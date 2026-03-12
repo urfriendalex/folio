@@ -1,0 +1,19 @@
+.page {
+  width: var(--content-width);
+  margin: 0 auto;
+  padding: calc(var(--header-height) + 2rem) 0 4rem;
+}
+
+.header {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}

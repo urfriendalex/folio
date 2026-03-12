@@ -1,0 +1,11 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" fill="#100F0E"/>
+  <circle cx="902" cy="280" r="214" fill="#DE5F3C"/>
+  <circle cx="288" cy="1184" r="202" fill="#A9C17A"/>
+  <rect x="92" y="108" width="1016" height="1284" rx="42" fill="#F5EEE5" fill-opacity="0.9"/>
+  <rect x="146" y="176" width="908" height="206" rx="26" fill="#100F0E"/>
+  <rect x="146" y="434" width="908" height="340" rx="26" fill="#E8DED1"/>
+  <rect x="146" y="826" width="430" height="486" rx="26" fill="#100F0E"/>
+  <rect x="624" y="826" width="430" height="486" rx="26" fill="#DE5F3C"/>
+  <text x="184" y="320" fill="#F5EEE5" font-family="Georgia, serif" font-size="88">Fragments</text>
+</svg>

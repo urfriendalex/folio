@@ -1,0 +1,99 @@
+.page {
+  width: var(--content-width);
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+  padding: calc(var(--header-height) + 0.5rem) 0 1rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.hero h1 {
+  margin: 0.2rem 0 0;
+  max-width: 12ch;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+
+.hero p {
+  max-width: 18rem;
+  margin: 0.25rem 0 0;
+  color: var(--muted-color);
+  line-height: 1.45;
+}
+
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+}
+
+.zoomLabel {
+  min-width: 4ch;
+  text-align: center;
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.board {
+  --archive-scale: 1;
+
+  padding: 0;
+  border-radius: calc(var(--radius-xl) * 1.1);
+}
+
+.grid {
+  columns: 4 12rem;
+  column-gap: 0.5rem;
+}
+
+.tile {
+  break-inside: avoid;
+  margin-bottom: 0.5rem;
+  transform: scale(var(--archive-scale));
+  transform-origin: top center;
+  transition: transform 220ms ease;
+}
+
+.tileInner {
+  overflow: hidden;
+  border-radius: calc(var(--radius-lg) * 1.1);
+  border: 1px solid var(--line-color);
+  background: transparent;
+}
+
+.tile img {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 64rem) {
+  .grid {
+    columns: 3 12rem;
+  }
+}
+
+@media (max-width: 50rem) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    width: fit-content;
+  }
+
+  .grid {
+    columns: 2 10rem;
+  }
+}

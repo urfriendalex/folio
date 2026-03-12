@@ -1,0 +1,18 @@
+.section {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+.inner {
+  width: var(--content-width);
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.email {
+  font-size: clamp(2.4rem, 7vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}

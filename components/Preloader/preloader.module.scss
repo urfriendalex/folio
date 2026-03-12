@@ -1,0 +1,126 @@
+.overlay {
+  --ascii-stage-width: 100vw;
+  --ascii-stage-height: 100vh;
+
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--preloader-bg);
+  color: var(--walker-color);
+  will-change: opacity, filter;
+  opacity: 1;
+  filter: blur(0);
+}
+
+.track {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--ascii-stage-width);
+  height: var(--ascii-stage-height);
+  transform: translate3d(-50%, -50%, 0);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms cubic-bezier(0.23, 0.96, 0.32, 1);
+}
+
+.trackEntered {
+  opacity: 1;
+}
+
+.walker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-block;
+  width: max-content;
+  height: max-content;
+  margin: 0;
+  color: var(--walker-color);
+  white-space: pre;
+  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-size: clamp(1.12rem, 1.6vw, 1.58rem);
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 1rem var(--walker-glow);
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.progress {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.progressVisible {
+  opacity: 1;
+}
+
+.progressValue {
+  color: #ff2b2b;
+  font-size: clamp(0.55rem, 1.25vw, 0.9rem);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
+}
+
+.debugBadge {
+  display: none;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.45rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--preloader-progress-color);
+  border: 1px solid color-mix(in srgb, var(--preloader-progress-color) 42%, transparent);
+  background: color-mix(in srgb, var(--preloader-bg) 88%, transparent);
+  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
+}
+
+:global(html[data-preloader-debug="on"]) .debugBadge {
+  display: inline-flex;
+}
+
+.isLoaded {
+  opacity: 0;
+  filter: blur(10px);
+  transition:
+    opacity 640ms cubic-bezier(0.23, 0.96, 0.32, 1),
+    filter 640ms cubic-bezier(0.23, 0.96, 0.32, 1);
+}
+
+.reducedMotionExit {
+  transform: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+@media (max-width: 48rem) {
+  .walker {
+    font-size: clamp(0.74rem, 3.5vw, 0.98rem);
+  }
+}
+
+@media (min-width: 64rem) {
+  .overlay {
+    --ascii-stage-width: clamp(16rem, 18vw, 24rem);
+    --ascii-stage-height: clamp(14rem, 44vh, 28rem);
+  }
+}

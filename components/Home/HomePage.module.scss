@@ -1,0 +1,218 @@
+.page {
+  display: grid;
+  gap: 3rem;
+  padding: calc(var(--header-height) + 0.5rem) 0 0;
+}
+
+.hero {
+  width: var(--content-width);
+  margin: 0 auto;
+  min-height: calc(100svh - var(--header-height) - 0.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.heroCopy {
+  display: grid;
+  align-content: space-between;
+  gap: 1.25rem;
+  padding: 0.2rem 0;
+  border-radius: var(--radius-xl);
+}
+
+.heroText {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  max-width: 8ch;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2.8rem, 8vw, 6.8rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.manifesto {
+  max-width: 18rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--muted-color);
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.statCard {
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+}
+
+.statValue {
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.statLabel {
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.heroFeature {
+  display: grid;
+  gap: 1rem;
+  align-content: stretch;
+}
+
+.featureMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.featureMeta p {
+  max-width: 16rem;
+  margin: 0;
+  color: var(--muted-color);
+  line-height: 1.45;
+}
+
+.featureMeta a {
+  font-size: 0.82rem;
+}
+
+.works {
+  width: var(--content-width);
+  margin: 0 auto;
+  display: grid;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+
+.worksHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.worksHeader h2 {
+  margin: 0;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.worksGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.workCard {
+  display: grid;
+  gap: 1rem;
+  padding: 0.5rem 0 1.5rem;
+  border-radius: var(--radius-xl);
+  color: inherit;
+  border-top: 1px solid var(--line-color);
+  transition: color 260ms ease;
+}
+
+.workCard:hover,
+.workCard:focus-visible {
+  background: transparent;
+  color: var(--fg-color);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.cardHeader strong {
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.cardHeader span {
+  color: var(--muted-color);
+  font-size: 0.95rem;
+}
+
+.cardSummary {
+  margin: 0;
+  color: var(--muted-color);
+  line-height: 1.45;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.tag {
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 0;
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 64rem) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .heroFeature {
+    align-content: start;
+  }
+}
+
+@media (max-width: 50rem) {
+  .page {
+    gap: 3rem;
+  }
+
+  .heroCopy {
+    padding: 1rem;
+  }
+
+  .quickGrid,
+  .worksGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .worksHeader {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .featureMeta {
+    flex-direction: column;
+    align-items: start;
+  }
+}

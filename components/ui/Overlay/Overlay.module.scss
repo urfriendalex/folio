@@ -1,0 +1,46 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgb(16 16 16 / 0.18);
+}
+
+.panel {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--header-height) + 1rem) 0 2rem;
+  background: var(--bg-color);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  width: var(--content-width);
+  margin: 0 auto 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  background: var(--bg-color);
+  z-index: 1;
+}
+
+.content {
+  width: var(--content-width);
+  margin: 0 auto;
+  padding-bottom: 1rem;
+}
+
+@media (max-width: 48rem) {
+  .panel {
+    padding: calc(var(--header-height) + 0.75rem) 0 1.5rem;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+}

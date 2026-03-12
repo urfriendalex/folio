@@ -1,0 +1,10 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" fill="#11100F"/>
+  <rect x="118" y="118" width="964" height="1264" rx="38" fill="#EFE7DC"/>
+  <path d="M118 494H1082" stroke="#11100F" stroke-opacity="0.16" stroke-width="2"/>
+  <path d="M118 864H1082" stroke="#11100F" stroke-opacity="0.16" stroke-width="2"/>
+  <circle cx="595" cy="681" r="220" fill="#DE5F3C"/>
+  <circle cx="595" cy="681" r="112" fill="#11100F"/>
+  <text x="166" y="306" fill="#11100F" font-family="Georgia, serif" font-size="84">Motion studies</text>
+  <text x="166" y="1180" fill="#11100F" font-family="Arial, sans-serif" font-size="38" letter-spacing="8">ALWAYS IN BETWEEN</text>
+</svg>

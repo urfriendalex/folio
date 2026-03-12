@@ -1,0 +1,233 @@
+.page {
+  width: var(--content-width);
+  margin: 0 auto;
+  display: grid;
+  gap: 1.25rem;
+  padding: calc(var(--header-height) + 0.5rem) 0 1rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+  gap: 1.25rem;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  border-radius: var(--radius-xl);
+}
+
+.routeLabel {
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.summary {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--muted-color);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.tag {
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 0;
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.rail {
+  position: sticky;
+  top: calc(var(--header-height) + 1rem);
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  border-radius: var(--radius-xl);
+}
+
+.railGroup {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.railLabel {
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.rail a,
+.rail button {
+  justify-content: flex-start;
+}
+
+.stack {
+  display: grid;
+  gap: 2rem;
+}
+
+.sectionCard {
+  display: grid;
+  gap: 1rem;
+  padding: 0 0 2rem;
+  border-radius: var(--radius-xl);
+  border-bottom: 1px solid var(--line-color);
+}
+
+.sectionHeader {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(1.4rem, 3vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.sectionHeader p {
+  margin: 0;
+  max-width: 24rem;
+  color: var(--muted-color);
+  line-height: 1.45;
+}
+
+.noteGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.note {
+  padding: 0;
+  border-radius: var(--radius-lg);
+  border: 0;
+  background: transparent;
+  color: var(--muted-color);
+  min-height: 0;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4500;
+  padding: calc(var(--header-height) + 0.8rem) 0.8rem 0.8rem;
+  background: rgb(13 13 13 / 0.92);
+}
+
+.overlayCard {
+  width: min(78rem, calc(100vw - 1.6rem));
+  height: min(100%, calc(100svh - var(--header-height) - 1.6rem));
+  margin: 0 auto;
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: var(--radius-xl);
+  color: var(--bg-color);
+  background: var(--bg-color);
+  border: 0;
+}
+
+.overlayHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.overlayHeader h3 {
+  margin: 0;
+  max-width: 14ch;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.overlayHeader p,
+.overlayBody {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--muted-color);
+  line-height: 1.45;
+}
+
+.techList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.tech {
+  padding: 0.3rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 0;
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 64rem) {
+  .hero,
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    position: static;
+  }
+}
+
+@media (max-width: 50rem) {
+  .noteGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .detailGrid {
+    gap: 1rem;
+  }
+
+  .overlayCard {
+    padding: 1rem;
+  }
+
+  .overlayHeader {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,20 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d8e5ff"/>
+      <stop offset="1" stop-color="#f4f1e7"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="1600" y1="0" x2="0" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1f222f"/>
+      <stop offset="1" stop-color="#0d0f14"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect x="60" y="60" width="1480" height="880" rx="42" fill="white" fill-opacity="0.56"/>
+  <path d="M160 760L560 420L850 640L1180 360L1440 590" stroke="#1f283f" stroke-opacity="0.5" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="560" cy="420" r="24" fill="#1f283f" fill-opacity="0.65"/>
+  <circle cx="850" cy="640" r="24" fill="#1f283f" fill-opacity="0.65"/>
+  <circle cx="1180" cy="360" r="24" fill="#1f283f" fill-opacity="0.65"/>
+  <rect x="1060" y="660" width="300" height="170" rx="24" fill="url(#dark)" fill-opacity="0.85"/>
+  <text x="1110" y="750" fill="#f5f7ff" font-size="52" font-family="'Space Grotesk', sans-serif" letter-spacing="5">FOLIO</text>
+</svg>

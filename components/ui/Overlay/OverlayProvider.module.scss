@@ -1,0 +1,28 @@
+.stack,
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.stack h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.stack p,
+.field span {
+  margin: 0;
+  color: var(--muted-color);
+}
+
+.stack p {
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}

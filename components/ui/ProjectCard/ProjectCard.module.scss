@@ -1,0 +1,33 @@
+.card {
+  display: grid;
+  gap: 1rem;
+}
+
+.media {
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fg-color) 3%, transparent);
+}
+
+.media img {
+  width: 100%;
+  height: auto;
+}
+
+.meta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.meta h3,
+.meta p {
+  margin: 0;
+}
+
+.meta h3 {
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.meta p {
+  color: var(--muted-color);
+}

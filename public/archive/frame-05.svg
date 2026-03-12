@@ -1,0 +1,9 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" fill="#151210"/>
+  <rect x="136" y="124" width="928" height="1252" rx="42" fill="#F8F3EC"/>
+  <path d="M186 1160L1014 278" stroke="#151210" stroke-width="18"/>
+  <path d="M186 1258L1014 376" stroke="#DE5F3C" stroke-width="36"/>
+  <circle cx="320" cy="370" r="100" fill="#A9C17A"/>
+  <circle cx="870" cy="1070" r="160" fill="#151210"/>
+  <text x="184" y="248" fill="#151210" font-family="Georgia, serif" font-size="82">Index fragment</text>
+</svg>

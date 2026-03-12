@@ -1,0 +1,76 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--bg-color) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line-color);
+}
+
+.inner {
+  width: var(--content-width);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logo {
+  --logo-size: 1rem;
+  display: inline-flex;
+  align-items: baseline;
+  overflow: hidden;
+  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-size: var(--logo-size);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.hiddenPart {
+  transform: translateY(calc(var(--logo-size) * 1.8)) skew(0deg, 18deg);
+  transition:
+    transform 240ms ease,
+    opacity 240ms ease;
+}
+
+.endingPart {
+  margin-left: 0.14em;
+  transform: translateX(calc(var(--logo-size) * -5.35));
+  transition: transform 240ms ease 120ms;
+}
+
+.logo:is(:hover, :focus-visible) .hiddenPart {
+  transform: translateY(0) skew(0deg, 0deg);
+}
+
+.logo:is(:hover, :focus-visible) .endingPart {
+  transform: translateX(0);
+  transition-delay: 0ms;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1.25rem;
+}
+
+@media (max-width: 48rem) {
+  .inner {
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+    padding: 0.85rem 0;
+  }
+
+  .logo {
+    --logo-size: 0.92rem;
+  }
+
+  .nav {
+    gap: 0.9rem;
+  }
+}

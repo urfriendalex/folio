@@ -1,0 +1,39 @@
+.section {
+  min-height: calc(100svh - var(--header-height));
+}
+
+.inner {
+  width: var(--content-width);
+  min-height: calc(100svh - var(--header-height));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.content {
+  display: grid;
+  gap: 1rem;
+}
+
+.monogram {
+  margin: 0;
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.heading {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}

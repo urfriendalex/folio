@@ -1,0 +1,30 @@
+.footer {
+  border-top: 1px solid var(--line-color);
+}
+
+.inner {
+  width: var(--content-width);
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  color: var(--muted-color);
+}
+
+.group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+@media (max-width: 48rem) {
+  .inner {
+    grid-template-columns: 1fr;
+  }
+}
