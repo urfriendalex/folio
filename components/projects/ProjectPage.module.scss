@@ -1,46 +1,18 @@
 .page {
-  width: var(--content-width);
-  margin: 0 auto;
-  padding: calc(var(--header-height) + 2rem) 0 4rem;
-  display: grid;
-  gap: 2rem;
-}
-
-.header {
-  display: grid;
-  gap: 1rem;
-}
-
-.copy {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.copy h1,
-.copy p {
-  margin: 0;
-}
-
-.copy h1 {
-  max-width: 10ch;
-  font-size: clamp(2.6rem, 7vw, 5.4rem);
-  line-height: 0.92;
-  letter-spacing: -0.06em;
-}
-
-.copy p {
-  color: var(--muted-color);
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  padding: calc(var(--header-height) + 1.25rem) 0 clamp(13rem, 30vh, 18rem);
 }
 
 .stills {
   display: grid;
-  gap: 1rem;
+  width: min(70rem, 100%);
+  margin: 0 auto;
+  gap: 1.5rem;
+}
+
+.still {
+  overflow: hidden;
+  border-radius: var(--radius-panel-lg);
+  background: color-mix(in srgb, var(--surface-color) 58%, transparent);
 }
 
 .still img {
@@ -48,47 +20,524 @@
   height: auto;
 }
 
-.overlayContent {
-  display: grid;
-  gap: 1rem;
+.toolbarShell {
+  --toolbar-rest-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(3.65rem, 6.2vw, 4.65rem));
+  --toolbar-block-height: clamp(3.35rem, 5.8vw, 3.95rem);
+  --toolbar-preview-height: clamp(10.75rem, 15.25vw, 12.75rem);
+  /* Expand ~300ms ease-out; collapse faster + distinct curve (exit feels snappier than enter). */
+  --toolbar-motion-expand: 300ms;
+  --toolbar-motion-collapse: 165ms;
+  /* No wait for per-char reverse — shell + grid collapse immediately with body fade */
+  --toolbar-collapse-delay: 0ms;
+  --toolbar-expand-ease: cubic-bezier(0.2, 0.88, 0.24, 1);
+  --toolbar-collapse-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --toolbar-panel-p-inline: clamp(1rem, 1.9vw, 1.38rem);
+  --toolbar-panel-p-block-collapsed: 0.55rem;
+  --toolbar-panel-p-block-open: clamp(1.08rem, 2.05vw, 1.28rem);
+  --toolbar-panel-p-bottom-open: clamp(1.02rem, 1.95vw, 1.2rem);
+  --toolbar-expand-toggle: clamp(2rem, 4.2vw, 2.28rem);
+  position: fixed;
+  left: 50%;
+  bottom: var(--toolbar-rest-bottom);
+  width: min(58rem, calc(100vw - 1rem));
+  height: var(--toolbar-preview-height);
+  transform: translateX(-50%);
+  z-index: 450;
+  pointer-events: none;
 }
 
-.overlayContent h2,
-.overlayContent p {
+@media (prefers-reduced-motion: reduce) {
+  .toolbarShell {
+    --toolbar-motion-expand: 85ms;
+    --toolbar-motion-collapse: 85ms;
+    --toolbar-collapse-delay: 0ms;
+  }
+
+  .expandToggle:active,
+  .toolbarAction:active,
+  .navButton:active {
+    transform: none;
+  }
+}
+
+.toolbarTrack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas: "prev panel next";
+  height: 100%;
+  align-items: end;
+  gap: 0.55rem;
+}
+
+.toolbarCore {
+  grid-area: panel;
+  width: 100%;
+  height: var(--toolbar-block-height);
+  min-width: 0;
+  align-self: end;
+  pointer-events: auto;
+  --toolbar-motion-duration: var(--toolbar-motion-collapse);
+  --toolbar-ease: var(--toolbar-collapse-ease);
+  transition: height var(--toolbar-motion-duration) var(--toolbar-ease);
+  transition-delay: 0ms;
+}
+
+.toolbarCore[data-expanded="true"] {
+  height: var(--toolbar-preview-height);
+  --toolbar-motion-duration: var(--toolbar-motion-expand);
+  --toolbar-ease: var(--toolbar-expand-ease);
+  transition-delay: 0ms;
+}
+
+.toolbarCore:not([data-expanded="true"]) {
+  transition-delay: var(--toolbar-collapse-delay, 0ms);
+}
+
+.toolbarPanel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  min-height: var(--toolbar-block-height);
+  padding: var(--toolbar-panel-p-block-collapsed) var(--toolbar-panel-p-inline)
+    var(--toolbar-panel-p-block-collapsed);
+  border: 1px solid var(--project-toolbar-border);
+  border-radius: var(--project-toolbar-panel-radius);
+  background: var(--project-toolbar-block-bg);
+  box-shadow: var(--project-toolbar-panel-shadow);
+  backdrop-filter: var(--project-toolbar-panel-backdrop);
+  transition:
+    background var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    border-color var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    box-shadow var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    padding var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1));
+  transition-delay: 0ms;
+}
+
+.toolbarCore[data-expanded="true"] .toolbarPanel {
+  padding: var(--toolbar-panel-p-block-open) var(--toolbar-panel-p-inline)
+    var(--toolbar-panel-p-bottom-open);
+  transition-delay: 0ms;
+  border-color: var(--project-toolbar-border-strong);
+  background: var(--project-toolbar-block-bg);
+  box-shadow: var(--project-toolbar-panel-shadow-strong);
+}
+
+.toolbarCore:not([data-expanded="true"]) .toolbarPanel {
+  transition-delay: var(--toolbar-collapse-delay, 0ms);
+}
+
+.toolbarHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: calc(
+    var(--toolbar-block-height) - 2 * var(--toolbar-panel-p-block-collapsed) - 0.125rem
+  );
+  align-content: center;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.toolbarCore[data-expanded="true"] .toolbarHeader {
+  flex: 0 0 auto;
+  min-height: 0;
+  align-content: start;
+}
+
+.toolbarHeader,
+.toolbarBodyWrap {
+  position: relative;
+  z-index: 1;
+}
+
+.toolbarCopy {
+  min-width: 0;
+}
+
+.toolbarCopy h1 {
   margin: 0;
+  padding-top: 0;
+  font-size: clamp(0.9rem, 1.02vw, 1rem);
+  line-height: 1.05;
+  transition: padding-top var(--toolbar-motion-duration, 300ms)
+    var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1));
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--project-toolbar-text);
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.overlayContent h2 {
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 0.96;
-  letter-spacing: -0.05em;
+.toolbarCore[data-expanded="true"] .toolbarCopy h1 {
+  padding-top: 0.06em;
 }
 
-.overlayContent p {
-  max-width: 40rem;
-  color: var(--muted-color);
-  line-height: 1.5;
-}
-
-.details {
+.expandToggle {
+  appearance: none;
+  flex: 0 0 auto;
+  width: var(--toolbar-expand-toggle);
+  height: var(--toolbar-expand-toggle);
+  border: 1px solid var(--project-toolbar-border);
+  border-radius: var(--project-toolbar-toggle-radius);
+  padding: 0;
+  background: var(--project-toolbar-block-bg);
+  backdrop-filter: var(--project-toolbar-toggle-backdrop);
+  color: var(--project-toolbar-text);
   display: grid;
-  gap: 0.85rem;
+  place-items: center;
+  transition:
+    background var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    border-color var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.expandToggle:active {
+  transform: scale(0.97);
+}
+
+.toolbarCore:not([data-expanded="true"]) .expandToggle {
+  align-self: center;
+}
+
+.toolbarCore[data-expanded="true"] .expandToggle {
+  align-self: start;
+}
+
+.expandToggle:hover,
+.expandToggle:focus-visible {
+  background: var(--project-toolbar-block-bg-hover);
+  border-color: var(--project-toolbar-border-strong);
+}
+
+.expandGlyph {
+  position: relative;
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.expandGlyph::before,
+.expandGlyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: max(1px, 0.09rem);
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  transition:
+    transform 155ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 155ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.expandGlyph::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.toolbarCore[data-expanded="true"] .expandGlyph::after {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(90deg) scaleX(0);
+}
+
+.toolbarBodyWrap {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--toolbar-motion-duration, 300ms)
+    var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1));
+  transition-delay: 0ms;
+}
+
+.toolbarCore[data-expanded="true"] .toolbarBodyWrap {
+  flex: 1 1 auto;
+  grid-template-rows: 1fr;
+  transition-delay: 0ms;
+}
+
+.toolbarCore:not([data-expanded="true"]) .toolbarBodyWrap {
+  transition-delay: var(--toolbar-collapse-delay, 0ms);
+}
+
+.toolbarBody {
+  box-sizing: border-box;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  opacity: 0;
+  transition:
+    padding-top var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    opacity 0ms linear;
+}
+
+.toolbarCore[data-expanded="true"] .toolbarBody {
+  padding-top: 0.75rem;
+  opacity: 1;
+  transition: padding-top var(--toolbar-motion-duration, 300ms)
+    var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1));
+}
+
+.toolbarCore:not([data-expanded="true"]) .toolbarBody {
+  opacity: 0;
+  transition:
+    padding-top var(--toolbar-motion-duration, 300ms) var(--toolbar-ease, cubic-bezier(0.2, 0.88, 0.24, 1)),
+    opacity 72ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.toolbarDescription {
+  flex: 0 1 auto;
+  /* RevealLines grid gap stacks on top of line-height — keep row rhythm from line-height only. */
+  --reveal-line-gap: 0;
+  --reveal-line-opacity-ms: 380ms;
+  --reveal-line-transform-ms: 480ms;
   margin: 0;
+  max-width: none;
+  width: 100%;
+  min-width: 0;
+  color: var(--project-toolbar-muted);
+  font-size: clamp(0.88rem, 1.15vw, 0.95rem);
+  line-height: 1.28;
 }
 
-.details div {
+.toolbarDescription[data-mode="lines"] {
+  gap: 0;
+  row-gap: 0;
+}
+
+/* RevealLines: one line box per row — match clip to text (avoids tall empty strips per line). */
+.toolbarDescription[data-mode="lines"] > span {
+  line-height: inherit;
+}
+
+.toolbarDescription[data-mode="lines"] > span > span {
+  line-height: inherit;
+}
+
+.toolbarActionReveal {
+  --reveal-line-gap: 0;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.toolbarAction[data-align="start"] .toolbarActionReveal {
+  text-align: left;
+}
+
+.toolbarAction[data-align="end"] .toolbarActionReveal {
+  text-align: right;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: stretch;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 0.95rem;
+  gap: 0.65rem 1rem;
+}
+
+.toolbarActions[data-has-visit="true"] {
+  justify-content: space-between;
+}
+
+.toolbarActions > * {
+  flex: 0 0 auto;
+}
+
+/* Shared: `link-underline` (globals) — same animated ::after for anchor + button. */
+.toolbarAction {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 0.14em;
+  border: 0;
+  background: transparent;
+  color: var(--project-toolbar-text);
+  font-family: var(--font-body-stack);
+  font-size: clamp(0.82rem, 1.05vw, 0.9rem);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: var(--tracking-tight-sm);
+  text-transform: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.toolbarAction > * {
+  font-weight: inherit;
+}
+
+.toolbarAction[data-align="start"] {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.toolbarAction[data-align="end"] {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+button.toolbarAction {
+  appearance: none;
+  font-weight: 400;
+}
+
+.toolbarAction:active {
+  transform: scale(0.98);
+}
+
+.navButton {
+  width: 100%;
+  min-width: 0;
+  height: var(--toolbar-block-height);
+  min-height: var(--toolbar-block-height);
+  align-self: end;
+  overflow: hidden;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid var(--project-toolbar-border);
+  border-radius: var(--project-toolbar-panel-radius);
+  background: var(--project-toolbar-block-bg);
+  box-shadow: var(--project-toolbar-panel-shadow);
+  backdrop-filter: var(--project-toolbar-panel-backdrop);
   display: grid;
-  gap: 0.25rem;
-}
-
-.details dt {
-  font-family: var(--font-pixel), monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
+  align-items: center;
+  pointer-events: auto;
+  color: var(--project-toolbar-text);
+  font-family: var(--font-body-stack);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
-  color: var(--muted-color);
+  transition:
+    background 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 280ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.details dd {
-  margin: 0;
+.navButton:active {
+  transform: scale(0.98);
+}
+
+.navButton:hover,
+.navButton:focus-visible {
+  background: var(--project-toolbar-block-bg-hover);
+  border-color: var(--project-toolbar-border-strong);
+  box-shadow: var(--project-toolbar-panel-shadow-strong);
+}
+
+.previousButton {
+  grid-area: prev;
+}
+
+.nextButton {
+  grid-area: next;
+}
+
+.previousButton,
+.nextButton {
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.76rem;
+  font-weight: 400;
+  letter-spacing: var(--tracking-label-sm);
+}
+
+@media (max-width: 48rem) {
+  .page {
+    padding-bottom: clamp(14rem, 34vh, 18rem);
+  }
+
+  .toolbarShell {
+    width: calc(100vw - 1rem);
+    height: calc(var(--toolbar-preview-height) + var(--toolbar-block-height) + 0.4rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+  }
+
+  .toolbarTrack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "panel panel"
+      "prev next";
+    /* Fixed rows: panel row reserves preview height so the core grows upward (align-self: end), not down over the nav */
+    grid-template-rows: var(--toolbar-preview-height) var(--toolbar-block-height);
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .toolbarShell {
+    --toolbar-panel-p-inline: clamp(0.82rem, 3.4vw, 1.05rem);
+    --toolbar-panel-p-block-collapsed: 0.58rem;
+    --toolbar-panel-p-block-open: clamp(0.88rem, 2.6vw, 1rem);
+    --toolbar-panel-p-bottom-open: clamp(0.8rem, 2.4vw, 0.95rem);
+    --toolbar-expand-toggle: clamp(2.05rem, 5vw, 2.35rem);
+  }
+
+  .toolbarPanel {
+    padding: var(--toolbar-panel-p-block-collapsed) var(--toolbar-panel-p-inline)
+      var(--toolbar-panel-p-block-collapsed);
+  }
+
+  .toolbarCore {
+    width: 100%;
+  }
+
+  .toolbarCore[data-expanded="true"] .toolbarPanel {
+    padding: var(--toolbar-panel-p-block-open) var(--toolbar-panel-p-inline)
+      var(--toolbar-panel-p-bottom-open);
+  }
+
+  .toolbarCopy h1 {
+    font-size: 0.88rem;
+  }
+
+  .toolbarDescription {
+    max-width: none;
+    font-size: 0.84rem;
+  }
+
+  .still {
+    border-radius: var(--radius-xl);
+  }
+}
+
+@media (max-width: 30rem) {
+  .toolbarShell {
+    width: calc(100vw - 0.75rem);
+  }
+
+  .toolbarTrack {
+    gap: 0.45rem;
+  }
+
+  .navButton {
+    width: 100%;
+    padding-inline: 0.68rem;
+    font-size: 0.8rem;
+  }
+
+  .previousButton,
+  .nextButton {
+    font-size: 0.72rem;
+  }
 }

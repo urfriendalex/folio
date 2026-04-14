@@ -1,20 +1,156 @@
+@use "sass:math";
+
+/// Layer index: `0` = ::before, `1–6` = stacked divs, `7` = ::after
+@function navbar-gradient-blur-mask-layer($layer) {
+  @if $layer == 0 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 0%,
+      var(--navbar-gradient-blur-mask) 12.5%,
+      var(--navbar-gradient-blur-mask) 25%,
+      var(--navbar-gradient-blur-mask-transparent) 37.5%
+    );
+  }
+  @if $layer == 7 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 87.5%,
+      var(--navbar-gradient-blur-mask) 100%
+    );
+  }
+  @if $layer == 6 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 75%,
+      var(--navbar-gradient-blur-mask) 87.5%,
+      var(--navbar-gradient-blur-mask) 100%
+    );
+  }
+  // Layers 1–5: first transparent stop at `12.5% * n` (div 1 → 12.5% … 50%)
+  $start: 12.5% * $layer;
+  @return linear-gradient(
+    to top,
+    var(--navbar-gradient-blur-mask-transparent) $start,
+    var(--navbar-gradient-blur-mask) $start + 12.5%,
+    var(--navbar-gradient-blur-mask) $start + 25%,
+    var(--navbar-gradient-blur-mask-transparent) $start + 37.5%
+  );
+}
+
+@mixin navbar-gradient-blur-layer($layer) {
+  mask: navbar-gradient-blur-mask-layer($layer);
+
+  @if $layer == 0 {
+    backdrop-filter: blur(0.5px);
+  } @else if $layer == 7 {
+    backdrop-filter: blur(64px);
+  } @else {
+    $blur: math.pow(2, $layer - 1) * 1px;
+    backdrop-filter: blur($blur);
+  }
+}
+
+// `data-contrast`: light surface under bar → dark ink; dark surface → light ink (from JS luminance sampling).
 .header {
-  position: sticky;
+  position: relative;
+  isolation: isolate;
+  --navbar-ink: var(--navbar-contrast-light-ink);
+}
+
+.header[data-contrast="light"] {
+  --navbar-ink: var(--navbar-contrast-dark-ink);
+}
+
+.header[data-contrast="dark"] {
+  --navbar-ink: var(--navbar-contrast-light-ink);
+}
+
+.gradientBlur {
+  position: absolute;
+  z-index: var(--navbar-gradient-blur-z-index);
+  inset: auto 0 0 0;
   top: 0;
-  z-index: 100;
-  background: color-mix(in srgb, var(--bg-color) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line-color);
+  height: 150%;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transition:
+    height 520ms cubic-bezier(0.22, 0.9, 0.2, 1),
+    transform 520ms cubic-bezier(0.22, 0.9, 0.2, 1),
+    opacity var(--navbar-gradient-blur-transition);
+}
+
+:global(html.is-overlay-blur) .gradientBlur,
+:global(html.is-nav-open) .gradientBlur {
+  height: 300vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradientBlur {
+    transition: opacity var(--navbar-gradient-blur-transition);
+  }
+}
+
+.gradientBlur > div,
+.gradientBlur::before,
+.gradientBlur::after {
+  position: absolute;
+  inset: 0;
+}
+
+.gradientBlur::before {
+  content: "";
+  z-index: 1;
+  @include navbar-gradient-blur-layer(0);
+}
+
+@for $i from 1 through 6 {
+  .gradientBlur > div:nth-of-type(#{$i}) {
+    z-index: $i + 1;
+    @include navbar-gradient-blur-layer($i);
+  }
+}
+
+.gradientBlur::after {
+  content: "";
+  z-index: 8;
+  @include navbar-gradient-blur-layer(7);
+}
+
+// Single smooth wash — undertone on each masked blur layer caused banded / comb artifacts.
+.gradientBlurAtmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--navbar-gradient-blur-undertone) 0%,
+    var(--navbar-gradient-blur-undertone-mid) 38%,
+    transparent 100%
+  );
 }
 
 .inner {
-  width: var(--content-width);
+  position: relative;
+  z-index: 2;
   min-height: var(--header-height);
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding-block: 0.1rem;
+  transition:
+    opacity 220ms ease,
+    visibility 0ms linear 0ms;
+}
+
+:global(html.is-overlay-open) .inner {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    visibility 0ms linear 220ms;
 }
 
 .logo {
@@ -22,55 +158,401 @@
   display: inline-flex;
   align-items: baseline;
   overflow: hidden;
-  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--font-body-stack);
   font-size: var(--logo-size);
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-weight: 900;
+  letter-spacing: var(--tracking-tight-md);
   line-height: 1;
 }
 
+.logo,
+.navLink,
+.menuButton {
+  color: var(--navbar-ink);
+  transition:
+    color 220ms ease,
+    opacity 220ms ease;
+}
+
 .hiddenPart {
+  max-width: 0;
+  overflow: hidden;
   transform: translateY(calc(var(--logo-size) * 1.8)) skew(0deg, 18deg);
   transition:
+    max-width 280ms ease,
     transform 240ms ease,
     opacity 240ms ease;
 }
 
-.endingPart {
+.initialY {
   margin-left: 0.14em;
-  transform: translateX(calc(var(--logo-size) * -5.35));
-  transition: transform 240ms ease 120ms;
+  transition: margin-left 240ms ease;
+}
+
+.hiddenSurname {
+  max-width: 0;
+  overflow: hidden;
+  transform: translateY(calc(var(--logo-size) * 1.8)) skew(0deg, 18deg);
+  transition:
+    max-width 280ms ease 80ms,
+    transform 240ms ease 80ms,
+    opacity 240ms ease 80ms;
+}
+
+.dot {
+  max-width: 1ch;
+  overflow: hidden;
+  margin-left: 0.12em;
+  transition:
+    max-width 200ms ease,
+    opacity 200ms ease,
+    margin-left 200ms ease;
 }
 
 .logo:is(:hover, :focus-visible) .hiddenPart {
+  max-width: 8.5ch;
   transform: translateY(0) skew(0deg, 0deg);
 }
 
-.logo:is(:hover, :focus-visible) .endingPart {
-  transform: translateX(0);
-  transition-delay: 0ms;
+.logo:is(:hover, :focus-visible) .initialY {
+  margin-left: 0.32em;
+}
+
+.logo:is(:hover, :focus-visible) .hiddenSurname {
+  max-width: 7ch;
+  transform: translateY(0) skew(0deg, 0deg);
+}
+
+.logo:is(:hover, :focus-visible) .dot {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
 }
 
 .nav {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 1.25rem;
+  gap: 1rem 3rem;
+}
+
+.navLink,
+.mobileNavLink,
+.mobileFooterLink {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.navLink {
+  font-size: 0.82rem;
+}
+
+.archiveNavLink {
+  font-family: var(--font-pixel-square-stack);
+  letter-spacing: 0.06em;
+}
+
+.navLink:hover,
+.navLink:focus-visible {
+  opacity: 0.72;
+}
+
+.menuButton {
+  display: none;
+}
+
+.mobileOverlay {
+  display: none;
 }
 
 @media (max-width: 48rem) {
   .inner {
-    align-items: flex-start;
-    justify-content: flex-start;
-    flex-direction: column;
-    padding: 0.85rem 0;
+    position: relative;
+    z-index: 430;
+    padding-block: 0.1rem;
+    padding-inline: clamp(0.75rem, 4vw, 1.25rem);
   }
 
   .logo {
-    --logo-size: 0.92rem;
+    --logo-size: 0.94rem;
+  }
+
+  /* Idle: collapsed like desktop; full wordmark when nav is open */
+  :global(html.is-nav-open) .hiddenPart,
+  :global(html.is-nav-open) .hiddenSurname {
+    max-width: none;
+    transform: translateY(0) skew(0deg, 0deg);
+  }
+
+  :global(html.is-nav-open) .initialY {
+    margin-left: 0.12em;
+  }
+
+  :global(html.is-nav-open) .dot {
+    display: none;
+  }
+
+  :global(html.is-nav-open) .header {
+    --navbar-ink: var(--overlay-immersive-fg);
+  }
+
+  /* Keep logo + toggle visible above the nav overlay; override the overlay-open hide */
+  :global(html.is-nav-open) .inner {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 220ms ease,
+      visibility 0ms linear 0ms;
   }
 
   .nav {
-    gap: 0.9rem;
+    display: none;
+  }
+
+  .menuButton {
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .mobileNavLink,
+  .mobileFooterRow,
+  .mobileFooterLink {
+    color: var(--overlay-fg);
+    text-shadow: none;
+  }
+
+  .menuButton {
+    width: 2rem;
+    height: 2rem;
+    display: inline-grid;
+    align-content: center;
+    justify-items: end;
+    gap: 0.32rem;
+  }
+
+  .menuButtonLine {
+    width: 1.35rem;
+    height: 1px;
+    background: currentColor;
+    transform-origin: center;
+    transition:
+      transform 220ms ease,
+      opacity 220ms ease;
+  }
+
+  .menuButton[aria-expanded="true"] .menuButtonLine:first-child {
+    transform: translateY(0.2rem) rotate(45deg);
+  }
+
+  .menuButton[aria-expanded="true"] .menuButtonLine:last-child {
+    transform: translateY(-0.2rem) rotate(-45deg);
+  }
+
+  .mobileOverlay {
+    --overlay-fg: var(--overlay-immersive-fg);
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 420;
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    background: transparent;
+    isolation: isolate;
+    transition:
+      opacity 260ms ease,
+      visibility 260ms ease;
+    visibility: hidden;
+  }
+
+  .mobileOverlay::before {
+    display: none;
+  }
+
+  .mobileOverlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--overlay-immersive-backdrop);
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .mobileOverlay[data-open="true"]::after {
+    opacity: 1;
+  }
+
+  .mobileOverlay[data-open="true"] {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Dismiss before About exit (folio:before-about-close). Must not require [data-open=true] — React batches
+     setMenuOpen(false) with overlay close so data-open can already be false on first paint. */
+  :global(html.nav-overlay-instant) .mobileOverlay {
+    transition: none !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  :global(html.nav-overlay-instant) .mobileOverlay::before,
+  :global(html.nav-overlay-instant) .mobileOverlay::after {
+    transition: none !important;
+    opacity: 0 !important;
+  }
+
+  :global(html.nav-overlay-instant) .mobileNavLink,
+  :global(html.nav-overlay-instant) .mobileClockBlock,
+  :global(html.nav-overlay-instant) .mobileFooterLinks a {
+    transition: none !important;
+  }
+
+  .mobileOverlayInner {
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    min-height: 100svh;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: 2rem;
+    padding-block: calc(var(--header-height) + 1.25rem) 1.35rem;
+  }
+
+  .mobileNav {
+    align-self: start;
+    display: grid;
+    gap: 0.55rem;
+    align-content: start;
+    padding-top: 0.5rem;
+  }
+
+  .mobileNavLink {
+    width: fit-content;
+    font-size: clamp(2rem, 8vw, 2.6rem);
+    letter-spacing: -0.08em;
+    text-align: left;
+    opacity: 0;
+    transform: translate3d(0, 1rem, 0);
+    transition:
+      opacity 360ms ease,
+      transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    transition-delay: calc((3 - var(--item-index, 0)) * 50ms);
+  }
+
+  .mobileOverlay[data-open="true"] .mobileNavLink {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: calc(120ms + var(--item-index, 0) * 90ms);
+  }
+
+  .mobileNavLink.archiveNavLink {
+    letter-spacing: 0.04em;
+  }
+
+  .mobileFooterRow {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .mobileFooterLinks {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.65rem 1rem;
+  }
+
+  .mobileFooterLink {
+    font-size: 0.82rem;
+    line-height: 1;
+  }
+
+  .mobileClockBlock {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-content: end;
+    font-variant-numeric: tabular-nums;
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0);
+    transition:
+      opacity 300ms ease,
+      transform 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    transition-delay: 0ms;
+  }
+
+  .mobileClockMono {
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .mobileClockLine {
+    display: grid;
+    grid-template-columns: minmax(4.25rem, auto) minmax(0, 1fr);
+    gap: 0.35rem 0.65rem;
+    align-items: baseline;
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  .mobileClockLabel {
+    font-family: var(--font-pixel-stack);
+    font-size: 0.56rem;
+    letter-spacing: var(--tracking-label-md);
+    text-transform: uppercase;
+    color: var(--overlay-immersive-muted);
+    white-space: nowrap;
+  }
+
+  .mobileClockValue {
+    font-size: 0.86rem;
+    font-feature-settings: "tnum" 1;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .mobileFooterLinks a {
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0);
+    transition:
+      opacity 300ms ease,
+      transform 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    transition-delay: 0ms;
+  }
+
+  .mobileOverlay[data-open="true"] .mobileClockBlock {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 420ms;
+  }
+
+  .mobileOverlay[data-open="true"] .mobileFooterLinks a:nth-child(1) {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 460ms;
+  }
+
+  .mobileOverlay[data-open="true"] .mobileFooterLinks a:nth-child(2) {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 500ms;
   }
 }

@@ -1,4 +1,11 @@
 :root {
+  --font-body-stack: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono-stack: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
+  --font-pixel-stack: var(--font-geist-pixel-grid), monospace;
+  --font-pixel-square-stack: var(--font-geist-pixel-square), monospace;
+  --font-system-95-stack: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
+  --font-pixel: var(--font-pixel-stack);
+  --font-pixel-square: var(--font-pixel-square-stack);
   --bg-color: #f7f6f2;
   --bg-elevated: transparent;
   --bg-deep: #101010;
@@ -7,6 +14,7 @@
   --line-color: rgb(16 16 16 / 0.12);
   --accent-color: #101010;
   --accent-soft: rgb(16 16 16 / 0.06);
+  --signal-color: red;
   --lime-color: #101010;
   --panel-shadow: none;
   --walker-color: #050505;
@@ -15,22 +23,193 @@
   --preloader-progress-color: #050505;
   --walker-speed: 260;
   --header-height: 4.5rem;
-  --content-width: min(76rem, calc(100vw - 2rem));
+  --content-width: 100%;
+  --content-padding-inline: clamp(0.75rem, 2.4vw, 2rem);
+  /* Minimal footer: fixed wordmark strip height = `padding-bottom` on minimal `<footer>` */
+  --footer-wordmark-strip-height: clamp(10rem, 28vh, 17.5rem);
   --radius-xl: 1rem;
   --radius-lg: 0.8rem;
   --radius-sm: 999px;
+  --radius-panel-sm: 0.5rem;
+  --radius-panel-md: 0.75rem;
+  --radius-panel-lg: 1.35rem;
+  --radius-panel-xl: 1.8rem;
+  --tracking-label-sm: 0.08em;
+  --tracking-label-md: 0.12em;
+  --tracking-label-lg: 0.14em;
+  --tracking-tight-sm: -0.01em;
+  --tracking-tight-md: -0.04em;
+  --tracking-tight-lg: -0.08em;
+  --blur-glass-md: 10px;
+  --blur-glass-lg: 16px;
+  --shadow-glass-sm: 0 0.5rem 1.3rem rgb(0 0 0 / 0.04);
+  --shadow-glass-md: 0 0.85rem 2rem rgb(16 16 16 / 0.08);
+  --shadow-glass-lg: 0 2rem 6rem rgb(0 0 0 / 0.16);
   --grain-opacity: 0;
+  --surface-color: rgb(255 255 255 / 0.72);
+  --surface-strong: rgb(255 255 255 / 0.88);
+  --surface-muted: rgb(255 255 255 / 0.56);
+  --surface-outline: rgb(16 16 16 / 0.1);
+  --surface-outline-strong: rgb(16 16 16 / 0.18);
+  --elevated-shadow: 0 1.4rem 3rem rgb(16 16 16 / 0.08);
+  --section-padding-y: clamp(4.5rem, 8vw, 7rem);
+  --section-gap: clamp(1.4rem, 3vw, 2.6rem);
+  --hero-gradient-start: #f2ebda;
+  --hero-gradient-mid: #b9c6ff;
+  --hero-gradient-end: #d4dc95;
+  --hero-glow-primary: rgb(83 111 255 / 0.34);
+  --hero-glow-secondary: rgb(193 213 80 / 0.28);
+  --hero-grid-color: rgb(16 16 16 / 0.08);
+  --hero-mark-color: rgb(255 255 255 / 0.84);
+  --hero-panel-bg: rgb(255 255 255 / 0.58);
+  --hero-panel-shadow: 0 2rem 5rem rgb(16 16 16 / 0.12);
+  --contact-gradient-start: rgb(255 255 255 / 0.84);
+  --contact-gradient-end: rgb(224 230 255 / 0.64);
+  --overlay-default-backdrop: rgb(10 10 14 / 0.38);
+  --overlay-default-backdrop-filter: blur(20px) saturate(120%);
+  --overlay-default-surface-top: color-mix(in srgb, var(--bg-color) 90%, transparent);
+  --overlay-default-surface-bottom: color-mix(in srgb, var(--bg-color) 97%, transparent);
+  --overlay-default-surface-base: color-mix(in srgb, var(--bg-color) 80%, transparent);
+  --overlay-default-surface-shadow: var(--shadow-glass-lg);
+  --overlay-default-surface-radius: var(--radius-panel-xl);
+  --overlay-default-surface-enter-blur: 18px;
+  --overlay-default-orb-a: rgb(82 114 255 / 0.28);
+  --overlay-default-orb-b: rgb(255 56 178 / 0.22);
+  --overlay-default-orb-c: rgb(255 243 179 / 0.18);
+  --overlay-immersive-bg: transparent;
+  --overlay-immersive-fg: #101010;
+  --overlay-immersive-muted: rgb(16 16 16 / 0.62);
+  --overlay-immersive-line: rgb(16 16 16 / 0.12);
+  --overlay-immersive-backdrop: rgb(247 246 242 / 0.74);
+  --overlay-immersive-backdrop-filter: blur(22px) saturate(108%);
+  --project-toolbar-border: var(--surface-outline);
+  --project-toolbar-border-strong: var(--surface-outline-strong);
+  --project-toolbar-block-bg: color-mix(in srgb, var(--surface-strong) 90%, var(--bg-color));
+  --project-toolbar-block-bg-hover: color-mix(in srgb, var(--surface-strong) 98%, var(--bg-color));
+  --project-toolbar-text: var(--fg-color);
+  --project-toolbar-muted: var(--muted-color);
+  --project-toolbar-panel-shadow:
+    0 0.85rem 2rem color-mix(in srgb, var(--fg-color) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
+  --project-toolbar-panel-shadow-strong:
+    0 1rem 2.4rem color-mix(in srgb, var(--fg-color) 11%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 34%, transparent);
+  --project-toolbar-panel-backdrop: blur(var(--blur-glass-lg));
+  --project-toolbar-toggle-backdrop: blur(var(--blur-glass-lg)) saturate(130%);
+  --project-toolbar-panel-radius: var(--radius-panel-sm);
+  --project-toolbar-toggle-radius: calc(var(--radius-panel-sm) / 2);
+  /* Win98-style bevels + gray — shared by footer taskbar, Start menus, 404 dialog */
+  --win98-chrome-face: #c0c0c0;
+  --win98-chrome-ink: #0a0a0a;
+  --win98-chrome-shadow: #404040;
+  --win98-chrome-highlight: #ffffff;
+  --taskbar-face: var(--win98-chrome-face);
+  --taskbar-shadow: var(--win98-chrome-shadow);
+  --taskbar-highlight: var(--win98-chrome-highlight);
+  --taskbar-ink: var(--win98-chrome-ink);
+  --taskbar-shell-shadow: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18));
+  --taskbar-start-hover-brightness: 1.03;
+  --taskbar-quick-hover-brightness: 1.05;
+  --taskbar-clock-bg: #b9b9b9;
+  --taskbar-clock-tooltip-border: var(--taskbar-shadow);
+  --taskbar-clock-tooltip-bg: var(--taskbar-face);
+  --taskbar-clock-tooltip-ink: var(--taskbar-ink);
+  --taskbar-clock-tooltip-muted: color-mix(in srgb, var(--taskbar-ink) 68%, transparent);
+  --taskbar-menu-surface-bg: var(--bg-color);
+  --taskbar-menu-surface-border: var(--line-color);
+  --taskbar-menu-surface-shadow: var(--elevated-shadow);
+  --taskbar-menu-rail-bg: color-mix(in srgb, var(--fg-color) 6%, var(--bg-color));
+  --taskbar-menu-item-hover: color-mix(in srgb, var(--fg-color) 4%, transparent);
+  --taskbar-menu-card-bg: color-mix(in srgb, var(--fg-color) 3%, transparent);
+  --taskbar-mode-switch-bg: color-mix(in srgb, var(--fg-color) 3%, transparent);
+  --taskbar-mode-button-active-bg: color-mix(in srgb, var(--fg-color) 8%, transparent);
+  /* Windows 98 Start menu / taskbar chrome (light) */
+  --win-menu-face: var(--win98-chrome-face);
+  --win-menu-ink: var(--win98-chrome-ink);
+  --win-menu-muted: #404040;
+  --win-menu-hilite-bg: #000080;
+  --win-menu-hilite-fg: #ffffff;
+  --win-menu-border-light: #ffffff;
+  --win-menu-border-dark: #404040;
+  --win-menu-border-inner-dark: #808080;
+  --win-menu-separator-light: #ffffff;
+  --win-menu-separator-dark: #808080;
+  /* Classic Start menu left rail (vertical blue gradient, “Windows 98” strip) */
+  --win-menu-rail-gradient: linear-gradient(180deg, #0842b0 0%, #000080 45%, #000068 100%);
+  --win-menu-rail-fg: #ffffff;
+  --taskbar-theme-lamp-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.18);
+  --taskbar-theme-lamp-light: #161616;
+  --taskbar-theme-lamp-dark: #ffd56d;
+  --taskbar-flag-base: #000;
+  --taskbar-flag-red: #d82828;
+  --taskbar-flag-green: #3d9140;
+  --taskbar-flag-blue: #2446d6;
+  --taskbar-flag-yellow: #e0b00d;
+  --taskbar-flag-shadow: none;
+  /* Win98 dialog surface (404 floating window — same plastic + flag primaries as taskbar) */
+  --win98-window-shell: var(--win98-chrome-face);
+  --win98-window-shell-shadow: #878787;
+  --win98-window-shell-highlight: #fff;
+  --win98-window-shell-lowlight: #dfdfdf;
+  --win98-window-title-top: #07226f;
+  --win98-window-title-bottom: #0b3ca8;
+  --win98-window-title-ink: #fff;
+  --win98-window-border: #000;
+  --win98-window-ink: #111;
+  --win98-window-frame: #fdfdfd;
+  --win98-window-frame-edge: #c8c8c8;
+  --win98-window-frame-shadow: #7b7b7b;
+  --win98-window-screen: #fff;
+  --win98-window-pattern-dot: rgb(0 0 0 / 0.2);
+  --win98-window-button-face: var(--win98-chrome-face);
+  --win98-window-button-highlight: #fff;
+  --win98-window-button-shadow: #7b7b7b;
+  --win98-window-button-deep-shadow: #000;
+  --win98-window-float-shadow: rgb(0 0 0 / 0.16);
+  --win98-window-icon-border: rgb(255 255 255 / 0.35);
+  --win98-window-icon-highlight: rgb(255 255 255 / 0.2);
+  --win98-window-icon-shadow: rgb(0 0 0 / 0.28);
+  --win98-window-icon-red: var(--taskbar-flag-red);
+  --win98-window-icon-blue: var(--taskbar-flag-blue);
+  --win98-window-icon-green: var(--taskbar-flag-green);
+  --win98-window-icon-yellow: var(--taskbar-flag-yellow);
+  --win98-window-close-ink: #111;
+  --win98-window-width: clamp(23rem, 38vw, 31rem);
+  --win98-window-height: clamp(26rem, 44vw, 34rem);
+  /* 404 floating window — compact on narrow viewports so bounce + trails read clearly */
+  --win98-window-width-mobile: min(86vw, 19.5rem);
+  --win98-window-height-mobile: min(36svh, 17.5rem);
+  --navbar-contrast-dark-ink: var(--fg-color);
+  --navbar-contrast-light-ink: rgb(250 248 243 / 0.98);
+  --navbar-gradient-blur-mask-transparent: rgb(0 0 0 / 0);
+  --navbar-gradient-blur-mask: rgb(0 0 0 / 1);
+  --navbar-gradient-blur-undertone: rgb(255 255 255 / 0.07);
+  --navbar-gradient-blur-undertone-mid: rgb(255 255 255 / 0.02);
+  --navbar-gradient-blur-z-index: 1;
+  --navbar-gradient-blur-transition: 320ms ease;
+  /* Navbar.module: lift stacked blur off-screen while modal overlay is open */
+  --navbar-blur-overlay-lift: -500px;
+}
+
+@media (max-width: 48rem) {
+  :root {
+    --footer-wordmark-strip-height: clamp(8.5rem, 22vh, 13rem);
+  }
 }
 
 [data-theme="dark"] {
+  --navbar-contrast-dark-ink: rgb(18 18 20 / 0.94);
+
   --bg-color: #0d0d0d;
   --bg-elevated: transparent;
   --bg-deep: #f3f1ea;
   --fg-color: #f3f1ea;
+  --navbar-contrast-light-ink: var(--fg-color);
   --muted-color: rgb(243 241 234 / 0.58);
   --line-color: rgb(243 241 234 / 0.12);
   --accent-color: #f3f1ea;
   --accent-soft: rgb(243 241 234 / 0.06);
+  --signal-color: red;
   --lime-color: #f3f1ea;
   --panel-shadow: none;
   --walker-color: #f6f6f6;
@@ -38,6 +217,111 @@
   --preloader-bg: #000000;
   --preloader-progress-color: #f6f5f2;
   --walker-speed: 260;
+  --shadow-glass-sm: 0 0.5rem 1.3rem rgb(0 0 0 / 0.16);
+  --shadow-glass-md: 0 1rem 2.4rem rgb(0 0 0 / 0.28);
+  --shadow-glass-lg: 0 2.2rem 6rem rgb(0 0 0 / 0.32);
+  --surface-color: rgb(13 13 13 / 0.66);
+  --surface-strong: rgb(13 13 13 / 0.82);
+  --surface-muted: rgb(13 13 13 / 0.58);
+  --surface-outline: rgb(243 241 234 / 0.12);
+  --surface-outline-strong: rgb(243 241 234 / 0.22);
+  --elevated-shadow: 0 1.6rem 3.4rem rgb(0 0 0 / 0.34);
+  --hero-gradient-start: #17204f;
+  --hero-gradient-mid: #2930b6;
+  --hero-gradient-end: #6d7f1a;
+  --hero-glow-primary: rgb(107 129 255 / 0.38);
+  --hero-glow-secondary: rgb(190 219 71 / 0.26);
+  --hero-grid-color: rgb(243 241 234 / 0.1);
+  --hero-mark-color: rgb(243 241 234 / 0.78);
+  --hero-panel-bg: rgb(9 10 20 / 0.54);
+  --hero-panel-shadow: 0 2rem 5rem rgb(0 0 0 / 0.32);
+  --contact-gradient-start: rgb(15 16 24 / 0.84);
+  --contact-gradient-end: rgb(33 36 56 / 0.68);
+  --overlay-default-backdrop: rgb(5 6 12 / 0.54);
+  --overlay-default-surface-top: color-mix(in srgb, var(--bg-color) 82%, transparent);
+  --overlay-default-surface-bottom: color-mix(in srgb, var(--bg-color) 94%, transparent);
+  --overlay-default-surface-base: color-mix(in srgb, var(--bg-color) 72%, transparent);
+  --overlay-default-surface-shadow: 0 2.2rem 6rem rgb(0 0 0 / 0.32);
+  --overlay-default-orb-a: rgb(98 119 255 / 0.22);
+  --overlay-default-orb-b: rgb(223 87 180 / 0.18);
+  --overlay-default-orb-c: rgb(195 180 92 / 0.16);
+  --overlay-immersive-bg: transparent;
+  --overlay-immersive-fg: #f4f2eb;
+  --overlay-immersive-muted: rgb(244 242 235 / 0.62);
+  --overlay-immersive-line: rgb(244 242 235 / 0.14);
+  --overlay-immersive-backdrop: rgb(4 4 6 / 0.78);
+  --overlay-immersive-backdrop-filter: blur(24px) saturate(112%);
+  --project-toolbar-block-bg: color-mix(in srgb, var(--surface-strong) 94%, black 6%);
+  --project-toolbar-block-bg-hover: color-mix(in srgb, var(--surface-strong) 100%, black 0%);
+  --project-toolbar-panel-shadow:
+    0 1rem 2.4rem rgb(0 0 0 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --project-toolbar-panel-shadow-strong:
+    0 1.2rem 2.8rem rgb(0 0 0 / 0.34),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --taskbar-shell-shadow: drop-shadow(0 -2px 12px rgb(0 0 0 / 0.45));
+  --taskbar-start-hover-brightness: 1.12;
+  --taskbar-quick-hover-brightness: 1.1;
+  --taskbar-clock-tooltip-border: var(--taskbar-highlight);
+  --taskbar-clock-tooltip-bg: var(--bg-color);
+  --taskbar-clock-tooltip-ink: var(--fg-color);
+  --taskbar-clock-tooltip-muted: var(--muted-color);
+  --taskbar-flag-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
+  /* Toolbar + Start menu: match page base dark — near-black face, readable 3D bevels */
+  --win98-chrome-face: #0d0d0d;
+  --win98-chrome-ink: #eceff4;
+  --win98-chrome-shadow: #000000;
+  --win98-chrome-highlight: #2a2a2c;
+  --taskbar-face: var(--win98-chrome-face);
+  --taskbar-shadow: var(--win98-chrome-shadow);
+  --taskbar-highlight: var(--win98-chrome-highlight);
+  --taskbar-ink: var(--win98-chrome-ink);
+  --taskbar-clock-bg: #0a0a0a;
+  --taskbar-menu-surface-bg: #0d0d0d;
+  --win-menu-face: var(--win98-chrome-face);
+  --win-menu-ink: var(--win98-chrome-ink);
+  --win-menu-muted: rgb(154 160 168 / 0.88);
+  /* Same classic Win98 selection blue on dark chrome */
+  --win-menu-hilite-bg: #000080;
+  --win-menu-hilite-fg: #ffffff;
+  --win-menu-border-light: #2e2e32;
+  --win-menu-border-dark: #000000;
+  --win-menu-border-inner-dark: #141416;
+  --win-menu-separator-light: #2e2e32;
+  --win-menu-separator-dark: #000000;
+  --win-menu-rail-gradient: linear-gradient(180deg, #1a2f6a 0%, #0c1c48 42%, #040810 100%);
+  --win-menu-rail-fg: rgb(236 239 244 / 0.94);
+  --win98-window-shell: #2e3138;
+  --win98-window-shell-shadow: #08090c;
+  --win98-window-shell-highlight: #575d69;
+  --win98-window-shell-lowlight: #3e434d;
+  --win98-window-title-top: #0a0f22;
+  --win98-window-title-bottom: #304879;
+  --win98-window-title-ink: #eef3ff;
+  --win98-window-border: #c7d0dd;
+  --win98-window-ink: #eff2f7;
+  --win98-window-frame: #10131a;
+  --win98-window-frame-edge: #4e5563;
+  --win98-window-frame-shadow: #050609;
+  --win98-window-screen: #0a0b0f;
+  --win98-window-pattern-dot: rgb(255 255 255 / 0.18);
+  --win98-window-button-face: #2a2f38;
+  --win98-window-button-highlight: #626a79;
+  --win98-window-button-shadow: #14171d;
+  --win98-window-button-deep-shadow: #020304;
+  --win98-window-float-shadow: rgb(0 0 0 / 0.42);
+  --win98-window-icon-border: rgb(255 255 255 / 0.18);
+  --win98-window-icon-highlight: rgb(255 255 255 / 0.12);
+  --win98-window-icon-shadow: rgb(0 0 0 / 0.42);
+  --win98-window-icon-red: var(--taskbar-flag-red);
+  --win98-window-icon-blue: var(--taskbar-flag-blue);
+  --win98-window-icon-green: var(--taskbar-flag-green);
+  --win98-window-icon-yellow: var(--taskbar-flag-yellow);
+  --win98-window-close-ink: var(--win98-window-ink);
+  --navbar-gradient-blur-mask-transparent: rgb(0 0 0 / 0);
+  --navbar-gradient-blur-mask: rgb(0 0 0 / 1);
+  --navbar-gradient-blur-undertone: rgb(0 0 0 / 0.1);
+  --navbar-gradient-blur-undertone-mid: rgb(0 0 0 / 0.03);
 }
 
 *,
@@ -63,16 +347,9 @@ html {
 body {
   background: var(--bg-color);
   color: var(--fg-color);
-  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-body-stack);
   text-rendering: geometricPrecision;
   position: relative;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
 }
 
 body::before {
@@ -98,6 +375,19 @@ html.is-nav-open body {
   overflow: hidden;
 }
 
+html.is-nav-open [data-app-navbar="true"],
+html.is-overlay-open [data-app-navbar="true"] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+html.is-nav-open [data-app-shell="true"],
+html.is-overlay-open [data-app-shell="true"] {
+  padding-top: var(--header-height);
+}
+
 html.is-overlay-open,
 html.is-overlay-open body {
   overflow: hidden;
@@ -108,12 +398,27 @@ html.is-fullscreen-route body {
   overflow: hidden;
 }
 
+html.is-archive-route,
+html.is-archive-route body {
+  overflow: hidden;
+}
+
+// Shell reveal: light fade + scale only (no `filter` on this subtree — breaks descendant
+// `backdrop-filter`). Section / scroll reveals are gated until `is-loading` clears; see
+// `useRevealOnView` + `usePreloaderComplete`.
 html [data-app-shell="true"] {
+  position: relative;
   transition:
-    filter 720ms cubic-bezier(0.23, 0.96, 0.32, 1),
     opacity 720ms cubic-bezier(0.23, 0.96, 0.32, 1),
     transform 720ms cubic-bezier(0.23, 0.96, 0.32, 1);
-  will-change: filter, opacity, transform;
+}
+
+html.is-loading [data-app-shell="true"] {
+  will-change: opacity, transform;
+}
+
+html:not(.is-loading) [data-app-shell="true"] {
+  will-change: auto;
 }
 
 html.is-fullscreen-route [data-app-chrome="true"] {
@@ -124,14 +429,54 @@ html.is-fullscreen-route [data-app-main="true"] {
   min-height: 100svh;
 }
 
-html.is-loading [data-app-shell="true"] {
-  filter: blur(16px);
+html.is-archive-route [data-app-main="true"] {
+  min-height: 100svh;
+  background: transparent;
+}
+
+html.is-archive-route [data-footer-wordmark-underlay="true"],
+html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
+  display: none;
+}
+
+/* Full-viewport fixed WebGL under `main` can composite above sticky chrome; pin navbar to the viewport. */
+html.is-archive-route [data-app-navbar="true"] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10000;
+  pointer-events: auto;
+}
+
+html.is-archive-route [data-app-footer="true"],
+html.is-archive-route [data-toolbar-ascii-portal="true"] {
+  display: none;
+}
+
+html [data-app-navbar="true"],
+html [data-app-footer="true"] {
+  transition:
+    opacity 220ms ease,
+    visibility 0ms linear 0ms;
+}
+
+html.is-overlay-open [data-app-navbar="true"] {
+  pointer-events: none;
+}
+
+html.is-overlay-open [data-app-footer="true"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html.is-loading:not(.is-preloader-exiting) [data-app-shell="true"] {
   opacity: 0;
   transform: scale(1.01);
 }
 
 html.is-loading.is-preloader-exiting [data-app-shell="true"] {
-  filter: blur(0);
   opacity: 1;
   transform: scale(1);
 }
@@ -151,7 +496,7 @@ html.js-enabled[data-preloader="skip"] [data-preloader-overlay="true"] {
   gap: 1rem;
   background: var(--preloader-bg);
   color: var(--preloader-progress-color);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   font-size: 0.8rem;
 }
@@ -196,122 +541,112 @@ img {
 }
 
 .page-shell {
+  box-sizing: border-box;
   width: var(--content-width);
+  max-width: none;
   margin: 0 auto;
+  padding-inline: var(--content-padding-inline);
 }
 
 .section-label {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: var(--font-pixel), monospace;
+  font-family: var(--font-pixel-stack);
   font-size: 0.65rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--muted-color);
 }
 
-.section-label::before {
-  content: "";
-  width: 0.75rem;
-  height: 1px;
-  background: currentColor;
-  opacity: 1;
-}
-
 .panel-surface {
-  background: var(--bg-elevated);
-  border: 0;
-  box-shadow: var(--panel-shadow);
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface-muted));
+  border: 1px solid var(--surface-outline);
+  box-shadow: var(--elevated-shadow);
 }
 
-.link-underline {
+.link-underline,
+.text-link {
   position: relative;
-  display: inline-flex;
-  gap: 0.35rem;
-  white-space: nowrap;
-}
-
-.link-underline::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -0.15rem;
-  width: 100%;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform 260ms ease;
-}
-
-.link-underline:hover::after,
-.link-underline:focus-visible::after {
-  transform: scaleX(1);
-  transform-origin: left;
-}
-
-.link-wavy {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding-bottom: 0.15rem;
-  overflow: hidden;
-  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
-}
-
-.link-wavy svg {
-  position: absolute;
-  left: 0;
-  bottom: -0.2rem;
-  width: 300%;
-  height: 0.9rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  transition: transform 600ms cubic-bezier(0, 0.25, 0.5, 1);
-}
-
-.link-wavy:hover svg,
-.link-wavy:focus-visible svg {
-  transform: translate3d(-66.6%, 0, 0);
-}
-
-.pill-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  border-radius: var(--radius-sm);
-  border: 0;
-  padding: 0.3rem 0;
-  background: transparent;
-  color: var(--muted-color);
-  font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
-  font-size: 0.82rem;
-  letter-spacing: -0.01em;
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
 }
 
 .text-link {
   color: var(--fg-color);
 }
 
-.text-link:hover,
-.text-link:focus-visible {
+.link-underline::after,
+.text-link::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  left: 0;
+  top: 100%;
+  pointer-events: none;
+  background: currentColor;
+  transform-origin: 100% 50%;
+  transform: scale3d(0, 1, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .link-underline::after,
+  .text-link::after {
+    transition: transform 0.3s;
+  }
+}
+
+.link-underline:hover::after,
+.link-underline:focus-visible::after,
+.text-link:hover::after,
+.text-link:focus-visible::after {
+  transform-origin: 0% 50%;
+  transform: scale3d(1, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-underline::after,
+  .text-link::after {
+    transition: none;
+  }
+
+  .link-underline:hover::after,
+  .link-underline:focus-visible::after,
+  .text-link:hover::after,
+  .text-link:focus-visible::after {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+
+
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-outline);
+  padding: 0.62rem 0.96rem;
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface-muted));
+  box-shadow: var(--shadow-glass-sm);
   color: var(--fg-color);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+  font-family: var(--font-body-stack);
+  font-size: 0.8rem;
+  letter-spacing: var(--tracking-tight-sm);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .pill-button:hover,
 .pill-button:focus-visible {
-  background: transparent;
+  border-color: var(--surface-outline-strong);
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface-color));
   color: var(--fg-color);
-  transform: none;
+  box-shadow: var(--shadow-glass-md);
+  transform: translateY(-1px);
 }
 
 .sr-only {
@@ -383,7 +718,6 @@ textarea {
 
 @media (max-width: 50rem) {
   :root {
-    --content-width: min(100vw - 1rem, 100vw - 1rem);
     --header-height: 4rem;
   }
 }

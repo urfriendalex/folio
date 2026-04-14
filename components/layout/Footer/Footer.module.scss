@@ -1,30 +1,1188 @@
 .footer {
   border-top: 1px solid var(--line-color);
+  background: var(--bg-color);
+  color: var(--fg-color);
+}
+
+/* Minimal: transparent padding below cover reveals fixed wordmark (portaled to AppShell) under this stacking context. */
+.footer[data-footer-presentation="minimal"] {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  padding-bottom: var(--footer-wordmark-strip-height);
+  background: transparent;
+  border-top: none;
+}
+
+/* Only globals `.link-underline` (animated ::after) — no browser underline on top. */
+.footer :global(.link-underline),
+.footer :global(.link-underline:hover),
+.footer :global(.link-underline:focus-visible) {
+  text-decoration: none;
+}
+
+/* Win98 taskbar / Start menu: no editorial link-underline animation (menu rows use hilite). */
+.taskbarOuter :global(.link-underline::after),
+.taskbarOuter :global(.text-link::after) {
+  display: none;
+}
+
+/* Desktop toolbar mode: taskbar is the footer — normal document flow, end of page. */
+.footerToolbarOnly {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-top: none;
+  background: transparent;
+}
+
+/* Fills `.toolbarAsciiBackdrop` in AppShell (z-index 25) — above main/footer, below navbar (400). */
+.asciiViewportOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 0;
+  pointer-events: none;
+  /* Match original color-ASCII look (meta `bgMode: black`) — not page theme */
+  background: #000;
+  opacity: 0;
+  transition: opacity 320ms cubic-bezier(0.33, 1, 0.68, 1);
+
+  &[data-visible="true"] {
+    opacity: 1;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asciiViewportOverlay {
+    transition-duration: 60ms;
+
+    &[data-visible="true"] {
+      transition-duration: 60ms;
+    }
+  }
+}
+
+.asciiViewportInner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .inner {
-  width: var(--content-width);
-  margin: 0 auto;
-  padding: 1.25rem 0 2rem;
+  padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 5vw, 3rem);
+}
+
+.footer[data-footer-presentation="minimal"] .inner {
+  padding-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+/* —— Editorial top —— */
+.editorial {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 0.85fr);
+  gap: clamp(1.75rem, 4vw, 3.5rem);
+  align-items: start;
+  padding-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.editorialCol {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.editorialLead,
+.editorialBody,
+.editorialIntro {
+  margin: 0;
+  font-family: var(--font-body-stack);
+  font-size: clamp(0.9rem, 1.1vw, 0.98rem);
+  line-height: 1.55;
+  color: var(--fg-color);
+}
+
+.editorialBody {
   color: var(--muted-color);
 }
 
-.group {
-  display: grid;
-  gap: 0.45rem;
+.editorialIntro {
+  max-width: min(28ch, 100%);
 }
 
-.links {
+.editorialEmail {
+  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+  font-weight: 500;
+  color: var(--fg-color);
+  width: fit-content;
+}
+
+.connectLabel {
+  margin-top: 0.5rem;
+  font-family: var(--font-pixel-stack);
+  font-size: 0.58rem;
+  letter-spacing: var(--tracking-label-lg);
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.connectList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.connectLink {
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.9rem;
+  color: var(--muted-color);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.connectLink:hover,
+.connectLink:focus-visible {
+  color: var(--fg-color);
+}
+
+.localeBlock {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.localeLabel {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: var(--tracking-label-md);
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.localeValue {
+  font-size: 0.92rem;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.localeMeta {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted-color);
+}
+
+/* Shown only in minimal mode, or on narrow viewports when toolbar strip is unavailable. */
+.columnControls {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--line-color);
+}
+
+.columnControlBtn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  background: transparent;
+  padding: 0.85rem 0;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 0;
+  box-sizing: border-box;
+  font-family: var(--font-body-stack);
+  font-size: 0.86rem;
+  line-height: 1.2;
+  color: var(--fg-color);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.columnControlBtn:focus-visible {
+  outline: 2px solid var(--fg-color);
+  outline-offset: 2px;
+}
+
+@media (min-width: 48.01rem) {
+  .columnControlBtn {
+    padding: 0;
+  }
+}
+
+
+.inlineControlButton {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0.35rem 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 14rem;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  font-size: 0.86rem;
+  color: var(--fg-color);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 2px;
+}
+
+.inlineControlButton:focus-visible {
+  outline: 2px solid var(--fg-color);
+  outline-offset: 2px;
+}
+
+@media (min-width: 48.01rem) {
+  .inlineControlButton {
+    min-height: 0;
+    padding: 0;
+  }
+}
+
+.inlineControlValue {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+/* —— Win95-style taskbar (desktop toolbar mode) —— */
+.taskbarOuter {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+}
+
+.toolbarShell {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  filter: var(--taskbar-shell-shadow);
+}
+
+.taskbar {
+  --w95-face: var(--taskbar-face);
+  --w95-shadow: var(--taskbar-shadow);
+  --w95-highlight: var(--taskbar-highlight);
+  --w95-ink: var(--taskbar-ink);
+
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2.35rem;
+  margin: 0;
+  padding: 0.2rem 0.35rem 0.2rem 0.2rem;
+  border: 2px solid;
+  border-color: var(--w95-highlight) var(--w95-shadow) var(--w95-shadow) var(--w95-highlight);
+  border-radius: 0;
+  background: var(--w95-face);
+  color: var(--w95-ink);
+  font-family: var(--font-system-95-stack);
+}
+
+.taskbarLeft,
+.taskbarRight {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.startButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.12rem 0.65rem 0.12rem 0.35rem;
+  border: 2px solid;
+  border-color: var(--w95-highlight) var(--w95-shadow) var(--w95-shadow) var(--w95-highlight);
+  border-radius: 0;
+  background: var(--w95-face);
+  color: var(--w95-ink);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.startButton:hover,
+.startButton:focus-visible {
+  filter: brightness(var(--taskbar-start-hover-brightness));
+}
+
+.startButton:active {
+  border-color: var(--w95-shadow) var(--w95-highlight) var(--w95-highlight) var(--w95-shadow);
+  padding: 0.14rem 0.63rem 0.1rem 0.37rem;
+}
+
+.winFlag {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  background-color: var(--taskbar-flag-base);
+  background-image:
+    linear-gradient(var(--taskbar-flag-red), var(--taskbar-flag-red)),
+    linear-gradient(var(--taskbar-flag-green), var(--taskbar-flag-green)),
+    linear-gradient(var(--taskbar-flag-blue), var(--taskbar-flag-blue)),
+    linear-gradient(var(--taskbar-flag-yellow), var(--taskbar-flag-yellow));
+  background-size: 50% 50%;
+  background-position:
+    0 0,
+    100% 0,
+    0 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: var(--taskbar-flag-shadow);
+}
+
+.startLabel {
+  line-height: 1;
+}
+
+.taskbarGroove {
+  align-self: stretch;
+  width: 2px;
+  min-height: 1.5rem;
+  border: 1px solid;
+  border-color: var(--w95-shadow) var(--w95-highlight) var(--w95-highlight) var(--w95-shadow);
+  background: var(--w95-face);
+}
+
+.quickLaunch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.quickLaunchBtn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0.1rem;
+  border: 2px solid;
+  border-color: var(--w95-highlight) var(--w95-shadow) var(--w95-shadow) var(--w95-highlight);
+  background: var(--w95-face);
+  font-family: var(--font-pixel-stack);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--w95-ink);
+}
+
+.quickLaunchBtn:hover,
+.quickLaunchBtn:focus-visible {
+  filter: brightness(var(--taskbar-quick-hover-brightness));
+}
+
+.quickLaunchBtn:active {
+  border-color: var(--w95-shadow) var(--w95-highlight) var(--w95-highlight) var(--w95-shadow);
+}
+
+.taskbarIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 2px solid;
+  border-color: var(--w95-highlight) var(--w95-shadow) var(--w95-shadow) var(--w95-highlight);
+  background: var(--w95-face);
+  cursor: pointer;
+}
+
+.taskbarIconButton:active {
+  border-color: var(--w95-shadow) var(--w95-highlight) var(--w95-highlight) var(--w95-shadow);
+}
+
+.taskbarVersion {
+  padding: 0 0.35rem 0 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--w95-ink);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.taskbar .clockTray {
+  flex: 0 0 auto;
+  border: 2px solid;
+  border-color: var(--w95-shadow) var(--w95-highlight) var(--w95-highlight) var(--w95-shadow);
+  background: var(--taskbar-clock-bg);
+  color: var(--w95-ink);
+}
+
+.taskbar .clockValue {
+  color: var(--w95-ink);
+}
+
+.taskbar .clockTooltip {
+  /* Inner .winMenuPanel supplies Win9x chrome */
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+.themeLamp {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  box-shadow: var(--taskbar-theme-lamp-shadow);
+}
+
+.themeLamp[data-theme="light"] {
+  background: var(--taskbar-theme-lamp-light);
+}
+
+.themeLamp[data-theme="dark"] {
+  background: var(--taskbar-theme-lamp-dark);
+}
+
+.clockTray {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* HH:mm:ss + " WAW" (12 glyphs) + letter-spacing slack — fixed width so ticks don’t resize the taskbar */
+  width: calc(14ch + 1.3rem);
+  min-width: calc(14ch + 1.3rem);
+  max-width: calc(14ch + 1.3rem);
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--line-color);
+  background: transparent;
+  color: var(--fg-color);
+  cursor: help;
+}
+
+.clockValue {
+  display: block;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 14ch;
+  min-width: 14ch;
+  max-width: 14ch;
+  font-family: var(--font-pixel-stack);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.clockTooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.45rem);
+  min-width: 11.5rem;
+  max-width: min(20rem, calc(100vw - 1rem));
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(0.35rem);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+.clockTray:is(:hover, :focus-visible) .clockTooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltipLabel,
+.menuSectionLabel,
+.timeLabel,
+.displayMenuLabel {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.58rem;
+  letter-spacing: var(--tracking-label-lg);
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+/* Windows 98-style nested menu surface (clock flyout, Start menu, Display submenu) */
+.winMenuPanel {
+  padding: 2px;
+  border: 2px solid;
+  border-color: var(--win-menu-border-light) var(--win-menu-border-dark) var(--win-menu-border-dark)
+    var(--win-menu-border-light);
+  background: var(--win-menu-face);
+  color: var(--win-menu-ink);
+  font-family: var(--font-system-95-stack);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.2);
+}
+
+.winMenuRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.2rem 0.35rem;
+  margin: 0;
+}
+
+.winMenuRowLabel {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--win-menu-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.winMenuRowValue {
+  font-size: 0.75rem;
+  text-align: right;
+  color: var(--win-menu-ink);
+}
+
+.winMenuRowStrong {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--win-menu-ink);
+}
+
+.winMenuSeparator {
+  height: 2px;
+  margin: 0.2rem 0;
+  border: none;
+  background: linear-gradient(
+    180deg,
+    var(--win-menu-separator-dark) 0 50%,
+    var(--win-menu-separator-light) 50% 100%
+  );
+}
+
+.winMenuCaption,
+.winMenuTooltipMeta {
+  margin: 0;
+  padding: 0.15rem 0.35rem 0.35rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--win-menu-muted);
+}
+
+.winMenuTooltipPrimary {
+  margin: 0;
+  padding: 0.35rem 0.45rem 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--win-menu-ink);
+}
+
+.winMenuItem,
+.winMenuChoice {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0.28rem 0.45rem 0.28rem 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--win-menu-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.winMenuChoice {
+  gap: 0.35rem;
+}
+
+.winMenuCheck {
+  display: inline-flex;
+  width: 0.85rem;
+  flex-shrink: 0;
+  justify-content: center;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+/* Win98: hover + checked = classic #000080 bar + white label */
+.winMenuItem:hover,
+.winMenuItem:focus-visible {
+  background: var(--win-menu-hilite-bg);
+  color: var(--win-menu-hilite-fg);
+}
+
+.winMenuChoice:hover,
+.winMenuChoice:focus-visible,
+.winMenuChoice[data-active="true"] {
+  background: var(--win-menu-hilite-bg);
+  color: var(--win-menu-hilite-fg);
+}
+
+.menuItemButtonSubmenu {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line-color);
+  background: var(--taskbar-menu-card-bg);
+  color: var(--fg-color);
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItemButtonSubmenu:hover,
+.menuItemButtonSubmenu:focus-visible {
+  background: var(--taskbar-menu-item-hover);
+}
+
+.menuSubmenuChevron {
+  font-size: 0.65rem;
+  line-height: 1;
+  color: var(--win-menu-ink);
+  opacity: 1;
+}
+
+.inlineControlChevron {
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+/* Start menu: nested flyouts to the right of each row (cascading menus) */
+.startMenuLayout {
+  position: relative;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.startMenuRow {
+  position: relative;
+  width: 100%;
+}
+
+.startMenuLayout > nav.winMenuPanel {
+  min-width: 11.75rem;
+}
+
+.startMenuParent {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.28rem 0.45rem 0.28rem 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--win-menu-ink);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.startMenuParent:hover,
+.startMenuParent:focus-visible {
+  background: var(--win-menu-hilite-bg);
+  color: var(--win-menu-hilite-fg);
+}
+
+.startMenuParent[aria-expanded="true"] {
+  background: var(--win-menu-hilite-bg);
+  color: var(--win-menu-hilite-fg);
+}
+
+.startMenuFlyout {
+  position: absolute;
+  left: calc(100% + 2px);
+  top: 0;
+  z-index: 4;
+  max-width: min(22rem, calc(100vw - 10rem));
+  filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.12));
+}
+
+.startMenuFlyout .winMenuPanel {
+  min-width: min(18rem, calc(100vw - 12rem));
+}
+
+.startMenuFlyout .menuProse {
+  color: var(--win-menu-ink);
+}
+
+.startMenuFlyout .menuProseMuted {
+  color: var(--win-menu-muted);
+}
+
+.winMenuLink {
+  display: block;
+  margin: 0;
+  padding: 0.28rem 0.45rem;
+  border: none;
+  background: transparent;
+  color: var(--win-menu-ink);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.winMenuLink:hover,
+.winMenuLink:focus-visible {
+  background: var(--win-menu-hilite-bg);
+  color: var(--win-menu-hilite-fg);
+}
+
+/* —— Start menu shell (Win98 raised panel) —— */
+.menuPanel {
+  position: absolute;
+  left: 0;
+  /* Flush with taskbar top (Win98 reference — no gap above toolbar) */
+  bottom: 100%;
+  width: auto;
+  max-width: min(96vw, 48rem);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: visible;
+  border: 2px solid;
+  border-color: var(--win-menu-border-light) var(--win-menu-border-dark) var(--win-menu-border-dark)
+    var(--win-menu-border-light);
+  background: var(--win-menu-face);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(0.85rem);
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    visibility 180ms ease;
+  z-index: 5;
+}
+
+.menuPanel[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Narrow blue strip (Win98 reference: thin vertical rail; text anchored to bottom) */
+.menuRail {
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0.5rem 0.18rem;
+  background: var(--win-menu-rail-gradient);
+  border-right: 1px solid var(--win-menu-border-dark);
+  color: var(--win-menu-rail-fg);
+}
+
+.menuRailCopyright {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-pixel-stack);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--win-menu-rail-fg);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.45);
+  line-height: 1.15;
+  max-width: 100%;
+}
+
+.menuContent {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.45rem 0.55rem 0.45rem;
+  overflow: visible;
+  background: var(--win-menu-face);
+  font-family: var(--font-system-95-stack);
+}
+
+.menuItem,
+.menuItemButton {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.85rem;
+  border: 1px solid var(--line-color);
+  background: transparent;
+  padding: 0.58rem 0.7rem;
+  color: var(--fg-color);
+  font-family: var(--font-body-stack);
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.menuItem:is(a) {
+  width: auto;
+  align-self: start;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 0.35rem 0;
+  color: var(--fg-color);
+}
+
+.menuItem:is(a):hover,
+.menuItem:is(a):focus-visible {
+  background: transparent;
+  text-decoration: none;
+}
+
+.menuItemButton {
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItemButton:hover,
+.modeButton:hover {
+  background: var(--taskbar-menu-item-hover);
+}
+
+.menuItemValue {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: var(--tracking-label-md);
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.menuProse {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--fg-color);
+}
+
+.menuProseMuted {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted-color);
+}
+
+.displayControl {
+  position: relative;
+}
+
+/* Nested to the right of the Display row (Start menu) */
+.startMenuRow.displayControl .displayMenu {
+  top: 0;
+  left: calc(100% + 2px);
+}
+
+.displayMenu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 0.45rem);
+  z-index: 6;
+  display: none;
+  flex-direction: column;
+  min-width: 9.5rem;
+  padding: 2px;
+  gap: 0;
+  border: 2px solid;
+  border-color: var(--win-menu-border-light) var(--win-menu-border-dark) var(--win-menu-border-dark)
+    var(--win-menu-border-light);
+  background: var(--win-menu-face);
+  color: var(--win-menu-ink);
+  font-family: var(--font-system-95-stack);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.18);
+}
+
+.displayMenu[data-open="true"] {
+  display: flex;
+}
+
+.displayMenu .winMenuChoice {
+  font-size: 0.82rem;
+}
+
+/* Inline display dropdown (column 3) */
+.columnControls .displayMenu {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 0.35rem);
+  left: 0;
+  right: auto;
+}
+
+/* —— Minimal-only: opaque editorial block (wordmark is fixed under footer chrome, z-index in AppShell) —— */
+.minimalFooterCover {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-color);
+  border-top: 1px solid var(--line-color);
+}
+
+/* Portaled into `#footer-wordmark-underlay` (AppShell; viewport-fixed when active). Full viewport width — no page-shell insets. */
+.wordmarkReveal {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--fg-color);
+  color: var(--bg-color);
+}
+
+/* Edge-to-edge; only env(safe-area) on notched devices. Pretext + DOM share one width (no content-padding). */
+.wordmarkRevealInner {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+  padding-bottom: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* —— Brand wordmark —— */
+.brand {
+  padding-top: clamp(2rem, 5vw, 3.5rem);
+  border-top: 1px solid var(--line-color);
+}
+
+.brandStatement {
+  margin: 0 0 clamp(1rem, 2.5vw, 1.35rem);
+  max-width: min(52rem, 100%);
+  font-size: clamp(0.78rem, 1.35vw, 0.88rem);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: var(--muted-color);
+}
+
+/* Column controls already draw the rule above the wordmark — avoid a double line. */
+.footer[data-footer-presentation="minimal"] .brand {
+  border-top: none;
+}
+
+.brandMeta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.brandMetaStart {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.brandTagline {
+  font-size: clamp(0.72rem, 1.5vw, 0.82rem);
+  line-height: 1.3;
+  color: var(--fg-color);
+}
+
+.brandCopyright {
+  font-size: clamp(0.72rem, 1.5vw, 0.82rem);
+  color: var(--muted-color);
+  text-align: right;
+}
+
+.wordmark {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--font-body-stack);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  color: var(--fg-color);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/*
+ * Font size from @chenglou/pretext (`wordmarkFontSizePxForWidth`).
+ * `letter-spacing: 0` so canvas metrics match the DOM (Pretext has no tracking).
+ */
+.wordmarkReveal .wordmark {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  white-space: nowrap;
+  overflow: visible;
+  word-break: normal;
+  overflow-wrap: normal;
+  font-size: clamp(2rem, 12vw, 9rem);
+  line-height: 0.88;
+  letter-spacing: 0;
+}
+
+@media (max-width: 64rem) {
+  .editorial {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .editorialCol:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 48rem) {
-  .inner {
+  .footer[data-footer-presentation="minimal"] .inner {
+    padding-bottom: clamp(2.5rem, 8vw, 3rem);
+  }
+
+  .editorial {
     grid-template-columns: 1fr;
+    gap: clamp(2rem, 6vw, 2.75rem);
+    padding-bottom: clamp(2rem, 6vw, 3rem);
+  }
+
+  .editorialCol:last-child {
+    grid-column: auto;
+  }
+
+  .editorialIntro {
+    max-width: none;
+  }
+
+  .connectList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+    row-gap: 0.45rem;
+  }
+
+  .connectLink {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .localeBlock + .localeBlock {
+    margin-top: 0.15rem;
+  }
+
+  .columnControls {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+  }
+
+  .brand {
+    padding-top: clamp(1.75rem, 6vw, 2.5rem);
+  }
+
+  .brandMeta {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 0.5rem;
+  }
+
+  .brandCopyright {
+    text-align: right;
+    align-self: auto;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: min(100%, 10rem);
+  }
+
+  .brandMetaStart {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startButton,
+  .quickLaunchBtn,
+  .taskbarIconButton,
+  .menuItem,
+  .menuItemButton,
+  .modeButton,
+  .clockTooltip,
+  .menuPanel {
+    transition: none;
   }
 }

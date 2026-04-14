@@ -1,34 +1,141 @@
 .section {
-  padding: 0 0 6rem;
+  padding: 0 0 var(--section-padding-y);
+  scroll-margin-top: calc(var(--header-height) + 0.5rem);
 }
 
 .inner {
-  width: var(--content-width);
-  margin: 0 auto;
   display: grid;
-  gap: 2rem;
+  gap: clamp(1rem, 2.2vw, 1.35rem);
 }
 
 .header {
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.2rem 0 0.25rem;
 }
 
-.header h2 {
+.title {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+  font-size: clamp(1.02rem, 1.2vw, 1.12rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.viewSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.viewButton {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--fg-color) 34%, transparent);
+  transition: color 220ms ease;
+}
+
+.viewButton[data-active="true"] {
+  color: var(--fg-color);
+}
+
+.viewButton[data-active="false"]:hover,
+.viewButton[data-active="false"]:focus-visible {
+  color: color-mix(in srgb, var(--fg-color) 62%, transparent);
+}
+
+.viewButtonFrame {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.3rem;
+}
+
+.viewGlyph {
+  position: absolute;
+  display: grid;
+  width: calc(var(--icon-width-ratio) * 100%);
+  height: calc(var(--icon-height-ratio) * 100%);
+  grid-template-columns: repeat(var(--icon-columns), minmax(0, 1fr));
+  gap: calc(var(--icon-gap-ratio) * 100%);
+}
+
+.viewGlyphCell {
+  display: block;
+  border-radius: 0.03rem;
+  background: currentColor;
+}
+
+.viewGlyph[data-variant="bars"] {
+  align-items: stretch;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.viewGlyph[data-variant="bars"] .viewGlyphCell {
+  width: 100%;
+  height: 100%;
+}
+
+.viewGlyph[data-variant="grid"] {
+  grid-template-rows: repeat(var(--icon-rows), minmax(0, 1fr));
+}
+
+.viewGlyph[data-variant="grid"] .viewGlyphCell {
+  width: 100%;
+  height: 100%;
 }
 
 .grid {
   display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: clamp(1rem, 2.4vw, 1.5rem);
+  row-gap: clamp(1.35rem, 3vw, 1.85rem);
+  align-items: start;
+  transition: grid-template-columns 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.grid[data-view="wide"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2rem 1.5rem;
+}
+
+.grid[data-view="regular"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid[data-view="compact"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid > * {
+  min-width: 0;
 }
 
 @media (max-width: 48rem) {
+  .header {
+    gap: 0.8rem;
+  }
+
   .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(0.85rem, 4vw, 1.15rem);
+    row-gap: clamp(1.25rem, 4.5vw, 1.65rem);
+  }
+
+  .grid[data-view="wide"] {
     grid-template-columns: 1fr;
+  }
+
+  .grid[data-view="regular"],
+  .grid[data-view="compact"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewSwitch {
+    gap: 0.28rem;
   }
 }

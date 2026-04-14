@@ -1,46 +1,287 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 12000;
-  background: rgb(16 16 16 / 0.18);
+  /* Above sticky navbar (400) and mobile nav overlay (420); below preloader / dev layers. */
+  z-index: 500;
+  background: transparent;
 }
 
-.panel {
+/* Tinted dim layer; frosted-glass blur is provided by the shared gradient blur in Navbar. */
+.backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--overlay-default-backdrop);
+  opacity: 0;
+  transition: opacity 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.backdrop[data-visible="true"]::before {
+  opacity: 1;
+}
+
+.backdrop[data-visible="false"]::before {
+  opacity: 0;
+}
+
+/* Immersive: frosted glass lives on `.surface` so `backdrop-filter` samples the page.
+   A tinted parent + full-screen child often prevents the outer layer from blurring. */
+.backdrop[data-variant="immersive"]::before {
+  display: none;
+}
+
+.backdrop[data-variant="immersive"] {
+  background: transparent;
+}
+
+.surface {
   position: fixed;
   inset: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding: calc(var(--header-height) + 1rem) 0 2rem;
-  background: var(--bg-color);
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  width: calc(100vw - 2rem);
+  max-width: none;
+  height: min(calc(100svh - 2rem), 60rem);
+  margin: auto;
+  padding: clamp(1.25rem, 3vw, 2.4rem);
+  overflow: hidden;
+  border-radius: var(--overlay-default-surface-radius);
+  background:
+    linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
+    var(--overlay-default-surface-base);
+  box-shadow: var(--overlay-default-surface-shadow);
+  opacity: 0;
+  transform: scale(1.01);
+  isolation: isolate;
+  transition:
+    opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.header {
-  position: sticky;
-  top: 0;
-  width: var(--content-width);
-  margin: 0 auto 1.25rem;
+.surface[data-variant="immersive"] {
+  --overlay-fg: var(--overlay-immersive-fg);
+  --overlay-muted: var(--overlay-immersive-muted);
+  --overlay-line: var(--overlay-immersive-line);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  background: var(--bg-color);
+  flex-direction: column;
+  /* Avoid `100vw` / `100svh` here: vw includes scrollbar width inconsistently vs `inset:0`, so open/close
+     toggling `overflow: hidden` caused a subtle horizontal jump (navbar / chrome shifting). */
+  width: auto;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  inset: 0;
+  /* Mobile gets extra top pad in max-width rule. Desktop: align with close — see min-width block. */
+  padding: 0 0 1rem;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  isolation: isolate;
+}
+
+/* Match globals.scss light / dark immersive tokens so frosted + ink follow *content* behind the sheet,
+   not only `data-theme` (e.g. light site scrolled over a dark hero). */
+.surface[data-variant="immersive"][data-overlay-tone="light"] {
+  --overlay-immersive-fg: #101010;
+  --overlay-immersive-muted: rgb(16 16 16 / 0.62);
+  --overlay-immersive-line: rgb(16 16 16 / 0.12);
+  --overlay-immersive-backdrop: rgb(247 246 242 / 0.74);
+  --overlay-immersive-backdrop-filter: blur(22px) saturate(108%);
+}
+
+.surface[data-variant="immersive"][data-overlay-tone="dark"] {
+  --overlay-immersive-fg: #f4f2eb;
+  --overlay-immersive-muted: rgb(244 242 235 / 0.62);
+  --overlay-immersive-line: rgb(244 242 235 / 0.14);
+  --overlay-immersive-backdrop: rgb(4 4 6 / 0.78);
+  --overlay-immersive-backdrop-filter: blur(24px) saturate(112%);
+}
+
+/* Frosted-glass blur is provided by the shared gradient blur in Navbar; only the tint ::after is needed. */
+.surface[data-variant="immersive"]::before {
+  display: none;
+}
+
+.surface[data-variant="immersive"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--overlay-immersive-backdrop);
+  opacity: 0;
+  transition: opacity 780ms cubic-bezier(0.22, 0.9, 0.2, 1);
+}
+
+.surface[data-variant="immersive"][data-visible="true"]::after {
+  opacity: 1;
+}
+
+.surface[data-variant="immersive"][data-visible="false"]::after {
+  opacity: 0;
+  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+}
+
+.surface[data-visible="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.surface[data-variant="immersive"][data-visible="true"] {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition: none;
+}
+
+.surface[data-variant="immersive"][data-visible="false"] {
+  opacity: 0;
+  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+}
+
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.orbA,
+.orbB,
+.orbC {
+  position: absolute;
+  border-radius: var(--radius-sm);
+  filter: blur(60px);
+  opacity: 0.72;
+}
+
+.orbA {
+  left: -6%;
+  top: 12%;
+  width: 22rem;
+  height: 22rem;
+  background: var(--overlay-default-orb-a);
+}
+
+.orbB {
+  right: 4%;
+  top: 22%;
+  width: 24rem;
+  height: 24rem;
+  background: var(--overlay-default-orb-b);
+}
+
+.orbC {
+  left: 28%;
+  bottom: -10%;
+  width: 28rem;
+  height: 28rem;
+  background: var(--overlay-default-orb-c);
+}
+
+.closeButton {
+  position: absolute;
+  top: clamp(1rem, 2vw, 1.5rem);
+  right: clamp(1rem, 2vw, 1.5rem);
   z-index: 1;
+  border: 0;
+  padding: 0.1rem 0;
+  background: transparent;
+  color: var(--muted-color);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+/* Same vertical band as Navbar `.inner`: padding-block 0.1rem + centered 2rem menu toggle */
+.closeButton[data-variant="immersive"] {
+  top: calc(0.1rem + (var(--header-height) - 2.2rem) / 2);
+  right: max(var(--content-padding-inline), 0.8rem);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  color: var(--overlay-fg);
+}
+
+.closeButton:hover,
+.closeButton:focus-visible {
+  color: var(--fg-color);
+}
+
+.closeButton[data-variant="immersive"]:hover,
+.closeButton[data-variant="immersive"]:focus-visible {
+  color: var(--overlay-fg);
+}
+
+.panelTitle {
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
 .content {
-  width: var(--content-width);
-  margin: 0 auto;
-  padding-bottom: 1rem;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: clamp(0rem, 1vw, 0.4rem);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+/* Base `.content { padding-right }` is more specific than `page-shell`’s `padding-inline` for the right edge — match left inset. */
+.content[data-variant="immersive"] {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-right: var(--content-padding-inline);
+  color: var(--overlay-fg);
+}
+
+.content[data-visible="true"] {
+  opacity: 1;
+}
+
+/* Desktop: first line of body copy lines up with the cap line of “Close” (same top offset + half of remaining band in the 2rem-tall control). */
+@media (min-width: 48.0625rem) {
+  .surface[data-variant="immersive"] {
+    padding-top: calc(
+      0.1rem + (var(--header-height) - 2.2rem) / 2 + (2rem - 0.76rem * 1.2) / 2
+    );
+  }
 }
 
 @media (max-width: 48rem) {
-  .panel {
-    padding: calc(var(--header-height) + 0.75rem) 0 1.5rem;
+  .surface {
+    width: calc(100vw - 1.5rem);
+    height: calc(100svh - 1.5rem);
+    border-radius: 1rem;
   }
 
-  .header {
-    align-items: flex-start;
+  /* Reserve space under fixed close so scroll content doesn’t sit underneath it. */
+  .surface[data-variant="immersive"] {
+    padding-top: calc(var(--header-height) + 1rem);
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop::before,
+  .surface,
+  .surface[data-variant="immersive"]::before,
+  .surface[data-variant="immersive"]::after {
+    transition: none;
   }
 }

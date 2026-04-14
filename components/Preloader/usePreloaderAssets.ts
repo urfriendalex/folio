@@ -1,59 +1,198 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { projects } from "@/content/projects";
+import { archiveManifest } from "@/lib/generated/archive-manifest";
 
-export type PreloadAsset = {
-  id: string;
-  type: "image" | "font";
-  src: string;
-};
+export type PreloadAsset =
+  | {
+      id: string;
+      type: "image";
+      src: string;
+    }
+  | {
+      id: string;
+      type: "fetch";
+      src: string;
+      responseType?: "arrayBuffer" | "json" | "text";
+    }
+  | {
+      id: string;
+      type: "fonts" | "lenis" | "window-load";
+    };
 
-const MIN_DURATION_MS = 800;
-const MAX_DURATION_MS = 4000;
-const DEBUG_MIN_DURATION_MS = 12600;
-const DEBUG_MAX_DURATION_MS = 122000;
+const FOOTER_ASCII_FRAME_FOLDER = "/animations/0be291eb7c81020bd899984d1fdfdb48/high";
+
+const sharedImageSources = Array.from(
+  new Set([
+    ...projects.map((project) => project.thumbnail),
+    ...projects.flatMap((project) => project.stills),
+    ...archiveManifest.map((entry) => entry.src),
+  ]),
+);
 
 export const CRITICAL_PRELOAD_ASSETS: readonly PreloadAsset[] = [
   {
-    id: "hero-image",
-    type: "image",
-    src: "/images/hero-placeholder.svg",
+    id: "window-load",
+    type: "window-load",
   },
-];
+  {
+    id: "fonts",
+    type: "fonts",
+  },
+  {
+    id: "lenis",
+    type: "lenis",
+  },
+  ...sharedImageSources.map((src) => ({
+    id: `image:${src}`,
+    type: "image" as const,
+    src,
+  })),
+  {
+    id: "toolbar-ascii-meta",
+    type: "fetch",
+    src: `${FOOTER_ASCII_FRAME_FOLDER}/meta.json`,
+    responseType: "json",
+  },
+  {
+    id: "toolbar-ascii-frame",
+    type: "fetch",
+    src: `${FOOTER_ASCII_FRAME_FOLDER}/frame_00001.bin`,
+    responseType: "arrayBuffer",
+  },
+] as const;
+
+const MAX_DURATION_MS = 12000;
 
 function loadImage(src: string): Promise<void> {
   return new Promise((resolve) => {
     const image = new Image();
-    image.onload = () => resolve();
-    image.onerror = () => resolve();
+    let settled = false;
+
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve();
+    };
+
+    image.decoding = "async";
+    image.loading = "eager";
+    image.onload = () => {
+      if (typeof image.decode !== "function") {
+        finish();
+        return;
+      }
+
+      void image.decode().catch(() => undefined).finally(finish);
+    };
+    image.onerror = finish;
     image.src = src;
+
+    if (image.complete) {
+      if (typeof image.decode !== "function") {
+        finish();
+        return;
+      }
+
+      void image.decode().catch(() => undefined).finally(finish);
+    }
   });
 }
 
-function loadFont(asset: PreloadAsset): Promise<void> {
+function waitForWindowLoad(): Promise<void> {
   return new Promise((resolve) => {
-    if (typeof FontFace === "undefined" || !("fonts" in document)) {
+    if (document.readyState === "complete") {
       resolve();
       return;
     }
 
-    const face = new FontFace(`preload-${asset.id}`, `url(${asset.src})`);
-    face
-      .load()
-      .then((loaded) => {
-        document.fonts.add(loaded);
-      })
-      .catch(() => undefined)
-      .finally(() => resolve());
+    window.addEventListener("load", () => resolve(), { once: true });
   });
 }
 
-function loadAsset(asset: PreloadAsset): Promise<void> {
-  if (asset.type === "font") {
-    return loadFont(asset);
-  }
+function waitForFonts(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!("fonts" in document)) {
+      resolve();
+      return;
+    }
 
-  return loadImage(asset.src);
+    void document.fonts.ready
+      .catch(() => undefined)
+      .finally(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
+  });
+}
+
+function waitForLenis(): Promise<void> {
+  return new Promise((resolve) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.__lenis) {
+      resolve();
+      return;
+    }
+
+    const startedAt = performance.now();
+    const check = () => {
+      if (window.__lenis || performance.now() - startedAt >= 2000) {
+        resolve();
+        return;
+      }
+
+      window.requestAnimationFrame(check);
+    };
+
+    window.requestAnimationFrame(check);
+  });
+}
+
+async function loadFetchAsset(asset: Extract<PreloadAsset, { type: "fetch" }>): Promise<void> {
+  try {
+    const response = await fetch(asset.src, { credentials: "same-origin" });
+    if (!response.ok) {
+      return;
+    }
+
+    switch (asset.responseType) {
+      case "json":
+        await response.json();
+        break;
+      case "text":
+        await response.text();
+        break;
+      case "arrayBuffer":
+      default:
+        await response.arrayBuffer();
+        break;
+    }
+  } catch {
+    // Best-effort warmup only.
+  }
+}
+
+function loadAsset(asset: PreloadAsset): Promise<void> {
+  switch (asset.type) {
+    case "image":
+      return loadImage(asset.src);
+    case "fetch":
+      return loadFetchAsset(asset);
+    case "fonts":
+      return waitForFonts();
+    case "lenis":
+      return waitForLenis();
+    case "window-load":
+      return waitForWindowLoad();
+    default:
+      return Promise.resolve();
+  }
 }
 
 export function usePreloaderAssets(
@@ -72,20 +211,18 @@ export function usePreloaderAssets(
 
     let cancelled = false;
     let loaded = 0;
-    let minDurationTimer: number | null = null;
-    const html = document.documentElement;
-    const debugMode = html.getAttribute("data-preloader-debug") === "on";
-    const minDurationMs = debugMode ? DEBUG_MIN_DURATION_MS : MIN_DURATION_MS;
-    const maxDurationMs = debugMode ? DEBUG_MAX_DURATION_MS : MAX_DURATION_MS;
-
-    const startedAt = performance.now();
     const totalAssets = assets.length;
 
     actualProgressRef.current = totalAssets === 0 ? 1 : 0;
     isCompleteRef.current = false;
 
     const settleProgress = () => {
-      actualProgressRef.current = totalAssets === 0 ? 1 : loaded / totalAssets;
+      if (totalAssets === 0) {
+        actualProgressRef.current = 1;
+        return;
+      }
+
+      actualProgressRef.current = loaded >= totalAssets ? 0.99 : loaded / totalAssets;
     };
 
     const finalize = () => {
@@ -102,17 +239,7 @@ export function usePreloaderAssets(
         return;
       }
 
-      const elapsed = performance.now() - startedAt;
-      const waitTime = Math.max(minDurationMs - elapsed, 0);
-
-      if (waitTime === 0) {
-        finalize();
-        return;
-      }
-
-      minDurationTimer = window.setTimeout(() => {
-        finalize();
-      }, waitTime);
+      finalize();
     };
 
     assets.forEach((asset) => {
@@ -133,14 +260,11 @@ export function usePreloaderAssets(
 
     const timeoutTimer = window.setTimeout(() => {
       finalize();
-    }, maxDurationMs);
+    }, MAX_DURATION_MS);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutTimer);
-      if (minDurationTimer !== null) {
-        window.clearTimeout(minDurationTimer);
-      }
     };
   }, [assets, enabled]);
 

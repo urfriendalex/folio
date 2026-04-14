@@ -2,12 +2,19 @@
 
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import styles from "./Overlay.module.scss";
 
 type OverlayProps = {
   children: ReactNode;
+  contentVisible?: boolean;
+  /** Sampled from page content when About opens; drives frosted tint + ink vs global `data-theme`. */
+  immersiveTone?: "light" | "dark";
   onClose: () => void;
   title: string;
+  variant?: "panel" | "immersive";
+  showTitle?: boolean;
+  visible?: boolean;
 };
 
 function getFocusableElements(container: HTMLElement) {
@@ -18,7 +25,16 @@ function getFocusableElements(container: HTMLElement) {
   );
 }
 
-export function Overlay({ children, onClose, title }: OverlayProps) {
+export function Overlay({
+  children,
+  contentVisible = true,
+  immersiveTone = "light",
+  onClose,
+  title,
+  variant = "panel",
+  showTitle = true,
+  visible = true,
+}: OverlayProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const portalRoot = useSyncExternalStore(
     () => () => undefined,
@@ -32,14 +48,19 @@ export function Overlay({ children, onClose, title }: OverlayProps) {
     }
 
     const html = document.documentElement;
+    lockBodyScroll();
     html.classList.add("is-overlay-open");
 
-    const panelNode = panelRef.current;
-    const focusable = panelNode ? getFocusableElements(panelNode) : [];
-    const firstFocusable = focusable[0];
-    firstFocusable?.focus();
+    return () => {
+      html.classList.remove("is-overlay-open");
+      unlockBodyScroll();
+    };
+  }, [portalRoot]);
 
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const panelNode = panelRef.current;
+
       if (event.key === "Escape") {
         onClose();
         return;
@@ -71,32 +92,88 @@ export function Overlay({ children, onClose, title }: OverlayProps) {
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      html.classList.remove("is-overlay-open");
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose, portalRoot]);
+  }, [onClose]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (visible) {
+      html.classList.add("is-overlay-blur");
+    } else {
+      html.classList.remove("is-overlay-blur");
+    }
+    return () => {
+      html.classList.remove("is-overlay-blur");
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const panelNode = panelRef.current;
+    const focusable = panelNode ? getFocusableElements(panelNode) : [];
+    const firstFocusable = focusable[0];
+    const frame = window.requestAnimationFrame(() => {
+      firstFocusable?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [visible]);
 
   if (!portalRoot) {
     return null;
   }
 
   return createPortal(
-    <div className={styles.backdrop} role="presentation" onClick={onClose}>
+    <div
+      className={styles.backdrop}
+      data-variant={variant}
+      data-visible={visible}
+      role="presentation"
+      onClick={onClose}
+    >
       <div
         ref={panelRef}
-        className={styles.panel}
+        className={styles.surface}
+        data-variant={variant}
+        data-overlay-tone={variant === "immersive" ? immersiveTone : undefined}
+        data-visible={visible}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className={styles.header}>
-          <span className="section-label">{title}</span>
-          <button type="button" className="pill-button" onClick={onClose}>
-            Close
-          </button>
+        {variant === "panel" ? (
+          <div className={styles.atmosphere} aria-hidden="true">
+            <span className={styles.orbA} />
+            <span className={styles.orbB} />
+            <span className={styles.orbC} />
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className={styles.closeButton}
+          data-variant={variant}
+          aria-label={`Close ${title}`}
+          onClick={onClose}
+        >
+          Close
+        </button>
+        {/* Lenis: when stopped (overlay open), wheel/touch get preventDefault unless path includes data-lenis-prevent. */}
+        <div
+          className={`${styles.content} ${variant === "immersive" ? "page-shell" : ""}`}
+          data-variant={variant}
+          data-visible={visible}
+          data-content-visible={contentVisible}
+          data-lenis-prevent=""
+        >
+          {showTitle ? <span className={`${styles.panelTitle} section-label`}>{title}</span> : null}
+          {children}
         </div>
-        <div className={styles.content}>{children}</div>
       </div>
     </div>,
     portalRoot,

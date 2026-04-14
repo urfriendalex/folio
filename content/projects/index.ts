@@ -1,13 +1,16 @@
 import { dianaMilkanovaProject } from "./diana-milkanova";
-import { fujinSushiProject } from "./fujin-sushi";
 import { kinoprobyProject } from "./kinoproby";
-import { lkDigitalCourseProject } from "./lk-digital-course";
+import { ohgotmiProject } from "./ohgotmi";
+import { pastelMuseProject } from "./pastel-muse";
+import { studioIskraProject } from "./studio-iskra";
 
+/** Featured entries first, then the rest in a stable order. */
 export const projects = [
+  studioIskraProject,
+  ohgotmiProject,
   kinoprobyProject,
   dianaMilkanovaProject,
-  fujinSushiProject,
-  lkDigitalCourseProject,
+  pastelMuseProject,
 ];
 
 export function getProjectBySlug(slug: string) {

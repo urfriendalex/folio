@@ -1,33 +1,111 @@
 .card {
   display: grid;
-  gap: 1rem;
+  grid-template-rows: auto auto;
+  gap: 0;
+  transition: transform 240ms ease;
+  will-change: transform;
 }
 
+.card:hover,
+.card:focus-within {
+  transform: translateY(-0.1rem);
+}
+
+/* Preview: full-width frame only — no typography here */
 .media {
+  position: relative;
+  display: block;
   overflow: hidden;
+  border-radius: 0;
   background: color-mix(in srgb, var(--fg-color) 3%, transparent);
+  aspect-ratio: 16 / 9;
+}
+
+.media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--hero-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hero-grid-color) 1px, transparent 1px);
+  background-size: 100% 3rem, 3rem 100%;
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.media::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22%;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-deep) 28%, transparent));
+  pointer-events: none;
 }
 
 .media img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
 }
 
 .meta {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.meta h3,
-.meta p {
   margin: 0;
+  padding: 0;
+  margin-top: clamp(0.65rem, 1.4vw, 0.85rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.1vw, 0.65rem);
 }
 
-.meta h3 {
-  font-size: 1.15rem;
+.identity {
+  width: 100%;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.94rem;
   font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
-.meta p {
+.year {
+  flex-shrink: 0;
   color: var(--muted-color);
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+/* Actions: own row, full width — visit / explore align to column edges */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  gap: 1rem;
+}
+
+.linksLeft {
+  min-width: 0;
+}
+
+.actionLink {
+  flex-shrink: 0;
+  display: inline-block;
+  padding-bottom: 0.15em;
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-transform: lowercase;
+  color: var(--fg-color);
 }

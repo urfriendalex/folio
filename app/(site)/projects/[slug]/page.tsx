@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
   return {
     title: `${project.title} | Alexander Y.`,
-    description: project.description,
+    description: project.shortDescription ?? project.description,
   };
 }
 

@@ -1,0 +1,70 @@
+/* Full viewport behind sticky navbar (navbar z-index 400). */
+.viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  min-height: 100svh;
+  height: 100svh;
+  overflow: clip;
+  background: var(--bg-color);
+  color: var(--fg-color);
+  isolation: isolate;
+}
+
+.viewport::before,
+.viewport::after {
+  display: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.scene :global(canvas) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.scene[data-dragging="true"] :global(canvas) {
+  cursor: grabbing;
+}
+
+.sceneCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  /* Promote the canvas to its own compositor layer so the browser tends to GPU-composite it. */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.focusLabel {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.55rem;
+  margin: 0;
+  max-width: min(70vw, 28rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.58rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: #c00;
+}

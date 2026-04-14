@@ -1,18 +1,505 @@
 .section {
+  padding-bottom: var(--section-padding-y);
+  scroll-margin-top: calc(var(--header-height) + 0.5rem);
+}
+
+/* Full-viewport, centered form; main document scroll (Lenis) — no nested scroll on .stage */
+.sectionFormOpen {
   min-height: 100svh;
+  padding-bottom: max(var(--section-padding-y), env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sectionFormOpen .stage {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  align-items: center;
+  min-height: calc(100svh - var(--header-height));
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.sectionFormOpen .formView {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: min(76rem, 100%);
+  min-height: auto;
+  margin-inline: auto;
+  padding-block: clamp(1rem, 4vh, 2.5rem);
+  box-sizing: border-box;
+}
+
+/*
+ * In-flow control (not viewport-fixed) so it scrolls with `.stage` when the form is taller than the viewport.
+ * Typography aligned with overlay close controls (see Overlay.module.scss) — signal color.
+ */
+.formBackRow {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-bottom: clamp(0.25rem, 1.2vw, 0.65rem);
+}
+
+.formBackScreen {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  box-sizing: border-box;
+  width: max-content;
+  border: 0;
+  padding: 0.1rem 0;
+  background: transparent;
+  color: var(--signal-color);
+  font: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translate3d(0, 0.6rem, 0);
+  pointer-events: none;
+  transition:
+    opacity 320ms ease,
+    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    color 220ms ease;
+  transition-delay: 180ms;
+}
+
+.formBackScreen[data-visible="true"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+
+.formBackScreen:hover,
+.formBackScreen:focus-visible {
+  color: var(--fg-color);
+}
+
+.stage {
+  position: relative;
+  min-height: calc(100svh - var(--header-height) - 1rem);
+}
+
+.emailView,
+.formView {
+  min-height: inherit;
+}
+
+.emailView {
+  display: grid;
+  align-content: center;
+  justify-items: stretch;
+  gap: 1rem;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding-inline: max(var(--content-padding-inline), env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+}
+
+.emailLink {
+  display: block;
+  inline-size: 100%;
+  color: var(--fg-color);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: none;
+  }
+}
+
+.emailWord {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: none;
+  font-size: clamp(2.75rem, 7.5vw, 8.5rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow-x: visible;
+  overflow-y: visible;
+  opacity: 0;
+  filter: blur(18px);
+  transform: translate3d(0, -1rem, 0);
+  transition:
+    opacity 360ms ease,
+    filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+.emailWord[data-visible="true"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.emailText {
+  font-style: normal;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--fg-color);
+}
+
+.emailBlend {
+  --pixel-blend-start: 49%;
+  --pixel-blend-mid: 59%;
+  --pixel-blend-end: 68%;
+  position: relative;
+  display: inline-grid;
+  align-items: center;
+  white-space: nowrap;
+  isolation: isolate;
+  flex-shrink: 0;
+  padding-inline: 0.08em 0.16em;
+}
+
+.emailTextBase,
+.emailTextPixel,
+.emailTextPixelGhost {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.emailTextBase {
+  font-family: var(--font-pixel-square-stack);
+  letter-spacing: -0.018em;
+  mask-image: linear-gradient(
+    90deg,
+    #000 0,
+    #000 var(--pixel-blend-start),
+    rgb(0 0 0 / 0.82) var(--pixel-blend-mid),
+    transparent var(--pixel-blend-end)
+  );
+}
+
+.emailTextPixel,
+.emailTextPixelGhost {
+  font-family: var(--font-pixel-stack);
+  letter-spacing: -0.018em;
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(var(--pixel-blend-start) - 6%),
+    rgb(0 0 0 / 0.36) var(--pixel-blend-start),
+    rgb(0 0 0 / 0.78) var(--pixel-blend-mid),
+    #000 calc(var(--pixel-blend-end) - 2%),
+    #000 100%
+  );
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+.emailTextPixel {
+  opacity: 0.92;
+  transform: translate3d(0.02em, 0.01em, 0);
+}
+
+.emailTextPixelGhost {
+  opacity: 0.16;
+  transform: translate3d(0.08em, 0.01em, 0);
+  filter: blur(0.012em);
+}
+
+.emailLink:hover .emailTextPixel,
+.emailLink:focus-visible .emailTextPixel {
+  transform: translate3d(0.03em, 0.01em, 0);
+}
+
+.emailLink:hover .emailTextPixelGhost,
+.emailLink:focus-visible .emailTextPixelGhost {
+  opacity: 0.24;
+  transform: translate3d(0.1em, 0.01em, 0);
+}
+
+.contactToggle,
+.submitButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.contactToggle {
+  width: fit-content;
+  color: var(--signal-color);
+  font-size: 0.72rem;
+  letter-spacing: var(--tracking-label-lg);
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0.6rem, 0);
+  transition:
+    opacity 320ms ease,
+    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition-delay: 180ms;
+}
+
+.emailView .contactToggle {
+  margin-inline: auto;
+}
+
+.contactToggle[data-visible="true"] {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+
+.formView {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(16rem, 0.72fr);
+  gap: clamp(2rem, 5vw, 6rem);
+  align-items: start;
+  padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  opacity: 0;
+  filter: blur(16px);
+  transform: translate3d(0, 1rem, 0);
+  transition:
+    opacity 360ms ease,
+    filter 620ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+.formView[data-visible="true"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.formColumn,
+.infoColumn,
+.form {
+  display: grid;
+}
+
+.formColumn {
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+.formHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.formTitle,
+.infoTitle {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 0.96;
+  letter-spacing: -0.08em;
+}
+
+.form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 3.2rem) 1.5rem;
+}
+
+.field,
+.formActions,
+.formStatus,
+.infoGroup {
+  --field-delay: calc(var(--field-index, 0) * 90ms);
+}
+
+.field {
+  position: relative;
+  display: grid;
+  gap: 0.8rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line-color);
+}
+
+.field::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: color-mix(in srgb, var(--fg-color) 85%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 720ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition-delay: calc(var(--field-delay) + 80ms);
+}
+
+.formView[data-visible="true"] .field::after {
+  transform: scaleX(1);
+}
+
+.field span,
+.field input,
+.field textarea,
+.formActions,
+.formStatus,
+.infoGroup {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translate3d(-1rem, 0, 0);
+  transition:
+    opacity 360ms ease,
+    filter 520ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition-delay: var(--field-delay);
+}
+
+.formView[data-visible="true"] .formStatus,
+.formView[data-visible="true"] .field span,
+.formView[data-visible="true"] .field input,
+.formView[data-visible="true"] .field textarea,
+.formView[data-visible="true"] .formActions,
+.formView[data-visible="true"] .infoGroup {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.field span,
+.infoLabel,
+.submitButton {
+  color: var(--muted-color);
+  font-size: 0.82rem;
+  letter-spacing: var(--tracking-label-sm);
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg-color);
+  outline: none;
+}
+
+.field textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.fieldWide,
+.formActions {
+  grid-column: 1 / -1;
+}
+
+.formActions {
   display: flex;
   align-items: center;
 }
 
-.inner {
-  width: var(--content-width);
-  margin: 0 auto;
-  display: grid;
-  gap: 1rem;
+.submitButton {
+  width: fit-content;
+  color: var(--fg-color);
 }
 
-.email {
-  font-size: clamp(2.4rem, 7vw, 6rem);
-  line-height: 0.92;
-  letter-spacing: -0.06em;
+.formStatus {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: var(--muted-color);
+}
+
+.formStatusError {
+  color: var(--signal-color);
+}
+
+.formStatusSuccess {
+  color: var(--fg-color);
+}
+
+.infoColumn {
+  gap: 2rem;
+  align-content: start;
+}
+
+.infoGroup {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--line-color);
+}
+
+.infoText {
+  margin: 0;
+  max-width: 24rem;
+  color: var(--muted-color);
+  line-height: 1.55;
+}
+
+.infoMail {
+  width: fit-content;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.infoLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.infoLink {
+  color: var(--fg-color);
+}
+
+@media (max-width: 64rem) {
+  .formView {
+    grid-template-columns: 1fr;
+  }
+
+  .infoColumn {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .stage {
+    min-height: calc(100svh - var(--header-height) - 0.5rem);
+  }
+
+  .emailWord {
+    font-size: clamp(2.4rem, 12vw, 5.2rem);
+  }
+
+  .form {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldWide,
+  .formActions {
+    grid-column: auto;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formView,
+  .emailWord,
+  .contactToggle,
+  .formBackScreen,
+  .field::after,
+  .field span,
+  .field input,
+  .field textarea,
+  .formActions,
+  .infoGroup {
+    transition: none;
+  }
 }

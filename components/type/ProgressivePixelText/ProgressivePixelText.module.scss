@@ -1,0 +1,51 @@
+.wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.wrapSingleLine {
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.measure {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: inherit;
+  padding-top: 0.06em;
+  padding-bottom: 0.12em;
+}
+
+.measureSingleLine {
+  white-space: nowrap;
+  width: max-content;
+}
+
+/* Inline color switches with canvas raster — avoid CSS color transitions (reads as opacity). */
+.measureColorLatch {
+  transition: none;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: crisp-edges;
+}
+
+.fallback {
+  display: block;
+  width: 100%;
+}

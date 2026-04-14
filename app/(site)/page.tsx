@@ -1,6 +1,7 @@
+import { contactContent } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { projects } from "@/content/projects";
-import { ContactSection } from "@/components/sections/Contact/ContactSection";
+import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectionGooey";
 import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
 
@@ -22,7 +23,10 @@ export default function Home() {
       />
       <HeroSection content={heroContent} />
       <WorkSection projects={projects} />
-      <ContactSection email="hello@yansons.online" />
+      <ContactSectionGooey
+        content={contactContent}
+        hoverPhrase={contactContent.emailHoverPhrase ?? "Let's work together"}
+      />
     </>
   );
 }

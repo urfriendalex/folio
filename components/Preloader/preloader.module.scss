@@ -44,7 +44,7 @@
   margin: 0;
   color: var(--walker-color);
   white-space: pre;
-  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-family: var(--font-mono-stack);
   font-size: clamp(1.12rem, 1.6vw, 1.58rem);
   line-height: 1.02;
   letter-spacing: 0.02em;
@@ -70,32 +70,12 @@
 }
 
 .progressValue {
-  color: #ff2b2b;
+  color: var(--signal-color);
   font-size: clamp(0.55rem, 1.25vw, 0.9rem);
   line-height: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tracking-label-lg);
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
-}
-
-.debugBadge {
-  display: none;
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.45rem 0.62rem;
-  border-radius: 999px;
-  font-size: 0.64rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--preloader-progress-color);
-  border: 1px solid color-mix(in srgb, var(--preloader-progress-color) 42%, transparent);
-  background: color-mix(in srgb, var(--preloader-bg) 88%, transparent);
-  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
-}
-
-:global(html[data-preloader-debug="on"]) .debugBadge {
-  display: inline-flex;
+  font-family: var(--font-mono-stack);
 }
 
 .isLoaded {

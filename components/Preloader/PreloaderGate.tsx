@@ -18,7 +18,7 @@ export function PreloaderGate({ children }: PreloaderGateProps) {
   return (
     <>
       {showPreloader ? <Preloader onDone={handleDone} /> : null}
-      <div data-app-shell="true">{children}</div>
+      {children}
     </>
   );
 }

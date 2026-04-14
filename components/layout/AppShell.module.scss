@@ -2,6 +2,55 @@
   min-height: 100svh;
 }
 
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 400;
+}
+
 .main {
+  position: relative;
+  /* Below footer chrome so fixed UI in main (e.g. project `.toolbarShell`) stays under the full footer + wordmark. */
+  z-index: 20;
   min-height: calc(100svh - var(--header-height));
+  background: var(--bg-color);
+}
+
+/* Viewport-fixed strip; visibility toggled from Footer via `data-footer-wordmark-active` + IO (hidden off-footer). */
+.footerWordmarkUnderlay {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  height: var(--footer-wordmark-strip-height);
+  /* Below `.footerChrome` (35) so editorial/footer paints over the strip; above `.main` (20) so project toolbar stays under. */
+  z-index: 34;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: none;
+
+  &[data-footer-wordmark-active="true"] {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Above main (20); below footer chrome (35) and navbar (400). */
+.toolbarAsciiBackdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.footerChrome {
+  position: relative;
+  /* Above main + ASCII backdrop so editorial footer and wordmark composite over project toolbar. */
+  z-index: 35;
 }

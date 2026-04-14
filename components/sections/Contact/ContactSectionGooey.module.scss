@@ -1,0 +1,81 @@
+/* Gooey contact banner: menu-style SVG text layout */
+
+.gooeyEmailWord {
+  --color-menu: var(--fg-color);
+  --font-menu: var(--font-pixel-square-stack);
+  --fontsize-menu: 18px;
+
+  display: flex;
+  width: 100%;
+  max-width: none;
+  justify-content: center;
+  align-items: center;
+  line-height: normal;
+  min-height: clamp(5.5rem, 22vw, 14rem);
+  overflow-x: visible;
+  overflow-y: visible;
+
+  .gooeyItem {
+    border: none;
+    transition: none;
+    cursor: default;
+    position: relative;
+    display: block;
+    overflow: visible;
+    width: 100%;
+    min-height: clamp(5.5rem, 22vw, 14rem);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .menuText {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 120%;
+    font-size: var(--fontsize-menu);
+    fill: var(--color-menu);
+    font-family: var(--font-menu);
+    font-weight: 700;
+    pointer-events: none;
+    overflow: visible;
+    max-width: 100%;
+  }
+
+  .menuText text {
+    transform-origin: 50% 50%;
+    transform-box: view-box;
+  }
+
+  .menuText text:nth-child(2) {
+    opacity: 0;
+  }
+
+  /* Fine pointers: hover only (no focus-open state on desktop). */
+  @media (hover: hover) and (pointer: fine) {
+    .gooeyItemReduced:hover .menuText text:nth-child(1) {
+      opacity: 0;
+    }
+
+    .gooeyItemReduced:hover .menuText text:nth-child(2) {
+      opacity: 1;
+    }
+  }
+
+  /* Coarse / no-hover: keep keyboard + tap affordance */
+  @media (hover: none) {
+    .gooeyItemReduced:focus-visible .menuText text:nth-child(1) {
+      opacity: 0;
+    }
+
+    .gooeyItemReduced:focus-visible .menuText text:nth-child(2) {
+      opacity: 1;
+    }
+  }
+
+  .gooeyItemReduced .menuText text {
+    transition: opacity 160ms ease-out;
+  }
+}

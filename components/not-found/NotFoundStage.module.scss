@@ -1,10 +1,37 @@
 .page {
+  --window-shell: var(--win98-window-shell);
+  --window-shell-shadow: var(--win98-window-shell-shadow);
+  --window-shell-highlight: var(--win98-window-shell-highlight);
+  --window-shell-lowlight: var(--win98-window-shell-lowlight);
+  --window-title-top: var(--win98-window-title-top);
+  --window-title-bottom: var(--win98-window-title-bottom);
+  --window-title-ink: var(--win98-window-title-ink);
+  --window-border: var(--win98-window-border);
+  --window-ink: var(--win98-window-ink);
+  --window-frame: var(--win98-window-frame);
+  --window-frame-edge: var(--win98-window-frame-edge);
+  --window-frame-shadow: var(--win98-window-frame-shadow);
+  --window-screen: var(--win98-window-screen);
+  --window-pattern-dot: var(--win98-window-pattern-dot);
+  --window-button-face: var(--win98-window-button-face);
+  --window-button-highlight: var(--win98-window-button-highlight);
+  --window-button-shadow: var(--win98-window-button-shadow);
+  --window-button-deep-shadow: var(--win98-window-button-deep-shadow);
+  --window-float-shadow: var(--win98-window-float-shadow);
+  --window-icon-border: var(--win98-window-icon-border);
+  --window-icon-highlight: var(--win98-window-icon-highlight);
+  --window-icon-shadow: var(--win98-window-icon-shadow);
+  --window-icon-red: var(--win98-window-icon-red);
+  --window-icon-blue: var(--win98-window-icon-blue);
+  --window-icon-green: var(--win98-window-icon-green);
+  --window-icon-yellow: var(--win98-window-icon-yellow);
+  --window-close-ink: var(--win98-window-close-ink);
+  --window-width: var(--win98-window-width);
+  --window-height: var(--win98-window-height);
   position: relative;
   min-height: 100svh;
   overflow: clip;
-  background:
-    radial-gradient(circle at center, color-mix(in srgb, var(--fg-color) 4%, transparent), transparent 48%),
-    var(--bg-color);
+  background: var(--bg-color);
   color: var(--fg-color);
 }
 
@@ -13,18 +40,52 @@
   inset: 0;
   overflow: clip;
   pointer-events: none;
+  isolation: isolate;
+  z-index: 0;
+}
+
+.trailLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.backdrop404 {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.backdrop404Text {
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(4.5rem, 20vw, 15rem);
+  font-weight: 400;
+  line-height: 0.82;
+  letter-spacing: var(--tracking-label-md);
+  color: var(--signal-color);
+  user-select: none;
 }
 
 .sprite {
-  --sprite-width: clamp(11rem, 22vw, 19rem);
-  --sprite-height: clamp(8rem, 16vw, 13rem);
-
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--sprite-width);
-  height: var(--sprite-height);
+  z-index: 2;
+  width: var(--window-width);
+  height: var(--window-height);
   will-change: transform;
+  pointer-events: none;
+}
+
+.trailCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -35,13 +96,174 @@
   will-change: transform;
 }
 
-.ascii {
+.window {
+  position: absolute;
+  width: var(--window-width);
+  height: var(--window-height);
+  padding: 0.18rem;
+  border: 1px solid var(--window-border);
+  border-radius: 0;
+  background: var(--window-shell);
+  box-shadow:
+    inset 1px 1px 0 var(--window-shell-highlight),
+    inset -1px -1px 0 var(--window-shell-shadow),
+    0.85rem 1rem 0 var(--window-float-shadow);
+}
+
+.window {
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.windowPaused {
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--window-shell-highlight) 115%, white),
+    inset -1px -1px 0 color-mix(in srgb, var(--window-shell-shadow) 115%, black),
+    1rem 1.15rem 0 var(--window-float-shadow);
+}
+
+.windowBar {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem;
+  height: 1.55rem;
+  padding: 0 0.2rem 0 0.28rem;
+  background: linear-gradient(90deg, var(--window-title-top), var(--window-title-bottom));
+  z-index: 1;
+}
+
+.windowHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.windowBrandMark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: baseline;
+  line-height: 1;
+  font-family: var(--font-body-stack);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight-md);
+  color: var(--window-title-ink);
+}
+
+.windowTitle {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  color: var(--window-title-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeButton,
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--window-border);
+  border-radius: 0;
+  background: var(--window-button-face);
+  color: var(--window-ink);
+  box-shadow:
+    inset 1px 1px 0 var(--window-button-highlight),
+    inset -1px -1px 0 var(--window-button-shadow);
+  text-decoration: none;
+  font-family: var(--font-pixel-stack);
+}
+
+.closeButton {
+  width: 1.1rem;
+  height: 1rem;
+  padding-top: 0.03rem;
+  font-size: 0.68rem;
+  line-height: 1;
+  color: var(--window-close-ink);
+}
+
+.windowBody {
+  position: absolute;
+  inset: 1.95rem 0.7rem 0.65rem;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.48rem;
+  min-height: 0;
+}
+
+.windowBodyWithActions {
+  inset: 1.95rem 0.7rem 0.72rem;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 0.55rem;
+}
+
+.screenFrame {
+  height: 100%;
+  min-height: 7.25rem;
+  padding: 0.16rem;
+  border: 1px solid var(--window-frame-shadow);
+  background: var(--window-frame);
+  box-shadow:
+    inset 1px 1px 0 var(--window-shell-highlight),
+    inset -1px -1px 0 var(--window-frame-edge);
+}
+
+.screen {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--window-frame-edge);
+  background: var(--window-screen);
+  box-shadow:
+    inset 1px 1px 0 var(--window-shell-highlight),
+    inset -1px -1px 0 var(--window-frame-shadow);
+}
+
+.screenPattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(circle at 1px 1px, var(--window-pattern-dot) 1.05px, transparent 0);
+  background-size: 0.34rem 0.34rem;
+  mix-blend-mode: multiply;
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+/* Any `ASCIIAnimation` asset: outer crop / inner root / canvas layout modes */
+.screenAsciiViewport {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(1.14);
+  transform-origin: center center;
+}
+
+.screenAsciiRoot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
 }
 
-.walker {
+/* Default: letterboxed / centered; works for canvas or `<pre>` text frames */
+.screenAsciiCanvas {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -51,59 +273,199 @@
   margin: 0;
   color: var(--walker-color);
   white-space: pre;
-  font-family: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
-  font-size: clamp(0.84rem, 1.3vw, 1.18rem);
-  line-height: 1.02;
-  letter-spacing: 0.02em;
-  text-shadow: 0 0 1rem var(--walker-glow);
+  font-family: var(--font-mono-stack);
+  font-size: clamp(0.82rem, 1.42vw, 1.14rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  text-shadow: none;
   transform-origin: center;
   will-change: transform, opacity;
+  filter: contrast(1.18) saturate(0.75);
 }
 
-.label {
+/* Paired with `fillParent` on ASCIIAnimation — full-bleed in `.screen` */
+.screenAsciiCanvasFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  filter: contrast(1.18) saturate(0.75);
+}
+
+.copyBlock {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--window-ink);
+}
+
+.copyLabel {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.copy {
+  margin: 0;
+  max-width: 31ch;
+  font-family: var(--font-pixel-stack);
+  font-size: 0.74rem;
+  line-height: 1.52;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.65rem;
+}
+
+@media (min-width: 26rem) {
+  .actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem 0.65rem;
+  }
+}
+
+.toolbar {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  transform: translate(-50%, -50%);
-  color: color-mix(in srgb, var(--fg-color) 40%, transparent);
-  font-family: var(--font-pixel), monospace;
-  font-size: clamp(0.58rem, 0.92vw, 0.78rem);
-  letter-spacing: 0.36em;
-  text-transform: uppercase;
-  pointer-events: none;
-  user-select: none;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 12;
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem 0.45rem calc(0.42rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--window-border);
+  background: var(--window-shell);
+  box-shadow:
+    0 -1px 0 var(--window-shell-highlight),
+    0 -0.35rem 0.85rem rgb(0 0 0 / 0.12);
+  pointer-events: auto;
 }
 
-.label::before,
-.label::after {
-  content: "";
-  width: 1.4rem;
-  height: 1px;
-  background: currentColor;
+.toolbarInner {
+  display: flex;
+  width: 100%;
+  max-width: min(42rem, 100%);
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 0.28rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.toolbarInner::-webkit-scrollbar {
+  height: 3px;
+}
+
+.toolbarInner::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--window-ink) 28%, transparent);
+  border-radius: 2px;
+}
+
+.actionButton {
+  min-height: 2.18rem;
+  padding: 0 0.55rem;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.toolbarButton {
+  flex: 1 1 0;
+  min-width: 3rem;
+  min-height: 2.05rem;
+  padding-inline: 0.28rem;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible,
+.actionButton:hover,
+.actionButton:focus-visible {
+  background: color-mix(in srgb, var(--window-button-face) 88%, white);
+  outline: none;
+}
+
+.closeButton:active,
+.actionButton:active {
+  box-shadow:
+    inset -1px -1px 0 var(--window-button-highlight),
+    inset 1px 1px 0 var(--window-button-deep-shadow);
+  outline: none;
 }
 
 @media (max-width: 48rem) {
-  .sprite {
-    --sprite-width: clamp(9rem, 42vw, 14rem);
-    --sprite-height: clamp(6.75rem, 30vw, 10rem);
+  .page {
+    --window-width: var(--win98-window-width-mobile);
+    --window-height: var(--win98-window-height-mobile);
   }
 
-  .walker {
-    font-size: clamp(0.62rem, 2.4vw, 0.92rem);
+  .screenAsciiViewport {
+    transform: none;
+    transform-origin: center center;
   }
 
-  .label {
-    gap: 0.4rem;
-    font-size: 0.56rem;
-    letter-spacing: 0.28em;
+  .screenAsciiCanvas {
+    font-size: clamp(0.54rem, 1.95vw, 0.8rem);
   }
 
-  .label::before,
-  .label::after {
-    width: 0.9rem;
+  .screenFrame {
+    min-height: 4.25rem;
+    padding-left: 0;
+    padding-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    box-shadow:
+      inset 0 1px 0 var(--window-shell-highlight),
+      inset 0 -1px 0 var(--window-frame-edge);
+  }
+
+  .screen {
+    border-left-width: 0;
+    border-right-width: 0;
+    box-shadow:
+      inset 0 1px 0 var(--window-shell-highlight),
+      inset 0 -1px 0 var(--window-frame-shadow);
+  }
+
+  .windowBody {
+    inset: 1.88rem 0.55rem 0.52rem;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.38rem;
+  }
+
+  .copy {
+    max-width: 100%;
+    font-size: 0.58rem;
+    line-height: 1.45;
+  }
+
+  .copyLabel {
+    font-size: 0.64rem;
+  }
+
+  .toolbar {
+    padding: 0.32rem 0.35rem calc(0.34rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .toolbarInner {
+    gap: 0.22rem;
+    max-width: 100%;
+  }
+
+  .toolbarButton {
+    min-width: 2.5rem;
+    min-height: 1.95rem;
+    padding-inline: 0.18rem;
+    font-size: 0.52rem;
   }
 }

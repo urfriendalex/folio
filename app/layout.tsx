@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import {
-  Geist,
-  Geist_Mono,
-  Silkscreen,
-} from "next/font/google";
+import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
+import { Geist, Geist_Mono } from "next/font/google";
 import { PreloaderGate } from "@/components/Preloader/PreloaderGate";
 import "@/styles/globals.scss";
 
-const isDev = process.env.NODE_ENV !== "production";
-const forcePreloaderDebug = isDev && process.env.NEXT_PUBLIC_PRELOADER_DEBUG === "1";
-const pixelDisplay = Silkscreen({
-  subsets: ["latin"],
-  variable: "--font-pixel",
-  weight: ["400", "700"],
-});
 const screenBody = Geist({
   subsets: ["latin"],
   variable: "--font-body",
@@ -23,23 +13,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
 });
+const fontVariables = `${GeistPixelGrid.variable} ${GeistPixelSquare.variable} ${screenBody.variable} ${geistMono.variable}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://yansons.online"),
-  title: "Alexander Yansons — Developer & Creative Technologist",
-  description: "Portfolio foundation for development, motion, systems thinking, and experimental work.",
+  title: "Alexander Yansons | Web Developer & Creative Technologist",
+  description: "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
   openGraph: {
-    title: "Alexander Yansons — Developer & Creative Technologist",
+    title: "Alexander Yansons | Web Developer & Creative Technologist",
     description:
-      "Portfolio foundation for development, motion, systems thinking, and experimental work.",
+      "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
     type: "website",
     url: "https://yansons.online",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alexander Yansons — Developer & Creative Technologist",
+    title: "Alexander Yansons | Web Developer & Creative Technologist",
     description:
-      "Portfolio foundation for development, motion, systems thinking, and experimental work.",
+      "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
   },
 };
 
@@ -59,28 +50,18 @@ const bootstrapScript = `
   } catch (_error) {}
   html.setAttribute("data-theme", theme);
 
+  let footerMode = "toolbar";
+  try {
+    const storedFooterMode = localStorage.getItem("footerMode");
+    if (storedFooterMode === "toolbar" || storedFooterMode === "minimal") {
+      footerMode = storedFooterMode;
+    }
+  } catch (_error) {}
+  html.setAttribute("data-footer-mode", footerMode);
+
   let shouldRun = true;
   try {
-    const params = new URLSearchParams(window.location.search);
-    const preloaderParam = params.get("preloader");
-    const isDev = ${JSON.stringify(isDev)};
-    const forceDebug = ${JSON.stringify(forcePreloaderDebug)};
-    const debugMode =
-      forceDebug || (isDev && (preloaderParam === "debug" || preloaderParam === "dbg"));
-
-    html.setAttribute("data-preloader-debug", debugMode ? "on" : "off");
-
-    if (debugMode) {
-      sessionStorage.removeItem("preloaded");
-      shouldRun = true;
-    } else if (isDev && preloaderParam === "reset") {
-      sessionStorage.removeItem("preloaded");
-      shouldRun = true;
-    } else if (isDev && preloaderParam === "1") {
-      shouldRun = true;
-    } else {
-      shouldRun = sessionStorage.getItem("preloaded") !== "true";
-    }
+    shouldRun = sessionStorage.getItem("preloaded") !== "true";
   } catch (_error) {
     shouldRun = true;
   }
@@ -101,16 +82,17 @@ export default function RootLayout({
 }>) {
   return (
     <html
+      className={fontVariables}
       lang="en"
       data-theme="light"
+      data-footer-mode="toolbar"
       data-preloader="run"
-      data-preloader-debug="off"
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: bootstrapScript }} />
       </head>
-      <body className={`${pixelDisplay.variable} ${screenBody.variable} ${geistMono.variable}`}>
+      <body>
         <noscript>
           <div className="noscript-loader" role="status" aria-live="polite">
             <span className="noscript-loader__spinner" />

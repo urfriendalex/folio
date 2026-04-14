@@ -1,39 +1,389 @@
+/* Same shell pattern as Work: section = vertical rhythm only; `.page-shell` on inner = horizontal inset */
 .section {
-  min-height: calc(100svh - var(--header-height));
+  --hero-walker-web-color: #0000ee;
+  --hero-walker-creative-color: var(--signal-color);
+  padding-top: calc(var(--header-height) + 0.25rem);
+  padding-bottom: clamp(2.25rem, 5vw + 0.75rem, 4.5rem);
 }
 
 .inner {
-  width: var(--content-width);
-  min-height: calc(100svh - var(--header-height));
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
+  width: 100%;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 0.9fr);
+  align-items: stretch;
+  /* Occupy viewport without endless void — svh tracks mobile browser UI */
+  min-height: clamp(26rem, 58svh, 44rem);
+  gap: clamp(1rem, 2vw, 2rem);
 }
 
 .content {
   display: grid;
-  gap: 1rem;
+  align-content: center;
+  gap: clamp(0.75rem, 1.8vw, 1.1rem);
+  padding: clamp(1.5rem, 3.2vw, 2.6rem) 0;
+  /* Laptop-ish: keep a comfortable measure; see wide/ultrawide overrides below */
+  max-width: min(52rem, 100%);
 }
 
-.monogram {
+@media (hover: hover) and (pointer: fine) {
+  .content {
+    cursor: default;
+  }
+}
+
+.intro {
   margin: 0;
-  font-family: var(--font-pixel), monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  min-width: 0;
+  font-size: clamp(0.88rem, 0.35vw + 0.82rem, 0.96rem);
+  line-height: 1.45;
   color: var(--muted-color);
+  /* Line breaks follow Pretext (RevealLines) like the heading */
+  --reveal-line-gap: 0.02em;
+}
+
+.introPixelSquare {
+  font-family: var(--font-pixel-square-stack);
+  letter-spacing: 0.05em;
+  vertical-align: 0.04em;
+  color: inherit;
+}
+
+.introAccentTrigger {
+  display: inline-block;
+  transition: color 180ms ease-out;
+}
+
+.introAccentTriggerWeb:hover {
+  color: var(--hero-walker-web-color);
+}
+
+.introAccentTriggerCreative:hover {
+  color: var(--hero-walker-creative-color);
+}
+
+.introAccentTriggerWeb:focus-visible {
+  color: var(--hero-walker-web-color);
+}
+
+.introAccentTriggerCreative:focus-visible {
+  color: var(--hero-walker-creative-color);
 }
 
 .heading {
   margin: 0;
-  max-width: 12ch;
-  font-size: clamp(3rem, 8vw, 6rem);
-  line-height: 0.92;
-  letter-spacing: -0.06em;
+  /* Desktop / tablet: closer to original scale (cap ~3.5rem), readable min */
+  font-size: clamp(1.55rem, 1.35vw + 0.65rem, 3.35rem);
+  /* Enough line box that RevealLines’ overflow clips don’t shave descenders */
+  line-height: 1.14;
+  letter-spacing: -0.038em;
+  font-weight: 400;
+  max-width: 100%;
+  /* Space between RevealLines rows (Pretext layout + optional \n in copy) */
+  --reveal-line-gap: clamp(0.02em, 0.05vw + 0.01em, 0.05em);
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+.heroCta {
+  margin: clamp(0.65rem, 1.15vw, 0.95rem) 0 0;
+  --reveal-line-gap: clamp(0.02em, 0.05vw + 0.01em, 0.05em);
+}
+
+/* RevealLines `.tokenClip` uses overflow:hidden — room for globals `.link-underline::after` (top: 100%). */
+.heroCta :global(.tokenClip) {
+  padding-bottom: 0.18em;
+}
+
+.heroCtaLink {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(0.78rem, 0.95vw + 0.58rem, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  color: var(--fg-color);
+  text-decoration: none;
+  transition: color 200ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .heroCtaLink:hover {
+    color: var(--signal-color);
+  }
+}
+
+.heroCtaLink:focus-visible {
+  color: var(--signal-color);
+}
+
+.heroCtaLink:active {
+  color: var(--signal-color);
+}
+
+/* “stuff” → strikethrough + pixel “shit” (hover / focus on fine pointers; tap on coarse) */
+.stuffGag {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: default;
+  vertical-align: baseline;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) {
+  .stuffGag {
+    cursor: pointer;
+  }
+}
+
+.stuffSurface {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+}
+
+/* LTR strike drawn here; opacity of “stuff” is driven by GSAP */
+.stuffStrikeLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: max(0.09em, 2px);
+  margin-top: -0.045em;
+  transform-origin: left center;
+  transform: scaleX(0);
+  border-radius: 0.02em;
+  pointer-events: none;
+  /* Solid bar — “stuff” opacity is animated separately */
+  background-color: var(--fg-color);
+}
+
+.stuffGlyph {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: none) {
+  .stuffGlyph {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    text-decoration-color: color-mix(in srgb, var(--muted-color) 78%, transparent);
+  }
+}
+
+.stuffGag[data-gag-open="true"] .stuffGlyph {
+  text-decoration: none;
+}
+
+/* Outer: anchor point only — centering stays correct if GSAP tweens are killed mid-flight */
+.shitPortalWrap {
+  z-index: 10050;
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  /* `font-size` set inline (px) to match the real “stuff” glyph — ties scale to headline on every breakpoint */
+  line-height: 0;
+}
+
+/* Constant tilt — never targeted by GSAP (avoids 0° flashes when tweens are interrupted) */
+.shitPortalTilt {
+  display: inline-block;
+  transform: rotate(-11deg) translateZ(0);
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+
+/* GSAP animates autoAlpha only (no scale — avoids pixel-font shimmer) */
+.shitPortal {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  font-family: var(--font-pixel-square-stack);
+  /* Slightly larger than “stuff”; parent `.shitPortalWrap` font-size tracks the glyph */
+  font-size: 1.28em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #e01818;
+  white-space: nowrap;
+  mix-blend-mode: normal;
+  text-rendering: geometricPrecision;
+}
+
+.visualPanel {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  min-height: 100%;
+  opacity: 0;
+  transform: translate3d(0, 1.25rem, 0) scale(0.975);
+  filter: blur(10px);
+  transition:
+    opacity 420ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 680ms cubic-bezier(0.23, 1, 0.32, 1),
+    filter 680ms cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+}
+
+.visualPanel[data-visible="true"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+
+.visualPanelInner {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(21rem, 54vh, 36rem);
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+  overflow: visible;
+  contain: layout;
+}
+
+.walkerShell {
+  --hero-walker-scale-hidden: 2.15;
+  --hero-walker-scale-visible: 1.28;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  height: clamp(21rem, 54vh, 36rem);
+  transform: scale(var(--hero-walker-scale-hidden));
+  transform-origin: center;
+  transition: transform 760ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.visualPanel[data-visible="true"] .walkerShell {
+  transform: scale(var(--hero-walker-scale-visible));
+}
+
+.walker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-block;
+  width: max-content;
+  height: max-content;
+  margin: 0;
+  padding: 0;
+  color: var(--walker-color);
+  white-space: pre;
+  font-family: var(--font-mono-stack);
+  /* Match preloader typography exactly; size changes come only from `.walkerShell` scale. */
+  font-size: clamp(1.12rem, 1.6vw, 1.58rem);
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  transform-origin: center;
+  will-change: transform, opacity;
+  transition: text-shadow 220ms ease-out;
+  text-shadow: 0 0 1rem var(--walker-glow);
+}
+
+/* Wide desktop: a bit more measure + weight the copy column so the block isn’t a thin rail */
+@media (min-width: 90rem) {
+  .stage {
+    grid-template-columns: minmax(0, 2.4fr) minmax(0, 0.82fr);
+    gap: clamp(1.25rem, 2.2vw, 2.75rem);
+  }
+
+  .content {
+    max-width: min(62rem, 100%);
+  }
+}
+
+@media (min-width: 120rem) {
+  .stage {
+    grid-template-columns: minmax(0, 2.58fr) minmax(0, 0.74fr);
+    gap: clamp(1.35rem, 2.4vw, 3rem);
+  }
+
+  .content {
+    max-width: min(72rem, 100%);
+  }
+}
+
+@media (max-width: 64rem) {
+  .stage {
+    grid-template-columns: 1fr;
+    min-height: clamp(22rem, 50svh, 38rem);
+  }
+
+  /* Second column was only for desktop asymmetry — hide so mobile isn’t a two-row grid */
+  .visualPanel {
+    display: none;
+  }
+
+  .content {
+    max-width: min(46rem, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualPanel {
+    transform: none;
+    filter: none;
+    transition: opacity 140ms ease-out;
+  }
+
+  .walkerShell {
+    transform: none;
+    transition: none;
+  }
+
+  .walker {
+    transition: text-shadow 140ms ease-out;
+    text-shadow: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .section {
+    padding-top: calc(var(--header-height) + 0.35rem);
+    padding-bottom: clamp(1.75rem, 4vw + 0.5rem, 3rem);
+  }
+
+  .stage {
+    /* Pull headline into a calmer vertical band — less “stuck to the top” */
+    min-height: clamp(38svh, 46svh, 28rem);
+    align-items: center;
+  }
+
+  .content {
+    padding-block: clamp(0.75rem, 2vw, 1.25rem);
+    gap: 0.65rem;
+  }
+
+  .heading {
+    font-size: clamp(1.75rem, 0.35rem + 5.5vw, 2.65rem);
+    line-height: 1.14;
+    letter-spacing: -0.035em;
+    max-width: 100%;
+    text-wrap: balance;
+  }
+
+  .intro {
+    max-width: 38ch;
+  }
 }

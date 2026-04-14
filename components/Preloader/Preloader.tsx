@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import ASCIIAnimation from "./ascii";
-import { getFrameFolderForTheme, LIGHT_FRAME_FOLDER } from "./frameFolder";
+import { getFrameFolderForTheme, getInitialFrameFolder } from "./frameFolder";
 import styles from "./preloader.module.scss";
 import {
   CRITICAL_PRELOAD_ASSETS,
@@ -23,7 +23,7 @@ export function Preloader({ onDone }: PreloaderProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLSpanElement | null>(null);
 
-  const [frameFolder, setFrameFolder] = useState(LIGHT_FRAME_FOLDER);
+  const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const [isAsciiReady, setIsAsciiReady] = useState(false);
   const [hasStartedAssetLoading, setHasStartedAssetLoading] = useState(false);
   const { actualProgressRef, isCompleteRef } = usePreloaderAssets(
@@ -95,14 +95,10 @@ export function Preloader({ onDone }: PreloaderProps) {
     let didFinalize = false;
     let displayedProgress = 0;
 
-    const setProgressText = (value: number) => {
-      const clamped = Math.max(0, Math.min(100, value * 100));
-      if (clamped >= 99.95) {
-        progressNode.textContent = "100%";
-        return;
-      }
-
-      progressNode.textContent = `${Math.round(clamped)}%`;
+    const setProgressText = (value: number, isComplete = false) => {
+      const clamped = Math.max(0, Math.min(isComplete ? 1 : 0.99, value));
+      const percent = isComplete ? 100 : Math.min(99, Math.floor(clamped * 100));
+      progressNode.textContent = `${percent}%`;
     };
 
     if (!hasStartedAssetLoading) {
@@ -124,7 +120,7 @@ export function Preloader({ onDone }: PreloaderProps) {
       }
 
       displayedProgress = 1;
-      setProgressText(1);
+      setProgressText(1, true);
 
       overlayNode.classList.add(styles.isLoaded);
       html.classList.add("is-preloader-exiting");
@@ -188,7 +184,7 @@ export function Preloader({ onDone }: PreloaderProps) {
         displayedProgress = 1;
       }
 
-      setProgressText(displayedProgress);
+      setProgressText(displayedProgress, isCompleteRef.current && displayedProgress >= 1);
 
       if (isCompleteRef.current && displayedProgress >= 1) {
         finishPreloader();
@@ -243,9 +239,6 @@ export function Preloader({ onDone }: PreloaderProps) {
         aria-label="Loading progress"
       >
         <span ref={progressRef} className={styles.progressValue} />
-      </div>
-      <div className={styles.debugBadge} aria-hidden="true">
-        DEBUG MODE
       </div>
     </div>
   );

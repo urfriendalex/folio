@@ -1,0 +1,20 @@
+.root {
+  --pixel-from: 64%;
+  position: relative;
+  display: inline-grid;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+.base,
+.pixel {
+  grid-area: 1 / 1;
+}
+
+.pixel {
+  font-family: var(--font-pixel-stack);
+  letter-spacing: 0;
+  clip-path: inset(0 0 0 var(--pixel-from));
+  transform: translate3d(0.04em, 0.02em, 0);
+  opacity: 0.96;
+}

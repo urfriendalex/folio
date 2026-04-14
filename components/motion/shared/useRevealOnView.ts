@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 
-type UseRevealOnViewOptions = {
+export type UseRevealOnViewOptions = {
   once?: boolean;
   rootMargin?: string;
   threshold?: number;
@@ -12,6 +13,8 @@ export function useRevealOnView<T extends HTMLElement>(
   ref: RefObject<T | null>,
   options?: UseRevealOnViewOptions,
 ) {
+  const preloaderComplete = usePreloaderComplete();
+
   const [visible, setVisible] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -28,6 +31,10 @@ export function useRevealOnView<T extends HTMLElement>(
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reduceMotion) {
+      return undefined;
+    }
+
+    if (!preloaderComplete) {
       return undefined;
     }
 
@@ -52,7 +59,7 @@ export function useRevealOnView<T extends HTMLElement>(
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [options?.once, options?.rootMargin, options?.threshold, ref]);
+  }, [preloaderComplete, options?.once, options?.rootMargin, options?.threshold, ref]);
 
   return visible;
 }
