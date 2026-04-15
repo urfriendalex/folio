@@ -8,19 +8,15 @@ export const studioIskraProject: ProjectEntry = {
   role: "Solo Designer & Developer",
   technologies: ["Framer", "React", "JavaScript", "CSS"],
   shortDescription:
-    "Portfolio for a creative studio—a clean, modern showcase with a flexible gallery for project work.",
+    "Studio portfolio in Framer with a custom React gallery—fast iteration, flexible presentation.",
   description:
-    "A portfolio website for Studio Iskra built entirely in Framer, extended with a custom React-based gallery component. I handled the project end-to-end, combining Framer's visual development workflow with custom code to deliver a more flexible and dynamic content experience. The goal was to create a clean, modern, and highly visual platform for presenting the studio's work.",
-  overview:
-    "The project focused on building a visually refined website that balances speed of iteration (via Framer) with custom functionality where needed.",
-  roleSummary:
-    "Owned the project end-to-end, from design to development and custom React extensions.",
+    "Framer-built portfolio extended with a custom React gallery. End-to-end: visual layout in Framer plus code where native tools stopped short.",
+  overview: "Balance Framer speed with custom React for a flexible, image-led showcase.",
+  roleSummary: "Design through build, including custom React for the gallery.",
   responsibilities: [
-    "Full website design",
-    "Framer development",
-    "Custom React component development",
-    "Gallery system implementation",
-    "UX and structure decisions",
+    "Design & Framer build",
+    "Custom React gallery",
+    "UX and site structure",
   ],
   client: {
     name: "Studio Iskra",
@@ -30,27 +26,24 @@ export const studioIskraProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "All design and development were done by me; worked with the client on content and direction.",
+    details: "Solo build; aligned with the client on content and direction.",
   },
   stack: {
     platform: ["Framer"],
     frontend: ["React", "JavaScript", "CSS"],
-    notes: "Extended Framer with custom React components to go beyond native capabilities.",
+    notes: "Custom React layered on Framer for gallery behavior.",
   },
   features: [
-    "Custom React-powered gallery",
-    "Highly visual portfolio layout",
-    "Smooth browsing experience for visual content",
-    "Responsive design across devices",
-    "Hybrid no-code + code approach",
+    "Custom React gallery",
+    "Visual portfolio layout",
+    "Responsive, hybrid no-code + code",
   ],
   impact: {
-    summary:
-      "Combined speed of Framer with flexibility of custom React to deliver a more tailored and scalable portfolio experience.",
+    summary: "Framer velocity with custom React where the portfolio needed more control.",
     highlights: [
-      "Extended a no-code tool with custom engineering",
-      "Improved flexibility of content presentation",
-      "Delivered a modern, performant visual experience",
+      "No-code base + targeted engineering",
+      "Flexible project presentation",
+      "Modern, fast-feeling experience",
     ],
   },
   tags: ["Framer", "React", "Frontend", "Portfolio", "Creative Development", "Custom Components"],

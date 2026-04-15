@@ -57,6 +57,10 @@
 .header {
   position: relative;
   isolation: isolate;
+  --navbar-ink: var(--navbar-contrast-dark-ink);
+}
+
+:global(html[data-theme="dark"]) .header {
   --navbar-ink: var(--navbar-contrast-light-ink);
 }
 
@@ -64,11 +68,9 @@
   position: absolute;
   z-index: var(--navbar-gradient-blur-z-index);
   inset: auto 0 0 0;
-  top: 0;
-  height: 150%;
+  top: calc(-1 * var(--navbar-gradient-blur-overscan));
+  height: calc(150% + var(--navbar-gradient-blur-overscan));
   pointer-events: none;
-  transition:
-    opacity var(--navbar-gradient-blur-transition);
 }
 
 @supports (overflow: clip) {
@@ -84,17 +86,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gradientBlur {
-    transition: opacity var(--navbar-gradient-blur-transition);
+  .gradientBlurStrip {
+    transition: none;
   }
 }
 
 .gradientBlurStrip {
   position: absolute;
   inset: 0;
-  transition:
-    opacity var(--navbar-gradient-blur-transition),
-    visibility 0ms linear 0ms;
+  transform: translateY(0);
+  transition: transform var(--navbar-gradient-blur-transition);
 }
 
 :global(html.is-archive-route) .gradientBlurStrip {
@@ -163,11 +164,24 @@
 :global(html.is-overlay-blur) .gradientBlurStrip,
 :global(html.is-overlay-blur-pending) .gradientBlurStrip,
 :global(html.is-nav-open) .gradientBlurStrip {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--navbar-gradient-blur-transition),
-    visibility 0ms linear var(--navbar-gradient-blur-duration, 320ms);
+  opacity: 1;
+  visibility: visible;
+}
+
+:global(html.is-overlay-blur) .gradientBlur,
+:global(html.is-overlay-blur-pending) .gradientBlur,
+:global(html.is-nav-open) .gradientBlur {
+  transform: none;
+}
+
+:global(html.is-overlay-blur) .gradientBlurStrip,
+:global(html.is-overlay-blur-pending) .gradientBlurStrip,
+:global(html.is-nav-open) .gradientBlurStrip {
+  transform: translateY(calc(-100% - var(--navbar-gradient-blur-overscan)));
+}
+
+:global(html.is-overlay-blur-closing) .gradientBlurStrip {
+  transform: translateY(0);
 }
 
 :global(html.is-overlay-blur) .gradientBlurOverlay,
@@ -339,16 +353,25 @@
   /* Idle: collapsed like desktop; full wordmark when nav is open */
   :global(html.is-nav-open) .hiddenPart,
   :global(html.is-nav-open) .hiddenSurname {
-    max-width: none;
     transform: translateY(0) skew(0deg, 0deg);
   }
 
+  :global(html.is-nav-open) .hiddenPart {
+    max-width: 8.5ch;
+  }
+
   :global(html.is-nav-open) .initialY {
-    margin-left: 0.12em;
+    margin-left: 0.32em;
+  }
+
+  :global(html.is-nav-open) .hiddenSurname {
+    max-width: 7ch;
   }
 
   :global(html.is-nav-open) .dot {
-    display: none;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
   }
 
   :global(html.is-nav-open) .header {

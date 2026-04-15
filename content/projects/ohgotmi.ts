@@ -8,19 +8,15 @@ export const ohgotmiProject: ProjectEntry = {
   role: "Solo Designer & Developer",
   technologies: ["Framer", "React", "JavaScript", "CSS"],
   shortDescription:
-    "Portfolio for a film producer—atmospheric and cinematic, built around pacing and imagery rather than a conventional résumé layout.",
+    "Producer portfolio—cinematic pacing and imagery instead of a résumé-style site.",
   description:
-    "A portfolio website for a film producer, built using Framer and extended with custom React components and bespoke styling. I handled the entire project end-to-end, focusing on creating a cinematic, immersive browsing experience that reflects the visual language of film. The site combines Framer's rapid iteration capabilities with custom engineering to achieve a more expressive and controlled frontend.",
-  overview:
-    "The goal was to create a portfolio that feels closer to a film experience than a traditional website, emphasizing pacing, visuals, and atmosphere.",
-  roleSummary:
-    "Owned the full lifecycle of the project, from concept and design to implementation and custom frontend logic.",
+    "Framer site with custom React and styling: immersive, film-forward browsing. Full ownership from concept to shipped frontend.",
+  overview: "Read as a film experience—pacing, visuals, and atmosphere over generic portfolio patterns.",
+  roleSummary: "Concept, design, Framer build, and custom frontend behavior.",
   responsibilities: [
-    "Full website design",
-    "Framer development",
-    "Custom React component development",
-    "Advanced styling and layout control",
-    "UX and interaction design",
+    "Design & Framer development",
+    "Custom React components",
+    "Interaction and layout",
   ],
   client: {
     name: "OhGotMi",
@@ -30,27 +26,24 @@ export const ohgotmiProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Worked directly with the client on content and direction; all design and development executed by me.",
+    details: "Client on content; I handled design and build.",
   },
   stack: {
     platform: ["Framer"],
     frontend: ["React", "JavaScript", "CSS"],
-    notes: "Hybrid approach combining Framer with custom React components for extended control and flexibility.",
+    notes: "Framer plus React for parts that needed more control.",
   },
   features: [
-    "Cinematic, image-led layout",
-    "Custom React-driven components",
-    "Advanced styling beyond default Framer capabilities",
-    "Immersive content presentation",
-    "Responsive experience across devices",
+    "Image-led, cinematic layout",
+    "Custom React where Framer ended",
+    "Responsive, immersive presentation",
   ],
   impact: {
-    summary:
-      "Delivered a portfolio that aligns closely with film aesthetics, creating a more immersive and differentiated digital presence.",
+    summary: "A digital presence that matches film aesthetics instead of default portfolio tropes.",
     highlights: [
-      "Translated cinematic language into web interactions",
-      "Extended no-code tooling with custom engineering",
-      "Achieved a more expressive and brand-aligned frontend",
+      "Cinematic feel in layout and motion",
+      "Custom code on a no-code base",
+      "Tighter alignment with the producer’s voice",
     ],
   },
   tags: ["Framer", "React", "Frontend", "Portfolio", "Creative Development", "Film"],

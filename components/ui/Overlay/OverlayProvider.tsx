@@ -15,7 +15,6 @@ import { contactContent } from "@/content/contact";
 import type { ProjectEntry } from "@/content/projects/types";
 import { RevealLines } from "@/components/motion";
 import { PixelText } from "@/components/type/PixelText/PixelText";
-import { getImmersiveOverlayTone } from "@/lib/navbarSurfaceLuminance";
 import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
 
@@ -125,11 +124,11 @@ const ABOUT_OVERLAY_EXIT_MS =
   ABOUT_TOKEN_TRANSITION_MS +
   ABOUT_EXIT_BUFFER_MS;
 const OVERLAY_BLUR_PENDING_CLASS = "is-overlay-blur-pending";
+const OVERLAY_BLUR_CLOSING_CLASS = "is-overlay-blur-closing";
 
 export function OverlayProvider({ children }: OverlayProviderProps) {
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [projectOverlay, setProjectOverlay] = useState<ProjectEntry | null>(null);
-  const [immersiveTone, setImmersiveTone] = useState<"light" | "dark">("light");
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayContentVisible, setOverlayContentVisible] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -146,9 +145,18 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     document.documentElement.classList.remove(OVERLAY_BLUR_PENDING_CLASS);
   };
 
+  const setClosingBlurHandoff = () => {
+    document.documentElement.classList.add(OVERLAY_BLUR_CLOSING_CLASS);
+  };
+
+  const clearClosingBlurHandoff = () => {
+    document.documentElement.classList.remove(OVERLAY_BLUR_CLOSING_CLASS);
+  };
+
   useEffect(() => {
     return () => {
       clearPendingBlurHandoff();
+      clearClosingBlurHandoff();
 
       if (closeShellTimerRef.current) {
         window.clearTimeout(closeShellTimerRef.current);
@@ -193,6 +201,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const closeOverlay = () => {
     if (!activeOverlay) {
       clearPendingBlurHandoff();
+      clearClosingBlurHandoff();
       return;
     }
 
@@ -202,10 +211,12 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
 
     clearOverlayTimers();
     clearPendingBlurHandoff();
+    setClosingBlurHandoff();
     setOverlayContentVisible(false);
 
     const finishClose = () => {
       clearPendingBlurHandoff();
+      clearClosingBlurHandoff();
       setActiveOverlay(null);
       setProjectOverlay(null);
       setOverlayVisible(false);
@@ -236,11 +247,9 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const openOverlay = (type: Exclude<OverlayType, "project">) => {
     clearOverlayTimers();
     setPendingBlurHandoff();
+    clearClosingBlurHandoff();
     triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setProjectOverlay(null);
-    if (type === "about") {
-      setImmersiveTone(getImmersiveOverlayTone());
-    }
     setActiveOverlay(type);
     setOverlayVisible(false);
     setOverlayContentVisible(false);
@@ -257,8 +266,8 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const openProjectFullInfo = (project: ProjectEntry) => {
     clearOverlayTimers();
     setPendingBlurHandoff();
+    clearClosingBlurHandoff();
     triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setImmersiveTone(getImmersiveOverlayTone());
     setProjectOverlay(project);
     setActiveOverlay("project");
     setOverlayVisible(false);
@@ -289,7 +298,6 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           onClose={closeOverlay}
           title="Information"
           variant="immersive"
-          immersiveTone={immersiveTone}
           showTitle={false}
           visible={overlayVisible}
           contentVisible={overlayContentVisible}
@@ -423,7 +431,6 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           onClose={closeOverlay}
           title={projectOverlay.title}
           variant="immersive"
-          immersiveTone={immersiveTone}
           showTitle={false}
           visible={overlayVisible}
           contentVisible={overlayContentVisible}

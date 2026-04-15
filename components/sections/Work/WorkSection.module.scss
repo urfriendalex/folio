@@ -24,6 +24,13 @@
   letter-spacing: -0.02em;
 }
 
+.title[data-mode="lines"] {
+  display: inline-grid;
+  width: auto;
+  min-width: auto;
+  justify-items: start;
+}
+
 .viewSwitch {
   display: inline-flex;
   align-items: center;

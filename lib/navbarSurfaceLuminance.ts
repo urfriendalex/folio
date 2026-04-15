@@ -314,29 +314,6 @@ function pickMainHitBelowNavbarChrome(
   return null;
 }
 
-function pickMainHitBelowAppNavbarChrome(x: number, startY: number, main: HTMLElement): Element | null {
-  const maxY = window.innerHeight - 1;
-  let y = Math.round(Math.min(maxY, Math.max(0, startY)));
-
-  for (let attempt = 0; attempt < NAVBAR_SURFACE_MAX_ATTEMPTS; attempt++) {
-    const stack = document.elementsFromPoint(x, y).filter(
-      (el) => !shouldSkipSurfaceLuminanceHit(el) && !el.closest("[data-app-navbar]"),
-    );
-    const hit = pickHitInsideRoot(stack, main);
-    if (hit) {
-      return hit;
-    }
-
-    const nextY = Math.min(maxY, y + NAVBAR_SURFACE_VERTICAL_STEP_PX);
-    if (nextY === y) {
-      break;
-    }
-    y = nextY;
-  }
-
-  return null;
-}
-
 export function isLightSurfaceAtPoint(x: number, y: number, header: HTMLElement): boolean {
   const main = document.querySelector<HTMLElement>("[data-app-main]");
   const hit = pickMainHitBelowNavbarChrome(x, y, header, main);
@@ -389,46 +366,4 @@ export function resolveNavbarContrast(header: HTMLElement): NavbarContrastMode {
   }
 
   return isLightFromLuminance(median(contentLuminances)) ? "light" : "dark";
-}
-
-/**
- * Sample a band below the header (where About will sit) so immersive overlay frosted glass + ink
- * match the scrolled content, not only `data-theme` (light site over a dark hero, etc.).
- */
-export function getImmersiveOverlayTone(): "light" | "dark" {
-  if (typeof document === "undefined") {
-    return "light";
-  }
-
-  const main = document.querySelector<HTMLElement>("[data-app-main]");
-  if (!main) {
-    return "light";
-  }
-
-  const headerRaw = getComputedStyle(document.documentElement).getPropertyValue("--header-height").trim();
-  const headerPx = Number.parseFloat(headerRaw) || 72;
-  const h = window.innerHeight;
-  const w = window.innerWidth;
-  /* Band under chrome + mid-viewport (where centered overlay copy sits), not only a strip under the header. */
-  const sampleYs = [
-    Math.round(Math.min(h - 1, Math.max(0, headerPx + 40))),
-    Math.round(Math.min(h - 1, Math.max(headerPx + 64, h * 0.38))),
-    Math.round(Math.min(h - 1, Math.max(headerPx + 80, h * 0.52))),
-  ];
-  const sampleXs = [0.12, 0.5, 0.88].map((t) => t * w);
-  let lightVotes = 0;
-  let total = 0;
-
-  for (const sampleY of sampleYs) {
-    for (const rawX of sampleXs) {
-      const x = Math.round(Math.min(w - 1, Math.max(0, rawX)));
-      const hit = pickMainHitBelowAppNavbarChrome(x, sampleY, main);
-      total += 1;
-      if (isLightSurfaceBehindElement(hit, { stopAtRoot: main })) {
-        lightVotes += 1;
-      }
-    }
-  }
-
-  return lightVotes > total / 2 ? "light" : "dark";
 }

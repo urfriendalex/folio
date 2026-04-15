@@ -8,7 +8,10 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
+import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import type { ProjectEntry } from "@/content/projects/types";
+import { useHeroRevealComplete } from "@/lib/heroRevealComplete";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
 import styles from "./WorkSection.module.scss";
 
@@ -92,6 +95,15 @@ const mobileViewOptions: Array<{
   },
 ];
 
+const workChromeRevealOptions = {
+  rootMargin: "0px",
+  threshold: 0,
+} as const;
+
+const WORK_CHROME_STAGGER_STEP_MS = 56;
+const WORK_CARD_STAGGER_OFFSET = 2;
+const WORK_TITLE = "Recent projects";
+
 export function WorkSection({ projects }: WorkSectionProps) {
   const [view, setView] = useState<GridView>("wide");
   // Must match SSR: never read viewport in useState initializer or server/desktop
@@ -101,6 +113,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
   const previousRectsRef = useRef(new Map<string, DOMRect>());
   const hasMountedRef = useRef(false);
   const viewOptions = isMobile ? mobileViewOptions : desktopViewOptions;
+  const heroRevealComplete = useHeroRevealComplete();
 
   const setCardNode = (slug: string, node: HTMLElement | null) => {
     if (node) {
@@ -207,53 +220,66 @@ export function WorkSection({ projects }: WorkSectionProps) {
     <section id="work" className={styles.section}>
       <div className={`page-shell ${styles.inner}`}>
         <header className={styles.header}>
-          <h2 className={styles.title}>Recent projects</h2>
-          <div className={styles.viewSwitch} role="group" aria-label="Project grid layout">
-            {viewOptions.map((option) => {
-              const isActive = option.view === view;
+          <RevealLines
+            as="h2"
+            className={styles.title}
+            text={WORK_TITLE}
+            measureLines={false}
+            visible={heroRevealComplete}
+          />
+          <ScrollReveal
+            visible={heroRevealComplete}
+            revealOptions={workChromeRevealOptions}
+            staggerIndex={1}
+            staggerStepMs={WORK_CHROME_STAGGER_STEP_MS}
+          >
+            <div className={styles.viewSwitch} role="group" aria-label="Project grid layout">
+              {viewOptions.map((option) => {
+                const isActive = option.view === view;
 
-              return (
-                <button
-                  key={option.view}
-                  type="button"
-                  className={styles.viewButton}
-                  data-active={isActive}
-                  aria-pressed={isActive}
-                  aria-label={option.label}
-                  onClick={() => {
-                    if (isActive) {
-                      return;
-                    }
-
-                    previousRectsRef.current = captureRects();
-                    startTransition(() => {
-                      setView(option.view);
-                    });
-                  }}
-                >
-                  <span className={styles.viewButtonFrame} aria-hidden="true">
-                    <span
-                      className={styles.viewGlyph}
-                      data-variant={option.variant}
-                      style={
-                        {
-                          "--icon-columns": option.columns,
-                          "--icon-rows": option.rows,
-                          "--icon-width-ratio": option.widthRatio,
-                          "--icon-height-ratio": option.heightRatio,
-                          "--icon-gap-ratio": option.gapRatio,
-                        } as CSSProperties
+                return (
+                  <button
+                    key={option.view}
+                    type="button"
+                    className={styles.viewButton}
+                    data-active={isActive}
+                    aria-pressed={isActive}
+                    aria-label={option.label}
+                    onClick={() => {
+                      if (isActive) {
+                        return;
                       }
-                    >
-                      {Array.from({ length: option.columns * option.rows }, (_, cellIndex) => (
-                        <span key={`${option.view}-${cellIndex}`} className={styles.viewGlyphCell} />
-                      ))}
+
+                      previousRectsRef.current = captureRects();
+                      startTransition(() => {
+                        setView(option.view);
+                      });
+                    }}
+                  >
+                    <span className={styles.viewButtonFrame} aria-hidden="true">
+                      <span
+                        className={styles.viewGlyph}
+                        data-variant={option.variant}
+                        style={
+                          {
+                            "--icon-columns": option.columns,
+                            "--icon-rows": option.rows,
+                            "--icon-width-ratio": option.widthRatio,
+                            "--icon-height-ratio": option.heightRatio,
+                            "--icon-gap-ratio": option.gapRatio,
+                          } as CSSProperties
+                        }
+                      >
+                        {Array.from({ length: option.columns * option.rows }, (_, cellIndex) => (
+                          <span key={`${option.view}-${cellIndex}`} className={styles.viewGlyphCell} />
+                        ))}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollReveal>
         </header>
         <div className={styles.grid} data-view={view} aria-label="Recent projects">
           {projects.map((project, index) => (
@@ -261,6 +287,8 @@ export function WorkSection({ projects }: WorkSectionProps) {
               key={project.slug}
               project={project}
               index={index}
+              visible={heroRevealComplete}
+              staggerIndexOffset={WORK_CARD_STAGGER_OFFSET}
               cardRef={(node) => setCardNode(project.slug, node)}
             />
           ))}

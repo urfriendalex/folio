@@ -70,9 +70,10 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
     const root = document.documentElement;
     const lenis = new Lenis({
-      duration: 1.05,
+      duration: 0.82,
       smoothWheel: true,
       syncTouch: false,
+      wheelMultiplier: 1.12,
       anchors: {
         offset: getAnchorScrollOffset("#work"),
       },

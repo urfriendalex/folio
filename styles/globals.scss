@@ -188,6 +188,7 @@
   --navbar-gradient-blur-z-index: 1;
   --navbar-gradient-blur-duration: 320ms;
   --navbar-gradient-blur-transition: 320ms ease;
+  --navbar-gradient-blur-overscan: 0px;
   --navbar-overlay-backdrop-blur: 20px;
   --navbar-overlay-backdrop-saturate: 112%;
 }
@@ -195,6 +196,8 @@
 @media (max-width: 48rem) {
   :root {
     --footer-wordmark-strip-height: clamp(8.5rem, 22vh, 13rem);
+    /* Push the navbar's progressive blur above the visible viewport on mobile Safari / iOS chrome. */
+    --navbar-gradient-blur-overscan: calc(env(safe-area-inset-top, 0px) + 3.25rem);
   }
 }
 

@@ -77,12 +77,11 @@ export function usePretextLines(
       setLines(layoutLinesWordWrap(normalizedText, width, font, whiteSpace));
     };
 
-    const frame = window.requestAnimationFrame(update);
+    update();
 
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => {
-      window.cancelAnimationFrame(frame);
       ro.disconnect();
     };
   }, [normalizedText, whiteSpace, enabled, containerRef]);

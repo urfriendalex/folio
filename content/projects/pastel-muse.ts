@@ -8,19 +8,16 @@ export const pastelMuseProject: ProjectEntry = {
   role: "Design + Frontend",
   technologies: ["Next.js", "GSAP", "SCSS"],
   shortDescription:
-    "Custom website for a photo day experience—registration, storytelling, and motion that sets the tone before the event.",
+    "Marketing + registration for a photo day—soft editorial mood, GSAP preloader, clear signup.",
   description:
-    "A bespoke marketing and registration site for Pastel Muse, a photo day experience. The site guides visitors through what the day is, why it matters, and how to sign up, with layered motion and typography that match the brand’s soft, editorial mood. A GSAP-driven preloader and multiple animation passes create a deliberate sense of arrival before the main content.",
-  overview:
-    "The focus was a calm, premium feel for a single-day photography experience: clear information hierarchy, a straightforward registration path, and enough motion to feel crafted without overwhelming the message.",
-  roleSummary:
-    "Owned layout, interaction design, and frontend implementation—including the preloader, scroll-linked animation, and text reveals.",
+    "Next.js site for Pastel Muse: story, schedule, and registration with GSAP preloader and scroll-linked motion that match the brand’s quiet, editorial tone.",
+  overview: "Premium feel for a one-day shoot: clear hierarchy, simple signup, motion that supports—not shouts.",
+  roleSummary: "Structure, interaction design, and frontend—including preloader and reveals.",
   responsibilities: [
-    "Experience and page structure",
-    "Registration flow and form integration",
-    "GSAP preloader and timeline animation",
-    "Scroll and text-reveal treatments",
-    "Responsive layout and performance passes",
+    "Page structure & flow",
+    "Registration integration",
+    "GSAP preloader & scroll animation",
+    "Responsive polish",
   ],
   client: {
     name: "Pastel Muse",
@@ -30,27 +27,24 @@ export const pastelMuseProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Built with the host’s content and positioning; implementation and motion design by me.",
+    details: "Host’s brief and copy; I built the experience and motion.",
   },
   stack: {
     platform: ["Next.js"],
     frontend: ["React", "GSAP", "SCSS"],
-    notes: "Heavy use of GSAP for the preloader, section transitions, and coordinated text reveals.",
+    notes: "GSAP for preloader, section transitions, and text reveals.",
   },
   features: [
-    "Registration form for the photo day",
-    "GSAP preloader for a branded load-in",
-    "Multiple animation layers (scroll, section, and micro-interaction)",
-    "Text reveals tied to layout and scroll",
-    "Responsive, content-first presentation",
+    "Registration path",
+    "Branded GSAP preloader",
+    "Scroll-linked motion & reveals",
   ],
   impact: {
-    summary:
-      "Delivered a single destination that feels like part of the experience—not a generic landing page—while keeping signup clear and low-friction.",
+    summary: "One cohesive destination for the day—not a generic landing—with low-friction signup.",
     highlights: [
-      "Registration and story live in one cohesive flow",
-      "Motion supports the brand instead of distracting from it",
-      "Preloader and reveals set expectations before the fold",
+      "Story and form in one flow",
+      "Motion aligned with the brand",
+      "Preloader sets tone before content",
     ],
   },
   tags: ["Next.js", "GSAP", "Frontend", "Animation", "Events", "Photography"],

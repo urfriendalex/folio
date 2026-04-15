@@ -13,17 +13,26 @@ const projectCardRevealOptions = {
 type ProjectCardProps = {
   project: ProjectEntry;
   index: number;
+  visible?: boolean;
+  staggerIndexOffset?: number;
   cardRef?: (node: HTMLElement | null) => void;
 };
 
-export function ProjectCard({ project, index, cardRef }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  index,
+  visible,
+  staggerIndexOffset = 0,
+  cardRef,
+}: ProjectCardProps) {
   const projectHref = `/projects/${project.slug}`;
   const externalUrl = project.optionalLink ?? project.links?.[0]?.url;
 
   return (
     <ScrollReveal
+      visible={visible}
       revealOptions={projectCardRevealOptions}
-      staggerIndex={index}
+      staggerIndex={staggerIndexOffset + index}
       staggerStepMs={72}
     >
       <article className={styles.card} ref={cardRef}>

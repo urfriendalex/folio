@@ -8,18 +8,15 @@ export const dianaMilkanovaProject: ProjectEntry = {
   role: "Frontend Developer",
   technologies: ["Shopify", "Liquid", "HTML", "CSS", "JavaScript"],
   shortDescription:
-    "Online store for an independent fashion label—a minimal, editorial presentation with the product at the center.",
+    "Minimal Shopify storefront for an independent fashion label—editorial layout, product-first.",
   description:
-    "An e-commerce website built on Shopify for Diana Milkanova. I implemented a fully custom frontend layer using Shopify Liquid, tailoring the visual experience beyond standard themes. The goal was to create a refined, minimal, and editorial-style storefront that highlights the product while maintaining a strong brand identity.",
-  overview:
-    "The project focused on building a Shopify-based e-commerce experience that feels more like a curated fashion/editorial site rather than a typical template-driven store.",
-  roleSummary:
-    "Implemented the storefront with custom styling and theme-level modifications using Shopify Liquid.",
+    "Custom Shopify frontend using Liquid: a refined, editorial-style store beyond default themes, with the product and brand identity at the center.",
+  overview: "Shopify e-commerce shaped to read more like a fashion site than a generic template.",
+  roleSummary: "Custom theme work in Liquid, layout, and UI for core shop flows.",
   responsibilities: [
-    "Custom Shopify theme development",
-    "Liquid templating",
-    "Frontend styling and layout",
-    "UI refinement for e-commerce flows",
+    "Custom theme & Liquid",
+    "Frontend layout and styling",
+    "E-commerce UI refinement",
   ],
   client: {
     name: "Diana Milkanova",
@@ -29,27 +26,24 @@ export const dianaMilkanovaProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Worked directly with the client; implementation and customization were done by me.",
+    details: "Directly with the client; I owned implementation.",
   },
   stack: {
     platform: ["Shopify"],
     frontend: ["Liquid", "HTML", "CSS", "JavaScript"],
-    notes: "Custom theme-level work using Shopify Liquid to override default theme behavior.",
+    notes: "Theme-level Liquid to override default behavior where needed.",
   },
   features: [
-    "Custom Shopify theme styling",
-    "Editorial-style product presentation",
-    "Refined product and collection pages",
-    "Responsive e-commerce layouts",
-    "Optimized shopping flow UX",
+    "Custom theme styling",
+    "Editorial product presentation",
+    "Responsive shop layouts",
   ],
   impact: {
-    summary:
-      "Delivered a more premium and brand-aligned shopping experience compared to out-of-the-box Shopify themes.",
+    summary: "A more premium, brand-aligned storefront than out-of-the-box Shopify themes.",
     highlights: [
-      "Elevated visual identity beyond standard templates",
-      "Improved clarity and focus on products",
-      "Created a more cohesive and branded storefront",
+      "Stronger visual identity vs templates",
+      "Clearer product focus",
+      "Cohesive branded experience",
     ],
   },
   tags: ["E-commerce", "Shopify", "Liquid", "Frontend", "Custom Theme", "Fashion"],

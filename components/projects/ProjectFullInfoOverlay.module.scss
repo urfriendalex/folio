@@ -1,5 +1,5 @@
-/* Immersive tone (--overlay-fg / --muted / --line) is set on the parent Overlay `.surface` via
-   `data-overlay-tone`; globals `.section-label` and `.text-link` use site theme — override here. */
+/* Immersive ink (--overlay-fg / --muted / --line) inherits from Overlay `.surface` → globals `--overlay-immersive-*`
+   per `data-theme`. `.section-label` and `.text-link` use site theme — override here. */
 
 .root {
   /* Snappier line motion + stagger (see `PROJECT_OVERLAY_REVEAL_STEP_MS` in TSX). Variables inherit into `RevealLines` tokens. */
@@ -41,28 +41,23 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* Stable gutter avoids layout shift when the scrollbar appears (tall case studies). */
+  scrollbar-gutter: stable;
 }
 
 @media (min-width: 60rem) {
-  .bodyScroll {
-    overflow-y: hidden;
-    overscroll-behavior: none;
-  }
-
   .root {
-    height: 100%;
-    max-height: 100%;
-    overflow: hidden;
     gap: clamp(0.75rem, 2vw, 1.25rem);
     padding-bottom: 0.5rem;
   }
 }
 
 /*
- * Desktop: intro (lead + overview) and body stack in column 1; meta aside spans full height in
- * column 2 so `position: sticky` applies for the entire scroll of `.bodyScroll`.
+ * Desktop: intro (lead + overview) and body stack in column 1; meta aside in column 2 uses
+ * `position: sticky` within `.bodyScroll` — that region must scroll when copy exceeds the viewport.
  * Mobile: single column — intro, then meta, then body (facts before long sections).
  */
 .sheetLayout {
@@ -147,7 +142,7 @@
   --reveal-line-gap: 0.14em;
   margin: 0;
   font-family: var(--font-pixel-stack);
-  font-size: clamp(0.62rem, 1.1vw, 0.68rem);
+  font-size: clamp(0.56rem, 1vw, 0.61rem);
   letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--overlay-muted);
@@ -156,7 +151,7 @@
 .title {
   --reveal-line-gap: 0.1em;
   margin: 0;
-  font-size: clamp(1.75rem, 4.5vw, 3rem);
+  font-size: clamp(1.58rem, 4.05vw, 2.7rem);
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.02;
@@ -167,7 +162,7 @@
   --reveal-line-gap: 0.28em;
   margin: 0;
   max-width: none;
-  font-size: clamp(1.05rem, 1.65vw, 1.22rem);
+  font-size: clamp(0.94rem, 1.5vw, 1.1rem);
   line-height: 1.52;
   text-wrap: pretty;
   color: var(--overlay-muted);
@@ -191,6 +186,7 @@
 
 .metaTitle {
   width: 100%;
+  font-size: clamp(0.56rem, 0.95vw, 0.6rem);
 }
 
 .metaCell :global(.section-label) {
@@ -200,7 +196,7 @@
 .metaValue {
   --reveal-line-gap: 0.22em;
   margin: 0;
-  font-size: clamp(0.9rem, 1.12vw, 1.02rem);
+  font-size: clamp(0.81rem, 1.01vw, 0.92rem);
   line-height: 1.48;
   color: var(--overlay-muted);
 }
@@ -225,12 +221,10 @@
   border-radius: var(--project-toolbar-panel-radius);
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 22%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 7%, transparent);
-  box-shadow:
-    0 0.65rem 1.6rem color-mix(in srgb, var(--overlay-fg) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 14%, transparent);
+  box-shadow: 0 0.65rem 1.6rem color-mix(in srgb, var(--overlay-fg) 7%, transparent);
   color: var(--overlay-fg);
   font-family: var(--font-body-stack);
-  font-size: clamp(0.74rem, 1.05vw, 0.82rem);
+  font-size: clamp(0.67rem, 0.95vw, 0.74rem);
   font-weight: 600;
   letter-spacing: var(--tracking-tight-sm);
   text-decoration: none;
@@ -277,9 +271,7 @@
   .visitSiteLink:hover {
     border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
     background: color-mix(in srgb, var(--overlay-fg) 14%, transparent);
-    box-shadow:
-      0 0.9rem 2.1rem color-mix(in srgb, var(--overlay-fg) 12%, transparent),
-      inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 22%, transparent);
+    box-shadow: 0 0.9rem 2.1rem color-mix(in srgb, var(--overlay-fg) 12%, transparent);
     color: var(--overlay-fg);
     transform: translateY(-0.06rem);
     transition-delay: 0ms;
@@ -291,7 +283,6 @@
   background: color-mix(in srgb, var(--overlay-fg) 14%, transparent);
   box-shadow:
     0 0.9rem 2.1rem color-mix(in srgb, var(--overlay-fg) 12%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 22%, transparent),
     0 0 0 2px color-mix(in srgb, var(--overlay-fg) 28%, transparent);
   color: var(--overlay-fg);
   outline: none;
@@ -313,13 +304,14 @@
 .extraLabel {
   --reveal-line-gap: 0.14em;
   margin: 0;
+  font-size: clamp(0.56rem, 0.95vw, 0.6rem);
 }
 
 .extraBody {
   --reveal-line-gap: 0.26em;
   margin: 0;
   max-width: none;
-  font-size: clamp(0.98rem, 1.22vw, 1.08rem);
+  font-size: clamp(0.88rem, 1.1vw, 0.97rem);
   line-height: 1.52;
   text-wrap: pretty;
   white-space: pre-wrap;
@@ -345,7 +337,7 @@
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 18%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
   max-width: 100%;
-  font-size: clamp(0.72rem, 1.02vw, 0.8rem);
+  font-size: clamp(0.65rem, 0.92vw, 0.72rem);
   font-weight: 500;
   letter-spacing: 0.03em;
   line-height: 1.25;
@@ -372,7 +364,7 @@
 .detailListItem {
   margin: 0;
   padding: 0;
-  font-size: clamp(0.94rem, 1.12vw, 1.02rem);
+  font-size: clamp(0.85rem, 1.01vw, 0.92rem);
   line-height: 1.48;
   letter-spacing: 0.01em;
   color: var(--overlay-muted);
@@ -380,22 +372,22 @@
 
 @media (min-width: 60rem) {
   .leadDesktop {
-    font-size: clamp(0.98rem, 1.2vw, 1.12rem);
+    font-size: clamp(0.88rem, 1.08vw, 1.01rem);
     line-height: 1.48;
   }
 
   .overviewDesktop {
-    font-size: clamp(0.94rem, 1.1vw, 1.02rem);
+    font-size: clamp(0.85rem, 1vw, 0.92rem);
     line-height: 1.48;
   }
 
   .proseDesktop {
-    font-size: clamp(0.92rem, 1.08vw, 1rem);
+    font-size: clamp(0.83rem, 0.97vw, 0.9rem);
     line-height: 1.46;
   }
 
   .title {
-    font-size: clamp(1.55rem, 2.75vw, 2.35rem);
+    font-size: clamp(1.4rem, 2.48vw, 2.12rem);
   }
 
   .header {
@@ -403,7 +395,7 @@
   }
 
   .detailListItem {
-    font-size: clamp(0.9rem, 1.05vw, 0.98rem);
+    font-size: clamp(0.81rem, 0.95vw, 0.88rem);
   }
 }
 
@@ -428,16 +420,16 @@
   }
 
   .title {
-    font-size: clamp(1.55rem, 7vw, 2.15rem);
+    font-size: clamp(1.4rem, 6.3vw, 1.94rem);
   }
 
   .lead {
-    font-size: clamp(0.98rem, 3.8vw, 1.12rem);
+    font-size: clamp(0.88rem, 3.4vw, 1.01rem);
     line-height: 1.52;
   }
 
   .extraBody {
-    font-size: clamp(0.93rem, 3.5vw, 1.05rem);
+    font-size: clamp(0.84rem, 3.15vw, 0.95rem);
     line-height: 1.5;
   }
 }

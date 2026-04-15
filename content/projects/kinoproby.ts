@@ -8,19 +8,16 @@ export const kinoprobyProject: ProjectEntry = {
   role: "Solo Designer & Developer",
   technologies: ["Tilda", "HTML", "CSS", "JavaScript"],
   shortDescription:
-    "Portfolio for a visual duo working in film, photography, and art. A bold, image-led site that feels closer to a magazine than a template.",
+    "Bold, image-led portfolio for a film/photo duo—magazine feel, built on Tilda + custom code.",
   description:
-    "A portfolio website for Kinoproby, a visual production duo working across commercial films, photography, art projects, and experimental visual work. I designed and developed the entire site solo, using Tilda as the foundation and extending it with custom HTML, CSS, and JavaScript to achieve a much more bespoke and expressive result. The goal was to create a bold, image-led experience that felt immersive, editorial, and true to the studio's visual language.",
-  overview:
-    "Kinoproby is a creative duo producing commercial videos, fashion films, music videos, photography, and art projects. The website needed to showcase a broad body of work while preserving a strong point of view and a distinct visual identity.",
-  roleSummary:
-    "I handled the project end-to-end, from design direction to development and custom frontend implementation.",
+    "Solo design and build: Tilda as the base, extended with custom HTML/CSS/JS for a bespoke, editorial portfolio across film, photo, and art work.",
+  overview: "Show a wide body of work without losing a strong visual POV or identity.",
+  roleSummary: "End-to-end: direction, IA, development, and custom front-of-site details.",
   responsibilities: [
-    "Full web design",
-    "Full web development",
+    "Design & development",
     "Information architecture",
-    "Custom interactions and loaders",
-    "Frontend customization on top of Tilda",
+    "Custom loaders & interactions",
+    "Tilda + custom frontend",
   ],
   client: {
     name: "Kinoproby",
@@ -30,27 +27,24 @@ export const kinoprobyProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "The client provided content and project materials; all design and implementation work was done by me.",
+    details: "Client supplied assets; I owned design and implementation.",
   },
   stack: {
     platform: ["Tilda"],
     frontend: ["HTML", "CSS", "JavaScript"],
-    notes: "Built on Tilda with substantial custom code to go beyond standard site-builder limitations.",
+    notes: "Heavy customization beyond typical Tilda output.",
   },
   features: [
-    "Multi-page portfolio structure",
-    "Highly visual, editorial-style presentation",
-    "Custom frontend enhancements",
-    "Custom loading experience",
-    "Sectioned project browsing across different content types",
+    "Multi-page portfolio",
+    "Editorial, image-first layout",
+    "Custom loading & section browsing",
   ],
   impact: {
-    summary:
-      "Created a distinctive portfolio presence that matched the studio's visual character instead of feeling template-based.",
+    summary: "Portfolio that reflects the studio’s character instead of reading as a template.",
     highlights: [
-      "Translated a strong creative identity into web form",
-      "Used custom code to push a no-code platform further",
-      "Built a flexible showcase for multiple types of visual work",
+      "Identity carried into the web",
+      "Custom code pushing a site-builder",
+      "Flexible showcase across media types",
     ],
   },
   tags: [

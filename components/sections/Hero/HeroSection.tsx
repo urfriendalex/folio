@@ -20,12 +20,14 @@ import {
 import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { getLenis } from "@/lib/smoothScroll";
 import styles from "./HeroSection.module.scss";
 
 /** Short stagger for the intro so the sequence stays snappy before the headline. */
 const INTRO_REVEAL_STEP_MS = 44;
 const HEADING_REVEAL_STEP_MS = 62;
+const REVEAL_TRANSFORM_SETTLE_MS = 620;
 
 /** Same breakpoint as Footer / Work — narrow viewports get a forced two-line intro. */
 const INTRO_STACK_QUERY = "(max-width: 48rem)";
@@ -146,6 +148,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   } | null>(null);
   const [portalMounted, setPortalMounted] = useState(false);
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
+  const preloaderComplete = usePreloaderComplete();
 
   const coarsePointer = useSyncExternalStore(
     subscribeCoarsePointer,
@@ -336,6 +339,57 @@ export function HeroSection({ content }: HeroSectionProps) {
     return undefined;
   }, [gagActive]);
 
+  /** Coarse pointers: dismiss the gag on any tap outside “stuff”, or when “stuff” scrolls out of view. */
+  useEffect(() => {
+    if (!coarsePointer || !stuffGagMobileActive) {
+      return undefined;
+    }
+
+    const onDocumentClickCapture = (event: MouseEvent) => {
+      const anchor = stuffAnchorRef.current;
+      const target = event.target;
+      if (!anchor || !(target instanceof Node)) {
+        return;
+      }
+      if (anchor.contains(target)) {
+        return;
+      }
+      setStuffGagMobileActive(false);
+    };
+
+    document.addEventListener("click", onDocumentClickCapture, true);
+
+    return () => {
+      document.removeEventListener("click", onDocumentClickCapture, true);
+    };
+  }, [coarsePointer, stuffGagMobileActive]);
+
+  useEffect(() => {
+    if (!coarsePointer || !stuffGagMobileActive) {
+      return undefined;
+    }
+
+    const anchor = stuffAnchorRef.current;
+    if (!anchor) {
+      return undefined;
+    }
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          setStuffGagMobileActive(false);
+        }
+      },
+      { root: null, threshold: 0 },
+    );
+
+    io.observe(anchor);
+
+    return () => {
+      io.disconnect();
+    };
+  }, [coarsePointer, stuffGagMobileActive]);
+
   const handleStuffPointerEnter = useCallback(() => {
     if (!coarsePointer) {
       setStuffGagHover(true);
@@ -372,6 +426,39 @@ export function HeroSection({ content }: HeroSectionProps) {
   const ctaLines = useMemo(() => (hasCta ? [ctaTextUpper] : []), [hasCta, ctaTextUpper]);
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute("data-hero-reveal", "pending");
+
+    if (!preloaderComplete) {
+      return () => {
+        html.setAttribute("data-hero-reveal", "pending");
+      };
+    }
+
+    const introEndMs =
+      (introLines.length > 0 ? (introLines.length - 1) * INTRO_REVEAL_STEP_MS : 0)
+      + REVEAL_TRANSFORM_SETTLE_MS;
+    const headingEndMs =
+      (headingLines.length > 0
+        ? (introLines.length + headingLines.length - 1) * HEADING_REVEAL_STEP_MS
+        : 0) + REVEAL_TRANSFORM_SETTLE_MS;
+    const ctaEndMs =
+      hasCta
+        ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
+        : 0;
+    const revealCompleteMs = Math.max(introEndMs, headingEndMs, ctaEndMs);
+
+    const timeoutId = window.setTimeout(() => {
+      html.setAttribute("data-hero-reveal", "complete");
+    }, revealCompleteMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      html.setAttribute("data-hero-reveal", "pending");
+    };
+  }, [ctaLines.length, hasCta, headingLines.length, introLines.length, preloaderComplete, sequenceTotal]);
 
   useEffect(() => {
     const html = document.documentElement;

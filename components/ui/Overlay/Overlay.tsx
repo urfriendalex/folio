@@ -8,8 +8,6 @@ import styles from "./Overlay.module.scss";
 type OverlayProps = {
   children: ReactNode;
   contentVisible?: boolean;
-  /** Sampled from page content when About opens; drives frosted tint + ink vs global `data-theme`. */
-  immersiveTone?: "light" | "dark";
   onClose: () => void;
   title: string;
   variant?: "panel" | "immersive";
@@ -28,7 +26,6 @@ function getFocusableElements(container: HTMLElement) {
 export function Overlay({
   children,
   contentVisible = true,
-  immersiveTone = "light",
   onClose,
   title,
   variant = "panel",
@@ -140,7 +137,6 @@ export function Overlay({
         ref={panelRef}
         className={styles.surface}
         data-variant={variant}
-        data-overlay-tone={variant === "immersive" ? immersiveTone : undefined}
         data-visible={visible}
         role="dialog"
         aria-modal="true"

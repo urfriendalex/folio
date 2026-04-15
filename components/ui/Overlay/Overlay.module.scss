@@ -85,23 +85,7 @@
   isolation: isolate;
 }
 
-/* Match globals.scss light / dark immersive tokens so frosted + ink follow *content* behind the sheet,
-   not only `data-theme` (e.g. light site scrolled over a dark hero). */
-.surface[data-variant="immersive"][data-overlay-tone="light"] {
-  --overlay-immersive-fg: #101010;
-  --overlay-immersive-muted: rgb(16 16 16 / 0.62);
-  --overlay-immersive-line: rgb(16 16 16 / 0.12);
-  --overlay-immersive-backdrop: rgb(247 246 242 / 0.74);
-  --overlay-immersive-backdrop-filter: blur(22px) saturate(108%);
-}
-
-.surface[data-variant="immersive"][data-overlay-tone="dark"] {
-  --overlay-immersive-fg: #f4f2eb;
-  --overlay-immersive-muted: rgb(244 242 235 / 0.62);
-  --overlay-immersive-line: rgb(244 242 235 / 0.14);
-  --overlay-immersive-backdrop: rgb(4 4 6 / 0.78);
-  --overlay-immersive-backdrop-filter: blur(24px) saturate(112%);
-}
+/* `--overlay-immersive-*` (fg, backdrop, etc.) come from `globals.scss` per `data-theme`. */
 
 /* Frosted-glass blur is provided by the shared gradient blur in Navbar; only the tint ::after is needed. */
 .surface[data-variant="immersive"]::before {
