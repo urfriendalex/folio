@@ -3,8 +3,8 @@
 
 .root {
   /* Snappier line motion + stagger (see `PROJECT_OVERLAY_REVEAL_STEP_MS` in TSX). Variables inherit into `RevealLines` tokens. */
-  --reveal-line-opacity-ms: 260ms;
-  --reveal-line-transform-ms: 300ms;
+  --reveal-line-opacity-ms: 190ms;
+  --reveal-line-transform-ms: 220ms;
   box-sizing: border-box;
   /* Bleed past `page-shell` padding so copy can use the full immersive surface; re-inset with fluid padding. */
   width: calc(100% + 2 * var(--content-padding-inline));
@@ -221,9 +221,13 @@
   width: 100%;
   min-height: 2.35rem;
   padding: 0.48rem 0.72rem;
-  border-radius: var(--radius-sm);
+  /* Match project toolbar nav chips (`.navButton` / `--project-toolbar-panel-radius`). */
+  border-radius: var(--project-toolbar-panel-radius);
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 22%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 7%, transparent);
+  box-shadow:
+    0 0.65rem 1.6rem color-mix(in srgb, var(--overlay-fg) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 14%, transparent);
   color: var(--overlay-fg);
   font-family: var(--font-body-stack);
   font-size: clamp(0.74rem, 1.05vw, 0.82rem);
@@ -231,18 +235,67 @@
   letter-spacing: var(--tracking-tight-sm);
   text-decoration: none;
   text-align: center;
+  backdrop-filter: var(--project-toolbar-panel-backdrop);
+  /* Whole control fades in with the line stagger (RevealLines only animated label text before). */
+  opacity: 0;
   transition:
-    border-color 180ms ease,
-    background 180ms ease,
+    opacity var(--reveal-line-opacity-ms, 190ms) ease,
+    border-color 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 280ms cubic-bezier(0.2, 0.88, 0.24, 1),
     color 180ms ease,
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition-delay: 0ms;
 }
 
-.visitSiteLink:hover,
+/* Stagger only the entrance fade — border/bg/shadow/transform stay 0ms so hover is instant. */
+.root[data-content-visible="true"] .visitSiteLink {
+  opacity: 1;
+  transition-delay:
+    calc(var(--link-token-index, 0) * var(--project-overlay-step, 11ms)),
+    0ms,
+    0ms,
+    0ms,
+    0ms,
+    0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visitSiteLink,
+  .tagPill {
+    opacity: 1;
+    transition-delay: 0ms;
+  }
+
+  .root[data-content-visible="false"] .visitSiteLink,
+  .root[data-content-visible="false"] .tagPill {
+    opacity: 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .visitSiteLink:hover {
+    border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 14%, transparent);
+    box-shadow:
+      0 0.9rem 2.1rem color-mix(in srgb, var(--overlay-fg) 12%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 22%, transparent);
+    color: var(--overlay-fg);
+    transform: translateY(-0.06rem);
+    transition-delay: 0ms;
+  }
+}
+
 .visitSiteLink:focus-visible {
-  border-color: color-mix(in srgb, var(--overlay-fg) 38%, transparent);
-  background: color-mix(in srgb, var(--overlay-fg) 12%, transparent);
+  border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 14%, transparent);
+  box-shadow:
+    0 0.9rem 2.1rem color-mix(in srgb, var(--overlay-fg) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--overlay-fg) 22%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--overlay-fg) 28%, transparent);
   color: var(--overlay-fg);
+  outline: none;
+  transition-delay: 0ms;
 }
 
 .visitSiteLink:active {
@@ -273,9 +326,39 @@
   color: var(--overlay-muted);
 }
 
-.tagsInline {
-  letter-spacing: 0.01em;
-  color: color-mix(in srgb, var(--overlay-muted) 92%, var(--overlay-fg));
+.tagPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem 0.5rem;
+  margin: 0;
+  align-items: center;
+}
+
+.tagPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 18%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  max-width: 100%;
+  font-size: clamp(0.72rem, 1.02vw, 0.8rem);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--overlay-muted) 88%, var(--overlay-fg));
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transition: opacity var(--reveal-line-opacity-ms, 190ms) ease;
+  transition-delay: 0ms;
+}
+
+.root[data-content-visible="true"] .tagPill {
+  opacity: 1;
+  transition-delay: calc(var(--tag-token-index, 0) * var(--project-overlay-step, 11ms));
 }
 
 .detailList {
@@ -286,23 +369,13 @@
   gap: 0.42rem;
 }
 
-.detailList li {
-  position: relative;
+.detailListItem {
   margin: 0;
-  padding-left: 1rem;
+  padding: 0;
   font-size: clamp(0.94rem, 1.12vw, 1.02rem);
   line-height: 1.48;
   letter-spacing: 0.01em;
   color: var(--overlay-muted);
-}
-
-.detailList li::before {
-  content: "–";
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: color-mix(in srgb, var(--overlay-fg) 42%, transparent);
-  font-weight: 500;
 }
 
 @media (min-width: 60rem) {
@@ -329,7 +402,7 @@
     gap: 0.45rem;
   }
 
-  .detailList li {
+  .detailListItem {
     font-size: clamp(0.9rem, 1.05vw, 0.98rem);
   }
 }

@@ -55,7 +55,6 @@ export const studioIskraProject: ProjectEntry = {
   },
   tags: ["Framer", "React", "Frontend", "Portfolio", "Creative Development", "Custom Components"],
   links: [{ label: "Live Site", url: "https://studioiskra.eu" }],
-  status: "Live",
   featured: true,
   thumbnail: "/images/project-placeholder.svg",
   stills: ["/archive/frame-05.svg", "/archive/frame-06.svg", "/archive/frame-02.svg"],

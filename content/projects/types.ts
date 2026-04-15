@@ -48,6 +48,5 @@ export type ProjectEntry = {
   impact?: ProjectImpact;
   tags?: string[];
   links?: ProjectLink[];
-  status?: string;
   featured?: boolean;
 };

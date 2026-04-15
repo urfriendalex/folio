@@ -124,6 +124,7 @@ const ABOUT_OVERLAY_EXIT_MS =
   (ABOUT_SEQUENCE_TOTAL - 1) * ABOUT_REVEAL_STEP_MS +
   ABOUT_TOKEN_TRANSITION_MS +
   ABOUT_EXIT_BUFFER_MS;
+const OVERLAY_BLUR_PENDING_CLASS = "is-overlay-blur-pending";
 
 export function OverlayProvider({ children }: OverlayProviderProps) {
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
@@ -136,8 +137,19 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const closeUnmountTimerRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
   const openContentFrameRef = useRef<number | null>(null);
+
+  const setPendingBlurHandoff = () => {
+    document.documentElement.classList.add(OVERLAY_BLUR_PENDING_CLASS);
+  };
+
+  const clearPendingBlurHandoff = () => {
+    document.documentElement.classList.remove(OVERLAY_BLUR_PENDING_CLASS);
+  };
+
   useEffect(() => {
     return () => {
+      clearPendingBlurHandoff();
+
       if (closeShellTimerRef.current) {
         window.clearTimeout(closeShellTimerRef.current);
       }
@@ -180,6 +192,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
 
   const closeOverlay = () => {
     if (!activeOverlay) {
+      clearPendingBlurHandoff();
       return;
     }
 
@@ -188,9 +201,11 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     }
 
     clearOverlayTimers();
+    clearPendingBlurHandoff();
     setOverlayContentVisible(false);
 
     const finishClose = () => {
+      clearPendingBlurHandoff();
       setActiveOverlay(null);
       setProjectOverlay(null);
       setOverlayVisible(false);
@@ -220,6 +235,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
 
   const openOverlay = (type: Exclude<OverlayType, "project">) => {
     clearOverlayTimers();
+    setPendingBlurHandoff();
     triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setProjectOverlay(null);
     if (type === "about") {
@@ -240,6 +256,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
 
   const openProjectFullInfo = (project: ProjectEntry) => {
     clearOverlayTimers();
+    setPendingBlurHandoff();
     triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setImmersiveTone(getImmersiveOverlayTone());
     setProjectOverlay(project);
@@ -372,12 +389,12 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
                   />
                 </a>
                 <a
-                  href={contactContent.threads}
+                  href={contactContent.linkedin}
                   className={`link-underline ${styles.aboutFooterLink}`}
                 >
                   <RevealLines
                     as="span"
-                    text="Threads"
+                    text="LinkedIn"
                     measureLines={false}
                     offset={ABOUT_FOOTER_OFFSET + 1}
                     stepMs={ABOUT_REVEAL_STEP_MS}

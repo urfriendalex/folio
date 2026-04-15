@@ -7,62 +7,37 @@ import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
-import { resolveNavbarContrast } from "@/lib/navbarSurfaceLuminance";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { scrollElementIntoView, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
-type NavbarContrast = "dark" | "light";
-
 function GradientBlur() {
   return (
     <div className={styles.gradientBlur} aria-hidden="true">
-      <div />
-      <div />
-      <div />
-      <div />
-      <div />
-      <div />
-      <div className={styles.gradientBlurAtmosphere} />
+      <div className={styles.gradientBlurStrip}>
+        {Array.from({ length: 8 }, (_, index) => (
+          <span
+            key={index}
+            className={styles.gradientBlurLayer}
+            data-layer={index}
+          />
+        ))}
+        <div className={styles.gradientBlurAtmosphere} />
+      </div>
+      <div className={styles.gradientBlurOverlay} />
     </div>
   );
-}
-
-function readHeaderHeightPx(): number {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue("--header-height").trim();
-  const n = Number.parseFloat(raw);
-  if (Number.isNaN(n)) {
-    return 72;
-  }
-  if (raw.endsWith("rem")) {
-    const fs = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    return n * fs;
-  }
-  return n;
 }
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { openAbout, activeOverlay } = useOverlay();
-  const headerRef = useRef<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [contrast, setContrast] = useState<NavbarContrast>("dark");
   const firstMenuActionRef = useRef<HTMLButtonElement | null>(null);
   const prevOverlayRef = useRef<typeof activeOverlay>(null);
   const closeMenuOnRouteChange = useEffectEvent(() => {
     setMenuOpen(false);
-  });
-  const syncNavbarContrast = useEffectEvent(() => {
-    const header = headerRef.current;
-
-    if (!header) {
-      return;
-    }
-
-    const nextContrast: NavbarContrast = resolveNavbarContrast(header);
-
-    setContrast((current) => (current === nextContrast ? current : nextContrast));
   });
   const timeZoneStatus = useTimeZoneStatus();
   const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
@@ -130,10 +105,6 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    syncNavbarContrast();
-  }, [pathname]);
-
-  useEffect(() => {
     const html = document.documentElement;
 
     if (menuOpen) {
@@ -189,71 +160,6 @@ export function Navbar() {
     };
   }, []);
 
-  useEffect(() => {
-    let frame = 0;
-
-    const scheduleSync = () => {
-      if (frame) {
-        return;
-      }
-
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        syncNavbarContrast();
-      });
-    };
-
-    scheduleSync();
-    window.addEventListener("scroll", scheduleSync, { passive: true });
-    window.addEventListener("resize", scheduleSync);
-    if ("onscrollend" in window) {
-      window.addEventListener("scrollend", scheduleSync as EventListener);
-    }
-    document.addEventListener("visibilitychange", scheduleSync);
-
-    const html = document.documentElement;
-    const themeObserver = new MutationObserver(scheduleSync);
-    themeObserver.observe(html, { attributes: true, attributeFilter: ["data-theme"] });
-
-    return () => {
-      if (frame) {
-        window.cancelAnimationFrame(frame);
-      }
-
-      window.removeEventListener("scroll", scheduleSync);
-      window.removeEventListener("resize", scheduleSync);
-      if ("onscrollend" in window) {
-        window.removeEventListener("scrollend", scheduleSync as EventListener);
-      }
-      document.removeEventListener("visibilitychange", scheduleSync);
-      themeObserver.disconnect();
-    };
-  }, [pathname]);
-
-  useEffect(() => {
-    const main = document.querySelector("[data-app-main]");
-    if (!main) {
-      return;
-    }
-
-    const headerPx = Math.round(readHeaderHeightPx());
-    const io = new IntersectionObserver(() => {
-      syncNavbarContrast();
-    }, {
-      root: null,
-      rootMargin: `-${headerPx}px 0px -40% 0px`,
-      threshold: [0, 0.02, 0.05, 0.1, 0.25, 0.5, 0.75, 1],
-    });
-
-    main.querySelectorAll("section").forEach((el) => {
-      io.observe(el);
-    });
-
-    return () => {
-      io.disconnect();
-    };
-  }, [pathname]);
-
   const openAboutFromMenu = () => {
     document.documentElement.classList.add("nav-overlay-instant");
     setMenuOpen(false);
@@ -281,7 +187,7 @@ export function Navbar() {
   };
 
   return (
-    <header ref={headerRef} className={styles.header} data-contrast={contrast}>
+    <header className={styles.header}>
       <GradientBlur />
       <div className={`page-shell ${styles.inner}`}>
         <Link
@@ -407,12 +313,12 @@ export function Navbar() {
                 Instagram
               </a>
               <a
-                href={contactContent.threads}
+                href={contactContent.linkedin}
                 className={`link-underline ${styles.mobileFooterLink}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                Threads
+                LinkedIn
               </a>
             </div>
           </div>

@@ -39,29 +39,24 @@
 
 @mixin navbar-gradient-blur-layer($layer) {
   mask: navbar-gradient-blur-mask-layer($layer);
+  -webkit-mask: navbar-gradient-blur-mask-layer($layer);
 
   @if $layer == 0 {
+    -webkit-backdrop-filter: blur(0.5px);
     backdrop-filter: blur(0.5px);
   } @else if $layer == 7 {
+    -webkit-backdrop-filter: blur(64px);
     backdrop-filter: blur(64px);
   } @else {
     $blur: math.pow(2, $layer - 1) * 1px;
+    -webkit-backdrop-filter: blur($blur);
     backdrop-filter: blur($blur);
   }
 }
 
-// `data-contrast`: light surface under bar → dark ink; dark surface → light ink (from JS luminance sampling).
 .header {
   position: relative;
   isolation: isolate;
-  --navbar-ink: var(--navbar-contrast-light-ink);
-}
-
-.header[data-contrast="light"] {
-  --navbar-ink: var(--navbar-contrast-dark-ink);
-}
-
-.header[data-contrast="dark"] {
   --navbar-ink: var(--navbar-contrast-light-ink);
 }
 
@@ -72,16 +67,20 @@
   top: 0;
   height: 150%;
   pointer-events: none;
-  transform: translate3d(0, 0, 0);
   transition:
-    height 520ms cubic-bezier(0.22, 0.9, 0.2, 1),
-    transform 520ms cubic-bezier(0.22, 0.9, 0.2, 1),
     opacity var(--navbar-gradient-blur-transition);
 }
 
-:global(html.is-overlay-blur) .gradientBlur,
-:global(html.is-nav-open) .gradientBlur {
-  height: 300vh;
+@supports (overflow: clip) {
+  .gradientBlurStrip {
+    overflow: clip;
+  }
+}
+
+@supports not (overflow: clip) {
+  .gradientBlurStrip {
+    overflow: hidden;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -90,36 +89,52 @@
   }
 }
 
-.gradientBlur > div,
-.gradientBlur::before,
-.gradientBlur::after {
+.gradientBlurStrip {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity var(--navbar-gradient-blur-transition),
+    visibility 0ms linear 0ms;
+}
+
+:global(html.is-archive-route) .gradientBlurStrip {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-color) 68%, transparent) 0%,
+    color-mix(in srgb, var(--bg-color) 28%, transparent) 44%,
+    transparent 100%
+  );
+}
+
+.gradientBlurLayer,
+.gradientBlurAtmosphere {
   position: absolute;
   inset: 0;
 }
 
-.gradientBlur::before {
-  content: "";
+:global(html.is-archive-route) .gradientBlurLayer {
+  display: none;
+}
+
+.gradientBlurLayer[data-layer="0"] {
   z-index: 1;
   @include navbar-gradient-blur-layer(0);
 }
 
 @for $i from 1 through 6 {
-  .gradientBlur > div:nth-of-type(#{$i}) {
+  .gradientBlurLayer[data-layer="#{$i}"] {
     z-index: $i + 1;
     @include navbar-gradient-blur-layer($i);
   }
 }
 
-.gradientBlur::after {
-  content: "";
+.gradientBlurLayer[data-layer="7"] {
   z-index: 8;
   @include navbar-gradient-blur-layer(7);
 }
 
 // Single smooth wash — undertone on each masked blur layer caused banded / comb artifacts.
 .gradientBlurAtmosphere {
-  position: absolute;
-  inset: 0;
   z-index: 9;
   pointer-events: none;
   background: linear-gradient(
@@ -128,6 +143,43 @@
     var(--navbar-gradient-blur-undertone-mid) 38%,
     transparent 100%
   );
+}
+
+.gradientBlurOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition:
+    opacity var(--navbar-gradient-blur-transition),
+    visibility 0ms linear var(--navbar-gradient-blur-duration, 320ms);
+}
+
+:global(html.is-overlay-blur) .gradientBlurStrip,
+:global(html.is-overlay-blur-pending) .gradientBlurStrip,
+:global(html.is-nav-open) .gradientBlurStrip {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--navbar-gradient-blur-transition),
+    visibility 0ms linear var(--navbar-gradient-blur-duration, 320ms);
+}
+
+:global(html.is-overlay-blur) .gradientBlurOverlay,
+:global(html.is-overlay-blur-pending) .gradientBlurOverlay,
+:global(html.is-nav-open) .gradientBlurOverlay {
+  opacity: 1;
+  visibility: visible;
+  -webkit-backdrop-filter: blur(var(--navbar-overlay-backdrop-blur)) saturate(var(--navbar-overlay-backdrop-saturate));
+  backdrop-filter: blur(var(--navbar-overlay-backdrop-blur)) saturate(var(--navbar-overlay-backdrop-saturate));
+  transition:
+    opacity var(--navbar-gradient-blur-transition),
+    visibility 0ms linear 0ms;
 }
 
 .inner {

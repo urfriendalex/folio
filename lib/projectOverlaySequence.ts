@@ -60,7 +60,7 @@ export type ProjectOverlayOffsets = {
 /**
  * Builds global line offsets for `RevealLines` in `ProjectFullInfoOverlay`. Keys are only registered
  * when the corresponding block is rendered — use `get(key)` only for blocks you conditionally show.
- * Bullet-style lists use pills (no per-line RevealLines); only section labels are registered where needed.
+ * Bullet lists register one offset per row (`resp0`, `feat0`, `impactH0`, …); tags register one index per pill for whole-pill fade timing.
  */
 export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverlayOffsets {
   const techLine = project.technologies.join(", ");
@@ -79,14 +79,14 @@ export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverla
     reg(key, estimateWrappedLines(text, charsPerLine, buffer));
   };
 
-  regText("descriptor", project.descriptor, 26, 3);
+  /* Generous buffers so global `--token-index` never collides with the next block (mixed stagger). */
+  regText("descriptor", project.descriptor, 24, 5);
   reg("title", 1);
-  /* Desktop uses tighter copy rhythm; keep estimates slightly conservative. */
-  regText("lead", project.description, 28, 3);
+  regText("lead", project.description, 26, 5);
 
   if (project.overview?.trim()) {
     reg("overviewL", 1);
-    regText("overviewBody", project.overview, 28, 2);
+    regText("overviewBody", project.overview, 26, 4);
   }
 
   reg("roleL", 1);
@@ -94,7 +94,7 @@ export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverla
   reg("yearL", 1);
   reg("yearV", 1);
   reg("techL", 1);
-  regText("techV", techLine, 22, 2);
+  regText("techV", techLine, 20, 4);
 
   const linkList =
     project.links && project.links.length > 0
@@ -109,50 +109,53 @@ export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverla
 
   if (project.client) {
     reg("clientL", 1);
-    regText("clientBody", formatProjectClient(project.client), 26, 2);
+    regText("clientBody", formatProjectClient(project.client), 24, 4);
   }
 
   if (project.roleSummary?.trim()) {
     reg("roleDetailL", 1);
-    regText("roleDetailV", project.roleSummary, 28, 2);
+    regText("roleDetailV", project.roleSummary, 26, 4);
   }
 
   if (project.responsibilities?.length) {
     reg("respL", 1);
+    project.responsibilities.forEach((item, i) => regText(`resp${i}`, item, 32, 3));
   }
 
   if (project.collaboration) {
     reg("collabL", 1);
-    regText("collabBody", formatProjectCollaboration(project.collaboration), 28, 2);
+    regText("collabBody", formatProjectCollaboration(project.collaboration), 26, 4);
   }
 
   if (project.stack) {
     reg("stackL", 1);
-    regText("stackBody", formatProjectStack(project.stack), 26, 2);
+    regText("stackBody", formatProjectStack(project.stack), 24, 4);
   }
 
   if (project.features?.length) {
     reg("featL", 1);
+    project.features.forEach((item, i) => regText(`feat${i}`, item, 32, 3));
   }
 
   if (project.impact) {
     const imp: ProjectImpact = project.impact;
     reg("impactL", 1);
-    regText("impactSum", imp.summary, 28, 2);
+    regText("impactSum", imp.summary, 26, 4);
+    imp.highlights?.forEach((line, i) => regText(`impactH${i}`, line, 32, 3));
   }
 
   if (project.tags?.length) {
     reg("tagsL", 1);
-    regText("tagsBody", project.tags.join(" · "), 26, 2);
+    project.tags.forEach((_, i) => {
+      reg(`tag${i}`, 1);
+    });
   }
 
-  if (project.status?.trim()) {
-    reg("statusL", 1);
-    reg("statusV", 1);
-  }
+  /* Keeps exit / inverse delays sane if Pretext yields more line tokens than estimates. */
+  const paddedTotal = total + 32;
 
   return {
-    total,
+    total: paddedTotal,
     get: (key: string) => map.get(key),
   };
 }

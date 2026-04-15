@@ -55,7 +55,6 @@ export const ohgotmiProject: ProjectEntry = {
   },
   tags: ["Framer", "React", "Frontend", "Portfolio", "Creative Development", "Film"],
   links: [{ label: "Live Site", url: "https://ohgotmi.com" }],
-  status: "Live",
   featured: true,
   thumbnail: "/images/project-placeholder.svg",
   stills: ["/archive/frame-07.svg", "/archive/frame-01.svg", "/archive/frame-04.svg"],

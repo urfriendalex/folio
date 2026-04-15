@@ -32,10 +32,6 @@
   touch-action: none;
 }
 
-.scene[data-dragging="true"] :global(canvas) {
-  cursor: grabbing;
-}
-
 .sceneCanvas {
   position: absolute;
   inset: 0;

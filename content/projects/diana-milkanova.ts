@@ -54,7 +54,6 @@ export const dianaMilkanovaProject: ProjectEntry = {
   },
   tags: ["E-commerce", "Shopify", "Liquid", "Frontend", "Custom Theme", "Fashion"],
   links: [{ label: "Live Site", url: "https://dianamilkanova.com" }],
-  status: "Live",
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
   stills: ["/archive/frame-02.svg", "/archive/frame-04.svg", "/archive/frame-08.svg"],

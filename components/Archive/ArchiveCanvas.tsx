@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ArchiveEntry } from "@/content/archive/archive-data";
 import styles from "./ArchiveCanvas.module.scss";
-import type { HoveredArchivePlane } from "./ArchiveCanvasScene";
 
 const ArchiveCanvasScene = dynamic(
   () => import("./ArchiveCanvasScene").then((mod) => mod.ArchiveCanvasScene),
@@ -22,20 +21,18 @@ function fileNameFromArchivePath(path: string) {
 }
 
 export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
-  const [hoveredPlane, setHoveredPlane] = useState<HoveredArchivePlane | null>(null);
-  const lastHoverKeyRef = useRef<string | null>(null);
+  const [hoveredLabel, setHoveredLabel] = useState<string>("");
+  const lastHoverLabelRef = useRef<string>("");
 
-  const onHoverChange = useCallback((plane: HoveredArchivePlane | null) => {
-    const key = plane
-      ? `${plane.item.image}|${plane.chunkX}|${plane.chunkY}|${plane.chunkZ}`
-      : null;
+  const onHoverLabelChange = useCallback((label: string | null) => {
+    const nextLabel = label ?? "";
 
-    if (lastHoverKeyRef.current === key) {
+    if (lastHoverLabelRef.current === nextLabel) {
       return;
     }
 
-    lastHoverKeyRef.current = key;
-    setHoveredPlane(plane);
+    lastHoverLabelRef.current = nextLabel;
+    setHoveredLabel(nextLabel);
   }, []);
 
   useEffect(() => {
@@ -47,17 +44,18 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     };
   }, []);
 
-  const focusLabel = hoveredPlane
-    ? fileNameFromArchivePath(hoveredPlane.item.image)
-    : "";
-
   return (
     <section className={styles.viewport} aria-label="Archive canvas">
-      <ArchiveCanvasScene items={items} onHoverChange={onHoverChange} />
+      <ArchiveCanvasScene
+        items={items}
+        onHoverLabelChange={onHoverLabelChange}
+      />
 
       <div className={styles.hud} aria-live="polite">
-        {focusLabel ? (
-          <span className={styles.focusLabel}>{focusLabel}</span>
+        {hoveredLabel ? (
+          <span className={styles.focusLabel}>
+            {fileNameFromArchivePath(hoveredLabel)}
+          </span>
         ) : null}
       </div>
     </section>

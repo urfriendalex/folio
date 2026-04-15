@@ -186,9 +186,10 @@
   --navbar-gradient-blur-undertone: rgb(255 255 255 / 0.07);
   --navbar-gradient-blur-undertone-mid: rgb(255 255 255 / 0.02);
   --navbar-gradient-blur-z-index: 1;
+  --navbar-gradient-blur-duration: 320ms;
   --navbar-gradient-blur-transition: 320ms ease;
-  /* Navbar.module: lift stacked blur off-screen while modal overlay is open */
-  --navbar-blur-overlay-lift: -500px;
+  --navbar-overlay-backdrop-blur: 20px;
+  --navbar-overlay-backdrop-saturate: 112%;
 }
 
 @media (max-width: 48rem) {
@@ -350,6 +351,16 @@ body {
   font-family: var(--font-body-stack);
   text-rendering: geometricPrecision;
   position: relative;
+}
+
+::selection {
+  background-color: var(--signal-color);
+  color: #101010;
+}
+
+::-moz-selection {
+  background-color: var(--signal-color);
+  color: #101010;
 }
 
 body::before {

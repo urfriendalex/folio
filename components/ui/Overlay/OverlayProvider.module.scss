@@ -99,10 +99,28 @@
     column-gap: clamp(2.5rem, 8vw, 6.5rem);
     row-gap: clamp(1.5rem, 4vw, 2.5rem);
   }
+
+  /*
+    Shared row tracks so CONTEXTS / DELIVERABLES / WHAT I OPTIMIZE FOR stay on one baseline
+    even when one column’s list wraps to more lines than the others.
+  */
+  @supports (grid-template-rows: subgrid) {
+    .metaGrid {
+      grid-template-rows: auto minmax(0, 1fr);
+      row-gap: 0.7rem;
+    }
+
+    .metaBlock {
+      grid-template-rows: subgrid;
+      grid-row: span 2;
+      gap: 0;
+    }
+  }
 }
 
 .metaBlock {
   position: relative;
+  display: grid;
   gap: 0.7rem;
   padding-top: 0.9rem;
   border-top: none;

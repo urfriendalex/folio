@@ -63,7 +63,6 @@ export const kinoprobyProject: ProjectEntry = {
     "JavaScript",
   ],
   links: [{ label: "Live Site", url: "https://kino-proby.com" }],
-  status: "Live",
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
   stills: ["/archive/frame-01.svg", "/archive/frame-03.svg", "/archive/frame-07.svg"],

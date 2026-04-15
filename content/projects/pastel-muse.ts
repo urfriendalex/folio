@@ -55,7 +55,6 @@ export const pastelMuseProject: ProjectEntry = {
   },
   tags: ["Next.js", "GSAP", "Frontend", "Animation", "Events", "Photography"],
   links: [{ label: "Live Site", url: "https://pastelmuse.lizakarasiova.com/" }],
-  status: "Live",
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
   stills: ["/archive/frame-08.svg", "/archive/frame-04.svg", "/archive/frame-01.svg"],

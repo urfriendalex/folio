@@ -100,6 +100,7 @@ export function Overlay({
     const html = document.documentElement;
     if (visible) {
       html.classList.add("is-overlay-blur");
+      html.classList.remove("is-overlay-blur-pending");
     } else {
       html.classList.remove("is-overlay-blur");
     }

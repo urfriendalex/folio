@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { RevealLines } from "@/components/motion";
 import type { ProjectEntry } from "@/content/projects/types";
 import {
@@ -11,16 +11,28 @@ import {
 } from "@/lib/projectOverlaySequence";
 import styles from "./ProjectFullInfoOverlay.module.scss";
 
-/** Stagger between line tokens — lower than About (dense case study copy). */
-const PROJECT_OVERLAY_REVEAL_STEP_MS = 17;
+/** Stagger between line tokens — dense case study; keep total reveal time short. */
+const PROJECT_OVERLAY_REVEAL_STEP_MS = 11;
 
 type ProjectFullInfoOverlayProps = {
   project: ProjectEntry;
   contentVisible: boolean;
 };
 
-/** Minimal editorial list — no pill chrome; keeps emphasis for rare accents elsewhere. */
-function DetailList({ items }: { items: string[] }) {
+/** Dash list — each row uses the shared line stagger (plain `<li>` was always visible). */
+function OverlayBulletList({
+  items,
+  keyPrefix,
+  get,
+  total,
+  visible,
+}: {
+  items: string[];
+  keyPrefix: "resp" | "feat" | "impactH";
+  get: (key: string) => number | undefined;
+  total: number;
+  visible: boolean;
+}) {
   if (items.length === 0) {
     return null;
   }
@@ -28,7 +40,16 @@ function DetailList({ items }: { items: string[] }) {
   return (
     <ul className={styles.detailList}>
       {items.map((text, index) => (
-        <li key={`${index}-${text}`}>{text}</li>
+        <RevealLines
+          key={`${keyPrefix}-${index}-${text}`}
+          as="li"
+          className={styles.detailListItem}
+          text={`– ${text}`}
+          offset={get(`${keyPrefix}${index}`) ?? 0}
+          stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+          total={total}
+          visible={visible}
+        />
       ))}
     </ul>
   );
@@ -45,8 +66,12 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
         ? [{ label: "visit site", url: project.optionalLink }]
         : [];
 
+  const rootMotionStyle = {
+    "--project-overlay-step": `${PROJECT_OVERLAY_REVEAL_STEP_MS}ms`,
+  } as CSSProperties;
+
   return (
-    <div className={styles.root} data-content-visible={contentVisible}>
+    <div className={styles.root} data-content-visible={contentVisible} style={rootMotionStyle}>
       <header className={styles.header}>
         <RevealLines
           as="p"
@@ -185,18 +210,15 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                     key={`${link.url}-${link.label}`}
                     href={link.url}
                     className={styles.visitSiteLink}
+                    style={
+                      {
+                        "--link-token-index": get(`link${i}`) ?? 0,
+                      } as CSSProperties
+                    }
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <RevealLines
-                      as="span"
-                      text={link.label}
-                      measureLines={false}
-                      offset={get(`link${i}`)}
-                      stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-                      total={total}
-                      visible={contentVisible}
-                    />
+                    {link.label}
                   </a>
                 ))}
               </div>
@@ -264,7 +286,13 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
               total={total}
               visible={contentVisible}
             />
-            <DetailList items={project.responsibilities} />
+            <OverlayBulletList
+              items={project.responsibilities}
+              keyPrefix="resp"
+              get={get}
+              total={total}
+              visible={contentVisible}
+            />
           </section>
         ) : null}
 
@@ -328,7 +356,13 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
               total={total}
               visible={contentVisible}
             />
-            <DetailList items={project.features} />
+            <OverlayBulletList
+              items={project.features}
+              keyPrefix="feat"
+              get={get}
+              total={total}
+              visible={contentVisible}
+            />
           </section>
         ) : null}
 
@@ -354,7 +388,13 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
               visible={contentVisible}
             />
             {project.impact.highlights?.length ? (
-              <DetailList items={project.impact.highlights} />
+              <OverlayBulletList
+                items={project.impact.highlights}
+                keyPrefix="impactH"
+                get={get}
+                total={total}
+                visible={contentVisible}
+              />
             ) : null}
           </section>
         ) : null}
@@ -371,40 +411,21 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
               total={total}
               visible={contentVisible}
             />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.tagsInline}`}
-              text={project.tags.join(" · ")}
-              offset={get("tagsBody")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.status?.trim() ? (
-          <section className={`${styles.extra} ${styles.extraGridHalf}`} aria-label="Status">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Status"
-              measureLines={false}
-              offset={get("statusL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={styles.extraBody}
-              text={project.status.trim()}
-              measureLines={false}
-              offset={get("statusV")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
+            <div className={styles.tagPills}>
+              {project.tags.map((tag, i) => (
+                <span
+                  key={`${tag}-${i}`}
+                  className={styles.tagPill}
+                  style={
+                    {
+                      "--tag-token-index": get(`tag${i}`) ?? 0,
+                    } as CSSProperties
+                  }
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </section>
         ) : null}
 

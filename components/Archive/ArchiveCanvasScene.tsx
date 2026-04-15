@@ -20,7 +20,6 @@ const VELOCITY_DECAY = 0.9;
 const INITIAL_CAMERA_Z = 50;
 const MAX_PLANE_CACHE = 256;
 const PLANE_GEOMETRY = new THREE.PlaneGeometry(1, 1);
-const HOVER_RAYCASTER = new THREE.Raycaster();
 const textureCache = new Map<string, THREE.Texture>();
 const loadCallbacks = new Map<string, Set<(tex: THREE.Texture) => void>>();
 const planeCache = new Map<string, PlaneData[]>();
@@ -36,10 +35,10 @@ const KEYBOARD_MAP: Array<{ name: KeyboardKey; keys: string[] }> = [
 ];
 
 type ArchiveMediaItem = {
-  entry: ArchiveEntry;
   url: string;
   width: number;
   height: number;
+  label: string;
 };
 
 type KeyboardKey = "forward" | "backward" | "left" | "right" | "up" | "down";
@@ -91,16 +90,9 @@ type ControllerState = {
   pendingChunk: { cx: number; cy: number; cz: number } | null;
 };
 
-export type HoveredArchivePlane = {
-  item: ArchiveEntry;
-  chunkX: number;
-  chunkY: number;
-  chunkZ: number;
-};
-
 type ArchiveCanvasSceneProps = {
   items: ArchiveEntry[];
-  onHoverChange: (plane: HoveredArchivePlane | null) => void;
+  onHoverLabelChange: (label: string | null) => void;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -330,10 +322,12 @@ function MediaPlane({
   plane,
   media,
   cameraGridRef,
+  onHoverLabelChange,
 }: {
   plane: PlaneData;
   media: ArchiveMediaItem;
   cameraGridRef: MutableRefObject<CameraGridState>;
+  onHoverLabelChange: (label: string | null) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -413,18 +407,6 @@ function MediaPlane({
     return plane.scale;
   }, [media.height, media.width, plane.scale]);
 
-  const hoverUserData = useMemo(
-    () => ({
-      archiveHover: {
-        item: media.entry,
-        chunkX: plane.chunkX,
-        chunkY: plane.chunkY,
-        chunkZ: plane.chunkZ,
-      } satisfies HoveredArchivePlane,
-    }),
-    [media.entry, plane.chunkX, plane.chunkY, plane.chunkZ],
-  );
-
   useEffect(() => {
     let isCancelled = false;
     const state = localState.current;
@@ -482,7 +464,8 @@ function MediaPlane({
       scale={displayScale}
       visible={false}
       geometry={PLANE_GEOMETRY}
-      userData={hoverUserData}
+      onPointerEnter={() => onHoverLabelChange(media.label)}
+      onPointerLeave={() => onHoverLabelChange(null)}
     >
       <meshBasicMaterial ref={materialRef} transparent opacity={0} side={THREE.DoubleSide} />
     </mesh>
@@ -495,12 +478,14 @@ function Chunk({
   cz,
   media,
   cameraGridRef,
+  onHoverLabelChange,
 }: {
   cx: number;
   cy: number;
   cz: number;
   media: ArchiveMediaItem[];
   cameraGridRef: MutableRefObject<CameraGridState>;
+  onHoverLabelChange: (label: string | null) => void;
 }) {
   const [planes, setPlanes] = useState<PlaneData[] | null>(null);
 
@@ -548,6 +533,7 @@ function Chunk({
             plane={plane}
             media={mediaItem}
             cameraGridRef={cameraGridRef}
+            onHoverLabelChange={onHoverLabelChange}
           />
         );
       })}
@@ -557,12 +543,10 @@ function Chunk({
 
 function SceneController({
   media,
-  onHoverChange,
-  onDraggingChange,
+  onHoverLabelChange,
 }: {
   media: ArchiveMediaItem[];
-  onHoverChange: (plane: HoveredArchivePlane | null) => void;
-  onDraggingChange: (isDragging: boolean) => void;
+  onHoverLabelChange: (label: string | null) => void;
 }) {
   const { camera, gl } = useThree();
   const isTouchDevice = useIsTouchDevice();
@@ -574,11 +558,6 @@ function SceneController({
     cz: 0,
     camZ: INITIAL_CAMERA_Z,
   });
-  const chunkRootRef = useRef<THREE.Group>(null);
-  const onHoverChangeRef = useRef(onHoverChange);
-  const lastHoverKeyRef = useRef<string | null>(null);
-  const lastPointerForHoverRayRef = useRef({ x: 0, y: 0 });
-  const hoverRayFrameRef = useRef(0);
   const [chunks, setChunks] = useState<ChunkData[]>(() =>
     CHUNK_OFFSETS.map((offset) => ({
       key: `${offset.dx},${offset.dy},${offset.dz}`,
@@ -589,29 +568,23 @@ function SceneController({
   );
 
   useEffect(() => {
-    onHoverChangeRef.current = onHoverChange;
-  }, [onHoverChange]);
-
-  useEffect(() => {
     const canvas = gl.domElement;
 
     const onMouseDown = (event: MouseEvent) => {
       const currentState = state.current;
       currentState.isDragging = true;
       currentState.lastMouse = { x: event.clientX, y: event.clientY };
-      onDraggingChange(true);
+      onHoverLabelChange(null);
     };
 
     const onMouseUp = () => {
       state.current.isDragging = false;
-      onDraggingChange(false);
     };
 
     const onMouseLeave = () => {
       state.current.mouse = { x: 0, y: 0 };
       state.current.isDragging = false;
-      onHoverChange(null);
-      onDraggingChange(false);
+      onHoverLabelChange(null);
     };
 
     const onMouseMove = (event: MouseEvent) => {
@@ -642,7 +615,7 @@ function SceneController({
 
       currentState.lastTouches = Array.from(event.touches);
       currentState.lastTouchDist = getTouchDistance(currentState.lastTouches);
-      onDraggingChange(true);
+      onHoverLabelChange(null);
     };
 
     const onTouchMove = (event: TouchEvent) => {
@@ -671,7 +644,6 @@ function SceneController({
       const currentState = state.current;
       currentState.lastTouches = Array.from(event.touches);
       currentState.lastTouchDist = getTouchDistance(currentState.lastTouches);
-      onDraggingChange(event.touches.length > 0);
     };
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -693,14 +665,11 @@ function SceneController({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
-  }, [gl, onDraggingChange, onHoverChange]);
+  }, [gl, onHoverLabelChange]);
 
-  useFrame((frameState) => {
+  useFrame(() => {
     const currentState = state.current;
     const now = performance.now();
-    const cameraX0 = camera.position.x;
-    const cameraY0 = camera.position.y;
-    const cameraZ0 = camera.position.z;
     const { forward, backward, left, right, up, down } = getKeys();
 
     if (forward) {
@@ -783,12 +752,6 @@ function SceneController({
       currentState.basePos.z,
     );
 
-    const cameraMovedThisFrame =
-      (camera.position.x - cameraX0) ** 2 +
-        (camera.position.y - cameraY0) ** 2 +
-        (camera.position.z - cameraZ0) ** 2 >
-      1e-8;
-
     currentState.targetVel.x *= VELOCITY_DECAY;
     currentState.targetVel.y *= VELOCITY_DECAY;
     currentState.targetVel.z *= VELOCITY_DECAY;
@@ -831,65 +794,16 @@ function SceneController({
         })),
       );
     }
-
-    const hoverCb = onHoverChangeRef.current;
-
-    if (isTouchDevice) {
-      if (lastHoverKeyRef.current !== null) {
-        lastHoverKeyRef.current = null;
-        hoverCb(null);
-      }
-    } else if (currentState.isDragging) {
-      if (lastHoverKeyRef.current !== null) {
-        lastHoverKeyRef.current = null;
-        hoverCb(null);
-      }
-    } else {
-      const root = chunkRootRef.current;
-
-      if (root) {
-        hoverRayFrameRef.current += 1;
-        const pointerMoved =
-          Math.abs(frameState.pointer.x - lastPointerForHoverRayRef.current.x) > 0.0001 ||
-          Math.abs(frameState.pointer.y - lastPointerForHoverRayRef.current.y) > 0.0001;
-
-        lastPointerForHoverRayRef.current.x = frameState.pointer.x;
-        lastPointerForHoverRayRef.current.y = frameState.pointer.y;
-
-        const skipHoverRay =
-          !pointerMoved && !cameraMovedThisFrame && hoverRayFrameRef.current % 2 === 1;
-
-        if (!skipHoverRay) {
-          HOVER_RAYCASTER.setFromCamera(frameState.pointer, camera);
-          const hits = HOVER_RAYCASTER.intersectObject(root, true);
-          const hitWithPayload = hits.find((hit) => hit.object.userData?.archiveHover);
-          const payload = hitWithPayload?.object.userData?.archiveHover as
-            | HoveredArchivePlane
-            | undefined;
-          const key = payload
-            ? `${payload.item.image}|${payload.chunkX}|${payload.chunkY}|${payload.chunkZ}`
-            : null;
-
-          if (key !== lastHoverKeyRef.current) {
-            lastHoverKeyRef.current = key;
-            hoverCb(payload ?? null);
-          }
-        }
-      }
-    }
   });
 
   useEffect(() => {
     state.current = createInitialState(INITIAL_CAMERA_Z);
     camera.position.set(0, 0, INITIAL_CAMERA_Z);
     cameraGridRef.current = { cx: 0, cy: 0, cz: 0, camZ: INITIAL_CAMERA_Z };
-    lastHoverKeyRef.current = null;
-    onHoverChange(null);
-    onDraggingChange(false);
-  }, [camera, onDraggingChange, onHoverChange]);
+  }, [camera]);
 
   return (
-    <group ref={chunkRootRef}>
+    <>
       {chunks.map((chunk) => (
         <Chunk
           key={chunk.key}
@@ -898,9 +812,10 @@ function SceneController({
           cz={chunk.cz}
           media={media}
           cameraGridRef={cameraGridRef}
+          onHoverLabelChange={onHoverLabelChange}
         />
       ))}
-    </group>
+    </>
   );
 }
 
@@ -955,17 +870,16 @@ function ArchiveWebglGpuDiagnostics() {
   return null;
 }
 
-export function ArchiveCanvasScene({ items, onHoverChange }: ArchiveCanvasSceneProps) {
+export function ArchiveCanvasScene({ items, onHoverLabelChange }: ArchiveCanvasSceneProps) {
   const isTouchDevice = useIsTouchDevice();
-  const [isDragging, setIsDragging] = useState(false);
   const [sceneBackground, setSceneBackground] = useState("#f7f6f2");
   const media = useMemo<ArchiveMediaItem[]>(
     () =>
       items.map((item) => ({
-        entry: item,
         url: item.image,
         width: item.width,
         height: item.height,
+        label: item.image,
       })),
     [items],
   );
@@ -1006,7 +920,7 @@ export function ArchiveCanvasScene({ items, onHoverChange }: ArchiveCanvasSceneP
 
   return (
     <KeyboardControls map={KEYBOARD_MAP}>
-      <div className={styles.scene} data-dragging={isDragging ? "true" : "false"}>
+      <div className={styles.scene}>
         <Canvas
           camera={{ position: [0, 0, INITIAL_CAMERA_Z], fov: 60, near: 1, far: 500 }}
           className={styles.sceneCanvas}
@@ -1026,17 +940,13 @@ export function ArchiveCanvasScene({ items, onHoverChange }: ArchiveCanvasSceneP
             gl.shadowMap.enabled = false;
             gl.outputColorSpace = THREE.SRGBColorSpace;
           }}
-          onPointerMissed={() => {
-            onHoverChange(null);
-          }}
         >
           <ArchiveWebglGpuDiagnostics />
           <color attach="background" args={[sceneBackground]} />
           <fog attach="fog" args={[sceneBackground, 120, 320]} />
           <SceneController
             media={media}
-            onHoverChange={onHoverChange}
-            onDraggingChange={setIsDragging}
+            onHoverLabelChange={onHoverLabelChange}
           />
         </Canvas>
       </div>
