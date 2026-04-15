@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
-import { getAnchor } from "@/lib/navLinks";
+import { getAnchor, navigateToHomeSection } from "@/lib/navLinks";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
-import { scrollElementIntoView, scrollToHeroSection } from "@/lib/smoothScroll";
+import { scrollElementIntoView } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
 function GradientBlur() {
@@ -176,15 +176,25 @@ export function Navbar() {
       return;
     }
 
-    if (pathname === "/") {
-      event.preventDefault();
-      scrollToHeroSection();
-      return;
-    }
-
     event.preventDefault();
-    router.push("/#hero");
+    navigateToHomeSection({ pathname, router, sectionId: "hero" });
   };
+
+  const handleMobileSectionClick =
+    (sectionId: "work" | "contact") => (event: MouseEvent<HTMLAnchorElement>) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        setMenuOpen(false);
+        return;
+      }
+
+      event.preventDefault();
+      navigateToHomeSection({
+        pathname,
+        router,
+        sectionId,
+        beforeScroll: () => setMenuOpen(false),
+      });
+    };
 
   return (
     <header className={styles.header}>
@@ -264,7 +274,7 @@ export function Navbar() {
               href={getAnchor(pathname, "work")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 1 } as CSSProperties}
-              onClick={() => setMenuOpen(false)}
+              onClick={handleMobileSectionClick("work")}
             >
               Work
             </a>
@@ -280,7 +290,7 @@ export function Navbar() {
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 3 } as CSSProperties}
-              onClick={() => setMenuOpen(false)}
+              onClick={handleMobileSectionClick("contact")}
             >
               Contact
             </a>

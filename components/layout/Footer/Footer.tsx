@@ -15,6 +15,7 @@ import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { contactContent } from "@/content/contact";
 import { heroContent } from "@/content/hero";
+import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
 import { getLenis, scrollToTop } from "@/lib/smoothScroll";
 import { useTimeZoneStatus } from "./TimeZoneStatus";
@@ -34,7 +35,7 @@ function portalIntoHost(hostId: string, node: ReactNode) {
   return host ? createPortal(node, host) : null;
 }
 
-type Theme = "dark" | "light";
+type Theme = ThemeName;
 type FooterMode = "toolbar" | "minimal";
 type StartSubmenu = "about" | "contact" | "connect" | null;
 type StartSubmenuKey = "about" | "contact" | "connect";
@@ -114,7 +115,7 @@ function getThemeSnapshot(): Theme {
     return "light";
   }
 
-  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  return document.documentElement.getAttribute(ROOT_THEME_ATTRIBUTE) === "dark" ? "dark" : "light";
 }
 
 function getFooterModeSnapshot(): FooterMode {
@@ -135,7 +136,8 @@ function getServerFooterModeSnapshot(): FooterMode {
 
 function setRootTheme(nextTheme: Theme) {
   const html = document.documentElement;
-  html.setAttribute("data-theme", nextTheme);
+  html.setAttribute(ROOT_THEME_ATTRIBUTE, nextTheme);
+  syncBrowserChromeTheme(nextTheme);
 
   try {
     localStorage.setItem("theme", nextTheme);

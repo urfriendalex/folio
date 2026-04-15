@@ -13,8 +13,7 @@ import {
 } from "react";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { notFoundContent } from "@/content/not-found";
-import { getAnchor } from "@/lib/navLinks";
-import { scrollToHeroSection } from "@/lib/smoothScroll";
+import { getAnchor, navigateToHomeSection } from "@/lib/navLinks";
 import { TrailCanvasLayer } from "./TrailGpuLayer";
 import styles from "./NotFoundStage.module.scss";
 
@@ -309,14 +308,8 @@ export function NotFoundStage() {
         return;
       }
 
-      if (pathname === "/") {
-        event.preventDefault();
-        scrollToHeroSection();
-        return;
-      }
-
       event.preventDefault();
-      router.push("/#hero");
+      navigateToHomeSection({ pathname, router, sectionId: "hero" });
     },
     [pathname, router],
   );

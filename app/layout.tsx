@@ -1,8 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PreloaderGate } from "@/components/Preloader/PreloaderGate";
+import {
+  FALLBACK_THEME_COLORS,
+  ROOT_BACKGROUND_COLOR_VAR,
+  ROOT_THEME_ATTRIBUTE,
+} from "@/lib/browserChrome";
 import "@/styles/globals.scss";
 
 const screenBody = Geist({
@@ -34,6 +39,17 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: FALLBACK_THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: FALLBACK_THEME_COLORS.dark },
+  ],
+};
+
 const bootstrapScript = `
 (() => {
   const html = document.documentElement;
@@ -48,7 +64,18 @@ const bootstrapScript = `
       theme = "dark";
     }
   } catch (_error) {}
-  html.setAttribute("data-theme", theme);
+  html.setAttribute("${ROOT_THEME_ATTRIBUTE}", theme);
+
+  const chromeColor = getComputedStyle(html)
+    .getPropertyValue("${ROOT_BACKGROUND_COLOR_VAR}")
+    .trim() || (theme === "dark" ? "${FALLBACK_THEME_COLORS.dark}" : "${FALLBACK_THEME_COLORS.light}");
+  let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeColorMeta) {
+    themeColorMeta = document.createElement("meta");
+    themeColorMeta.setAttribute("name", "theme-color");
+    document.head.appendChild(themeColorMeta);
+  }
+  themeColorMeta.setAttribute("content", chromeColor);
 
   let footerMode = "toolbar";
   try {
