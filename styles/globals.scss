@@ -460,6 +460,10 @@ html.is-archive-route [data-app-navbar="true"] {
   pointer-events: auto;
 }
 
+html.is-archive-route.is-overlay-open [data-app-navbar="true"] {
+  z-index: 499;
+}
+
 html.is-archive-route [data-app-footer="true"],
 html.is-archive-route [data-toolbar-ascii-portal="true"] {
   display: none;
