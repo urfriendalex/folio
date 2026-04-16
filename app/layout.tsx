@@ -55,6 +55,13 @@ const bootstrapScript = `
   const html = document.documentElement;
   html.classList.add("js-enabled");
 
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const isIOS = /iP(hone|od|ad)/.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo|Brave|Telegram|Instagram|FBAN|FBAV|Line|MicroMessenger|Twitter)/i.test(ua);
+  const isKnownIOSBrowser = isSafari || /(CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo|Brave)/i.test(ua);
+  html.setAttribute("data-ios-embedded-browser", isIOS && !isKnownIOSBrowser ? "true" : "false");
+
   let theme = "light";
   try {
     const storedTheme = localStorage.getItem("theme");
@@ -117,6 +124,54 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicons/dark/favicon-32x32.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicons/dark/favicon-16x16.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          href="/favicons/dark/favicon.ico"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/favicons/dark/apple-touch-icon.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicons/light/favicon-32x32.png"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicons/light/favicon-16x16.png"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="icon"
+          href="/favicons/light/favicon.ico"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/favicons/light/apple-touch-icon.png"
+          media="(prefers-color-scheme: dark)"
+        />
         <script dangerouslySetInnerHTML={{ __html: bootstrapScript }} />
       </head>
       <body>

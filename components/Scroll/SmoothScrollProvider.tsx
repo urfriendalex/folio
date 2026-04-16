@@ -1,11 +1,12 @@
 "use client";
 
 import Lenis from "lenis";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { getAnchorScrollOffset, getLenis, scrollElementIntoView } from "@/lib/smoothScroll";
+import { isReloadNavigation } from "@/lib/navigationType";
+import { clearLocationHash, getAnchorScrollOffset, getLenis, scrollElementIntoView } from "@/lib/smoothScroll";
 
-const HOME_SECTION_IDS = new Set(["hero", "work", "contact"]);
+const HOME_SECTION_IDS = new Set(["work", "contact"]);
 
 function scrollToTopImmediate() {
   const lenis = getLenis();
@@ -60,6 +61,7 @@ function shouldPauseSmoothScroll(root: HTMLElement) {
 
 export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const pathname = usePathname();
+  const hasHandledInitialNavigation = useRef(false);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -112,15 +114,41 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   }, []);
 
   useEffect(() => {
+    const isInitialNavigation = !hasHandledInitialNavigation.current;
+    hasHandledInitialNavigation.current = true;
+    const shouldRespectInitialHash = isInitialNavigation && !isReloadNavigation();
+
     if (pathname !== "/") {
+      if (isInitialNavigation) {
+        return;
+      }
+
       scrollToTopImmediate();
       return;
     }
 
     const id = window.location.hash.slice(1);
 
+    if (id === "hero") {
+      if (!shouldRespectInitialHash) {
+        return;
+      }
+
+      clearLocationHash();
+      scrollToTopImmediate();
+      return;
+    }
+
     if (id && HOME_SECTION_IDS.has(id)) {
+      if (!shouldRespectInitialHash) {
+        return;
+      }
+
       scrollToHomeSectionById(id);
+      return;
+    }
+
+    if (isInitialNavigation) {
       return;
     }
 

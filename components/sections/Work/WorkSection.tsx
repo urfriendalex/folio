@@ -13,6 +13,7 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import type { ProjectEntry } from "@/content/projects/types";
 import { useHeroRevealComplete } from "@/lib/heroRevealComplete";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
+import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import styles from "./WorkSection.module.scss";
 
 type WorkSectionProps = {
@@ -114,6 +115,8 @@ export function WorkSection({ projects }: WorkSectionProps) {
   const hasMountedRef = useRef(false);
   const viewOptions = isMobile ? mobileViewOptions : desktopViewOptions;
   const heroRevealComplete = useHeroRevealComplete();
+  const skipEntranceReveal = useRestoredScrollBypass();
+  const workVisible = heroRevealComplete || skipEntranceReveal;
 
   const setCardNode = (slug: string, node: HTMLElement | null) => {
     if (node) {
@@ -223,12 +226,14 @@ export function WorkSection({ projects }: WorkSectionProps) {
           <RevealLines
             as="h2"
             className={styles.title}
+            immediate={skipEntranceReveal}
             text={WORK_TITLE}
             measureLines={false}
-            visible={heroRevealComplete}
+            visible={workVisible}
           />
           <ScrollReveal
-            visible={heroRevealComplete}
+            immediate={skipEntranceReveal}
+            visible={workVisible}
             revealOptions={workChromeRevealOptions}
             staggerIndex={1}
             staggerStepMs={WORK_CHROME_STAGGER_STEP_MS}
@@ -287,7 +292,8 @@ export function WorkSection({ projects }: WorkSectionProps) {
               key={project.slug}
               project={project}
               index={index}
-              visible={heroRevealComplete}
+              immediate={skipEntranceReveal}
+              visible={workVisible}
               staggerIndexOffset={WORK_CARD_STAGGER_OFFSET}
               cardRef={(node) => setCardNode(project.slug, node)}
             />

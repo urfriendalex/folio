@@ -13,6 +13,7 @@ const projectCardRevealOptions = {
 type ProjectCardProps = {
   project: ProjectEntry;
   index: number;
+  immediate?: boolean;
   visible?: boolean;
   staggerIndexOffset?: number;
   cardRef?: (node: HTMLElement | null) => void;
@@ -21,6 +22,7 @@ type ProjectCardProps = {
 export function ProjectCard({
   project,
   index,
+  immediate = false,
   visible,
   staggerIndexOffset = 0,
   cardRef,
@@ -30,6 +32,7 @@ export function ProjectCard({
 
   return (
     <ScrollReveal
+      immediate={immediate}
       visible={visible}
       revealOptions={projectCardRevealOptions}
       staggerIndex={staggerIndexOffset + index}

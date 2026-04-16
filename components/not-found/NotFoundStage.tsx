@@ -13,7 +13,8 @@ import {
 } from "react";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { notFoundContent } from "@/content/not-found";
-import { getAnchor, navigateToHomeSection } from "@/lib/navLinks";
+import { getAnchor } from "@/lib/navLinks";
+import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import { TrailCanvasLayer } from "./TrailGpuLayer";
 import styles from "./NotFoundStage.module.scss";
 
@@ -124,7 +125,7 @@ function NotFoundQuickLinks({ pathname, onHomeClick, buttonClassName }: QuickLin
           return (
             <Link
               key="home"
-              href="/#hero"
+              href="/"
               scroll={false}
               className={buttonClassName}
               onClick={onHomeClick}
@@ -214,7 +215,7 @@ function NotFoundWindowContent({
           </span>
         </div>
         <Link
-          href="/#hero"
+          href="/"
           scroll={false}
           className={styles.closeButton}
           aria-label="Go back home"
@@ -308,8 +309,15 @@ export function NotFoundStage() {
         return;
       }
 
+      if (pathname === "/") {
+        event.preventDefault();
+        clearLocationHash();
+        scrollToHeroSection();
+        return;
+      }
+
       event.preventDefault();
-      navigateToHomeSection({ pathname, router, sectionId: "hero" });
+      router.push("/");
     },
     [pathname, router],
   );

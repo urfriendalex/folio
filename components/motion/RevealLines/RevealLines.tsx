@@ -21,6 +21,7 @@ export type RevealLinesProps = {
   as?: RevealLinesTag;
   className?: string;
   elementRef?: RefObject<HTMLElement | null>;
+  immediate?: boolean;
   offset?: number;
   stepMs?: number;
   text: string;
@@ -51,6 +52,7 @@ export function RevealLines({
   as = "p",
   className,
   elementRef,
+  immediate = false,
   offset = 0,
   stepMs = 70,
   text,
@@ -102,19 +104,19 @@ export function RevealLines({
 
   switch (as) {
     case "span":
-      return <span ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</span>;
+      return <span ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</span>;
     case "h1":
-      return <h1 ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</h1>;
+      return <h1 ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</h1>;
     case "h2":
-      return <h2 ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</h2>;
+      return <h2 ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</h2>;
     case "li":
-      return <li ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</li>;
+      return <li ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</li>;
     case "dt":
-      return <dt ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</dt>;
+      return <dt ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</dt>;
     case "dd":
-      return <dd ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</dd>;
+      return <dd ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</dd>;
     case "p":
     default:
-      return <p ref={setRef} className={classNames} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</p>;
+      return <p ref={setRef} className={classNames} data-immediate={immediate ? "true" : undefined} data-mode="lines" data-pretext={measureLines ? "true" : undefined} data-visible={resolvedVisible} style={style}>{children}</p>;
   }
 }

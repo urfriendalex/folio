@@ -383,6 +383,21 @@
   background: transparent;
   color: var(--fg-color);
   outline: none;
+  caret-color: var(--fg-color);
+}
+
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus,
+.field input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--fg-color);
+  caret-color: var(--fg-color);
+  border-radius: 0;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-color) inset;
+  box-shadow: 0 0 0 1000px var(--bg-color) inset;
+  transition:
+    background-color 9999s ease-out,
+    color 9999s ease-out;
 }
 
 .field textarea {

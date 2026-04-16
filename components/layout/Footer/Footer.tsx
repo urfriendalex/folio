@@ -17,9 +17,21 @@ import { contactContent } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
-import { getLenis, scrollToTop } from "@/lib/smoothScroll";
+import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
 import { useTimeZoneStatus } from "./TimeZoneStatus";
 import styles from "./Footer.module.scss";
+
+function waitForAnimationFrame() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
+async function waitForFooterModePaint() {
+  await waitForAnimationFrame();
+  await waitForAnimationFrame();
+  await waitForAnimationFrame();
+}
 
 function footerCopyrightLine(year: number, legalEntity?: string) {
   const base = `© ${year} Alexander Yansons`;
@@ -256,6 +268,7 @@ export function Footer() {
   const [asciiRevealKey, setAsciiRevealKey] = useState(0);
   const [clientPortalsReady, setClientPortalsReady] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
+  const minimalFooterCoverRef = useRef<HTMLDivElement | null>(null);
   const launcherButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstMenuActionRef = useRef<HTMLButtonElement | null>(null);
   const displayToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -289,6 +302,7 @@ export function Footer() {
       if (event.matches) {
         setMenuOpen(false);
         setDisplayMenuOpen(false);
+        setToolbarHovered(false);
       }
     };
     mediaQuery.addEventListener("change", handleChange);
@@ -434,12 +448,37 @@ export function Footer() {
   };
 
   const setFooterMode = (nextFooterMode: FooterMode) => {
+    setToolbarHovered(false);
     setRootFooterMode(nextFooterMode);
     setDisplayMenuOpen(false);
 
     if (nextFooterMode === "minimal") {
       setMenuOpen(false);
     }
+
+    void (async () => {
+      await waitForFooterModePaint();
+
+      const cover = minimalFooterCoverRef.current;
+      const maxScrollTop = Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight,
+        document.body.scrollHeight - window.innerHeight,
+      );
+      const targetScrollTop = cover
+        ? Math.max(0, window.scrollY + cover.getBoundingClientRect().bottom - window.innerHeight)
+        : maxScrollTop;
+      const lenis = getLenis();
+
+      if (lenis) {
+        lenis.resize();
+        const lenisLimit = typeof lenis.limit === "number" ? lenis.limit : maxScrollTop;
+        lenis.scrollTo(Math.min(targetScrollTop, lenisLimit), { force: true });
+        return;
+      }
+
+      window.scrollTo({ top: targetScrollTop, behavior: "smooth" });
+    })();
   };
 
   const handleLauncherKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -500,6 +539,7 @@ export function Footer() {
   };
 
   const handleBackToTop = () => {
+    clearLocationHash();
     scrollToTop();
     closeMenu();
   };
@@ -594,7 +634,7 @@ export function Footer() {
     >
       {minimalFooter && (
         <>
-          <div className={styles.minimalFooterCover}>
+          <div ref={minimalFooterCoverRef} className={styles.minimalFooterCover}>
             <div className={`page-shell ${styles.inner}`}>
               <div className={styles.editorial}>
                 <div className={styles.editorialCol}>
@@ -664,7 +704,7 @@ export function Footer() {
                     <button
                       type="button"
                       className={`link-underline ${styles.columnControlBtn}`}
-                      onClick={() => scrollToTop()}
+                      onClick={handleBackToTop}
                     >
                       Back to top
                     </button>

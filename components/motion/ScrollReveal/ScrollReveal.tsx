@@ -10,6 +10,7 @@ import styles from "@/components/motion/shared/reveal.module.scss";
 type ScrollRevealProps = {
   children: ReactNode;
   className?: string;
+  immediate?: boolean;
   visible?: boolean;
   /** Passed to IntersectionObserver (defaults in hook are tuned for in-flow text; use for looser triggers). */
   revealOptions?: UseRevealOnViewOptions;
@@ -22,6 +23,7 @@ type ScrollRevealProps = {
 export function ScrollReveal({
   children,
   className,
+  immediate = false,
   visible,
   revealOptions,
   staggerIndex = 0,
@@ -43,6 +45,7 @@ export function ScrollReveal({
     <div
       ref={ref}
       className={[styles.scrollReveal, className].filter(Boolean).join(" ")}
+      data-immediate={immediate ? "true" : undefined}
       data-visible={resolvedVisible}
       data-stagger={staggerStepMs > 0 ? "true" : undefined}
       style={staggerStyle}

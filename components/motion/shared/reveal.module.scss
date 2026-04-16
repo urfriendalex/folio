@@ -82,6 +82,10 @@
   );
 }
 
+.root[data-visible="true"][data-immediate="true"] .token {
+  transition: none;
+}
+
 .scrollReveal,
 .imageReveal {
   opacity: 0;
@@ -103,6 +107,11 @@
 
 .scrollReveal[data-stagger="true"][data-visible="true"] {
   transition-delay: calc(var(--reveal-stagger-index, 0) * var(--reveal-stagger-step, 0ms));
+}
+
+.scrollReveal[data-visible="true"][data-immediate="true"],
+.imageReveal[data-visible="true"][data-immediate="true"] {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

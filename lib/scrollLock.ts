@@ -1,8 +1,14 @@
 let lockCount = 0;
 let savedScrollY = 0;
+let shouldRestoreScroll = true;
+
+export function skipNextScrollRestore() {
+  shouldRestoreScroll = false;
+}
 
 export function lockBodyScroll() {
   if (lockCount === 0) {
+    shouldRestoreScroll = true;
     savedScrollY = window.scrollY;
     document.body.style.position = "fixed";
     document.body.style.top = `-${savedScrollY}px`;
@@ -22,7 +28,13 @@ export function unlockBodyScroll() {
     document.body.style.top = "";
     document.body.style.left = "";
     document.body.style.right = "";
-    window.scrollTo(0, savedScrollY);
+    const scrollY = savedScrollY;
     savedScrollY = 0;
+    const restoreScroll = shouldRestoreScroll;
+    shouldRestoreScroll = true;
+
+    if (restoreScroll) {
+      window.scrollTo(0, scrollY);
+    }
   }
 }

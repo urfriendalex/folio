@@ -125,6 +125,14 @@ export function getAnchorScrollOffset(target: ScrollTarget) {
   return -getScrollClearancePx(target);
 }
 
+export function clearLocationHash() {
+  if (typeof window === "undefined" || !window.location.hash) {
+    return;
+  }
+
+  window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+}
+
 export function scrollToHeroSection() {
   const el = document.getElementById("hero");
 

@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
-import { getAnchor, navigateToHomeSection } from "@/lib/navLinks";
-import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
-import { scrollElementIntoView } from "@/lib/smoothScroll";
+import { getAnchor } from "@/lib/navLinks";
+import { lockBodyScroll, skipNextScrollRestore, unlockBodyScroll } from "@/lib/scrollLock";
+import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
 function GradientBlur() {
@@ -83,28 +83,6 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    if (pathname !== "/") {
-      return;
-    }
-
-    if (window.location.hash !== "#hero") {
-      return;
-    }
-
-    const el = document.getElementById("hero");
-
-    if (!el) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      scrollElementIntoView(el);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [pathname]);
-
-  useEffect(() => {
     const html = document.documentElement;
 
     if (menuOpen) {
@@ -176,32 +154,36 @@ export function Navbar() {
       return;
     }
 
+    if (pathname === "/") {
+      event.preventDefault();
+      clearLocationHash();
+      scrollToHeroSection();
+      return;
+    }
+
     event.preventDefault();
-    navigateToHomeSection({ pathname, router, sectionId: "hero" });
+    router.push("/");
   };
 
-  const handleMobileSectionClick =
-    (sectionId: "work" | "contact") => (event: MouseEvent<HTMLAnchorElement>) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
-        setMenuOpen(false);
-        return;
-      }
+  const handleMobileSectionClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      setMenuOpen(false);
+      return;
+    }
 
-      event.preventDefault();
-      navigateToHomeSection({
-        pathname,
-        router,
-        sectionId,
-        beforeScroll: () => setMenuOpen(false),
-      });
-    };
+    if (pathname === "/") {
+      skipNextScrollRestore();
+    }
+
+    setMenuOpen(false);
+  };
 
   return (
     <header className={styles.header}>
       <GradientBlur />
       <div className={`page-shell ${styles.inner}`}>
         <Link
-          href="/#hero"
+          href="/"
           scroll={false}
           className={styles.logo}
           aria-label="Alexander Yansons"
@@ -274,7 +256,7 @@ export function Navbar() {
               href={getAnchor(pathname, "work")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 1 } as CSSProperties}
-              onClick={handleMobileSectionClick("work")}
+              onClick={handleMobileSectionClick}
             >
               Work
             </a>
@@ -290,7 +272,7 @@ export function Navbar() {
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 3 } as CSSProperties}
-              onClick={handleMobileSectionClick("contact")}
+              onClick={handleMobileSectionClick}
             >
               Contact
             </a>
