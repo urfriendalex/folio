@@ -55,13 +55,6 @@ const bootstrapScript = `
   const html = document.documentElement;
   html.classList.add("js-enabled");
 
-  const ua = navigator.userAgent || "";
-  const platform = navigator.platform || "";
-  const isIOS = /iP(hone|od|ad)/.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const isSafari = /Safari/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo|Brave|Telegram|Instagram|FBAN|FBAV|Line|MicroMessenger|Twitter)/i.test(ua);
-  const isKnownIOSBrowser = isSafari || /(CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo|Brave)/i.test(ua);
-  html.setAttribute("data-ios-embedded-browser", isIOS && !isKnownIOSBrowser ? "true" : "false");
-
   let theme = "light";
   try {
     const storedTheme = localStorage.getItem("theme");

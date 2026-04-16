@@ -74,10 +74,6 @@
   --navbar-ink: var(--navbar-contrast-light-ink);
 }
 
-:global(html[data-ios-embedded-browser="true"]) .gradientBlur {
-  display: none;
-}
-
 .gradientBlur {
   position: absolute;
   z-index: var(--navbar-gradient-blur-z-index);
@@ -353,15 +349,6 @@
 }
 
 @media (max-width: 48rem) {
-  :global(html[data-ios-embedded-browser="true"]) .header {
-    background: linear-gradient(
-      to bottom,
-      var(--navbar-embedded-surface) 0%,
-      var(--navbar-embedded-surface) calc(100% - 1.1rem),
-      var(--navbar-embedded-surface-bottom) 100%
-    );
-  }
-
   .header::before {
     height: calc(var(--navbar-gradient-blur-overscan) + 0.75rem);
     background:
@@ -372,19 +359,6 @@
         transparent 100%
       );
     box-shadow: inset 0 -1.25rem 1.8rem -1.35rem var(--navbar-safe-area-shadow);
-  }
-
-  :global(html[data-ios-embedded-browser="true"]) .header::before {
-    height: calc(var(--navbar-gradient-blur-overscan) + var(--header-height));
-    background:
-      linear-gradient(
-        to bottom,
-        var(--navbar-safe-area-fill) 0%,
-        var(--navbar-safe-area-fill) calc(var(--navbar-gradient-blur-overscan) + 2.6rem),
-        var(--navbar-embedded-surface) calc(var(--navbar-gradient-blur-overscan) + 3.5rem),
-        transparent 100%
-      );
-    box-shadow: inset 0 -1.5rem 1.9rem -1.45rem var(--navbar-safe-area-shadow);
   }
 
   .inner {

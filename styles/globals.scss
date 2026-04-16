@@ -192,8 +192,6 @@
   --navbar-gradient-blur-overscan: 0px;
   --navbar-safe-area-fill: var(--bg-color);
   --navbar-safe-area-shadow: rgb(16 16 16 / 0.12);
-  --navbar-embedded-surface: color-mix(in srgb, var(--bg-color) 96%, transparent);
-  --navbar-embedded-surface-bottom: color-mix(in srgb, var(--bg-color) 78%, transparent);
   --navbar-overlay-backdrop-blur: 20px;
   --navbar-overlay-backdrop-saturate: 112%;
 }
@@ -210,8 +208,6 @@
   --navbar-contrast-dark-ink: rgb(18 18 20 / 0.94);
   --navbar-safe-area-fill: #050505;
   --navbar-safe-area-shadow: rgb(0 0 0 / 0.36);
-  --navbar-embedded-surface: rgb(5 5 5 / 0.96);
-  --navbar-embedded-surface-bottom: rgb(5 5 5 / 0.76);
 
   --bg-color: #0d0d0d;
   --bg-elevated: transparent;
