@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PreloaderGate } from "@/components/Preloader/PreloaderGate";
 import {
   FALLBACK_THEME_COLORS,
@@ -177,6 +178,7 @@ export default function RootLayout({
         <PreloaderGate>
           {children}
         </PreloaderGate>
+        <SpeedInsights />
       </body>
     </html>
   );
