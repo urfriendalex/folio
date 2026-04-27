@@ -14,6 +14,7 @@ import {
   registerHomeContactFormOpener,
   type HomeContactFormOpenOptions,
 } from "@/lib/homeContactForm";
+import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { scrollElementIntoView } from "@/lib/smoothScroll";
 import { GooeyContactEmail } from "./GooeyContactEmail";
 import styles from "./ContactSection.module.scss";
@@ -51,12 +52,6 @@ export function ContactSectionGooey({
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
-  const socials = [
-    { label: "Instagram", href: content.instagram },
-    { label: "GitHub", href: content.github },
-    { label: "LinkedIn", href: content.linkedin },
-  ];
-
   useEffect(() => {
     return () => {
       if (switchTimerRef.current) {
@@ -220,11 +215,18 @@ export function ContactSectionGooey({
       <div className={styles.stage}>
         {view === "email" ? (
           <div className={styles.emailView} data-visible={emailVisible}>
+            <CalBookingTrigger
+              className={`link-underline ${styles.contactAction}`}
+              data-visible={emailVisible}
+            >
+              Schedule a call
+            </CalBookingTrigger>
+
             <GooeyContactEmail email={content.email} hoverPhrase={hoverPhrase} visible={emailVisible} />
 
             <button
               type="button"
-              className={`link-underline ${styles.contactToggle}`}
+              className={`link-underline ${styles.contactAction}`}
               data-visible={emailVisible}
               onClick={() => openForm()}
             >
@@ -305,39 +307,6 @@ export function ContactSectionGooey({
                 ) : null}
               </form>
             </div>
-
-            <aside className={styles.infoColumn}>
-              <h2 className={styles.infoTitle}>Get in touch</h2>
-
-              <div className={styles.infoGroup} style={{ "--field-index": 4 } as CSSProperties}>
-                <span className={styles.infoLabel}>Base</span>
-                <p className={styles.infoText}>{content.location}</p>
-              </div>
-
-              <div className={styles.infoGroup} style={{ "--field-index": 5 } as CSSProperties}>
-                <span className={styles.infoLabel}>Enquiries</span>
-                <a href={`mailto:${content.email}`} className={`link-underline ${styles.infoMail}`}>
-                  {content.email}
-                </a>
-                <p className={styles.infoText}>{content.responseTime}</p>
-              </div>
-
-              <div className={styles.infoGroup} style={{ "--field-index": 6 } as CSSProperties}>
-                <span className={styles.infoLabel}>Availability</span>
-                <p className={styles.infoText}>{content.availability}</p>
-              </div>
-
-              <div className={styles.infoGroup} style={{ "--field-index": 7 } as CSSProperties}>
-                <span className={styles.infoLabel}>Elsewhere</span>
-                <div className={styles.infoLinks}>
-                  {socials.map((social) => (
-                    <a key={social.label} href={social.href} className={`link-underline ${styles.infoLink}`}>
-                      {social.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </aside>
           </div>
         ) : null}
       </div>

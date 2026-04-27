@@ -1,17 +1,20 @@
 .page {
-  padding: calc(var(--header-height) + 1.25rem) 0 clamp(13rem, 30vh, 18rem);
+  --page-pad-bottom: clamp(6.5rem, 15vh, 9rem);
+  padding: calc(var(--header-height) + 0.25rem) 0 var(--page-pad-bottom);
 }
 
 .stills {
   display: grid;
+  box-sizing: border-box;
   width: min(70rem, 100%);
   margin: 0 auto;
   gap: 1.5rem;
+  padding-bottom: 1.5rem;
 }
 
 .still {
   overflow: hidden;
-  border-radius: var(--radius-panel-lg);
+  border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-color) 58%, transparent);
 }
 
@@ -21,7 +24,7 @@
 }
 
 .toolbarShell {
-  --toolbar-rest-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(3.65rem, 6.2vw, 4.65rem));
+  --toolbar-sticky-inset: clamp(1.3rem, 3vw, 1.85rem);
   --toolbar-block-height: clamp(3.35rem, 5.8vw, 3.95rem);
   --toolbar-preview-height: clamp(10.75rem, 15.25vw, 12.75rem);
   /* Expand ~300ms ease-out; collapse faster + distinct curve (exit feels snappier than enter). */
@@ -36,12 +39,11 @@
   --toolbar-panel-p-block-open: clamp(1.08rem, 2.05vw, 1.28rem);
   --toolbar-panel-p-bottom-open: clamp(1.02rem, 1.95vw, 1.2rem);
   --toolbar-expand-toggle: clamp(2rem, 4.2vw, 2.28rem);
-  position: fixed;
-  left: 50%;
-  bottom: var(--toolbar-rest-bottom);
-  width: min(58rem, calc(100vw - 1rem));
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--toolbar-sticky-inset));
+  width: min(58rem, 100%);
+  margin-inline: auto;
   height: var(--toolbar-preview-height);
-  transform: translateX(-50%);
   z-index: 450;
   pointer-events: none;
 }
@@ -465,13 +467,24 @@ button.toolbarAction {
 
 @media (max-width: 48rem) {
   .page {
-    padding-bottom: clamp(14rem, 34vh, 18rem);
+    --page-pad-bottom: clamp(7rem, 17vh, 9rem);
+    padding-bottom: var(--page-pad-bottom);
+  }
+
+  .stills {
+    padding-inline: clamp(0.65rem, 4vw, 1rem);
   }
 
   .toolbarShell {
-    width: calc(100vw - 1rem);
-    height: calc(var(--toolbar-preview-height) + var(--toolbar-block-height) + 0.4rem);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+    --toolbar-track-gap: 0.4rem;
+    width: calc(100% - 2 * var(--toolbar-track-gap));
+    height: calc(var(--toolbar-preview-height) + var(--toolbar-block-height) + var(--toolbar-track-gap));
+    --toolbar-sticky-inset: clamp(1.2rem, 3.1vw, 1.55rem);
+    --toolbar-panel-p-inline: clamp(0.82rem, 3.4vw, 1.05rem);
+    --toolbar-panel-p-block-collapsed: 0.58rem;
+    --toolbar-panel-p-block-open: clamp(0.88rem, 2.6vw, 1rem);
+    --toolbar-panel-p-bottom-open: clamp(0.8rem, 2.4vw, 0.95rem);
+    --toolbar-expand-toggle: clamp(2.05rem, 5vw, 2.35rem);
   }
 
   .toolbarTrack {
@@ -482,15 +495,7 @@ button.toolbarAction {
     /* Fixed rows: panel row reserves preview height so the core grows upward (align-self: end), not down over the nav */
     grid-template-rows: var(--toolbar-preview-height) var(--toolbar-block-height);
     align-items: stretch;
-    gap: 0.4rem;
-  }
-
-  .toolbarShell {
-    --toolbar-panel-p-inline: clamp(0.82rem, 3.4vw, 1.05rem);
-    --toolbar-panel-p-block-collapsed: 0.58rem;
-    --toolbar-panel-p-block-open: clamp(0.88rem, 2.6vw, 1rem);
-    --toolbar-panel-p-bottom-open: clamp(0.8rem, 2.4vw, 0.95rem);
-    --toolbar-expand-toggle: clamp(2.05rem, 5vw, 2.35rem);
+    gap: var(--toolbar-track-gap);
   }
 
   .toolbarPanel {
@@ -517,17 +522,13 @@ button.toolbarAction {
   }
 
   .still {
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-panel-md);
   }
 }
 
 @media (max-width: 30rem) {
   .toolbarShell {
-    width: calc(100vw - 0.75rem);
-  }
-
-  .toolbarTrack {
-    gap: 0.45rem;
+    --toolbar-track-gap: 0.45rem;
   }
 
   .navButton {

@@ -9,6 +9,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { CalBookingOverlayContent } from "@/components/booking/CalBookingOverlayContent";
 import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import { AboutOverlayContent } from "@/content/about";
 import { contactContent } from "@/content/contact";
@@ -18,12 +19,13 @@ import { PixelText } from "@/components/type/PixelText/PixelText";
 import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
 
-type OverlayType = "about" | "contact" | "project" | null;
+type OverlayType = "about" | "contact" | "project" | "booking" | null;
 
 type OverlayContextValue = {
   activeOverlay: OverlayType;
   closeOverlay: () => void;
   openAbout: () => void;
+  openCalBooking: () => void;
   openContactForm: () => void;
   openProjectFullInfo: (project: ProjectEntry) => void;
 };
@@ -45,11 +47,17 @@ type OverlayProviderProps = {
 };
 
 const ABOUT_REVEAL_STEP_MS = 28;
-const ABOUT_TOKEN_TRANSITION_MS = 620;
+const ABOUT_EXIT_SPEED_FACTOR = 3;
+const ABOUT_TOKEN_OPACITY_MS = 460;
+const ABOUT_TOKEN_TRANSFORM_MS = 620;
+const ABOUT_EXIT_STEP_MS = ABOUT_REVEAL_STEP_MS / ABOUT_EXIT_SPEED_FACTOR;
+const ABOUT_TOKEN_EXIT_OPACITY_MS = ABOUT_TOKEN_OPACITY_MS / ABOUT_EXIT_SPEED_FACTOR;
+const ABOUT_TOKEN_EXIT_TRANSFORM_MS = ABOUT_TOKEN_TRANSFORM_MS / ABOUT_EXIT_SPEED_FACTOR;
 const ABOUT_EXIT_BUFFER_MS = 80;
 const BASE_OVERLAY_EXIT_MS = 420;
 const ABOUT_FOOTER_COUNT = 3;
 const ABOUT_INTRO_COUNT = AboutOverlayContent.intro.split("\n").length;
+const META_LINE_DRAW_MS = 560;
 
 /** Rough token count for stagger (RevealLines line tokens); keeps meta/footer offsets in sync with the about body. */
 function estimateAboutLineTokens(text: string): number {
@@ -63,8 +71,10 @@ const ABOUT_DETAILS_OFFSET = aboutSequenceCursor;
 
 /** Horizontal stagger between column rule draws (overlap OK — next column need not wait for the previous). */
 const META_COLUMN_STAGGER_MS = 88;
+const META_COLUMN_EXIT_STAGGER_MS = META_COLUMN_STAGGER_MS / ABOUT_EXIT_SPEED_FACTOR;
 /** Small gap after each rule starts before that column’s label + list begin (does not wait for the 560ms draw). */
 const META_TEXT_GAP_MS = 44;
+const META_LINE_DRAW_EXIT_MS = META_LINE_DRAW_MS / ABOUT_EXIT_SPEED_FACTOR;
 
 const { detailSequences: ABOUT_DETAIL_SEQUENCES, footerOffset: ABOUT_FOOTER_OFFSET } = (() => {
   let cursor = ABOUT_DETAILS_OFFSET;
@@ -101,6 +111,7 @@ const { detailSequences: ABOUT_DETAIL_SEQUENCES, footerOffset: ABOUT_FOOTER_OFFS
     }
 
     return {
+      colIndex,
       detail,
       titleOffset,
       titleRevealDelayMs,
@@ -110,21 +121,29 @@ const { detailSequences: ABOUT_DETAIL_SEQUENCES, footerOffset: ABOUT_FOOTER_OFFS
     };
   });
 
-  const maxLineEnterMs = Math.max(...partial.map((d) => d.lineEnterDelayMs));
   const detailSequences = partial.map((d) => ({
     ...d,
-    lineExitDelayMs: maxLineEnterMs - d.lineEnterDelayMs,
+    lineExitDelayMs: (partial.length - d.colIndex - 1) * META_COLUMN_EXIT_STAGGER_MS,
   }));
 
   return { detailSequences, footerOffset: cursor };
 })();
 const ABOUT_SEQUENCE_TOTAL = ABOUT_FOOTER_OFFSET + ABOUT_FOOTER_COUNT;
 const ABOUT_OVERLAY_EXIT_MS =
-  (ABOUT_SEQUENCE_TOTAL - 1) * ABOUT_REVEAL_STEP_MS +
-  ABOUT_TOKEN_TRANSITION_MS +
+  (ABOUT_SEQUENCE_TOTAL - 1) * ABOUT_EXIT_STEP_MS +
+  ABOUT_TOKEN_EXIT_TRANSFORM_MS +
   ABOUT_EXIT_BUFFER_MS;
 const OVERLAY_BLUR_PENDING_CLASS = "is-overlay-blur-pending";
 const OVERLAY_BLUR_CLOSING_CLASS = "is-overlay-blur-closing";
+const ABOUT_MOTION_STYLE = {
+  "--reveal-step-out": `${ABOUT_EXIT_STEP_MS}ms`,
+  "--reveal-line-opacity-ms": `${ABOUT_TOKEN_OPACITY_MS}ms`,
+  "--reveal-line-opacity-out-ms": `${ABOUT_TOKEN_EXIT_OPACITY_MS}ms`,
+  "--reveal-line-transform-ms": `${ABOUT_TOKEN_TRANSFORM_MS}ms`,
+  "--reveal-line-transform-out-ms": `${ABOUT_TOKEN_EXIT_TRANSFORM_MS}ms`,
+  "--meta-line-duration-in": `${META_LINE_DRAW_MS}ms`,
+  "--meta-line-duration-out": `${META_LINE_DRAW_EXIT_MS}ms`,
+} as CSSProperties;
 
 export function OverlayProvider({ children }: OverlayProviderProps) {
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
@@ -288,6 +307,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
         activeOverlay,
         closeOverlay,
         openAbout: () => openOverlay("about"),
+        openCalBooking: () => openOverlay("booking"),
         openContactForm: () => openOverlay("contact"),
         openProjectFullInfo,
       }}
@@ -302,7 +322,11 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           visible={overlayVisible}
           contentVisible={overlayContentVisible}
         >
-          <div className={styles.about} data-content-visible={overlayContentVisible}>
+          <div
+            className={styles.about}
+            data-content-visible={overlayContentVisible}
+            style={ABOUT_MOTION_STYLE}
+          >
             <div className={styles.aboutScroll} data-lenis-prevent="">
               <div className={styles.aboutLead}>
                 <RevealLines
@@ -436,6 +460,20 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           contentVisible={overlayContentVisible}
         >
           <ProjectFullInfoOverlay project={projectOverlay} contentVisible={overlayContentVisible} />
+        </Overlay>
+      ) : null}
+      {activeOverlay === "booking" ? (
+        <Overlay
+          onClose={closeOverlay}
+          title="Schedule a call"
+          variant="immersive"
+          showTitle={false}
+          visible={overlayVisible}
+          contentVisible={overlayContentVisible}
+        >
+          <CalBookingOverlayContent
+            calLink={contactContent.calLink}
+          />
         </Overlay>
       ) : null}
       {activeOverlay === "contact" ? (

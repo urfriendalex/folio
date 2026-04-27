@@ -152,7 +152,11 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       return;
     }
 
-    scrollToTopImmediate();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToTopImmediate();
+      });
+    });
   }, [pathname]);
 
   return children;

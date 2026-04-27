@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import {
+  startTransition,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
@@ -83,6 +91,12 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
+    if (pathname === "/archive") {
+      router.prefetch("/");
+    }
+  }, [pathname, router]);
+
+  useEffect(() => {
     const html = document.documentElement;
 
     if (menuOpen) {
@@ -162,7 +176,9 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    router.push("/");
+    startTransition(() => {
+      router.push("/");
+    });
   };
 
   const handleMobileSectionClick = (event: MouseEvent<HTMLAnchorElement>) => {

@@ -1,7 +1,7 @@
 import gsap from "gsap";
 
 /**
- * GSAP timeline: blur ramp, opacity crossfade, y nudge (viewBox height 20, text y=15).
+ * GSAP timeline: blur ramp, opacity crossfade, y nudge (viewBox height 20, text y=15.5).
  */
 export function createGooeyContactTimeline(args: {
   textsGroupEl: SVGGElement;

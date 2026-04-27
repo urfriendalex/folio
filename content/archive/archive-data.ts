@@ -51,11 +51,14 @@ const archiveMeta = [
   },
 ] as const;
 
+export type ArchiveAssetKind = "image" | "video";
+
 export type ArchiveEntry = {
   id: string;
   image: string;
   width: number;
   height: number;
+  kind: ArchiveAssetKind;
   title: string;
   year: string;
   medium: string;
@@ -76,6 +79,7 @@ export const archiveEntries: ArchiveEntry[] = archiveManifest.map((item, index) 
     image: item.src,
     width: item.width,
     height: item.height,
+    kind: item.kind as ArchiveAssetKind,
     title: meta.title,
     year: meta.year,
     medium: meta.medium,

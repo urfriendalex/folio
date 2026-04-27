@@ -50,6 +50,26 @@
   pointer-events: none;
 }
 
+.loadingStatus {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.loadingText {
+  margin: 0;
+  padding: 0 1.25rem;
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(0.7rem, 1vw, 0.95rem);
+  line-height: 1.35;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--signal-color);
+  text-align: center;
+  text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
+}
+
 .focusLabel {
   position: absolute;
   right: 0.65rem;
@@ -59,8 +79,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.58rem;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-  color: #c00;
+  font-family: var(--font-pixel-stack);
+  font-size: clamp(0.62rem, 0.8vw, 0.75rem);
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  color: var(--signal-color);
+}
+
+@media (max-width: 48rem) {
+  .focusLabel {
+    right: 0.75rem;
+    /* Closer to the bottom than 4.15rem; still clears typical in-app UI. */
+    bottom: 3.4rem;
+    max-width: min(85vw, 20rem);
+    font-size: clamp(0.8rem, 2.9vw, 0.95rem);
+    line-height: 1.3;
+  }
 }

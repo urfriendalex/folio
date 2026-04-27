@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { contactContent } from "@/content/contact";
@@ -637,61 +638,74 @@ export function Footer() {
           <div ref={minimalFooterCoverRef} className={styles.minimalFooterCover}>
             <div className={`page-shell ${styles.inner}`}>
               <div className={styles.editorial}>
-                <div className={styles.editorialCol}>
-                  <p className={styles.editorialLead}>{contactContent.availability}</p>
-                  {contactContent.availabilityAi.trim() ? (
-                    <p className={styles.editorialBody}>{contactContent.availabilityAi}</p>
-                  ) : null}
-                  <p className={styles.editorialBody}>{contactContent.responseTime}</p>
-                </div>
-
-                <div className={styles.editorialCol}>
-                  <p className={styles.editorialIntro}>{contactContent.editorialIntro}</p>
-                  <a
-                    href={`mailto:${contactContent.email}`}
-                    className={`link-underline ${styles.editorialEmail}`}
-                  >
-                    {contactContent.email}
-                  </a>
-                  <span className={styles.connectLabel}>Connect</span>
-                  <ul className={styles.connectList}>
-                    {QUICK_LINKS.map((link) => (
-                      <li key={link.label}>
-                        <a href={link.href} className={`link-underline ${styles.connectLink}`}>
-                          {link.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className={styles.editorialCol}>
-                  <div className={styles.localeBlock}>
-                    <span className={styles.localeLabel}>Location</span>
-                    <span className={styles.localeValue}>{contactContent.location}</span>
+                <div className={`${styles.editorialCol} ${styles.editorialColPrimary}`}>
+                  <div className={styles.editorialTextCluster}>
+                    <p className={styles.editorialLead}>{contactContent.availability}</p>
+                    {contactContent.availabilityAi.trim() ? (
+                      <p className={styles.editorialBody}>{contactContent.availabilityAi}</p>
+                    ) : null}
+                    <CalBookingTrigger className={styles.bookingButton}>
+                      <span className={styles.bookingButtonText}>Schedule a call</span>
+                      <span className={styles.bookingButtonMeta}>Cal.com</span>
+                    </CalBookingTrigger>
                   </div>
-                  {sameAsWarsaw ? (
-                    <div className={styles.localeBlock}>
-                      <span className={styles.localeLabel}>Time</span>
-                      <span className={styles.localeValue}>{localClock}</span>
-                      <p className={styles.localeMeta}>
-                        {`${timeZoneStatus.visitorTimeZone} · ${timeZoneStatus.offsetLabel}`}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className={styles.localeBlock}>
-                        <span className={styles.localeLabel}>Your time</span>
-                        <span className={styles.localeValue}>{localClock}</span>
-                      </div>
-                      <div className={styles.localeBlock}>
-                        <span className={styles.localeLabel}>Warsaw (studio)</span>
-                        <span className={styles.localeValue}>{`${timeZoneStatus.warsawTime} · WAW`}</span>
-                      </div>
-                      <p className={styles.localeMeta}>{timeZoneStatus.offsetLabel}</p>
-                    </>
-                  )}
+                  {contactContent.editorialIntro.trim() ? (
+                    <p className={styles.editorialIntro}>{contactContent.editorialIntro}</p>
+                  ) : null}
+                </div>
 
+                <div className={`${styles.editorialCol} ${styles.editorialColSecondary}`}>
+                  <div className={styles.emailBlock}>
+                    <span className={styles.editorialLabel}>Email</span>
+                    <a
+                      href={`mailto:${contactContent.email}`}
+                      className={`link-underline ${styles.editorialEmail}`}
+                    >
+                      {contactContent.email}
+                    </a>
+                  </div>
+                  <div className={styles.connectBlock}>
+                    <span className={styles.connectLabel}>Connect</span>
+                    <ul className={styles.connectList}>
+                      {QUICK_LINKS.map((link) => (
+                        <li key={link.label}>
+                          <a href={link.href} className={`link-underline ${styles.connectLink}`}>
+                            {link.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className={`${styles.editorialCol} ${styles.editorialColTertiary}`}>
+                  <div className={styles.localeCluster}>
+                    <div className={styles.localeBlock}>
+                      <span className={styles.localeLabel}>Location</span>
+                      <span className={styles.localeValue}>{contactContent.location}</span>
+                    </div>
+                    {sameAsWarsaw ? (
+                      <div className={styles.localeBlock}>
+                        <span className={styles.localeLabel}>Time</span>
+                        <span className={styles.localeValue}>{localClock}</span>
+                        <p className={styles.localeMeta}>
+                          {`${timeZoneStatus.visitorTimeZone} · ${timeZoneStatus.offsetLabel}`}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={styles.localeBlock}>
+                          <span className={styles.localeLabel}>Your time</span>
+                          <span className={styles.localeValue}>{localClock}</span>
+                        </div>
+                        <div className={styles.localeBlock}>
+                          <span className={styles.localeLabel}>Warsaw (studio)</span>
+                          <span className={styles.localeValue}>{`${timeZoneStatus.warsawTime} · WAW`}</span>
+                        </div>
+                        <p className={styles.localeMeta}>{timeZoneStatus.offsetLabel}</p>
+                      </>
+                    )}
+                  </div>
                   <div className={styles.columnControls}>
                     <button
                       type="button"
@@ -916,7 +930,11 @@ export function Footer() {
                             {contactContent.availabilityAi.trim() ? (
                               <p className={styles.menuProse}>{contactContent.availabilityAi}</p>
                             ) : null}
-                            <p className={styles.menuProse}>{contactContent.responseTime}</p>
+                            <p className={styles.menuProse}>
+                              <CalBookingTrigger className={`link-underline ${styles.menuActionLink}`}>
+                                Book a call on Cal.com
+                              </CalBookingTrigger>
+                            </p>
                           </div>
                         </div>
                       ) : null}

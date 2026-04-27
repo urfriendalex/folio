@@ -50,5 +50,5 @@ export const ohgotmiProject: ProjectEntry = {
   links: [{ label: "Live Site", url: "https://ohgotmi.com" }],
   featured: true,
   thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/frame-07.svg", "/archive/frame-01.svg", "/archive/frame-04.svg"],
+  stills: ["/archive/explore-wall.webp", "/archive/artboard-1.webp", "/archive/desktop.webp"],
 };

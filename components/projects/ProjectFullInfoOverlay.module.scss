@@ -41,9 +41,24 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  padding-block: clamp(0.65rem, 1.4vw, 1rem);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 clamp(0.65rem, 1.4vw, 1rem),
+    #000 calc(100% - clamp(0.65rem, 1.4vw, 1rem)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 clamp(0.65rem, 1.4vw, 1rem),
+    #000 calc(100% - clamp(0.65rem, 1.4vw, 1rem)),
+    transparent 100%
+  );
   /* Stable gutter avoids layout shift when the scrollbar appears (tall case studies). */
   scrollbar-gutter: stable;
 }

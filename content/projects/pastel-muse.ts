@@ -51,5 +51,5 @@ export const pastelMuseProject: ProjectEntry = {
   links: [{ label: "Live Site", url: "https://pastelmuse.lizakarasiova.com/" }],
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/frame-08.svg", "/archive/frame-04.svg", "/archive/frame-01.svg"],
+  stills: ["/archive/gradient-bg-1.webp", "/archive/desktop.webp", "/archive/artboard-1.webp"],
 };

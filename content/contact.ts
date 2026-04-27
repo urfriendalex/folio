@@ -4,6 +4,8 @@ export const contactContent = {
   availability: "Open to freelance, studio, and product collaborations.",
   /** Optional second line in the footer editorial column; leave empty to hide. */
   availabilityAi: "",
+  /** Use either a profile slug like `name` or a preferred public event path like `name/intro-call`. */
+  calLink: process.env.NEXT_PUBLIC_CAL_LINK?.trim() || "yansons",
   responseTime: "Usually replies within two business days.",
   editorialIntro:
     "For enquiries and new work, email is best. A short note with scope, timeline, and any reference links helps.",

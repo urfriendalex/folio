@@ -14,7 +14,7 @@
   --line-color: rgb(16 16 16 / 0.12);
   --accent-color: #101010;
   --accent-soft: rgb(16 16 16 / 0.06);
-  --signal-color: red;
+  --signal-color: #ff0000;
   --lime-color: #101010;
   --panel-shadow: none;
   --walker-color: #050505;
@@ -218,7 +218,7 @@
   --line-color: rgb(243 241 234 / 0.12);
   --accent-color: #f3f1ea;
   --accent-soft: rgb(243 241 234 / 0.06);
-  --signal-color: red;
+  --signal-color: #ff0000;
   --lime-color: #f3f1ea;
   --panel-shadow: none;
   --walker-color: #f6f6f6;
@@ -363,12 +363,12 @@ body {
 
 ::selection {
   background-color: var(--signal-color);
-  color: #101010;
+  color: #fff;
 }
 
 ::-moz-selection {
   background-color: var(--signal-color);
-  color: #101010;
+  color: #fff;
 }
 
 body::before {
@@ -418,7 +418,9 @@ html.is-fullscreen-route body {
 }
 
 html.is-archive-route,
-html.is-archive-route body {
+html.is-archive-route body,
+html:has([data-archive-experience="true"]),
+html:has([data-archive-experience="true"]) body {
   overflow: hidden;
 }
 
@@ -448,18 +450,21 @@ html.is-fullscreen-route [data-app-main="true"] {
   min-height: 100svh;
 }
 
-html.is-archive-route [data-app-main="true"] {
+html.is-archive-route [data-app-main="true"],
+body:has([data-archive-experience="true"]) [data-app-main="true"] {
   min-height: 100svh;
   background: transparent;
 }
 
 html.is-archive-route [data-footer-wordmark-underlay="true"],
+body:has([data-archive-experience="true"]) [data-footer-wordmark-underlay="true"],
 html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
   display: none;
 }
 
 /* Full-viewport fixed WebGL under `main` can composite above sticky chrome; pin navbar to the viewport. */
-html.is-archive-route [data-app-navbar="true"] {
+html.is-archive-route [data-app-navbar="true"],
+body:has([data-archive-experience="true"]) [data-app-navbar="true"] {
   position: fixed;
   top: 0;
   right: 0;
@@ -468,11 +473,14 @@ html.is-archive-route [data-app-navbar="true"] {
   pointer-events: auto;
 }
 
-html.is-archive-route.is-overlay-open [data-app-navbar="true"] {
+html.is-archive-route.is-overlay-open [data-app-navbar="true"],
+html:has([data-archive-experience="true"]).is-overlay-open [data-app-navbar="true"] {
   z-index: 499;
 }
 
 html.is-archive-route [data-app-footer="true"],
+body:has([data-archive-experience="true"]) [data-app-footer="true"],
+body:has([data-archive-experience="true"]) [data-toolbar-ascii-portal="true"],
 html.is-archive-route [data-toolbar-ascii-portal="true"] {
   display: none;
 }

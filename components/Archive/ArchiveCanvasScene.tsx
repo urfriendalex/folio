@@ -4,7 +4,8 @@ import { KeyboardControls, useKeyboardControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import type { ArchiveEntry } from "@/content/archive/archive-data";
+import type { ArchiveAssetKind, ArchiveEntry } from "@/content/archive/archive-data";
+import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
 
 const CHUNK_SIZE = 110;
@@ -19,11 +20,16 @@ const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
 const INITIAL_CAMERA_Z = 50;
 const MAX_PLANE_CACHE = 256;
+const PIXELS_PER_WORLD_UNIT = 120;
+const FALLBACK_WORLD_SIZE = 14;
 const PLANE_GEOMETRY = new THREE.PlaneGeometry(1, 1);
 const textureCache = new Map<string, THREE.Texture>();
-const loadCallbacks = new Map<string, Set<(tex: THREE.Texture) => void>>();
+const loadCallbacks = new Map<string, Set<TextureLoadCallback>>();
+const videoElementCache = new Map<string, HTMLVideoElement>();
 const planeCache = new Map<string, PlaneData[]>();
 const textureLoader = new THREE.TextureLoader();
+const centerRaycaster = new THREE.Raycaster();
+const centerNdc = new THREE.Vector2(0, 0);
 
 const KEYBOARD_MAP: Array<{ name: KeyboardKey; keys: string[] }> = [
   { name: "forward", keys: ["w", "W", "ArrowUp"] },
@@ -38,6 +44,7 @@ type ArchiveMediaItem = {
   url: string;
   width: number;
   height: number;
+  kind: ArchiveAssetKind;
   label: string;
 };
 
@@ -60,7 +67,6 @@ type ChunkOffset = {
 type PlaneData = {
   id: string;
   position: THREE.Vector3;
-  scale: THREE.Vector3;
   mediaIndex: number;
   chunkX: number;
   chunkY: number;
@@ -90,10 +96,24 @@ type ControllerState = {
   pendingChunk: { cx: number; cy: number; cz: number } | null;
 };
 
+type SceneLoadState = {
+  active: boolean;
+  loaded: number;
+  total: number;
+};
+
 type ArchiveCanvasSceneProps = {
   items: ArchiveEntry[];
+  onSceneLoadStateChange?: (state: SceneLoadState) => void;
   onHoverLabelChange: (label: string | null) => void;
+  onFocusLabelChange: (label: string | null) => void;
 };
+
+type TextureLoadResult =
+  | { status: "loaded"; texture: THREE.Texture }
+  | { status: "error" };
+
+type TextureLoadCallback = (result: TextureLoadResult) => void;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -199,7 +219,6 @@ function generateChunkPlanes(cx: number, cy: number, cz: number) {
   for (let index = 0; index < 5; index += 1) {
     const baseSeed = seed + index * 1000;
     const random = (step: number) => seededRandom(baseSeed + step);
-    const size = 12 + random(4) * 8;
 
     planes.push({
       id: `${cx}-${cy}-${cz}-${index}`,
@@ -208,7 +227,6 @@ function generateChunkPlanes(cx: number, cy: number, cz: number) {
         cy * CHUNK_SIZE + random(1) * CHUNK_SIZE,
         cz * CHUNK_SIZE + random(2) * CHUNK_SIZE,
       ),
-      scale: new THREE.Vector3(size, size, 1),
       mediaIndex: Math.floor(random(5) * 1_000_000),
       chunkX: cx,
       chunkY: cy,
@@ -235,18 +253,87 @@ function generateChunkPlanesCached(cx: number, cy: number, cz: number) {
 }
 
 function isTextureLoaded(texture: THREE.Texture) {
-  const image = texture.image as HTMLImageElement | undefined;
+  const image = texture.image as HTMLImageElement | HTMLVideoElement | undefined;
+
+  if (image instanceof HTMLVideoElement) {
+    return image.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && image.videoWidth > 0;
+  }
+
   return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0;
 }
 
-function getTexture(item: ArchiveMediaItem, onLoad?: (texture: THREE.Texture) => void) {
+function applyImageTextureSettings(texture: THREE.Texture) {
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  const coarsePointer =
+    typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+  texture.anisotropy = coarsePointer ? 2 : 4;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+}
+
+function applyVideoTextureSettings(texture: THREE.Texture) {
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+}
+
+function notifyTextureLoaded(key: string, texture: THREE.Texture) {
+  loadCallbacks.get(key)?.forEach((callback) => {
+    callback({ status: "loaded", texture });
+  });
+  loadCallbacks.delete(key);
+}
+
+function notifyTextureError(key: string) {
+  loadCallbacks.get(key)?.forEach((callback) => {
+    callback({ status: "error" });
+  });
+  loadCallbacks.delete(key);
+  textureCache.delete(key);
+  videoElementCache.delete(key);
+}
+
+function ensureVideoPlayback(video: HTMLVideoElement) {
+  const startPlayback = () => {
+    const playAttempt = video.play();
+
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(() => {
+        // Ignore autoplay rejections; retry on user gesture below.
+      });
+    }
+  };
+
+  startPlayback();
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const resumePlayback = () => {
+    startPlayback();
+    window.removeEventListener("pointerdown", resumePlayback);
+    window.removeEventListener("touchstart", resumePlayback);
+    window.removeEventListener("keydown", resumePlayback);
+  };
+
+  window.addEventListener("pointerdown", resumePlayback, { once: true });
+  window.addEventListener("touchstart", resumePlayback, { once: true });
+  window.addEventListener("keydown", resumePlayback, { once: true });
+}
+
+function getTexture(item: ArchiveMediaItem, onLoad?: TextureLoadCallback) {
   const key = item.url;
   const existing = textureCache.get(key);
 
   if (existing) {
     if (onLoad) {
       if (isTextureLoaded(existing)) {
-        onLoad(existing);
+        onLoad({ status: "loaded", texture: existing });
       } else {
         loadCallbacks.get(key)?.add(onLoad);
       }
@@ -255,7 +342,7 @@ function getTexture(item: ArchiveMediaItem, onLoad?: (texture: THREE.Texture) =>
     return existing;
   }
 
-  const callbacks = new Set<(texture: THREE.Texture) => void>();
+  const callbacks = new Set<TextureLoadCallback>();
 
   if (onLoad) {
     callbacks.add(onLoad);
@@ -263,26 +350,55 @@ function getTexture(item: ArchiveMediaItem, onLoad?: (texture: THREE.Texture) =>
 
   loadCallbacks.set(key, callbacks);
 
+  if (item.kind === "video") {
+    const video = document.createElement("video");
+
+    video.src = key;
+    video.crossOrigin = "anonymous";
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.autoplay = true;
+    video.disablePictureInPicture = true;
+
+    const texture = new THREE.VideoTexture(video);
+
+    applyVideoTextureSettings(texture);
+
+    const handleLoaded = () => {
+      applyVideoTextureSettings(texture);
+      ensureVideoPlayback(video);
+      notifyTextureLoaded(key, texture);
+    };
+    const handleError = () => {
+      console.error("Video load failed:", key);
+      notifyTextureError(key);
+    };
+
+    video.addEventListener("loadeddata", handleLoaded, { once: true });
+    video.addEventListener("canplay", handleLoaded, { once: true });
+    video.addEventListener("error", handleError, { once: true });
+
+    textureCache.set(key, texture);
+    videoElementCache.set(key, video);
+
+    video.load();
+    ensureVideoPlayback(video);
+
+    return texture;
+  }
+
   const texture = textureLoader.load(
     key,
     (nextTexture: THREE.Texture) => {
-      nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
-      nextTexture.magFilter = THREE.LinearFilter;
-      nextTexture.generateMipmaps = true;
-      const coarsePointer =
-        typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
-      nextTexture.anisotropy = coarsePointer ? 2 : 4;
-      nextTexture.colorSpace = THREE.SRGBColorSpace;
-      nextTexture.needsUpdate = true;
-
-      loadCallbacks.get(key)?.forEach((callback) => {
-        callback(nextTexture);
-      });
-      loadCallbacks.delete(key);
+      applyImageTextureSettings(nextTexture);
+      notifyTextureLoaded(key, nextTexture);
     },
     undefined,
     (error: unknown) => {
       console.error("Texture load failed:", key, error);
+      notifyTextureError(key);
     },
   );
 
@@ -290,32 +406,16 @@ function getTexture(item: ArchiveMediaItem, onLoad?: (texture: THREE.Texture) =>
   return texture;
 }
 
-function useIsTouchDevice() {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+function getDisplayScale(media: ArchiveMediaItem) {
+  if (media.width > 0 && media.height > 0) {
+    return new THREE.Vector3(
+      media.width / PIXELS_PER_WORLD_UNIT,
+      media.height / PIXELS_PER_WORLD_UNIT,
+      1,
+    );
+  }
 
-  useEffect(() => {
-    const getIsTouchDevice = () => {
-      const hasTouchEvent = "ontouchstart" in window;
-      const hasTouchPoints = navigator.maxTouchPoints > 0;
-      const hasCoarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
-
-      return hasTouchEvent || hasTouchPoints || hasCoarsePointer;
-    };
-
-    const mediaQuery = window.matchMedia("(pointer: coarse)");
-    const handleChange = () => {
-      setIsTouchDevice(getIsTouchDevice());
-    };
-
-    handleChange();
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
-
-  return isTouchDevice;
+  return new THREE.Vector3(FALLBACK_WORLD_SIZE, FALLBACK_WORLD_SIZE, 1);
 }
 
 function MediaPlane({
@@ -323,11 +423,15 @@ function MediaPlane({
   media,
   cameraGridRef,
   onHoverLabelChange,
+  placeholderColor,
+  pointerHoverForLabel,
 }: {
   plane: PlaneData;
   media: ArchiveMediaItem;
   cameraGridRef: MutableRefObject<CameraGridState>;
   onHoverLabelChange: (label: string | null) => void;
+  placeholderColor: string;
+  pointerHoverForLabel: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -392,20 +496,17 @@ function MediaPlane({
         ? 0
         : lerp(state.opacity, targetOpacity, 0.18);
 
-    const isFullyOpaque = state.opacity > 0.99;
-    material.opacity = isFullyOpaque ? 1 : state.opacity;
+    const visibleOpacity = state.ready ? state.opacity : state.opacity * 0.24;
+    const isFullyOpaque = state.ready && visibleOpacity > 0.99;
+
+    material.opacity = isFullyOpaque ? 1 : visibleOpacity;
     material.depthWrite = isFullyOpaque;
-    mesh.visible = state.opacity > INVIS_THRESHOLD;
+    mesh.visible = visibleOpacity > INVIS_THRESHOLD;
   });
 
   const displayScale = useMemo(() => {
-    if (media.width && media.height) {
-      const aspectRatio = media.width / media.height;
-      return new THREE.Vector3(plane.scale.y * aspectRatio, plane.scale.y, 1);
-    }
-
-    return plane.scale;
-  }, [media.height, media.width, plane.scale]);
+    return getDisplayScale(media);
+  }, [media]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -420,11 +521,16 @@ function MediaPlane({
       material.opacity = 0;
       material.depthWrite = false;
       material.map = null;
+      material.color.set(placeholderColor);
     }
 
     if (!isReady) {
-      getTexture(media, () => {
+      getTexture(media, (result) => {
         if (isCancelled) {
+          return;
+        }
+
+        if (result.status !== "loaded") {
           return;
         }
 
@@ -436,26 +542,32 @@ function MediaPlane({
     return () => {
       isCancelled = true;
     };
-  }, [forceRender, isReady, media]);
+  }, [forceRender, isReady, media, placeholderColor]);
 
   useEffect(() => {
     const material = materialRef.current;
     const mesh = meshRef.current;
     const state = localState.current;
 
-    if (!material || !mesh || !texture || !isReady || !state.ready) {
+    if (!material || !mesh) {
+      return;
+    }
+
+    mesh.scale.copy(displayScale);
+
+    if (!texture || !isReady || !state.ready) {
+      material.map = null;
+      material.color.set(placeholderColor);
+      material.needsUpdate = true;
       return;
     }
 
     material.map = texture;
+    material.color.set("#ffffff");
     material.opacity = state.opacity;
     material.depthWrite = state.opacity >= 1;
-    mesh.scale.copy(displayScale);
-  }, [displayScale, isReady, texture]);
-
-  if (!isReady) {
-    return null;
-  }
+    material.needsUpdate = true;
+  }, [displayScale, isReady, placeholderColor, texture]);
 
   return (
     <mesh
@@ -464,8 +576,21 @@ function MediaPlane({
       scale={displayScale}
       visible={false}
       geometry={PLANE_GEOMETRY}
-      onPointerEnter={() => onHoverLabelChange(media.label)}
-      onPointerLeave={() => onHoverLabelChange(null)}
+      userData={{ archiveImageLabel: media.label }}
+      onPointerEnter={() => {
+        if (!pointerHoverForLabel || !localState.current.ready) {
+          return;
+        }
+
+        onHoverLabelChange(media.label);
+      }}
+      onPointerLeave={() => {
+        if (!pointerHoverForLabel) {
+          return;
+        }
+
+        onHoverLabelChange(null);
+      }}
     >
       <meshBasicMaterial ref={materialRef} transparent opacity={0} side={THREE.DoubleSide} />
     </mesh>
@@ -479,6 +604,8 @@ function Chunk({
   media,
   cameraGridRef,
   onHoverLabelChange,
+  placeholderColor,
+  pointerHoverForLabel,
 }: {
   cx: number;
   cy: number;
@@ -486,6 +613,8 @@ function Chunk({
   media: ArchiveMediaItem[];
   cameraGridRef: MutableRefObject<CameraGridState>;
   onHoverLabelChange: (label: string | null) => void;
+  placeholderColor: string;
+  pointerHoverForLabel: boolean;
 }) {
   const [planes, setPlanes] = useState<PlaneData[] | null>(null);
 
@@ -534,6 +663,8 @@ function Chunk({
             media={mediaItem}
             cameraGridRef={cameraGridRef}
             onHoverLabelChange={onHoverLabelChange}
+            placeholderColor={placeholderColor}
+            pointerHoverForLabel={pointerHoverForLabel}
           />
         );
       })}
@@ -544,12 +675,17 @@ function Chunk({
 function SceneController({
   media,
   onHoverLabelChange,
+  onFocusLabelChange,
+  placeholderColor,
 }: {
   media: ArchiveMediaItem[];
   onHoverLabelChange: (label: string | null) => void;
+  onFocusLabelChange: (label: string | null) => void;
+  placeholderColor: string;
 }) {
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();
   const isTouchDevice = useIsTouchDevice();
+  const lastFocusLabelRef = useRef<string | null>(null);
   const [, getKeys] = useKeyboardControls<KeyboardKey>();
   const state = useRef<ControllerState>(createInitialState(INITIAL_CAMERA_Z));
   const cameraGridRef = useRef<CameraGridState>({
@@ -666,6 +802,15 @@ function SceneController({
       canvas.removeEventListener("touchend", onTouchEnd);
     };
   }, [gl, onHoverLabelChange]);
+
+  useEffect(() => {
+    if (isTouchDevice) {
+      return;
+    }
+
+    lastFocusLabelRef.current = null;
+    onFocusLabelChange(null);
+  }, [isTouchDevice, onFocusLabelChange]);
 
   useFrame(() => {
     const currentState = state.current;
@@ -794,6 +939,20 @@ function SceneController({
         })),
       );
     }
+
+    if (isTouchDevice) {
+      centerRaycaster.setFromCamera(centerNdc, camera);
+      const hits = centerRaycaster.intersectObjects(scene.children, true);
+      const labelHit = hits.find(
+        (h) => typeof h.object.userData?.archiveImageLabel === "string",
+      );
+      const nextLabel = (labelHit?.object.userData?.archiveImageLabel as string) ?? null;
+
+      if (lastFocusLabelRef.current !== nextLabel) {
+        lastFocusLabelRef.current = nextLabel;
+        onFocusLabelChange(nextLabel);
+      }
+    }
   });
 
   useEffect(() => {
@@ -813,6 +972,8 @@ function SceneController({
           media={media}
           cameraGridRef={cameraGridRef}
           onHoverLabelChange={onHoverLabelChange}
+          placeholderColor={placeholderColor}
+          pointerHoverForLabel={!isTouchDevice}
         />
       ))}
     </>
@@ -845,6 +1006,30 @@ const CHUNK_OFFSETS: ChunkOffset[] = (() => {
   return offsets;
 })();
 
+function getInitialPreloadMedia(media: ArchiveMediaItem[]) {
+  if (!media.length) {
+    return [];
+  }
+
+  const preloadItems = new Map<string, ArchiveMediaItem>();
+
+  CHUNK_OFFSETS.forEach((offset) => {
+    if (offset.dist > RENDER_DISTANCE) {
+      return;
+    }
+
+    generateChunkPlanesCached(offset.dx, offset.dy, offset.dz).forEach((plane) => {
+      const mediaItem = media[plane.mediaIndex % media.length];
+
+      if (mediaItem) {
+        preloadItems.set(mediaItem.url, mediaItem);
+      }
+    });
+  });
+
+  return Array.from(preloadItems.values());
+}
+
 function ArchiveWebglGpuDiagnostics() {
   const gl = useThree((s) => s.gl);
 
@@ -870,19 +1055,27 @@ function ArchiveWebglGpuDiagnostics() {
   return null;
 }
 
-export function ArchiveCanvasScene({ items, onHoverLabelChange }: ArchiveCanvasSceneProps) {
+export function ArchiveCanvasScene({
+  items,
+  onHoverLabelChange,
+  onFocusLabelChange,
+  onSceneLoadStateChange,
+}: ArchiveCanvasSceneProps) {
   const isTouchDevice = useIsTouchDevice();
   const [sceneBackground, setSceneBackground] = useState("#f7f6f2");
+  const [placeholderColor, setPlaceholderColor] = useState("#101010");
   const media = useMemo<ArchiveMediaItem[]>(
     () =>
       items.map((item) => ({
         url: item.image,
         width: item.width,
         height: item.height,
+        kind: item.kind,
         label: item.image,
       })),
     [items],
   );
+  const initialPreloadMedia = useMemo(() => getInitialPreloadMedia(media), [media]);
   const dpr = Math.min(
     typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
     isTouchDevice ? 1.1 : 1.35,
@@ -890,18 +1083,23 @@ export function ArchiveCanvasScene({ items, onHoverLabelChange }: ArchiveCanvasS
 
   useEffect(() => {
     const root = document.documentElement;
-    const syncSceneBackground = () => {
+    const syncSceneColors = () => {
       const nextBackground = getComputedStyle(root).getPropertyValue("--bg-color").trim();
+      const nextPlaceholderColor = getComputedStyle(root).getPropertyValue("--fg-color").trim();
 
       if (nextBackground) {
         setSceneBackground(nextBackground);
       }
+
+      if (nextPlaceholderColor) {
+        setPlaceholderColor(nextPlaceholderColor);
+      }
     };
 
-    syncSceneBackground();
+    syncSceneColors();
 
     const observer = new MutationObserver(() => {
-      syncSceneBackground();
+      syncSceneColors();
     });
 
     observer.observe(root, {
@@ -913,6 +1111,54 @@ export function ArchiveCanvasScene({ items, onHoverLabelChange }: ArchiveCanvasS
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (!onSceneLoadStateChange) {
+      return;
+    }
+
+    if (!initialPreloadMedia.length) {
+      onSceneLoadStateChange({ active: false, loaded: 0, total: 0 });
+      return;
+    }
+
+    let isCancelled = false;
+    const settled = new Set<string>();
+    const total = initialPreloadMedia.length;
+    const publishState = () => {
+      if (!isCancelled) {
+        onSceneLoadStateChange({
+          active: settled.size < total,
+          loaded: settled.size,
+          total,
+        });
+      }
+    };
+    const markSettled = (url: string) => {
+      if (settled.has(url)) {
+        return;
+      }
+
+      settled.add(url);
+      publishState();
+    };
+
+    publishState();
+
+    initialPreloadMedia.forEach((item) => {
+      const texture = getTexture(item, () => {
+        markSettled(item.url);
+      });
+
+      if (isTextureLoaded(texture)) {
+        markSettled(item.url);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [initialPreloadMedia, onSceneLoadStateChange]);
 
   if (!media.length) {
     return <div className={styles.scene} aria-hidden="true" />;
@@ -947,6 +1193,8 @@ export function ArchiveCanvasScene({ items, onHoverLabelChange }: ArchiveCanvasS
           <SceneController
             media={media}
             onHoverLabelChange={onHoverLabelChange}
+            onFocusLabelChange={onFocusLabelChange}
+            placeholderColor={placeholderColor}
           />
         </Canvas>
       </div>

@@ -45,7 +45,7 @@ function getMobileServerSnapshot() {
 const MOBILE_LOOP_REPEAT_DELAY = 1.75;
 
 /** Shared baseline for both lines; viewBox height stays 20 so GSAP `y: ±5` stays proportional */
-const TEXT_BASELINE_Y = 15;
+const TEXT_BASELINE_Y = 15.5;
 
 type GooeyContactEmailProps = {
   email: string;

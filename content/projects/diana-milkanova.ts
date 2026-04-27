@@ -50,5 +50,5 @@ export const dianaMilkanovaProject: ProjectEntry = {
   links: [{ label: "Live Site", url: "https://dianamilkanova.com" }],
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/frame-02.svg", "/archive/frame-04.svg", "/archive/frame-08.svg"],
+  stills: ["/archive/banner-colored.webp", "/archive/desktop.webp", "/archive/gradient-bg-1.webp"],
 };

@@ -25,6 +25,8 @@
 *.pem
 .codex/
 .playwright-cli/
+.playwright-mcp/
+output/playwright/
 
 # debug
 npm-debug.log*

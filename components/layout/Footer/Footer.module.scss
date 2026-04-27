@@ -93,15 +93,48 @@
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 0.85fr);
   gap: clamp(1.75rem, 4vw, 3.5rem);
-  align-items: start;
+  align-items: stretch;
   padding-bottom: clamp(2.5rem, 6vw, 4rem);
 }
 
 .editorialCol {
   display: grid;
   align-content: start;
-  gap: 0.85rem;
+  gap: clamp(1.25rem, 2.5vw, 3rem);
   min-width: 0;
+}
+
+.editorialColPrimary {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editorialColSecondary {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editorialColTertiary {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editorialTextCluster {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.editorialLabel,
+.connectLabel,
+.localeLabel {
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: var(--tracking-label-md);
+  text-transform: uppercase;
+  color: var(--muted-color);
 }
 
 .editorialLead,
@@ -118,8 +151,63 @@
   color: var(--muted-color);
 }
 
+.bookingButton {
+  appearance: none;
+  width: min(100%, 22rem);
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line-color);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--fg-color);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.bookingButton:hover,
+.bookingButton:focus-visible {
+  background: var(--taskbar-menu-card-bg);
+}
+
+.bookingButton:focus-visible {
+  outline: 2px solid var(--fg-color);
+  outline-offset: 2px;
+}
+
+.bookingButtonText {
+  font-family: var(--font-body-stack);
+  font-size: clamp(0.9rem, 1.1vw, 0.98rem);
+  line-height: 1.35;
+}
+
+.bookingButtonMeta {
+  flex: 0 0 auto;
+  font-family: var(--font-pixel-stack);
+  font-size: 0.56rem;
+  letter-spacing: var(--tracking-label-md);
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.menuActionLink {
+  color: inherit;
+}
+
 .editorialIntro {
-  max-width: min(28ch, 100%);
+  margin-top: auto;
+  max-width: min(38ch, 100%);
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(0.58rem, 0.72vw, 0.66rem);
+  line-height: 1.8;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
 }
 
 .editorialEmail {
@@ -129,13 +217,17 @@
   width: fit-content;
 }
 
+.emailBlock {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.connectBlock {
+  margin-top: auto;
+}
+
 .connectLabel {
-  margin-top: 0.5rem;
-  font-family: var(--font-pixel-stack);
-  font-size: 0.58rem;
   letter-spacing: var(--tracking-label-lg);
-  text-transform: uppercase;
-  color: var(--muted-color);
 }
 
 .connectList {
@@ -165,12 +257,9 @@
   gap: 0.2rem;
 }
 
-.localeLabel {
-  font-family: var(--font-pixel-stack);
-  font-size: 0.56rem;
-  letter-spacing: var(--tracking-label-md);
-  text-transform: uppercase;
-  color: var(--muted-color);
+.localeCluster {
+  display: grid;
+  gap: 0.85rem;
 }
 
 .localeValue {
@@ -193,10 +282,8 @@
   z-index: 1;
   display: grid;
   gap: 0.5rem;
-  margin-top: 1.25rem;
-  padding-block: 1rem;
-  border-top: 1px solid var(--line-color);
-  border-bottom: 1px solid var(--line-color);
+  margin-top: auto;
+  justify-items: start;
 }
 
 .columnControlBtn {
@@ -235,14 +322,14 @@
   appearance: none;
   border: 0;
   background: transparent;
-  padding: 0.35rem 0;
+  padding: 0.2rem 0;
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: 100%;
-  max-width: 14rem;
-  min-height: 2.75rem;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  width: fit-content;
+  max-width: none;
+  min-height: 0;
   box-sizing: border-box;
   font-size: 0.86rem;
   color: var(--fg-color);
@@ -916,6 +1003,17 @@
   color: var(--fg-color);
 }
 
+.menuActionLink {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .menuProseMuted {
   margin: 0;
   font-size: 0.78rem;
@@ -925,6 +1023,16 @@
 
 .displayControl {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* Start menu: Display row matches other menu rows (full panel width). */
+.startMenuRow.displayControl {
+  width: 100%;
+  display: block;
 }
 
 /* Nested to the right of the Display row (Start menu) */
@@ -963,10 +1071,11 @@
 /* Inline display dropdown (column 3) */
 .columnControls .displayMenu {
   position: absolute;
-  top: auto;
-  bottom: calc(100% + 0.35rem);
-  left: 0;
+  top: 50%;
+  bottom: auto;
+  left: calc(100% + 0.45rem);
   right: auto;
+  transform: translateY(-50%);
 }
 
 /* —— Minimal-only: opaque editorial block (wordmark is fixed under footer chrome, z-index in AppShell) —— */
@@ -1116,6 +1225,10 @@
 
   .editorialIntro {
     max-width: none;
+  }
+
+  .bookingButton {
+    width: 100%;
   }
 
   .connectList {

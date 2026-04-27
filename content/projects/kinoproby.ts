@@ -3,14 +3,14 @@ import type { ProjectEntry } from "./types";
 export const kinoprobyProject: ProjectEntry = {
   slug: "kinoproby",
   title: "KINOPROBY",
-  descriptor: "Portfolio website for a bold visual production duo",
+  descriptor: "Portfolio website for a filmmaking duo",
   year: "2019",
   role: "Solo Designer & Developer",
   technologies: ["Tilda", "HTML", "CSS", "JavaScript"],
   shortDescription:
     "Bold, image-led portfolio for a film/photo duo—magazine feel, built on Tilda + custom code.",
   description:
-    "Solo design and build: Tilda as the base, extended with custom HTML/CSS/JS for a bespoke, editorial portfolio across film, photo, and art work.",
+    "Solo design and build: Tilda as the base, extended with custom HTML/CSS/JS for a bespoke, editorial portfolio across filmmaking and photography.",
   overview: "Show a wide body of work without losing a strong visual POV or identity.",
   roleSummary: "End-to-end: direction, IA, development, and custom front-of-site details.",
   responsibilities: [
@@ -59,5 +59,5 @@ export const kinoprobyProject: ProjectEntry = {
   links: [{ label: "Live Site", url: "https://kino-proby.com" }],
   featured: false,
   thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/frame-01.svg", "/archive/frame-03.svg", "/archive/frame-07.svg"],
+  stills: ["/archive/artboard-1.webp", "/archive/cards1.webp", "/archive/explore-wall.webp"],
 };

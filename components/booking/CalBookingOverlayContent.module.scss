@@ -1,0 +1,1170 @@
+.root {
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--content-padding-inline));
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--content-padding-inline));
+  padding-inline: max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-left, 0px))
+    max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-right, 0px));
+  padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(0.85rem, 2vw, 1.2rem);
+  color: var(--overlay-fg);
+}
+
+.flowShell {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(0.85rem, 2vw, 1.2rem);
+}
+
+@mixin stagger-children($max, $delay: 0ms, $step: 38ms, $duration: 280ms, $y: 0.5rem) {
+  > * {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate3d(0, $y, 0);
+    animation: stepChunkIn $duration cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @for $i from 1 through $max {
+    > :nth-child(#{$i}) {
+      animation-delay: $delay + ($i - 1) * $step;
+    }
+  }
+}
+
+.root :global(.text-link) {
+  color: var(--overlay-fg);
+}
+
+.root :global(.text-link:hover),
+.root :global(.text-link:focus-visible) {
+  color: var(--overlay-fg);
+  opacity: 0.82;
+}
+
+.header {
+  display: block;
+}
+
+.headerLine {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: clamp(0.7rem, 1.3vw, 1.15rem);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.55rem, 3.2vw, 2.8rem);
+  font-weight: 600;
+  line-height: 0.92;
+  color: var(--overlay-fg);
+  text-wrap: balance;
+}
+
+.headerControls {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.45rem, 0.9vw, 0.7rem);
+  padding-bottom: 0.3rem;
+}
+
+.stepCounter {
+  color: var(--overlay-muted);
+  font-size: clamp(0.82rem, 0.95vw, 0.92rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepNav {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.28rem, 0.5vw, 0.42rem);
+  flex-shrink: 0;
+}
+
+.stepNavButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--overlay-fg);
+  font: inherit;
+  font-size: clamp(1.2rem, 1.4vw, 1.45rem);
+  line-height: 0.8;
+  opacity: 0.52;
+  cursor: pointer;
+  will-change: opacity;
+  transition:
+    color 160ms ease,
+    opacity 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.stepNavButton:hover,
+.stepNavButton:focus-visible {
+  color: var(--signal-color);
+  opacity: 1;
+}
+
+.stepNavButton:active {
+  transform: scale(0.96);
+}
+
+.stepNavButton:disabled {
+  opacity: 0.18;
+  cursor: default;
+}
+
+.body,
+.sheetLayout,
+.sheetAside,
+.widgetSection {
+  min-height: 0;
+  width: 100%;
+}
+
+.body {
+  display: grid;
+  overflow: hidden;
+}
+
+.sheetLayout,
+.sheetAside,
+.widgetSection {
+  display: grid;
+  height: 100%;
+}
+
+.sheetLayout,
+.sheetAside {
+  gap: 1rem;
+}
+
+.widgetSection {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.75rem, 1.5vw, 1rem);
+}
+
+.guidedShell {
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.34fr) minmax(0, 1fr);
+  gap: clamp(0.75rem, 1.6vw, 1rem);
+}
+
+.contextPane,
+.stepPane,
+.inlineNotice,
+.fallbackPanel,
+.messagePanel {
+  min-width: 0;
+  width: 100%;
+}
+
+.contextPane,
+.stepPane {
+  display: grid;
+  align-content: start;
+  gap: clamp(0.72rem, 1.35vw, 1rem);
+}
+
+.contextPane {
+  grid-template-rows: auto auto 1fr;
+}
+
+.stepPane {
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
+  align-self: start;
+  grid-template-rows: auto auto;
+}
+
+.stepContent {
+  display: grid;
+  align-content: start;
+  gap: clamp(0.62rem, 1.1vw, 0.9rem);
+  will-change: opacity, transform, filter;
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    filter 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+
+  @starting-style {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translate3d(0, 0.35rem, 0);
+  }
+
+  @include stagger-children(4, 0ms, 80ms, 280ms, 0.5rem);
+}
+
+.skeletonStepContent {
+  display: grid;
+  align-content: start;
+  gap: clamp(0.62rem, 1.1vw, 0.9rem);
+}
+
+.metaTitle {
+  color: var(--overlay-muted);
+}
+
+.utilityLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.inlineLink {
+  display: inline-flex;
+  align-items: baseline;
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.singleEvent,
+.eventPicker,
+.formGrid,
+.formFields,
+.field {
+  display: grid;
+}
+
+.singleEvent {
+  gap: 0.28rem;
+  padding-top: 0.3rem;
+}
+
+.eventPicker {
+  gap: 0.5rem;
+
+  @include stagger-children(16, 40ms, 44ms, 260ms, 0.42rem);
+}
+
+.eventButton,
+.dateButton,
+.slotButton,
+.navButton,
+.input {
+  border: 1px solid var(--overlay-line);
+  background: transparent;
+  color: var(--overlay-fg);
+  font: inherit;
+}
+
+.eventButton,
+.dateButton,
+.slotButton,
+.navButton,
+.stepNavButton,
+.secondaryAction {
+  cursor: pointer;
+  transition:
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.eventButton:active,
+.dateButton:active,
+.slotButton:active,
+.navButton:active,
+.stepNavButton:active,
+.secondaryAction:active,
+.primaryLink:active,
+.copyLinkButton:active {
+  transform: scale(0.96);
+}
+
+.eventButton {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.52rem 0.62rem;
+  text-align: left;
+}
+
+.eventButton[data-active="true"],
+.dateButton[data-active="true"],
+.slotButton[data-active="true"] {
+  border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+}
+
+.eventButtonTitle,
+.eventTitle,
+.messageTitle,
+.stepTitle {
+  margin: 0;
+  color: var(--overlay-fg);
+}
+
+.eventButtonTitle {
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.eventButtonMeta,
+.eventBody,
+.fallbackBody,
+.messageText,
+.emptyText {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.42;
+  color: var(--overlay-muted);
+}
+
+.eventButtonMeta,
+.dateButton span:last-child,
+.navButton {
+  font-variant-numeric: tabular-nums;
+}
+
+.eventTitle,
+.messageTitle {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.stepTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: color-mix(in srgb, var(--overlay-fg) 54%, var(--overlay-muted));
+  font-weight: 500;
+}
+
+.stepTitle {
+  font-size: clamp(1.35rem, 2.4vw, 2.2rem);
+  font-weight: 520;
+  line-height: 1.02;
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--overlay-fg) 72%, var(--overlay-muted));
+  text-wrap: balance;
+}
+
+.navGroup {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.42rem;
+}
+
+.navButton {
+  min-width: 3.2rem;
+  min-height: 2rem;
+  padding: 0.28rem 0.58rem;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--overlay-fg) 56%, var(--overlay-muted));
+}
+
+.navButton:disabled,
+.dateButton:disabled,
+.primaryLink:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+
+  @include stagger-children(14, 80ms, 34ms, 300ms, 0.55rem);
+}
+
+.skeletonDateGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dateButton {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 0.5rem;
+  min-height: clamp(6.2rem, 13vh, 8rem);
+  padding: 0.62rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+.dateButton[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--overlay-fg) 8%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--overlay-fg) 4%, transparent);
+  background-size: 220% 100%;
+  animation: skeletonSweep 1.15s linear infinite;
+  pointer-events: none;
+}
+
+.dateButton span:first-child {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  line-height: 1;
+}
+
+.dateButton span:last-child {
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--overlay-muted);
+}
+
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+
+  @include stagger-children(64, 80ms, 28ms, 300ms, 0.55rem);
+}
+
+.slotButton {
+  min-height: clamp(3.35rem, 7.2vh, 4.4rem);
+  padding: 0.58rem;
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
+  text-align: center;
+}
+
+.formGrid {
+  gap: 0.85rem;
+
+  @include stagger-children(8, 0ms, 85ms, 280ms, 0.5rem);
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.65rem;
+  align-content: center;
+  min-height: clamp(7rem, 22vh, 11rem);
+}
+
+.inlineNotice {
+  display: grid;
+  gap: 0.42rem;
+  align-content: start;
+}
+
+.secondaryAction {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--overlay-line);
+  background: transparent;
+  color: var(--overlay-fg);
+  font: inherit;
+}
+
+.formFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+
+  @include stagger-children(12, 120ms, 32ms, 280ms, 0.38rem);
+}
+
+.field {
+  gap: 0.34rem;
+}
+
+.input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.64rem 0.72rem;
+  border-radius: 0;
+  outline: none;
+}
+
+.input:focus {
+  border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
+}
+
+.formError {
+  margin: 0;
+  color: #d4473d;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.actionBar {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 0.12rem;
+}
+
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 15rem);
+  min-height: 3rem;
+  padding: 0.62rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 34%, transparent);
+  border-radius: var(--project-toolbar-panel-radius);
+  background: color-mix(in srgb, var(--overlay-fg) 12%, transparent);
+  box-shadow: 0 0.8rem 1.8rem color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  color: var(--overlay-fg);
+  font-family: var(--font-body-stack);
+  font-size: 0.9rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 280ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    color 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.primaryLink:hover,
+.primaryLink:focus-visible {
+  border-color: color-mix(in srgb, var(--overlay-fg) 46%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 16%, transparent);
+  color: var(--overlay-fg);
+}
+
+.fallbackPanel,
+.messagePanel {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.fallbackPanel {
+  align-content: start;
+  justify-items: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.fallbackPanel .primaryLink {
+  width: auto;
+  min-width: 11.5rem;
+}
+
+.messagePanel {
+  padding: 1rem;
+  border: 1px solid var(--overlay-line);
+  background: color-mix(in srgb, var(--overlay-fg) 3%, transparent);
+}
+
+.successPanel {
+  align-content: center;
+  justify-self: center;
+  width: min(36rem, 100%);
+}
+
+.copyLinkButton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.8rem;
+  margin-top: 0.15rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid var(--overlay-line);
+  background: transparent;
+  color: var(--overlay-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.copyLinkButton span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--overlay-muted);
+}
+
+.copyLinkButton span:last-child {
+  color: var(--overlay-fg);
+  white-space: nowrap;
+}
+
+.skeletonEventGroup,
+.skeletonEventList {
+  display: grid;
+}
+
+.skeletonEventGroup {
+  width: 100%;
+  gap: 0.42rem;
+  align-content: start;
+}
+
+.skeletonEventList {
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.skeletonLine,
+.skeletonButton {
+  display: block;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--overlay-fg) 8%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--overlay-fg) 5%, transparent);
+  background-size: 220% 100%;
+  animation: skeletonSweep 1.35s linear infinite;
+}
+
+.skeletonEvent,
+.skeletonDate,
+.skeletonSlot,
+.skeletonSubmit,
+.skeletonNav {
+  display: block;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--overlay-fg) 6%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--overlay-fg) 4%, transparent);
+  background-size: 220% 100%;
+  animation: skeletonSweep 1.35s linear infinite;
+}
+
+.skeletonLine {
+  width: 8rem;
+  height: 0.8rem;
+}
+
+.skeletonLineShort {
+  width: 7rem;
+}
+
+.skeletonLineWide {
+  width: 100%;
+}
+
+.skeletonButton,
+.skeletonNav {
+  width: 3.2rem;
+  height: 2rem;
+}
+
+.skeletonEvent {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.52rem 0.62rem;
+}
+
+.skeletonDate {
+  display: grid;
+  align-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: clamp(6.2rem, 13vh, 8rem);
+  padding: 0.62rem;
+}
+
+.skeletonSlot {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: clamp(3.35rem, 7.2vh, 4.4rem);
+  padding: 0.58rem;
+}
+
+.skeletonSlot::before {
+  content: "";
+  display: block;
+  width: clamp(3.75rem, 7vw, 5.25rem);
+  height: 0.86rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--overlay-fg) 10%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  background-size: 220% 100%;
+  animation: skeletonSweep 1.35s linear infinite;
+}
+
+.skeletonSubmit {
+  width: min(100%, 15rem);
+  height: 3rem;
+  justify-self: start;
+  position: relative;
+}
+
+.skeletonSubmit::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 5.8rem;
+  height: 0.86rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--overlay-fg) 10%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  background-size: 220% 100%;
+  transform: translate(-50%, -50%);
+  animation: skeletonSweep 1.35s linear infinite;
+}
+
+.skeletonLink {
+  width: 3rem;
+  height: 0.72rem;
+}
+
+.skeletonLabel {
+  width: 3.6rem;
+  height: 0.62rem;
+}
+
+.skeletonStepTitle {
+  width: clamp(8rem, 20vw, 12rem);
+  height: clamp(1.1rem, 2vw, 1.45rem);
+}
+
+.skeletonEventTitle {
+  flex: 1 1 auto;
+  width: min(100%, 8.5rem);
+  height: 0.78rem;
+}
+
+.skeletonEventMeta {
+  flex: 0 0 auto;
+  width: 2.725rem;
+  height: 0.68rem;
+}
+
+.skeletonDatePrimary {
+  width: 6.125rem;
+  height: clamp(1rem, 1.8vw, 1.3rem);
+}
+
+.skeletonDateMeta {
+  width: 3.5rem;
+  height: 0.68rem;
+}
+
+@keyframes skeletonSweep {
+  from {
+    background-position: 180% 0;
+  }
+
+  to {
+    background-position: -40% 0;
+  }
+}
+
+@keyframes stepChunkIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate3d(0, 0.5rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (max-width: 76rem) {
+  .dateGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .skeletonDateGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dateButton,
+  .skeletonDate {
+    min-height: 4.65rem;
+  }
+}
+
+@media (max-width: 64rem) {
+  .header {
+    display: block;
+  }
+
+  .guidedShell {
+    grid-template-columns: 1fr;
+  }
+
+  .contextPane {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-rows: auto auto;
+    align-items: start;
+  }
+
+  .utilityLinks {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 64.01rem) {
+  .root {
+    align-items: center;
+  }
+
+  .flowShell {
+    width: min(100%, 112rem);
+    height: min(44rem, calc(100dvh - 3.5rem));
+    margin-inline: auto;
+    justify-content: center;
+    gap: clamp(1rem, 2.2vw, 1.5rem);
+  }
+
+  .body {
+    align-items: start;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .sheetLayout,
+  .sheetAside,
+  .widgetSection {
+    height: auto;
+  }
+
+  .widgetSection {
+    align-content: start;
+  }
+
+  .skeletonStepContent,
+  .skeletonDateGrid {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .actionBar {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 48rem) {
+  .root {
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 0;
+    padding-bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
+    gap: 0.68rem;
+  }
+
+  .flowShell {
+    padding-bottom: max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem));
+  }
+
+  .header {
+    padding-bottom: 0.6rem;
+  }
+
+  .title {
+    font-size: clamp(1.35rem, 7vw, 1.85rem);
+    line-height: 0.96;
+  }
+
+  .headerControls {
+    gap: 0.42rem;
+    padding-bottom: 0.08rem;
+    margin-left: auto;
+  }
+
+  .stepCounter {
+    font-size: 0.76rem;
+  }
+
+  .widgetSection {
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  .guidedShell {
+    align-self: start;
+  }
+
+  .guidedShell {
+    gap: 0.58rem;
+  }
+
+  .contextPane,
+  .stepPane {
+    gap: 0.58rem;
+  }
+
+  .stepPane {
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .contextPane {
+    display: none;
+  }
+
+  .contextPane {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .eventPicker {
+    grid-template-columns: 1fr;
+  }
+
+  .eventButton {
+    min-height: 2.55rem;
+    padding: 0.46rem 0.55rem;
+  }
+
+  .eventButtonTitle {
+    font-size: 0.84rem;
+  }
+
+  .stepTop {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 0.38rem;
+  }
+
+  .stepTop .navGroup {
+    width: 100%;
+  }
+
+  .stepTop .navButton,
+  .stepTop .skeletonNav {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stepTitle {
+    font-size: clamp(1.12rem, 5.4vw, 1.5rem);
+    letter-spacing: 0;
+  }
+
+  .navButton {
+    min-width: 3rem;
+    min-height: 1.9rem;
+    padding-inline: 0.46rem;
+    font-size: 0.8rem;
+  }
+
+  .stepNav {
+    gap: 0.18rem;
+  }
+
+  .stepNavButton {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.06rem;
+  }
+
+  .dateGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+
+  .skeletonDateGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+
+  .dateButton,
+  .skeletonDate {
+    min-height: 3.45rem;
+  }
+
+  .dateButton {
+    padding: 0.48rem 0.54rem;
+    gap: 0.3rem;
+  }
+
+  .dateButton span:first-child {
+    font-size: 1rem;
+  }
+
+  .dateButton span:last-child {
+    font-size: 0.72rem;
+  }
+
+  .timeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+
+  .slotButton,
+  .skeletonSlot {
+    min-height: 2.72rem;
+  }
+
+  .formFields {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .input {
+    min-height: 2.42rem;
+  }
+
+  .actionBar {
+    position: fixed;
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
+    justify-content: stretch;
+    margin-top: 0;
+    padding-top: 1rem;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .actionBar::before {
+    content: "";
+    position: absolute;
+    inset: -2rem -1rem -1rem;
+    background: linear-gradient(to top, var(--overlay-immersive-backdrop) 45%, transparent 100%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .primaryLink {
+    width: 100%;
+    min-height: 2.85rem;
+    pointer-events: auto;
+  }
+
+  .skeletonSubmit {
+    width: 100%;
+  }
+
+  .copyLinkButton {
+    grid-template-columns: 1fr;
+    gap: 0.32rem;
+  }
+}
+
+@media (max-height: 740px) and (max-width: 48rem) {
+  .contextPane {
+    display: none;
+  }
+
+  .dateGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .skeletonDateGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dateButton,
+  .skeletonDate {
+    min-height: 3.1rem;
+  }
+
+  .slotButton,
+  .skeletonSlot {
+    min-height: 2.55rem;
+  }
+}
+
+@media (max-height: 680px) {
+  .timeGrid {
+    max-height: min(40vh, 15rem);
+    overflow-y: auto;
+    padding-right: 0.1rem;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
+  }
+
+  .timeGrid::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepContent,
+  .stepContent > *,
+  .dateGrid > *,
+  .timeGrid > *,
+  .formGrid > *,
+  .primaryLink,
+  .eventButton,
+  .dateButton,
+  .slotButton,
+  .skeletonLine,
+  .skeletonButton,
+  .skeletonEvent,
+  .skeletonDate,
+  .skeletonSlot,
+  .skeletonSubmit {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}

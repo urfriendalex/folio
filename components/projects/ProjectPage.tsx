@@ -101,22 +101,20 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
   };
 
   return (
-    <>
-      <article className={`page-shell ${styles.page}`}>
-        <section className={styles.stills}>
-          {project.stills.map((still, index) => (
-            <ImageReveal key={`${still}-${index}`} className={styles.still}>
-              <Image
-                src={still}
-                alt={`${project.title} visual ${index + 1}`}
-                width={1200}
-                height={1500}
-                sizes="(max-width: 48rem) 100vw, 72rem"
-              />
-            </ImageReveal>
-          ))}
-        </section>
-      </article>
+    <article className={`page-shell ${styles.page}`}>
+      <section className={styles.stills}>
+        {project.stills.map((still, index) => (
+          <ImageReveal key={`${still}-${index}`} className={styles.still}>
+            <Image
+              src={still}
+              alt={`${project.title} visual ${index + 1}`}
+              width={1200}
+              height={1500}
+              sizes="(max-width: 48rem) 100vw, 72rem"
+            />
+          </ImageReveal>
+        ))}
+      </section>
 
       <div className={styles.toolbarShell} data-expanded={toolbarExpanded}>
         <div className={styles.toolbarTrack}>
@@ -220,6 +218,6 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
           </Link>
         </div>
       </div>
-    </>
+    </article>
   );
 }

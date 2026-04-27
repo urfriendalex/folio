@@ -20,6 +20,11 @@ import {
 import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
+import {
+  getHomeHeroRevealDone,
+  setHomeHeroRevealDone,
+  subscribeHomeHeroRevealDone,
+} from "@/lib/homeHeroRevealSession";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { getLenis } from "@/lib/smoothScroll";
 import styles from "./HeroSection.module.scss";
@@ -137,6 +142,9 @@ export function HeroSection({ content }: HeroSectionProps) {
   const stuffGlyphRef = useRef<HTMLSpanElement | null>(null);
   const shitPortalRef = useRef<HTMLSpanElement | null>(null);
   const gagPrevActiveRef = useRef(false);
+  const gagActiveRef = useRef(false);
+  const gagTransitionTokenRef = useRef(0);
+  const gagEnterRafIdsRef = useRef<Set<number>>(new Set());
   const [hoverAccent, setHoverAccent] = useState<HoverAccent | null>(null);
   const [stuffGagMobileActive, setStuffGagMobileActive] = useState(false);
   const [stuffGagHover, setStuffGagHover] = useState(false);
@@ -146,9 +154,14 @@ export function HeroSection({ content }: HeroSectionProps) {
     y: number;
     emBasePx: number;
   } | null>(null);
-  const [portalMounted, setPortalMounted] = useState(false);
+  const [portalHoldOpen, setPortalHoldOpen] = useState(false);
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const preloaderComplete = usePreloaderComplete();
+  const skipRepeatReveal = useSyncExternalStore(
+    subscribeHomeHeroRevealDone,
+    getHomeHeroRevealDone,
+    () => false,
+  );
 
   const coarsePointer = useSyncExternalStore(
     subscribeCoarsePointer,
@@ -158,11 +171,39 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   /** Fine pointers: hover only (no focus / no click-to-hold). Coarse: tap toggle. */
   const gagActive = coarsePointer ? stuffGagMobileActive : stuffGagHover;
-  const showGagPortalLayer = gagActive;
+  const showGagPortalLayer = gagActive || portalHoldOpen;
+  const portalMounted = typeof document !== "undefined";
+
+  const cancelPendingGagEnterFrames = useCallback(() => {
+    gagEnterRafIdsRef.current.forEach((id) => {
+      cancelAnimationFrame(id);
+    });
+    gagEnterRafIdsRef.current.clear();
+  }, []);
+
+  const scheduleGagEnterFrame = useCallback((callback: () => void) => {
+    const id = requestAnimationFrame(() => {
+      gagEnterRafIdsRef.current.delete(id);
+      callback();
+    });
+    gagEnterRafIdsRef.current.add(id);
+    return id;
+  }, []);
 
   useEffect(() => {
-    setPortalMounted(true);
-  }, []);
+    gagActiveRef.current = gagActive;
+  }, [gagActive]);
+
+  useEffect(() => {
+    const strikeLine = strikeLineRef.current;
+    const stuffGlyph = stuffGlyphRef.current;
+    const shitPortal = shitPortalRef.current;
+
+    return () => {
+      cancelPendingGagEnterFrames();
+      gsap.killTweensOf([strikeLine, stuffGlyph, shitPortal].filter(Boolean));
+    };
+  }, [cancelPendingGagEnterFrames]);
 
   useLayoutEffect(() => {
     const anchor = stuffAnchorRef.current;
@@ -229,12 +270,18 @@ export function HeroSection({ content }: HeroSectionProps) {
 
     if (gagActive && !wasActive) {
       gagPrevActiveRef.current = true;
+      cancelPendingGagEnterFrames();
+      const transitionToken = ++gagTransitionTokenRef.current;
 
       gsap.killTweensOf(
         [strikeLineRef.current, stuffGlyphRef.current, shitPortalRef.current].filter(Boolean),
       );
 
       const runEnter = (attempt = 0) => {
+        if (gagTransitionTokenRef.current !== transitionToken || !gagActiveRef.current) {
+          return;
+        }
+
         const s = strikeLineRef.current;
         const g = stuffGlyphRef.current;
         const h = shitPortalRef.current;
@@ -243,7 +290,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         }
 
         if (!h && attempt < 14) {
-          requestAnimationFrame(() => runEnter(attempt + 1));
+          scheduleGagEnterFrame(() => runEnter(attempt + 1));
           return;
         }
 
@@ -300,12 +347,16 @@ export function HeroSection({ content }: HeroSectionProps) {
         }
       };
 
-      requestAnimationFrame(() => requestAnimationFrame(() => runEnter(0)));
+      scheduleGagEnterFrame(() => {
+        scheduleGagEnterFrame(() => runEnter(0));
+      });
       return;
     }
 
     if (!gagActive && wasActive) {
       gagPrevActiveRef.current = false;
+      cancelPendingGagEnterFrames();
+      const transitionToken = ++gagTransitionTokenRef.current;
 
       const s = strikeLineRef.current;
       const g = stuffGlyphRef.current;
@@ -321,23 +372,61 @@ export function HeroSection({ content }: HeroSectionProps) {
         gsap.set(s, { scaleX: 0 });
         if (g) gsap.set(g, { opacity: 1 });
         if (h) gsap.set(h, { autoAlpha: 0 });
+        scheduleGagEnterFrame(() => {
+          if (gagTransitionTokenRef.current === transitionToken && !gagActiveRef.current) {
+            setPortalHoldOpen(false);
+          }
+        });
         return;
       }
 
-      if (h) {
-        gsap.set(h, {
-          autoAlpha: 0,
-          immediateRender: true,
-        });
-      }
+      const strikeMs = 0.14;
+      const followMs = 0.12;
+      const easeOut = "power3.out";
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (gagTransitionTokenRef.current === transitionToken && !gagActiveRef.current) {
+            setPortalHoldOpen(false);
+          }
+        },
+      });
+
+      tl.to(
+        s,
+        {
+          scaleX: 0,
+          duration: strikeMs,
+          ease: easeOut,
+          transformOrigin: "left center",
+        },
+        0,
+      );
       if (g) {
-        gsap.set(g, { opacity: 1 });
+        tl.to(
+          g,
+          {
+            opacity: 1,
+            duration: followMs,
+            ease: easeOut,
+          },
+          0,
+        );
       }
-      gsap.set(s, { scaleX: 0, transformOrigin: "left center" });
+      if (h) {
+        tl.to(
+          h,
+          {
+            autoAlpha: 0,
+            duration: followMs,
+            ease: easeOut,
+          },
+          0,
+        );
+      }
     }
 
     return undefined;
-  }, [gagActive]);
+  }, [cancelPendingGagEnterFrames, gagActive, scheduleGagEnterFrame]);
 
   /** Coarse pointers: dismiss the gag on any tap outside “stuff”, or when “stuff” scrolls out of view. */
   useEffect(() => {
@@ -392,6 +481,7 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const handleStuffPointerEnter = useCallback(() => {
     if (!coarsePointer) {
+      setPortalHoldOpen(true);
       setStuffGagHover(true);
     }
   }, [coarsePointer]);
@@ -401,6 +491,16 @@ export function HeroSection({ content }: HeroSectionProps) {
       setStuffGagHover(false);
     }
   }, [coarsePointer]);
+
+  const toggleStuffGagMobile = useCallback(() => {
+    setStuffGagMobileActive((value) => {
+      const nextValue = !value;
+      if (nextValue) {
+        setPortalHoldOpen(true);
+      }
+      return nextValue;
+    });
+  }, []);
 
   const stackIntroLines = useSyncExternalStore(
     subscribeIntroStack,
@@ -427,15 +527,32 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
 
+  useLayoutEffect(() => {
+    if (!preloaderComplete || !skipRepeatReveal) {
+      return;
+    }
+
+    document.documentElement.setAttribute("data-hero-reveal", "complete");
+  }, [preloaderComplete, skipRepeatReveal]);
+
   useEffect(() => {
     const html = document.documentElement;
-    html.setAttribute("data-hero-reveal", "pending");
 
     if (!preloaderComplete) {
+      html.setAttribute("data-hero-reveal", "pending");
       return () => {
         html.setAttribute("data-hero-reveal", "pending");
       };
     }
+
+    if (skipRepeatReveal) {
+      html.setAttribute("data-hero-reveal", "complete");
+      return () => {
+        html.setAttribute("data-hero-reveal", "pending");
+      };
+    }
+
+    html.setAttribute("data-hero-reveal", "pending");
 
     const introEndMs =
       (introLines.length > 0 ? (introLines.length - 1) * INTRO_REVEAL_STEP_MS : 0)
@@ -452,13 +569,22 @@ export function HeroSection({ content }: HeroSectionProps) {
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
+      setHomeHeroRevealDone();
     }, revealCompleteMs);
 
     return () => {
       window.clearTimeout(timeoutId);
       html.setAttribute("data-hero-reveal", "pending");
     };
-  }, [ctaLines.length, hasCta, headingLines.length, introLines.length, preloaderComplete, sequenceTotal]);
+  }, [
+    ctaLines.length,
+    hasCta,
+    headingLines.length,
+    introLines.length,
+    preloaderComplete,
+    sequenceTotal,
+    skipRepeatReveal,
+  ]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -600,7 +726,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               onPointerLeave={handleStuffPointerLeave}
               onClick={() => {
                 if (typeof window !== "undefined" && window.matchMedia(COARSE_POINTER_QUERY).matches) {
-                  setStuffGagMobileActive((v) => !v);
+                  toggleStuffGagMobile();
                 }
               }}
               onKeyDown={(event) => {
@@ -609,7 +735,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 }
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  setStuffGagMobileActive((v) => !v);
+                  toggleStuffGagMobile();
                 }
               }}
             >
@@ -628,7 +754,14 @@ export function HeroSection({ content }: HeroSectionProps) {
         );
       });
     },
-    [coarsePointer, gagActive, handleStuffPointerEnter, handleStuffPointerLeave, stuffGagMobileActive],
+    [
+      coarsePointer,
+      gagActive,
+      handleStuffPointerEnter,
+      handleStuffPointerLeave,
+      stuffGagMobileActive,
+      toggleStuffGagMobile,
+    ],
   );
 
   const renderCtaToken = useCallback((token: string) => {
@@ -665,6 +798,8 @@ export function HeroSection({ content }: HeroSectionProps) {
               total={sequenceTotal}
               stepMs={INTRO_REVEAL_STEP_MS}
               renderToken={renderIntroToken}
+              immediate={skipRepeatReveal}
+              visible={skipRepeatReveal ? true : undefined}
             />
             <RevealLines
               elementRef={headingRef}
@@ -676,6 +811,8 @@ export function HeroSection({ content }: HeroSectionProps) {
               total={sequenceTotal}
               stepMs={HEADING_REVEAL_STEP_MS}
               renderToken={renderHeadingToken}
+              immediate={skipRepeatReveal}
+              visible={skipRepeatReveal ? true : undefined}
             />
             {hasCta ? (
               <RevealLines
@@ -689,6 +826,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 total={sequenceTotal}
                 stepMs={HEADING_REVEAL_STEP_MS}
                 renderToken={renderCtaToken}
+                immediate={skipRepeatReveal}
+                visible={skipRepeatReveal ? true : undefined}
               />
             ) : null}
           </div>
@@ -709,6 +848,9 @@ export function HeroSection({ content }: HeroSectionProps) {
                 fps={WALKER_FPS}
                 lazy={false}
                 paused={!hoverAccent}
+                visible={Boolean(hoverAccent)}
+                randomVisibilityReveal
+                randomVisibilityDurationMs={560}
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"

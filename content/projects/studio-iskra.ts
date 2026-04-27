@@ -50,5 +50,9 @@ export const studioIskraProject: ProjectEntry = {
   links: [{ label: "Live Site", url: "https://studioiskra.eu" }],
   featured: true,
   thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/frame-05.svg", "/archive/frame-06.svg", "/archive/frame-02.svg"],
+  stills: [
+    "/archive/desktop-abstract.webp",
+    "/archive/explore-2.webp",
+    "/archive/banner-colored.webp",
+  ],
 };

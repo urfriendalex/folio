@@ -60,10 +60,12 @@
   opacity: 0;
   transform: translate3d(0, 0.75em, 0);
   transition:
-    opacity var(--reveal-line-opacity-ms, 460ms) ease,
-    transform var(--reveal-line-transform-ms, 620ms) cubic-bezier(0.2, 0.88, 0.24, 1);
+    opacity var(--reveal-line-opacity-out-ms, var(--reveal-line-opacity-ms, 460ms)) ease,
+    transform var(--reveal-line-transform-out-ms, var(--reveal-line-transform-ms, 620ms))
+      cubic-bezier(0.2, 0.88, 0.24, 1);
   transition-delay: calc(
-    (var(--reveal-total, 1) - var(--token-index) - 1) * var(--reveal-step, 24ms)
+    (var(--reveal-total, 1) - var(--token-index) - 1)
+      * var(--reveal-step-out, var(--reveal-step, 24ms))
   );
 }
 
@@ -77,6 +79,9 @@
 .root[data-visible="true"] .token {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+  transition-duration:
+    var(--reveal-line-opacity-ms, 460ms),
+    var(--reveal-line-transform-ms, 620ms);
   transition-delay: calc(
     var(--token-index) * var(--reveal-step, 24ms) + var(--reveal-delay, 0ms)
   );

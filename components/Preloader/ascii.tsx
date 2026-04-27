@@ -65,6 +65,12 @@ interface ASCIIAnimationProps {
   randomCellReveal?: boolean;
   /** Duration for one full random reveal pass (ms). */
   randomCellRevealDurationMs?: number;
+  /** Toggle render visibility without layout changes. */
+  visible?: boolean;
+  /** Text/color frames: reveal and hide using a stable random cell mask instead of container fades/scales. */
+  randomVisibilityReveal?: boolean;
+  /** Duration for random enter visibility reveal (ms). Exit runs slightly faster. */
+  randomVisibilityDurationMs?: number;
   /** Color frames: skip solid background so empty areas stay transparent (overrides meta `bgMode` when true). */
   transparentCanvasBackground?: boolean;
 }
@@ -161,6 +167,36 @@ function cellRevealHash01(cellIndex: number, frameKey: number): number {
   return (h >>> 0) / 4294967296;
 }
 
+function easeOutQuart(value: number): number {
+  return 1 - (1 - value) ** 4;
+}
+
+function maskTextFrame(frameText: string, revealProgress: number, frameKey: number): string {
+  if (revealProgress >= 1) {
+    return frameText;
+  }
+
+  if (revealProgress <= 0) {
+    return frameText.replace(/[^\r\n]/g, " ");
+  }
+
+  let cellIndex = 0;
+  let masked = "";
+
+  for (let index = 0; index < frameText.length; index += 1) {
+    const char = frameText[index] ?? "";
+    if (char === "\r" || char === "\n") {
+      masked += char;
+      continue;
+    }
+
+    masked += cellRevealHash01(cellIndex, frameKey) <= revealProgress ? char : " ";
+    cellIndex += 1;
+  }
+
+  return masked;
+}
+
 type DrawColorFrameOptions = {
   revealProgress?: number;
   frameKey?: number;
@@ -241,6 +277,9 @@ export default function ASCIIAnimation({
   fillParent = false,
   randomCellReveal = false,
   randomCellRevealDurationMs = 650,
+  visible = true,
+  randomVisibilityReveal = false,
+  randomVisibilityDurationMs = 520,
   transparentCanvasBackground = false,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
@@ -253,6 +292,8 @@ export default function ASCIIAnimation({
   const [isHovered, setIsHovered] = useState(false);
   const [scaleValue, setScaleValue] = useState(scale);
   const [scaled, setScaled] = useState(false);
+  const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
+  const [visibilitySeed, setVisibilitySeed] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
@@ -261,6 +302,9 @@ export default function ASCIIAnimation({
   const resolvedSource = useRef<ResolvedSource | null>(null);
   const hasNotifiedReadyRef = useRef(false);
   const revealRafRef = useRef<number>(0);
+  const visibilityRafRef = useRef<number>(0);
+  const visibilityProgressRef = useRef(visible ? 1 : 0);
+  const visibilitySeedRef = useRef(0);
 
   const notifyReady = useCallback(() => {
     if (hasNotifiedReadyRef.current) {
@@ -448,6 +492,69 @@ export default function ASCIIAnimation({
   const shouldPlay = isIntersecting && (!playOnHover || isHovered) && !paused;
   const totalFrames = format === "color" ? colorFrames.length : frames.length;
   const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
+  const maskedTextFrame = useMemo(() => {
+    if (format !== "text" || !randomVisibilityReveal) {
+      return currentTextFrame;
+    }
+
+    return maskTextFrame(currentTextFrame, visibilityProgress, visibilitySeed);
+  }, [currentTextFrame, format, randomVisibilityReveal, visibilityProgress, visibilitySeed]);
+
+  useEffect(() => {
+    window.cancelAnimationFrame(visibilityRafRef.current);
+
+    const target = visible ? 1 : 0;
+
+    if (!randomVisibilityReveal) {
+      visibilityProgressRef.current = target;
+      setVisibilityProgress(target);
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      visibilityProgressRef.current = target;
+      setVisibilityProgress(target);
+      return;
+    }
+
+    const startProgress = visibilityProgressRef.current;
+    if (Math.abs(startProgress - target) < 0.001) {
+      visibilityProgressRef.current = target;
+      setVisibilityProgress(target);
+      return;
+    }
+
+    const nextSeed = visibilitySeedRef.current + 1;
+    visibilitySeedRef.current = nextSeed;
+    setVisibilitySeed(nextSeed);
+
+    const durationBase = Math.max(120, randomVisibilityDurationMs);
+    const duration = target > startProgress
+      ? durationBase
+      : Math.max(90, Math.round(durationBase * 0.72));
+    const start = performance.now();
+
+    const tick = () => {
+      const elapsed = performance.now() - start;
+      const progress = Math.min(1, elapsed / duration);
+      const nextValue =
+        startProgress + (target - startProgress) * easeOutQuart(progress);
+
+      visibilityProgressRef.current = nextValue;
+      setVisibilityProgress(nextValue);
+
+      if (progress < 1) {
+        visibilityRafRef.current = window.requestAnimationFrame(tick);
+      }
+    };
+
+    visibilityRafRef.current = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(visibilityRafRef.current);
+    };
+  }, [randomVisibilityDurationMs, randomVisibilityReveal, visible]);
 
   useEffect(() => {
     if (totalFrames <= 1 || !shouldPlay) {
@@ -532,6 +639,12 @@ export default function ASCIIAnimation({
     randomCellRevealDurationMs,
     transparentCanvasBackground,
   ]);
+
+  useEffect(() => {
+    return () => {
+      window.cancelAnimationFrame(visibilityRafRef.current);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (fillParent) {
@@ -681,7 +794,7 @@ export default function ASCIIAnimation({
                 }
           }
         >
-          {currentTextFrame}
+          {maskedTextFrame}
         </pre>
       )}
     </div>

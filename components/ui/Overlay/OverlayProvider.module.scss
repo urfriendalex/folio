@@ -20,8 +20,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  /* Same rhythm between lead, description, and meta so the stack feels evenly spaced */
-  gap: clamp(1.65rem, 4.25vw, 3.35rem);
+  gap: clamp(0.7rem, 1.5vw, 1.2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -53,6 +52,7 @@
 
 .aboutDescription {
   display: block;
+  padding-bottom: clamp(4.2rem, 9vw, 7.2rem);
 }
 
 .aboutParagraph,
@@ -136,15 +136,17 @@
   background: var(--overlay-line);
   transform: scaleX(0);
   transform-origin: 0 50%;
-  transition: transform 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition: transform var(--meta-line-duration-out, 560ms) cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
 .about[data-content-visible="true"] .metaBlock::before {
   transform: scaleX(1);
+  transition-duration: var(--meta-line-duration-in, 560ms);
   transition-delay: var(--meta-line-enter-delay, 0ms);
 }
 
 .about[data-content-visible="false"] .metaBlock::before {
+  transition-duration: var(--meta-line-duration-out, 560ms);
   transition-delay: var(--meta-line-exit-delay, 0ms);
 }
 
@@ -182,7 +184,6 @@
   color: var(--overlay-muted);
 }
 
-/* Sits below `.aboutScroll` (sibling, not inside overflow) — pinned to bottom of column without covering copy. */
 .aboutFooter {
   flex-shrink: 0;
   display: flex;
@@ -251,9 +252,22 @@
 }
 
 @media (max-width: 48rem) {
-  /* Align with restrained desktop scale: smaller display lead + body, not full-width billboard type. */
   .aboutScroll {
-    gap: clamp(1.05rem, 3.5vw, 1.85rem);
+    padding-block: 0.75rem;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.75rem,
+      #000 calc(100% - 0.75rem),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.75rem,
+      #000 calc(100% - 0.75rem),
+      transparent 100%
+    );
   }
 
   .aboutLeadText {

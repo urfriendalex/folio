@@ -226,6 +226,8 @@
   white-space: nowrap;
   mix-blend-mode: normal;
   text-rendering: geometricPrecision;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .visualPanel {
@@ -233,20 +235,7 @@
   align-items: center;
   min-width: 0;
   min-height: 100%;
-  opacity: 0;
-  transform: translate3d(0, 1.25rem, 0) scale(0.975);
-  filter: blur(10px);
-  transition:
-    opacity 420ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 680ms cubic-bezier(0.23, 1, 0.32, 1),
-    filter 680ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
-}
-
-.visualPanel[data-visible="true"] {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
 }
 
 .visualPanelInner {
@@ -262,21 +251,12 @@
 }
 
 .walkerShell {
-  --hero-walker-scale-hidden: 2.15;
-  --hero-walker-scale-visible: 1.28;
   position: relative;
   display: grid;
   place-items: center;
   width: 100%;
   min-width: 0;
   height: clamp(21rem, 54vh, 36rem);
-  transform: scale(var(--hero-walker-scale-hidden));
-  transform-origin: center;
-  transition: transform 760ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.visualPanel[data-visible="true"] .walkerShell {
-  transform: scale(var(--hero-walker-scale-visible));
 }
 
 .walker {
@@ -344,7 +324,6 @@
   .visualPanel {
     transform: none;
     filter: none;
-    transition: opacity 140ms ease-out;
   }
 
   .walkerShell {
