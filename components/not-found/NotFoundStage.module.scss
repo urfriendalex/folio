@@ -55,8 +55,9 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
 
@@ -197,20 +198,19 @@
 .windowBody {
   position: absolute;
   inset: 1.95rem 0.7rem 0.65rem;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 0.48rem;
   min-height: 0;
 }
 
 .windowBodyWithActions {
   inset: 1.95rem 0.7rem 0.72rem;
-  grid-template-rows: minmax(0, 1fr) auto auto;
   gap: 0.55rem;
 }
 
 .screenFrame {
-  height: 100%;
+  flex: 1 1 0;
   min-height: 7.25rem;
   padding: 0.16rem;
   border: 1px solid var(--window-frame-shadow);
@@ -294,7 +294,8 @@
 }
 
 .copyBlock {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.15rem;
   color: var(--window-ink);
 }
@@ -439,7 +440,6 @@
 
   .windowBody {
     inset: 1.88rem 0.55rem 0.52rem;
-    grid-template-rows: minmax(0, 1fr) auto;
     gap: 0.38rem;
   }
 

@@ -91,12 +91,21 @@ function formatLongDate(dateKey: string, timeZone: string) {
   }).format(new Date(`${dateKey}T12:00:00Z`));
 }
 
-function formatShortDate(dateKey: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
+/** Day and weekday on separate lines so narrow cells never wrap “28 Tue” vs “1 Fri” inconsistently. */
+function formatShortDateParts(dateKey: string, timeZone: string) {
+  const d = new Date(`${dateKey}T12:00:00Z`);
+
+  const dayNum = new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     timeZone,
-  }).format(new Date(`${dateKey}T12:00:00Z`));
+  }).format(d);
+
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone,
+  }).format(d);
+
+  return { dayNum, weekday };
 }
 
 function formatMonthRange(start: string, end: string, timeZone: string) {
@@ -252,7 +261,7 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
     return rangeKeys.map((dateKey) => ({
       dateKey,
       label: formatLongDate(dateKey, viewerTimeZone),
-      shortLabel: formatShortDate(dateKey, viewerTimeZone),
+      ...formatShortDateParts(dateKey, viewerTimeZone),
       slots: slotMap[dateKey] ?? [],
     }));
   }, [rangeStart, slotsState, viewerTimeZone]);
@@ -425,6 +434,18 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
     }
   }
 
+  function restartBookingFlow() {
+    startTransition(() => {
+      setBookingState({ status: "idle" });
+      setCopyStatus("idle");
+      setStep("date");
+      setSelectedDateKey(null);
+      setSelectedSlot(null);
+      setRangeStart(getLocalDateKey());
+      setFormValues({ name: "", email: "", notes: "" });
+    });
+  }
+
   async function handleBookingSubmit() {
     if (!selectedEvent || !selectedSlot || !isEmailValid || bookingState.status === "submitting") {
       return;
@@ -486,27 +507,40 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
           <div className={styles.headerLine}>
             <h2 className={styles.title}>Schedule a call</h2>
             <div className={styles.headerControls}>
-              <span className={styles.stepCounter}>Step {stepNumber}</span>
-              <div className={styles.stepNav} aria-label="Booking step navigation">
+              {bookingState.status === "success" ? (
                 <button
                   type="button"
-                  className={styles.stepNavButton}
-                  aria-label="Previous step"
-                  onClick={goToPreviousStep}
-                  disabled={!canStepBack}
+                  className={styles.restartButton}
+                  aria-label="Start a new booking"
+                  onClick={restartBookingFlow}
                 >
-                  ←
+                  Restart
                 </button>
-                <button
-                  type="button"
-                  className={styles.stepNavButton}
-                  aria-label="Next step"
-                  onClick={goToNextStep}
-                  disabled={!canStepForward}
-                >
-                  →
-                </button>
-              </div>
+              ) : (
+                <>
+                  <span className={styles.stepCounter}>Step {stepNumber}</span>
+                  <div className={styles.stepNav} aria-label="Booking step navigation">
+                    <button
+                      type="button"
+                      className={styles.stepNavButton}
+                      aria-label="Previous step"
+                      onClick={goToPreviousStep}
+                      disabled={!canStepBack}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.stepNavButton}
+                      aria-label="Next step"
+                      onClick={goToNextStep}
+                      disabled={!canStepForward}
+                    >
+                      →
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -543,32 +577,28 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
                   </a>
                 </div>
               ) : bookingState.status === "success" ? (
-                <div className={`${styles.messagePanel} ${styles.successPanel}`}>
-                  <span className={`section-label ${styles.metaTitle}`}>Booked</span>
-                  <p className={styles.messageTitle}>Call scheduled</p>
+                <div className={styles.successStack}>
+                  <p className={styles.successHeadline}>Call scheduled</p>
                   <p className={styles.messageText}>
-                    {formatSlotSummary(bookingState.booking.start, viewerTimeZone)}. Confirmation sent to{" "}
+                    {formatSlotSummary(bookingState.booking.start, viewerTimeZone)} — confirmation emailed to{" "}
                     {bookingState.booking.attendeeEmail}.
                   </p>
                   {bookingState.booking.meetingUrl ? (
-                    <button
-                      type="button"
-                      className={styles.copyLinkButton}
-                      onClick={() => handleCopyMeetingUrl(bookingState.booking.meetingUrl!)}
-                    >
-                      <span>{bookingState.booking.meetingUrl}</span>
-                      <span>
+                    <div className={styles.meetingLinkRow}>
+                      <span className={styles.meetingUrl}>{bookingState.booking.meetingUrl}</span>
+                      <button
+                        type="button"
+                        className={styles.copyLinkAction}
+                        onClick={() => handleCopyMeetingUrl(bookingState.booking.meetingUrl!)}
+                      >
                         {copyStatus === "copied"
                           ? "Copied"
                           : copyStatus === "error"
                             ? "Copy failed"
                             : "Copy link"}
-                      </span>
-                    </button>
+                      </button>
+                    </div>
                   ) : null}
-                  <a href={`mailto:${contactContent.email}`} className={`text-link ${styles.inlineLink}`}>
-                    Email instead
-                  </a>
                 </div>
               ) : (
                 <div className={styles.widgetSection}>
@@ -654,13 +684,17 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
                                   key={day.dateKey}
                                   type="button"
                                   className={styles.dateButton}
+                                  aria-label={day.label}
                                   data-active={day.dateKey === selectedDateKey}
                                   data-loading={slotsState.status === "loading"}
                                   disabled={slotsState.status === "loading"}
                                   onClick={() => handleDateSelect(day.dateKey)}
                                 >
-                                  <span>{day.shortLabel}</span>
-                                  <span>
+                                  <span className={styles.dateButtonPrimary}>
+                                    <span className={styles.dateButtonDay}>{day.dayNum}</span>
+                                    <span className={styles.dateButtonWeek}>{day.weekday}</span>
+                                  </span>
+                                  <span className={styles.dateButtonMeta}>
                                     {slotsState.status === "loading"
                                       ? "..."
                                       : day.slots.length
@@ -685,36 +719,38 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
                           </div>
 
                           <div className={styles.timeGrid}>
-                            {slotsState.status === "loading" ? (
-                              SKELETON_SLOTS.map((slot) => <span key={slot} className={styles.skeletonSlot} />)
-                            ) : selectedDaySlots.length ? (
-                              selectedDaySlots.map((slot) => (
-                                <button
-                                  key={slot.start}
-                                  type="button"
-                                  className={styles.slotButton}
-                                  data-active={selectedSlot === slot.start}
-                                  onClick={() => handleSlotSelect(slot.start)}
-                                >
-                                  {formatSlotTime(slot.start, viewerTimeZone)}
-                                </button>
-                              ))
-                            ) : (
-                              <div className={styles.emptyState}>
-                                <p className={styles.emptyText}>No availability on this date.</p>
-                                <button
-                                  type="button"
-                                  className={styles.secondaryAction}
-                                  onClick={() => {
-                                    setSelectedDateKey(null);
-                                    setSelectedSlot(null);
-                                    setStep("date");
-                                  }}
-                                >
-                                  Choose another date
-                                </button>
-                              </div>
-                            )}
+                            <div className={styles.timeGridInner}>
+                              {slotsState.status === "loading" ? (
+                                SKELETON_SLOTS.map((slot) => <span key={slot} className={styles.skeletonSlot} />)
+                              ) : selectedDaySlots.length ? (
+                                selectedDaySlots.map((slot) => (
+                                  <button
+                                    key={slot.start}
+                                    type="button"
+                                    className={styles.slotButton}
+                                    data-active={selectedSlot === slot.start}
+                                    onClick={() => handleSlotSelect(slot.start)}
+                                  >
+                                    {formatSlotTime(slot.start, viewerTimeZone)}
+                                  </button>
+                                ))
+                              ) : (
+                                <div className={styles.emptyState}>
+                                  <p className={styles.emptyText}>No availability on this date.</p>
+                                  <button
+                                    type="button"
+                                    className={styles.secondaryAction}
+                                    onClick={() => {
+                                      setSelectedDateKey(null);
+                                      setSelectedSlot(null);
+                                      setStep("date");
+                                    }}
+                                  >
+                                    Choose another date
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           </>
                         ) : null}

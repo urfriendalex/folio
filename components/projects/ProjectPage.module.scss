@@ -107,6 +107,7 @@
   padding: var(--toolbar-panel-p-block-collapsed) var(--toolbar-panel-p-inline)
     var(--toolbar-panel-p-block-collapsed);
   border: 1px solid var(--project-toolbar-border);
+  corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
   background: var(--project-toolbar-block-bg);
   box-shadow: var(--project-toolbar-panel-shadow);
@@ -418,6 +419,7 @@ button.toolbarAction {
   overflow: hidden;
   padding: 0.55rem 0.72rem;
   border: 1px solid var(--project-toolbar-border);
+  corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
   background: var(--project-toolbar-block-bg);
   box-shadow: var(--project-toolbar-panel-shadow);

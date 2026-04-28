@@ -18,6 +18,7 @@ const INVIS_THRESHOLD = 0.01;
 const KEYBOARD_SPEED = 0.18;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
+const TOUCH_DRAG_SPEED = 0.026;
 const INITIAL_CAMERA_Z = 50;
 const MAX_PLANE_CACHE = 256;
 const PIXELS_PER_WORLD_UNIT = 120;
@@ -764,8 +765,8 @@ function SceneController({
         const [lastTouch] = currentState.lastTouches;
 
         if (touch && lastTouch) {
-          currentState.targetVel.x -= (touch.clientX - lastTouch.clientX) * 0.02;
-          currentState.targetVel.y += (touch.clientY - lastTouch.clientY) * 0.02;
+          currentState.targetVel.x -= (touch.clientX - lastTouch.clientX) * TOUCH_DRAG_SPEED;
+          currentState.targetVel.y += (touch.clientY - lastTouch.clientY) * TOUCH_DRAG_SPEED;
         }
       } else if (touches.length === 2 && currentState.lastTouchDist > 0) {
         const distance = getTouchDistance(touches);

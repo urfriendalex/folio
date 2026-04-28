@@ -155,8 +155,8 @@
   appearance: none;
   width: min(100%, 22rem);
   margin: 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--line-color);
+  padding: clamp(0.72rem, 1.6vw, 0.88rem) clamp(0.85rem, 2vw, 1.02rem);
+  border: 1px solid color-mix(in srgb, var(--fg-color) 14%, transparent);
   background: transparent;
   display: inline-flex;
   align-items: center;
@@ -166,34 +166,67 @@
   cursor: pointer;
   text-align: left;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms ease;
 }
 
-.bookingButton:hover,
-.bookingButton:focus-visible {
-  background: var(--taskbar-menu-card-bg);
+@media (hover: hover) and (pointer: fine) {
+  .bookingButton:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--fg-color) 26%, transparent);
+    background: color-mix(in srgb, var(--fg-color) 5%, transparent);
+  }
 }
 
 .bookingButton:focus-visible {
-  outline: 2px solid var(--fg-color);
-  outline-offset: 2px;
+  outline: 1px solid color-mix(in srgb, var(--fg-color) 42%, transparent);
+  outline-offset: 3px;
+}
+
+.bookingButton:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.bookingButton:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.bookingButton:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookingButton {
+    transition-duration: 0.01ms;
+  }
+
+  .bookingButton:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .bookingButtonText {
   font-family: var(--font-body-stack);
-  font-size: clamp(0.9rem, 1.1vw, 0.98rem);
-  line-height: 1.35;
+  font-size: clamp(0.88rem, 1.05vw, 0.96rem);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.38;
+  letter-spacing: -0.011em;
 }
 
 .bookingButtonMeta {
   flex: 0 0 auto;
   font-family: var(--font-pixel-stack);
-  font-size: 0.56rem;
+  font-size: 0.54rem;
   letter-spacing: var(--tracking-label-md);
   text-transform: uppercase;
   color: var(--muted-color);
+  font-weight: 400;
+  font-synthesis: none;
+  opacity: 0.92;
 }
 
 .menuActionLink {

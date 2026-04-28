@@ -20,8 +20,9 @@
 }
 
 .content {
-  display: grid;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: clamp(0.75rem, 1.8vw, 1.1rem);
   padding: clamp(1.5rem, 3.2vw, 2.6rem) 0;
   /* Laptop-ish: keep a comfortable measure; see wide/ultrawide overrides below */
@@ -231,7 +232,7 @@
 }
 
 .visualPanel {
-  display: grid;
+  display: flex;
   align-items: center;
   min-width: 0;
   min-height: 100%;
@@ -240,8 +241,9 @@
 
 .visualPanelInner {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-width: 0;
   min-height: clamp(21rem, 54vh, 36rem);
@@ -252,8 +254,9 @@
 
 .walkerShell {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-width: 0;
   height: clamp(21rem, 54vh, 36rem);

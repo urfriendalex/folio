@@ -232,7 +232,7 @@
   width: 100%;
   min-height: 2.35rem;
   padding: 0.48rem 0.72rem;
-  /* Match project toolbar nav chips (`.navButton` / `--project-toolbar-panel-radius`). */
+  corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 22%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 7%, transparent);
@@ -348,6 +348,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0.32rem 0.72rem;
+  corner-shape: squircle;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 18%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);

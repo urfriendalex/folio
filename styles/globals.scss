@@ -191,7 +191,6 @@
   --navbar-gradient-blur-transition: 320ms ease;
   --navbar-gradient-blur-overscan: 0px;
   --navbar-safe-area-fill: var(--bg-color);
-  --navbar-safe-area-shadow: rgb(16 16 16 / 0.12);
   --navbar-overlay-backdrop-blur: 20px;
   --navbar-overlay-backdrop-saturate: 112%;
 }
@@ -207,7 +206,6 @@
 [data-theme="dark"] {
   --navbar-contrast-dark-ink: rgb(18 18 20 / 0.94);
   --navbar-safe-area-fill: #050505;
-  --navbar-safe-area-shadow: rgb(0 0 0 / 0.36);
 
   --bg-color: #0d0d0d;
   --bg-elevated: transparent;
@@ -521,9 +519,10 @@ html.js-enabled[data-preloader="skip"] [data-preloader-overlay="true"] {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  display: grid;
-  align-content: center;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 1rem;
   background: var(--preloader-bg);
   color: var(--preloader-progress-color);

@@ -6,8 +6,9 @@
   inset: 0;
   z-index: 9999;
   overflow: hidden;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--preloader-bg);
   color: var(--walker-color);
   will-change: opacity, filter;
@@ -22,8 +23,9 @@
   width: var(--ascii-stage-width);
   height: var(--ascii-stage-height);
   transform: translate3d(-50%, -50%, 0);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   pointer-events: none;
   opacity: 0;
@@ -58,8 +60,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   opacity: 0;
   transition: opacity 180ms ease-out;

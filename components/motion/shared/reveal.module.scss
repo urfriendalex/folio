@@ -13,7 +13,8 @@
 }
 
 .root[data-mode="lines"] {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   min-width: 0;
   gap: var(--reveal-line-gap, 0.08em);

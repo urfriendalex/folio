@@ -1,21 +1,30 @@
 .root {
+  --booking-date-cell-min-height: clamp(6.2rem, 13vh, 8rem);
+  --booking-slot-cell-min-height: clamp(3.35rem, 7.2vh, 4.4rem);
+  --booking-date-grid-columns: repeat(3, minmax(0, 1fr));
+  --booking-time-grid-max-height: min(55vh, 28rem);
+
   box-sizing: border-box;
-  width: calc(100% + 2 * var(--content-padding-inline));
-  max-width: none;
-  height: 100%;
+  /* Stay within the immersive `.content` box — the old full-bleed calc + negative margin overflowed
+     parents with `overflow: hidden` and clipped steps 2–3 horizontally. */
+  width: 100%;
+  max-width: 100%;
+  /* `flex-basis: 0` so this grows to fill the overlay content area (not shrink-wrap to `.flowShell`). */
+  flex: 1 1 0;
   min-height: 0;
-  margin-inline: calc(-1 * var(--content-padding-inline));
+  margin-inline: 0;
   padding-inline: max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-left, 0px))
     max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-right, 0px));
   padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0px));
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: clamp(0.85rem, 2vw, 1.2rem);
   color: var(--overlay-fg);
 }
 
 .flowShell {
   min-height: 0;
+  margin-block: auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(0.85rem, 2vw, 1.2rem);
@@ -53,7 +62,7 @@
 .headerLine {
   display: flex;
   align-items: flex-end;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: clamp(0.7rem, 1.3vw, 1.15rem);
 }
 
@@ -70,7 +79,6 @@
   display: inline-flex;
   align-items: center;
   gap: clamp(0.45rem, 0.9vw, 0.7rem);
-  padding-bottom: 0.3rem;
 }
 
 .stepCounter {
@@ -126,6 +134,45 @@
   cursor: default;
 }
 
+.restartButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 18%, transparent);
+  background: transparent;
+  color: var(--overlay-fg);
+  font-family: var(--font-body-stack);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight-sm);
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .restartButton:hover {
+    border-color: color-mix(in srgb, var(--overlay-fg) 32%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  }
+}
+
+.restartButton:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--overlay-fg) 38%, transparent);
+  outline-offset: 3px;
+}
+
+.restartButton:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .body,
 .sheetLayout,
 .sheetAside,
@@ -136,7 +183,9 @@
 
 .body {
   display: grid;
-  overflow: hidden;
+  min-width: 0;
+  overflow-x: visible;
+  overflow-y: auto;
 }
 
 .sheetLayout,
@@ -160,6 +209,8 @@
 .guidedShell {
   min-height: 0;
   width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
   display: grid;
   grid-template-columns: minmax(15rem, 0.34fr) minmax(0, 1fr);
   gap: clamp(0.75rem, 1.6vw, 1rem);
@@ -169,7 +220,7 @@
 .stepPane,
 .inlineNotice,
 .fallbackPanel,
-.messagePanel {
+.successStack {
   min-width: 0;
   width: 100%;
 }
@@ -187,14 +238,18 @@
 
 .stepPane {
   min-height: 0;
-  overflow: hidden;
+  min-width: 0;
+  overflow-x: visible;
+  overflow-y: auto;
   align-content: start;
-  align-self: start;
-  grid-template-rows: auto auto;
+  align-self: stretch;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .stepContent {
   display: grid;
+  width: 100%;
+  min-width: 0;
   align-content: start;
   gap: clamp(0.62rem, 1.1vw, 0.9rem);
   will-change: opacity, transform, filter;
@@ -215,8 +270,23 @@
   @include stagger-children(4, 0ms, 80ms, 280ms, 0.5rem);
 }
 
+/* Time step: only the slot grid scrolls; title row stays fixed */
+.stepContent:has(.timeGrid) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-content: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.stepContent:has(.timeGrid) > .stepTop {
+  flex-shrink: 0;
+}
+
 .skeletonStepContent {
   display: grid;
+  width: 100%;
   align-content: start;
   gap: clamp(0.62rem, 1.1vw, 0.9rem);
 }
@@ -281,10 +351,43 @@
 .stepNavButton,
 .secondaryAction {
   cursor: pointer;
+}
+
+.eventButton {
   transition:
     border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     background 180ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dateButton,
+.slotButton {
+  transition:
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.navButton,
+.stepNavButton,
+.secondaryAction {
+  transition:
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dateButton:hover:not(:disabled):not([data-loading="true"]) {
+    border-color: color-mix(in srgb, var(--overlay-fg) 34%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 7%, transparent);
+  }
+
+  .slotButton:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--overlay-fg) 34%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 7%, transparent);
+  }
 }
 
 .eventButton:active,
@@ -292,9 +395,10 @@
 .slotButton:active,
 .navButton:active,
 .stepNavButton:active,
+.restartButton:active,
 .secondaryAction:active,
 .primaryLink:active,
-.copyLinkButton:active {
+.copyLinkAction:active {
   transform: scale(0.96);
 }
 
@@ -316,9 +420,7 @@
 }
 
 .eventButtonTitle,
-.eventTitle,
-.messageTitle,
-.stepTitle {
+.eventTitle {
   margin: 0;
   color: var(--overlay-fg);
 }
@@ -340,19 +442,19 @@
 }
 
 .eventButtonMeta,
-.dateButton span:last-child,
+.dateButtonMeta,
 .navButton {
   font-variant-numeric: tabular-nums;
 }
 
-.eventTitle,
-.messageTitle {
+.eventTitle {
   font-size: 1.05rem;
   line-height: 1.2;
 }
 
 .stepTop {
   display: flex;
+  width: 100%;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.7rem;
@@ -361,11 +463,13 @@
 }
 
 .stepTitle {
+  margin: 0;
+  font-family: var(--font-pixel-stack);
   font-size: clamp(1.35rem, 2.4vw, 2.2rem);
-  font-weight: 520;
+  font-weight: 500;
   line-height: 1.02;
-  letter-spacing: 0;
-  color: color-mix(in srgb, var(--overlay-fg) 72%, var(--overlay-muted));
+  letter-spacing: var(--tracking-label-sm);
+  color: color-mix(in srgb, var(--overlay-fg) 88%, var(--overlay-muted));
   text-wrap: balance;
 }
 
@@ -393,7 +497,8 @@
 
 .dateGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  grid-template-columns: var(--booking-date-grid-columns);
   gap: 0.5rem;
 
   @include stagger-children(14, 80ms, 34ms, 300ms, 0.55rem);
@@ -401,7 +506,8 @@
 
 .skeletonDateGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  grid-template-columns: var(--booking-date-grid-columns);
   gap: 0.5rem;
 }
 
@@ -410,7 +516,7 @@
   display: grid;
   align-content: space-between;
   gap: 0.5rem;
-  min-height: clamp(6.2rem, 13vh, 8rem);
+  min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
   text-align: left;
   overflow: hidden;
@@ -433,33 +539,96 @@
   pointer-events: none;
 }
 
-.dateButton span:first-child {
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
-  line-height: 1;
+.dateButtonPrimary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.18em;
+  min-width: 0;
 }
 
-.dateButton span:last-child {
+.dateButtonDay {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--overlay-fg);
+}
+
+/* Secondary to the day figure: quieter type color & scale */
+.dateButtonWeek {
+  font-size: clamp(0.75rem, 1.2vw, 0.86rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  font-variant-numeric: tabular-nums;
+  color: var(--overlay-muted);
+}
+
+.dateButtonMeta {
   font-size: 0.78rem;
   line-height: 1.2;
   color: var(--overlay-muted);
 }
 
 .timeGrid {
+  --booking-time-mask-fade: 0.75rem;
+
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  max-height: var(--booking-time-grid-max-height);
+  overflow-x: visible;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  /* Padding on `.timeGridInner` keeps slot cells out of the fade zones at scroll extremes. */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--booking-time-mask-fade),
+    #000 calc(100% - var(--booking-time-mask-fade)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--booking-time-mask-fade),
+    #000 calc(100% - var(--booking-time-mask-fade)),
+    transparent 100%
+  );
+}
+
+.timeGridInner {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-content: start;
+  padding-top: var(--booking-time-mask-fade);
+  padding-bottom: var(--booking-time-mask-fade);
 
   @include stagger-children(64, 80ms, 28ms, 300ms, 0.55rem);
 }
 
+.timeGrid::-webkit-scrollbar {
+  display: none;
+}
+
 .slotButton {
-  min-height: clamp(3.35rem, 7.2vh, 4.4rem);
+  min-height: var(--booking-slot-cell-min-height);
   padding: 0.58rem;
   font-size: clamp(1rem, 1.7vw, 1.22rem);
   text-align: center;
 }
 
 .formGrid {
+  width: 100%;
   gap: 0.85rem;
 
   @include stagger-children(8, 0ms, 85ms, 280ms, 0.5rem);
@@ -468,6 +637,7 @@
 .emptyState {
   grid-column: 1 / -1;
   display: grid;
+  width: 100%;
   gap: 0.65rem;
   align-content: center;
   min-height: clamp(7rem, 22vh, 11rem);
@@ -475,6 +645,7 @@
 
 .inlineNotice {
   display: grid;
+  width: 100%;
   gap: 0.42rem;
   align-content: start;
 }
@@ -489,6 +660,7 @@
 }
 
 .formFields {
+  width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.72rem;
 
@@ -531,40 +703,49 @@
   width: min(100%, 15rem);
   min-height: 3rem;
   padding: 0.62rem 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--overlay-fg) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 17%, transparent);
+  corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
-  background: color-mix(in srgb, var(--overlay-fg) 12%, transparent);
-  box-shadow: 0 0.8rem 1.8rem color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  box-shadow: none;
   color: var(--overlay-fg);
   font-family: var(--font-body-stack);
-  font-size: 0.9rem;
-  font-weight: 650;
-  letter-spacing: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  font-synthesis: none;
+  letter-spacing: -0.012em;
   text-decoration: none;
   text-align: center;
   cursor: pointer;
   transition:
-    border-color 220ms cubic-bezier(0.23, 1, 0.32, 1),
-    background 220ms cubic-bezier(0.23, 1, 0.32, 1),
-    box-shadow 280ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    color 180ms ease,
-    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms ease;
 }
 
-.primaryLink:hover,
-.primaryLink:focus-visible {
-  border-color: color-mix(in srgb, var(--overlay-fg) 46%, transparent);
-  background: color-mix(in srgb, var(--overlay-fg) 16%, transparent);
-  color: var(--overlay-fg);
+@media (hover: hover) and (pointer: fine) {
+  .primaryLink:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--overlay-fg) 28%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 10%, transparent);
+  }
 }
 
-.fallbackPanel,
-.messagePanel {
-  display: grid;
-  gap: 0.72rem;
+.primaryLink:focus-visible:not(:disabled) {
+  border-color: color-mix(in srgb, var(--overlay-fg) 30%, transparent);
+  background: color-mix(in srgb, var(--overlay-fg) 10%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--overlay-fg) 38%, transparent);
+  outline-offset: 3px;
+}
+
+.primaryLink:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .fallbackPanel {
+  display: grid;
+  gap: 0.72rem;
   align-content: start;
   justify-items: start;
   padding: 0;
@@ -577,49 +758,82 @@
   min-width: 11.5rem;
 }
 
-.messagePanel {
-  padding: 1rem;
-  border: 1px solid var(--overlay-line);
-  background: color-mix(in srgb, var(--overlay-fg) 3%, transparent);
-}
-
-.successPanel {
-  align-content: center;
-  justify-self: center;
-  width: min(36rem, 100%);
-}
-
-.copyLinkButton {
+.successStack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
+  gap: clamp(0.58rem, 1vw, 0.8rem);
+  align-content: start;
+  justify-items: start;
   width: 100%;
-  min-height: 2.8rem;
-  margin-top: 0.15rem;
-  padding: 0.58rem 0.72rem;
-  border: 1px solid var(--overlay-line);
-  background: transparent;
+  min-width: 0;
+}
+
+.successHeadline {
+  margin: 0;
+  font-size: clamp(1.02rem, 1.8vw, 1.16rem);
+  font-weight: 500;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
   color: var(--overlay-fg);
-  font: inherit;
-  text-align: left;
+}
+
+.meetingLinkRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem 0.75rem;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0.12rem;
+}
+
+.meetingUrl {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(0.46rem, 0.9vw, 0.58rem);
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--overlay-fg) 66%, var(--overlay-muted));
+  word-break: break-all;
+}
+
+.copyLinkAction {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  appearance: none;
+  border: 0;
+  padding: 0.1rem 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--overlay-fg) 92%, var(--overlay-muted));
+  font-family: var(--font-body-stack);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight-sm);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
   cursor: pointer;
   transition:
-    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+    color 160ms ease,
+    opacity 160ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0.01ms;
+  }
 }
 
-.copyLinkButton span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--overlay-muted);
+@media (hover: hover) and (pointer: fine) {
+  .copyLinkAction:hover:not(:disabled) {
+    color: var(--overlay-fg);
+  }
 }
 
-.copyLinkButton span:last-child {
-  color: var(--overlay-fg);
-  white-space: nowrap;
+.copyLinkAction:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--overlay-fg) 36%, transparent);
+  outline-offset: 3px;
+}
+
+.copyLinkAction:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .skeletonEventGroup,
@@ -709,7 +923,7 @@
   align-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  min-height: clamp(6.2rem, 13vh, 8rem);
+  min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
 }
 
@@ -717,7 +931,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: clamp(3.35rem, 7.2vh, 4.4rem);
+  min-height: var(--booking-slot-cell-min-height);
   padding: 0.58rem;
 }
 
@@ -828,12 +1042,8 @@
 }
 
 @media (max-width: 76rem) {
-  .dateGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .skeletonDateGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .root {
+    --booking-date-grid-columns: repeat(4, minmax(0, 1fr));
   }
 
   .dateButton,
@@ -863,11 +1073,9 @@
 }
 
 @media (min-width: 64.01rem) {
-  .root {
-    align-items: center;
-  }
-
   .flowShell {
+    --booking-stage-width: min(100%, 88rem);
+    --booking-pane-min-height: clamp(28rem, 58vh, 34rem);
     width: min(100%, 112rem);
     height: min(44rem, calc(100dvh - 3.5rem));
     margin-inline: auto;
@@ -875,8 +1083,15 @@
     gap: clamp(1rem, 2.2vw, 1.5rem);
   }
 
+  .header,
   .body {
-    align-items: start;
+    width: var(--booking-stage-width);
+    margin-inline: auto;
+  }
+
+  .body {
+    align-items: center;
+    justify-items: stretch;
     padding-top: 0;
     padding-bottom: 0;
   }
@@ -884,11 +1099,40 @@
   .sheetLayout,
   .sheetAside,
   .widgetSection {
+    min-height: var(--booking-pane-min-height);
     height: auto;
   }
 
   .widgetSection {
-    align-content: start;
+    align-content: center;
+  }
+
+  /* Same column template every step: proportional tracks only — a min width on col 2 overflowed
+     the stage on ~1024–1200px viewports and clipped the time grid / form / action bar. */
+  .guidedShell {
+    grid-template-columns: minmax(18rem, 0.92fr) minmax(0, 1.65fr);
+    min-height: var(--booking-pane-min-height);
+    align-items: start;
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .contextPane,
+  .stepPane,
+  .widgetSection {
+    justify-self: stretch;
+  }
+
+  .stepPane {
+    min-height: var(--booking-pane-min-height);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .stepContent,
+  .skeletonStepContent {
+    min-height: 0;
+    align-self: stretch;
   }
 
   .skeletonStepContent,
@@ -904,14 +1148,20 @@
 
 @media (max-width: 48rem) {
   .root {
+    --booking-date-grid-columns: repeat(2, minmax(0, 1fr));
+    /* Almost full viewport minus header + step title + padded action area — much taller than desktop cap */
+    --booking-time-grid-max-height: min(78dvh, 48rem);
+
     width: 100%;
     margin-inline: 0;
     padding-inline: 0;
     padding-bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
     gap: 0.68rem;
+    justify-content: flex-start;
   }
 
   .flowShell {
+    margin-block: 0;
     padding-bottom: max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem));
   }
 
@@ -959,6 +1209,9 @@
     height: 100%;
     align-self: stretch;
     grid-template-rows: minmax(0, 1fr) auto;
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
   }
 
   .contextPane {
@@ -1002,7 +1255,7 @@
 
   .stepTitle {
     font-size: clamp(1.12rem, 5.4vw, 1.5rem);
-    letter-spacing: 0;
+    letter-spacing: var(--tracking-label-sm);
   }
 
   .navButton {
@@ -1023,12 +1276,10 @@
   }
 
   .dateGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.42rem;
   }
 
   .skeletonDateGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.42rem;
   }
 
@@ -1042,15 +1293,19 @@
     gap: 0.3rem;
   }
 
-  .dateButton span:first-child {
+  .dateButtonDay {
     font-size: 1rem;
   }
 
-  .dateButton span:last-child {
+  .dateButtonWeek {
+    font-size: 0.74rem;
+  }
+
+  .dateButtonMeta {
     font-size: 0.72rem;
   }
 
-  .timeGrid {
+  .timeGridInner {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.42rem;
   }
@@ -1100,23 +1355,25 @@
     width: 100%;
   }
 
-  .copyLinkButton {
-    grid-template-columns: 1fr;
-    gap: 0.32rem;
+  .meetingLinkRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .copyLinkAction {
+    margin-inline-start: 0;
+    align-self: flex-start;
   }
 }
 
 @media (max-height: 740px) and (max-width: 48rem) {
+  .root {
+    --booking-date-grid-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .contextPane {
     display: none;
-  }
-
-  .dateGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .skeletonDateGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .dateButton,
@@ -1130,18 +1387,9 @@
   }
 }
 
-@media (max-height: 680px) {
-  .timeGrid {
-    max-height: min(40vh, 15rem);
-    overflow-y: auto;
-    padding-right: 0.1rem;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
-  }
-
-  .timeGrid::-webkit-scrollbar {
-    display: none;
+@media (max-height: 680px) and (min-width: 48.01rem) {
+  .root {
+    --booking-time-grid-max-height: min(40vh, 22rem);
   }
 }
 
@@ -1149,9 +1397,12 @@
   .stepContent,
   .stepContent > *,
   .dateGrid > *,
-  .timeGrid > *,
+  .timeGridInner > *,
   .formGrid > *,
   .primaryLink,
+  .copyLinkAction,
+  .stepNavButton,
+  .restartButton,
   .eventButton,
   .dateButton,
   .slotButton,

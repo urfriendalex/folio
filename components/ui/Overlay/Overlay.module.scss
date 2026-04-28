@@ -40,8 +40,9 @@
   position: fixed;
   inset: 0;
   z-index: 1;
-  display: grid;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: calc(100vw - 2rem);
   max-width: none;
   height: min(calc(100svh - 2rem), 60rem);
