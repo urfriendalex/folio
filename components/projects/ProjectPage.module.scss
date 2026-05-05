@@ -182,10 +182,25 @@
     background: color-mix(in srgb, var(--fg-color) 4%, var(--bg-color));
   }
 
-  .portraitMediaSurface {
-    aspect-ratio: var(--pm-w) / var(--pm-h);
+  /* Match desktop squeeze: cap width so tall assets don’t dominate the viewport. */
+  .portraitFrame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: 100%;
+    min-width: 0;
+  }
+
+  .portraitMediaSurface {
+    box-sizing: border-box;
+    aspect-ratio: var(--pm-w) / var(--pm-h);
+    width: min(
+      100%,
+      20rem,
+      calc(min(68svh, 30rem) * var(--pm-w) / var(--pm-h))
+    );
     max-width: 100%;
+    margin-inline: auto;
     height: auto;
     border-radius: var(--radius-panel-md);
     overflow: hidden;

@@ -31,4 +31,26 @@ export const projectMediaOrderIndexBySlug: Partial<
   ohgotmi: {
     "media-07.mp4": 1,
   },
+  "studio-iskra": {
+    "media-07.mp4": 1,
+  },
+  "diana-milkanova": {
+    "media-03.mp4": 1,
+    "media-04.mp4": 2,
+  },
+  /**
+   * Pastel Muse: open with desktop tabs (08), then interleave portrait captures (01–03) with
+   * desktop screenshots/videos so the grid isn’t “all mobile then all desktop”.
+   */
+  "pastel-muse": {
+    "media-08.mp4": 1,
+    "media-01.mp4": 2,
+    "media-04.mp4": 3,
+    "media-02.mp4": 4,
+    "media-05.png": 5,
+    "media-03.mp4": 6,
+    "media-06.png": 7,
+    "media-07.png": 8,
+    "media-09.mp4": 9,
+  },
 };

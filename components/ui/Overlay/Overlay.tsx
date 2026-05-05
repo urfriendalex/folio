@@ -54,6 +54,8 @@ export function Overlay({
     html.classList.add("is-overlay-open");
 
     return () => {
+      /* Drop overflow lock first: while `is-overlay-open` is on, `overflow: hidden` on `html` makes
+         Lenis’s scroll `limit` ~0, so `scrollTo(savedY)` clamps to the top. Sync scroll + body in `unlock`. */
       html.classList.remove("is-overlay-open");
       unlockBodyScroll();
     };
