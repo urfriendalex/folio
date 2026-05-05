@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "pnpm generate:archive-manifest",
     "dev": "next dev",
-    "prebuild": "pnpm generate:project-media && pnpm generate:archive-manifest",
+    "prebuild": "pnpm generate:archive-manifest",
     "build": "next build",
     "prepare": "node scripts/setup-git-hooks.mjs",
     "verify:generated": "node scripts/verify-generated-assets.mjs",
