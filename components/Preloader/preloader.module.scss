@@ -74,11 +74,12 @@
 
 .progressValue {
   color: var(--signal-color);
+  font-family: var(--font-pixel-square-stack);
   font-size: clamp(0.55rem, 1.25vw, 0.9rem);
   line-height: 1;
   letter-spacing: var(--tracking-label-lg);
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono-stack);
+  text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
 }
 
 .isLoaded {
