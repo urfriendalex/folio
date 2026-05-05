@@ -1,0 +1,23 @@
+# Alexander Yansons
+
+> Portfolio site for Alexander Yansons — independent web developer and creative technologist based in Warsaw, Poland.
+
+## Summary
+
+Alexander builds custom websites, e-commerce, portfolios, and product UI for brands, studios, and product teams. The site showcases selected case studies, an experimental archive, and a contact path for new work.
+
+## Primary pages
+
+- Home: https://yansons.online/
+- Project index (from home): https://yansons.online/#work
+- Archive: https://yansons.online/archive/
+
+## Contact
+
+- Email: hello@yansons.online
+- Scheduling: use the “Schedule a call” control on the homepage when available.
+
+## For automated agents
+
+- Machine-readable sitemap: https://yansons.online/sitemap.xml
+- Crawl policy: https://yansons.online/robots.txt

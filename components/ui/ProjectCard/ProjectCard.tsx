@@ -44,7 +44,7 @@ export function ProjectCard({
         <Link href={projectHref} className={styles.media} aria-label={`${project.title}, explore project`}>
           <ProjectMedia
             media={thumbnailMedia}
-            alt=""
+            alt={`${project.title} project preview`}
             className={styles.mediaAsset}
             sizes="(max-width: 48rem) 100vw, 48rem"
             fill

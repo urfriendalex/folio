@@ -8,6 +8,7 @@ import {
   ROOT_BACKGROUND_COLOR_VAR,
   ROOT_THEME_ATTRIBUTE,
 } from "@/lib/browserChrome";
+import { SITE_URL } from "@/lib/site";
 import "@/styles/globals.scss";
 
 const screenBody = Geist({
@@ -21,7 +22,7 @@ const geistMono = Geist_Mono({
 const fontVariables = `${GeistPixelGrid.variable} ${GeistPixelSquare.variable} ${screenBody.variable} ${geistMono.variable}`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yansons.online"),
+  metadataBase: new URL(SITE_URL),
   title: "Alexander Yansons | Web Developer & Creative Technologist",
   description: "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
   openGraph: {
@@ -29,13 +30,22 @@ export const metadata: Metadata = {
     description:
       "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
     type: "website",
-    url: "https://yansons.online",
+    url: SITE_URL,
+    images: [
+      {
+        url: "/favicons/dark/apple-touch-icon.png",
+        width: 180,
+        height: 180,
+        alt: "Alexander Yansons portfolio mark",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Alexander Yansons | Web Developer & Creative Technologist",
     description:
       "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
+    images: ["/favicons/dark/apple-touch-icon.png"],
   },
 };
 
