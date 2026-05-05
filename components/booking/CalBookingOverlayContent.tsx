@@ -65,6 +65,49 @@ const SKELETON_DAYS = Array.from({ length: RANGE_DAYS }, (_, index) => index);
 const SKELETON_SLOTS = Array.from({ length: 10 }, (_, index) => index);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * `navigator.clipboard.writeText` only works in a secure context (HTTPS or localhost).
+ * LAN dev URLs like `http://192.168.x.x` are not secure, so we fall back to `execCommand`.
+ */
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* Clipboard API unavailable or denied — use legacy path */
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.setAttribute("aria-hidden", "true");
+    ta.style.position = "fixed";
+    ta.style.left = "0";
+    ta.style.top = "0";
+    ta.style.width = "1px";
+    ta.style.height = "1px";
+    ta.style.padding = "0";
+    ta.style.margin = "0";
+    ta.style.border = "none";
+    ta.style.outline = "none";
+    ta.style.boxShadow = "none";
+    ta.style.background = "transparent";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -490,11 +533,11 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
   }
 
   async function handleCopyMeetingUrl(meetingUrl: string) {
-    try {
-      await navigator.clipboard.writeText(meetingUrl);
+    const ok = await copyTextToClipboard(meetingUrl);
+    if (ok) {
       setCopyStatus("copied");
       window.setTimeout(() => setCopyStatus("idle"), 1800);
-    } catch {
+    } else {
       setCopyStatus("error");
       window.setTimeout(() => setCopyStatus("idle"), 2200);
     }
@@ -580,12 +623,19 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
                 <div className={styles.successStack}>
                   <p className={styles.successHeadline}>Call scheduled</p>
                   <p className={styles.messageText}>
-                    {formatSlotSummary(bookingState.booking.start, viewerTimeZone)} — confirmation emailed to{" "}
+                    {formatSlotSummary(bookingState.booking.start, viewerTimeZone)}. Confirmation emailed to{" "}
                     {bookingState.booking.attendeeEmail}.
                   </p>
                   {bookingState.booking.meetingUrl ? (
                     <div className={styles.meetingLinkRow}>
-                      <span className={styles.meetingUrl}>{bookingState.booking.meetingUrl}</span>
+                      <a
+                        href={bookingState.booking.meetingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.meetingUrl}
+                      >
+                        {bookingState.booking.meetingUrl}
+                      </a>
                       <button
                         type="button"
                         className={styles.copyLinkAction}

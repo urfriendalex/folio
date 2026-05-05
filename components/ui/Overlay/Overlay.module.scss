@@ -228,11 +228,20 @@
   width: 100%;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  /* Horizontal clip only — `overflow: hidden` on both axes hid viewport-fixed descendants on iOS
+     Safari inside tall scroll containers (booking footer). Booking content uses local overflow elsewhere. */
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding-right: var(--content-padding-inline);
   color: var(--overlay-fg);
+}
+
+/* Full-viewport media: no inner scroll container (prevents gutter / scrollbar flash on open). */
+.content[data-variant="immersive"][data-non-scrollable="true"] {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .content[data-visible="true"] {

@@ -1,18 +1,20 @@
 import type { ProjectEntry } from "./types";
+import { generatedProjectMedia } from "./generated-media";
 
 export const studioIskraProject: ProjectEntry = {
   slug: "studio-iskra",
+  orderIndex: 2,
   title: "STUDIO ISKRA",
-  descriptor: "Creative studio portfolio",
+  descriptor: "Warsaw photo studio website",
   year: "2025",
   role: "Solo Designer & Developer",
   technologies: ["Framer", "React", "JavaScript", "CSS"],
   shortDescription:
-    "Studio portfolio in Framer with a custom React gallery—fast iteration, flexible presentation.",
+    "Framer website for a Warsaw photo studio, with a React gallery where the native setup stopped being enough.",
   description:
-    "Framer-built portfolio extended with a custom React gallery. End-to-end: visual layout in Framer plus code where native tools stopped short.",
-  overview: "Balance Framer speed with custom React for a flexible, image-led showcase.",
-  roleSummary: "Design through build, including custom React for the gallery.",
+    "Most of the site lives in Framer. The gallery is custom React: layout stayed in Framer, grid behavior did not.",
+  overview: "Website for a Warsaw photo studio, built in Framer with custom React where the gallery needed more control.",
+  roleSummary: "Design through build, including the React gallery.",
   responsibilities: [
     "Design & Framer build",
     "Custom React gallery",
@@ -20,39 +22,33 @@ export const studioIskraProject: ProjectEntry = {
   ],
   client: {
     name: "Studio Iskra",
-    type: "Creative studio",
-    industry: "Design / visual production",
+    type: "Photo studio",
+    industry: "Photography / studio",
   },
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Solo build; aligned with the client on content and direction.",
+    details: "Solo build; checked in with the client on content and direction.",
   },
   stack: {
     platform: ["Framer"],
     frontend: ["React", "JavaScript", "CSS"],
-    notes: "Custom React layered on Framer for gallery behavior.",
+    notes: "React layered on Framer for gallery behavior.",
   },
   features: [
     "Custom React gallery",
     "Visual portfolio layout",
-    "Responsive, hybrid no-code + code",
+    "Hybrid no-code shell plus targeted code",
   ],
   impact: {
-    summary: "Framer velocity with custom React where the portfolio needed more control.",
+    summary: "Framer carries most of the site; code shows up once, where control actually mattered.",
     highlights: [
-      "No-code base + targeted engineering",
-      "Flexible project presentation",
-      "Modern, fast-feeling experience",
+      "Fast iteration in Framer, one surgical React island",
+      "Room to reshuffle how work is presented",
+      "Lightweight in the browser day to day",
     ],
   },
   tags: ["Framer", "React", "Frontend", "Portfolio", "Creative Development", "Custom Components"],
   links: [{ label: "Live Site", url: "https://studioiskra.eu" }],
-  featured: true,
-  thumbnail: "/images/project-placeholder.svg",
-  stills: [
-    "/archive/desktop-abstract.webp",
-    "/archive/explore-2.webp",
-    "/archive/banner-colored.webp",
-  ],
+  ...generatedProjectMedia["studio-iskra"],
 };

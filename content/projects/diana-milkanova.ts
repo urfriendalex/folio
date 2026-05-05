@@ -1,18 +1,20 @@
 import type { ProjectEntry } from "./types";
+import { generatedProjectMedia } from "./generated-media";
 
 export const dianaMilkanovaProject: ProjectEntry = {
   slug: "diana-milkanova",
+  orderIndex: 5,
   title: "DIANA MILKANOVA",
   descriptor: "Independent fashion e-commerce",
   year: "2021",
   role: "Frontend Developer",
   technologies: ["Shopify", "Liquid", "HTML", "CSS", "JavaScript"],
   shortDescription:
-    "Minimal Shopify storefront for an independent fashion label—editorial layout, product-first.",
+    "Sparse Shopify storefront for a small fashion label: editorial layout, products first.",
   description:
-    "Custom Shopify frontend using Liquid: a refined, editorial-style store beyond default themes, with the product and brand identity at the center.",
-  overview: "Shopify e-commerce shaped to read more like a fashion site than a generic template.",
-  roleSummary: "Custom theme work in Liquid, layout, and UI for core shop flows.",
+    "Liquid-heavy Shopify front, closer to a fashion site than a stock theme, with the product and brand at the center.",
+  overview: "Commerce that reads editorial instead of default Shopify chrome.",
+  roleSummary: "Theme work in Liquid, layout, and UI across the main shop flows.",
   responsibilities: [
     "Custom theme & Liquid",
     "Frontend layout and styling",
@@ -20,18 +22,18 @@ export const dianaMilkanovaProject: ProjectEntry = {
   ],
   client: {
     name: "Diana Milkanova",
-    type: "Fashion / personal brand",
-    industry: "E-commerce, fashion",
+    type: "E-commerce shop",
+    industry: "Fashion e-commerce",
   },
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Directly with the client; I owned implementation.",
+    details: "Worked direct with the client; I shipped the implementation.",
   },
   stack: {
     platform: ["Shopify"],
     frontend: ["Liquid", "HTML", "CSS", "JavaScript"],
-    notes: "Theme-level Liquid to override default behavior where needed.",
+    notes: "Theme-level Liquid wherever defaults got in the way.",
   },
   features: [
     "Custom theme styling",
@@ -39,16 +41,14 @@ export const dianaMilkanovaProject: ProjectEntry = {
     "Responsive shop layouts",
   ],
   impact: {
-    summary: "A more premium, brand-aligned storefront than out-of-the-box Shopify themes.",
+    summary: "Feels more intentional than an off-the-shelf Shopify skin.",
     highlights: [
-      "Stronger visual identity vs templates",
-      "Clearer product focus",
-      "Cohesive branded experience",
+      "Visual voice that beats generic themes",
+      "Product reads before chrome does",
+      "One consistent brand line through checkout",
     ],
   },
   tags: ["E-commerce", "Shopify", "Liquid", "Frontend", "Custom Theme", "Fashion"],
   links: [{ label: "Live Site", url: "https://dianamilkanova.com" }],
-  featured: false,
-  thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/banner-colored.webp", "/archive/desktop.webp", "/archive/gradient-bg-1.webp"],
+  ...generatedProjectMedia["diana-milkanova"],
 };

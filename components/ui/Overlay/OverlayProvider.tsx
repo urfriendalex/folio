@@ -2,17 +2,20 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import { CalBookingOverlayContent } from "@/components/booking/CalBookingOverlayContent";
 import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import { AboutOverlayContent } from "@/content/about";
-import { contactContent } from "@/content/contact";
+import { contactContent, formatCopyrightLine } from "@/content/contact";
 import type { ProjectEntry } from "@/content/projects/types";
 import { RevealLines } from "@/components/motion";
 import { PixelText } from "@/components/type/PixelText/PixelText";
@@ -20,6 +23,7 @@ import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
 
 type OverlayType = "about" | "contact" | "project" | "booking" | null;
+type OpenOverlayType = Exclude<OverlayType, "project" | null>;
 
 type OverlayContextValue = {
   activeOverlay: OverlayType;
@@ -145,6 +149,114 @@ const ABOUT_MOTION_STYLE = {
   "--meta-line-duration-out": `${META_LINE_DRAW_EXIT_MS}ms`,
 } as CSSProperties;
 
+const COPYRIGHT_LINE = formatCopyrightLine(
+  new Date().getFullYear(),
+  contactContent.footerLegalEntity,
+);
+
+function setPendingBlurHandoff() {
+  document.documentElement.classList.add(OVERLAY_BLUR_PENDING_CLASS);
+}
+
+function clearPendingBlurHandoff() {
+  document.documentElement.classList.remove(OVERLAY_BLUR_PENDING_CLASS);
+}
+
+function setClosingBlurHandoff() {
+  document.documentElement.classList.add(OVERLAY_BLUR_CLOSING_CLASS);
+}
+
+function clearClosingBlurHandoff() {
+  document.documentElement.classList.remove(OVERLAY_BLUR_CLOSING_CLASS);
+}
+
+function ContactOverlayContent() {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    setStatus("sending");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          message: formData.get("message"),
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string; ok?: boolean };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Could not send your message. Please email directly.");
+      }
+
+      form.reset();
+      setStatus("sent");
+      setMessage("Message sent. I will get back to you soon.");
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Could not send your message. Please email directly.");
+    }
+  }, []);
+
+  return (
+    <div className={styles.contactOverlay}>
+      <div className={styles.contactLead}>
+        <span className="section-label">Get in touch</span>
+        <PixelText as="h2" className={styles.contactTitle} text="LET'S TALK" pixelFrom={62} />
+        <p>
+          Start with a short note. If forms are not your thing, email or socials work just as well.
+        </p>
+        <div className={styles.metaLinks}>
+          <a href={`mailto:${contactContent.email}`} className="text-link">
+            {contactContent.email}
+          </a>
+          <a href={contactContent.instagram} className="text-link">
+            Instagram
+          </a>
+          <a href={contactContent.github} className="text-link">
+            GitHub
+          </a>
+          <a href={contactContent.linkedin} className="text-link">
+            LinkedIn
+          </a>
+        </div>
+      </div>
+
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <label className={styles.field}>
+          <span>Name</span>
+          <input type="text" name="name" placeholder="Your name" required autoComplete="name" />
+        </label>
+        <label className={styles.field}>
+          <span>Email</span>
+          <input type="email" name="email" placeholder="you@example.com" required autoComplete="email" />
+        </label>
+        <label className={styles.field}>
+          <span>Message</span>
+          <textarea name="message" placeholder="Project, collaboration, idea." required />
+        </label>
+        <button type="submit" className="pill-button" disabled={status === "sending"}>
+          {status === "sending" ? "Sending" : "Send"}
+        </button>
+        {message ? (
+          <p role={status === "error" ? "alert" : "status"} aria-live="polite">
+            {message}
+          </p>
+        ) : null}
+      </form>
+    </div>
+  );
+}
+
 export function OverlayProvider({ children }: OverlayProviderProps) {
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [projectOverlay, setProjectOverlay] = useState<ProjectEntry | null>(null);
@@ -155,22 +267,6 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const closeUnmountTimerRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
   const openContentFrameRef = useRef<number | null>(null);
-
-  const setPendingBlurHandoff = () => {
-    document.documentElement.classList.add(OVERLAY_BLUR_PENDING_CLASS);
-  };
-
-  const clearPendingBlurHandoff = () => {
-    document.documentElement.classList.remove(OVERLAY_BLUR_PENDING_CLASS);
-  };
-
-  const setClosingBlurHandoff = () => {
-    document.documentElement.classList.add(OVERLAY_BLUR_CLOSING_CLASS);
-  };
-
-  const clearClosingBlurHandoff = () => {
-    document.documentElement.classList.remove(OVERLAY_BLUR_CLOSING_CLASS);
-  };
 
   useEffect(() => {
     return () => {
@@ -195,7 +291,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     };
   }, []);
 
-  const clearOverlayTimers = () => {
+  const clearOverlayTimers = useCallback(() => {
     if (closeShellTimerRef.current) {
       window.clearTimeout(closeShellTimerRef.current);
       closeShellTimerRef.current = null;
@@ -215,9 +311,9 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       window.cancelAnimationFrame(openContentFrameRef.current);
       openContentFrameRef.current = null;
     }
-  };
+  }, []);
 
-  const closeOverlay = () => {
+  const closeOverlay = useCallback(() => {
     if (!activeOverlay) {
       clearPendingBlurHandoff();
       clearClosingBlurHandoff();
@@ -261,9 +357,9 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
 
     setOverlayVisible(false);
     closeUnmountTimerRef.current = window.setTimeout(finishClose, BASE_OVERLAY_EXIT_MS);
-  };
+  }, [activeOverlay, clearOverlayTimers]);
 
-  const openOverlay = (type: Exclude<OverlayType, "project">) => {
+  const openOverlay = useCallback((type: OpenOverlayType) => {
     clearOverlayTimers();
     setPendingBlurHandoff();
     clearClosingBlurHandoff();
@@ -280,9 +376,9 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
         openContentFrameRef.current = null;
       });
     });
-  };
+  }, [clearOverlayTimers]);
 
-  const openProjectFullInfo = (project: ProjectEntry) => {
+  const openProjectFullInfo = useCallback((project: ProjectEntry) => {
     clearOverlayTimers();
     setPendingBlurHandoff();
     clearClosingBlurHandoff();
@@ -299,19 +395,32 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
         openContentFrameRef.current = null;
       });
     });
-  };
+  }, [clearOverlayTimers]);
+
+  const openAbout = useCallback(() => openOverlay("about"), [openOverlay]);
+  const openCalBooking = useCallback(() => openOverlay("booking"), [openOverlay]);
+  const openContactForm = useCallback(() => openOverlay("contact"), [openOverlay]);
+  const overlayContextValue = useMemo<OverlayContextValue>(
+    () => ({
+      activeOverlay,
+      closeOverlay,
+      openAbout,
+      openCalBooking,
+      openContactForm,
+      openProjectFullInfo,
+    }),
+    [
+      activeOverlay,
+      closeOverlay,
+      openAbout,
+      openCalBooking,
+      openContactForm,
+      openProjectFullInfo,
+    ],
+  );
 
   return (
-    <OverlayContext.Provider
-      value={{
-        activeOverlay,
-        closeOverlay,
-        openAbout: () => openOverlay("about"),
-        openCalBooking: () => openOverlay("booking"),
-        openContactForm: () => openOverlay("contact"),
-        openProjectFullInfo,
-      }}
-    >
+    <OverlayContext.Provider value={overlayContextValue}>
       {children}
       {activeOverlay === "about" ? (
         <Overlay
@@ -438,7 +547,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
               <span className={styles.aboutCopyright}>
                 <RevealLines
                   as="span"
-                  text="© 2026 Alexander Yansons"
+                  text={COPYRIGHT_LINE}
                   measureLines={false}
                   offset={ABOUT_FOOTER_OFFSET + 2}
                   stepMs={ABOUT_REVEAL_STEP_MS}
@@ -483,47 +592,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           visible={overlayVisible}
           contentVisible={overlayContentVisible}
         >
-          <div className={styles.contactOverlay}>
-            <div className={styles.contactLead}>
-              <span className="section-label">Get in touch</span>
-              <PixelText as="h2" className={styles.contactTitle} text="LET'S TALK" pixelFrom={62} />
-              <p>
-                Start with a short note. If forms are not your thing, email or socials work just as well.
-              </p>
-              <div className={styles.metaLinks}>
-                <a href={`mailto:${contactContent.email}`} className="text-link">
-                  {contactContent.email}
-                </a>
-                <a href={contactContent.instagram} className="text-link">
-                  Instagram
-                </a>
-                <a href={contactContent.github} className="text-link">
-                  GitHub
-                </a>
-                <a href={contactContent.linkedin} className="text-link">
-                  LinkedIn
-                </a>
-              </div>
-            </div>
-
-            <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
-              <label className={styles.field}>
-                <span>Name</span>
-                <input type="text" name="name" placeholder="Your name" />
-              </label>
-              <label className={styles.field}>
-                <span>Email</span>
-                <input type="email" name="email" placeholder="you@example.com" />
-              </label>
-              <label className={styles.field}>
-                <span>Message</span>
-                <textarea name="message" placeholder="Project, collaboration, idea." />
-              </label>
-              <button type="submit" className="pill-button">
-                Send
-              </button>
-            </form>
-          </div>
+          <ContactOverlayContent />
         </Overlay>
       ) : null}
     </OverlayContext.Provider>

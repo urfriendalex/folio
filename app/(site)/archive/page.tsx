@@ -3,7 +3,7 @@ import { ArchiveCanvas } from "@/components/Archive/ArchiveCanvas";
 import { archiveEntries } from "@/content/archive/archive-data";
 
 export const metadata: Metadata = {
-  title: "Archive — Alexander Yansons",
+  title: "Archive · Alexander Yansons",
   description: "An infinite spatial archive of experiments, concepts, and supporting visual work.",
 };
 

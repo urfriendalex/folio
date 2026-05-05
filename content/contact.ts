@@ -1,3 +1,10 @@
+/** © line for footer, about overlay, and anywhere else it should match. */
+export function formatCopyrightLine(year: number, legalEntity?: string) {
+  const base = `© ${year} Alexander Yansons`;
+  const trimmed = legalEntity?.trim();
+  return trimmed ? `${base} · ${trimmed}` : base;
+}
+
 export const contactContent = {
   email: "hello@yansons.online",
   location: "Warsaw, Poland",

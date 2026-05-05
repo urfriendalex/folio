@@ -1,33 +1,36 @@
 import type { ProjectEntry } from "./types";
+import { generatedProjectMedia } from "./generated-media";
 
 export const pastelMuseProject: ProjectEntry = {
   slug: "pastel-muse",
+  orderIndex: 3,
   title: "PASTEL MUSE",
-  descriptor: "Photo day experience website",
+  descriptor: "One-day photo experience event site",
   year: "2026",
   role: "Design + Frontend",
   technologies: ["Next.js", "GSAP", "SCSS"],
   shortDescription:
-    "Marketing + registration for a photo day—soft editorial mood, GSAP preloader, clear signup.",
+    "Website for a one-day photo event, with editorial art direction and registration handled through email and a Telegram bot.",
   description:
-    "Next.js site for Pastel Muse: story, schedule, and registration with GSAP preloader and scroll-linked motion that match the brand’s quiet, editorial tone.",
-  overview: "Premium feel for a one-day shoot: clear hierarchy, simple signup, motion that supports—not shouts.",
-  roleSummary: "Structure, interaction design, and frontend—including preloader and reveals.",
+    "Next.js site for Pastel Muse: story, schedule, and registration for a one-day photo event, with signups handled through email and a Telegram bot.",
+  overview:
+    "A one-day photo event site with a clear registration flow, plus motion and art direction that fit the tone.",
+  roleSummary: "Structure, interaction design, and frontend work, including preloader and reveals.",
   responsibilities: [
     "Page structure & flow",
-    "Registration integration",
+    "Registration via email and Telegram bot",
     "GSAP preloader & scroll animation",
     "Responsive polish",
   ],
   client: {
     name: "Pastel Muse",
-    type: "Photo day experience",
+    type: "One-day photo event",
     industry: "Photography / events",
   },
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Host’s brief and copy; I built the experience and motion.",
+    details: "Brief and copy from the host; I built the experience and motion.",
   },
   stack: {
     platform: ["Next.js"],
@@ -40,16 +43,14 @@ export const pastelMuseProject: ProjectEntry = {
     "Scroll-linked motion & reveals",
   ],
   impact: {
-    summary: "One cohesive destination for the day—not a generic landing—with low-friction signup.",
+    summary: "One destination for the day instead of a generic landing, with a straight path to sign up.",
     highlights: [
-      "Story and form in one flow",
-      "Motion aligned with the brand",
-      "Preloader sets tone before content",
+      "Story and form on one clean line",
+      "Motion matches the brand instead of stealing focus",
+      "Preloader sets tone before the first section lands",
     ],
   },
   tags: ["Next.js", "GSAP", "Frontend", "Animation", "Events", "Photography"],
   links: [{ label: "Live Site", url: "https://pastelmuse.lizakarasiova.com/" }],
-  featured: false,
-  thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/gradient-bg-1.webp", "/archive/desktop.webp", "/archive/artboard-1.webp"],
+  ...generatedProjectMedia["pastel-muse"],
 };

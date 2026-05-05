@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import styles from "./Overlay.module.scss";
 
 type OverlayProps = {
   children: ReactNode;
+  closeLabel?: string;
+  /** Immersive only: disable inner `.content` scrolling (e.g. full-screen media; avoids scrollbar flash). */
+  contentNonScrollable?: boolean;
   contentVisible?: boolean;
   onClose: () => void;
   title: string;
@@ -25,6 +28,8 @@ function getFocusableElements(container: HTMLElement) {
 
 export function Overlay({
   children,
+  closeLabel = "Close",
+  contentNonScrollable = false,
   contentVisible = true,
   onClose,
   title,
@@ -39,7 +44,7 @@ export function Overlay({
     () => null,
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!portalRoot) {
       return;
     }
@@ -158,7 +163,7 @@ export function Overlay({
           aria-label={`Close ${title}`}
           onClick={onClose}
         >
-          Close
+          {closeLabel}
         </button>
         {/* Lenis: when stopped (overlay open), wheel/touch get preventDefault unless path includes data-lenis-prevent. */}
         <div
@@ -166,6 +171,7 @@ export function Overlay({
           data-variant={variant}
           data-visible={visible}
           data-content-visible={contentVisible}
+          data-non-scrollable={contentNonScrollable ? "true" : undefined}
           data-lenis-prevent=""
         >
           {showTitle ? <span className={`${styles.panelTitle} section-label`}>{title}</span> : null}

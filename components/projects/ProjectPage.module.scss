@@ -18,9 +18,240 @@
   background: color-mix(in srgb, var(--surface-color) 58%, transparent);
 }
 
-.still img {
+/* Crossfade with immersive overlay close (~480ms on `.surface[data-variant="immersive"]`). Keep `transform` here so we do not override `.imageReveal > *`’s scale transition. */
+.still > * {
+  transition:
+    opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1),
+    transform 820ms cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+.still[data-media-viewer-hidden="true"] {
+  pointer-events: none;
+}
+
+.still[data-media-viewer-hidden="true"] > * {
+  opacity: 0;
+}
+
+.stillMedia {
   width: 100%;
+}
+
+.portraitFrame {
+  width: 100%;
+}
+
+.portraitMediaSurface {
+  width: 100%;
+}
+
+.fullscreenLink {
+  display: none;
+}
+
+.mobileMediaViewer {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: visible;
+}
+
+.mobileMediaStage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  container-type: size;
+  container-name: mobile-media-viewer;
+}
+
+.mobileMediaReveal {
+  box-sizing: border-box;
+  width: min(100cqw, calc(100cqh * var(--pm-w) / var(--pm-h)));
   height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: var(--pm-w) / var(--pm-h);
+  overflow: visible;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(0.3rem) scale(0.992);
+  transition:
+    opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mobileMediaViewer[data-visible="true"] .mobileMediaReveal {
+  opacity: 1;
+  transform: none;
+}
+
+.mobileMediaSurface {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  transform: none;
+  transition: none;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.mediaViewerControls {
+  position: absolute;
+  left: max(env(safe-area-inset-left), clamp(0.7rem, 1.8vw, 1rem));
+  bottom: max(env(safe-area-inset-bottom), clamp(0.7rem, 1.8vw, 1rem));
+  z-index: 2;
+  display: inline-flex;
+  gap: 0.4rem;
+  opacity: 0;
+  transform: translateY(0.3rem);
+  pointer-events: none;
+  transition:
+    opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mobileMediaViewer[data-visible="true"] .mediaViewerControls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition-delay: 140ms;
+}
+
+.mediaViewerControls button {
+  appearance: none;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
+  corner-shape: squircle;
+  border-radius: var(--radius-panel-sm);
+  background: color-mix(in srgb, var(--overlay-immersive-fg) 9%, transparent);
+  -webkit-backdrop-filter: var(--overlay-immersive-backdrop-filter);
+  backdrop-filter: var(--overlay-immersive-backdrop-filter);
+  color: var(--overlay-immersive-fg);
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.62rem;
+  letter-spacing: var(--tracking-label-sm);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    background 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mediaViewerControls button:hover,
+.mediaViewerControls button:focus-visible {
+  background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
+  border-color: color-mix(in srgb, var(--overlay-immersive-fg) 28%, transparent);
+}
+
+.mediaViewerControls button:active {
+  transform: scale(0.96);
+}
+
+.mediaViewerControls button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.mobileMediaTrigger {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileMediaTrigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 48rem) {
+  .portraitStill {
+    padding: clamp(0.65rem, 2vw, 0.9rem);
+    background: color-mix(in srgb, var(--fg-color) 4%, var(--bg-color));
+  }
+
+  .portraitMediaSurface {
+    aspect-ratio: var(--pm-w) / var(--pm-h);
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-panel-md);
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    touch-action: manipulation;
+  }
+}
+
+@media (min-width: 48.001rem) {
+  .portraitStill {
+    padding: clamp(0.9rem, 1.7vw, 1.25rem);
+    background: color-mix(in srgb, var(--fg-color) 4%, var(--bg-color));
+  }
+
+  .portraitFrame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: end;
+    justify-items: center;
+    gap: clamp(0.55rem, 1vw, 0.8rem);
+    min-height: 0;
+    position: relative;
+  }
+
+  .portraitMediaSurface {
+    grid-column: 1 / -1;
+    width: min(20rem, 36vw);
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: var(--pm-w) / var(--pm-h);
+    border-radius: var(--radius-panel-md);
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    touch-action: none;
+    transform: translate3d(var(--portrait-media-x, 0), var(--portrait-media-y, 0), 0)
+      scale(var(--portrait-media-scale, 1));
+    transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+    transform-origin: center;
+  }
+
+  .portraitStill .stillMedia {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-panel-md);
+  }
+
+  .fullscreenLink {
+    appearance: none;
+    display: inline-block;
+    grid-column: 2;
+    align-self: end;
+    justify-self: end;
+    padding-bottom: 0.14em;
+    border: 0;
+    background: transparent;
+    color: var(--fg-color);
+    font-family: var(--font-pixel-square-stack);
+    font-size: 0.64rem;
+    letter-spacing: var(--tracking-label-sm);
+    line-height: 1.25;
+    text-transform: lowercase;
+    cursor: pointer;
+  }
 }
 
 .toolbarShell {
@@ -53,6 +284,12 @@
     --toolbar-motion-expand: 85ms;
     --toolbar-motion-collapse: 85ms;
     --toolbar-collapse-delay: 0ms;
+  }
+
+  .still > * {
+    transition:
+      opacity 85ms ease,
+      transform 820ms cubic-bezier(0.2, 0.88, 0.24, 1);
   }
 
   .expandToggle:active,

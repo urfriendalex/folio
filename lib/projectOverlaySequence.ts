@@ -96,12 +96,7 @@ export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverla
   reg("techL", 1);
   regText("techV", techLine, 20, 4);
 
-  const linkList =
-    project.links && project.links.length > 0
-      ? project.links
-      : project.optionalLink
-        ? [{ label: "visit site", url: project.optionalLink }]
-        : [];
+  const linkList = project.links && project.links.length > 0 ? project.links : [];
 
   linkList.forEach((_, i) => {
     reg(`link${i}`, 1);

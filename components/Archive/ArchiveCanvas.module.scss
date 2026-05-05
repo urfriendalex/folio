@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   z-index: 0;
-  width: 100vw;
+  /* `inset: 0` sizes to the viewport; avoid `100vw` (scrollbar gutter overflow). */
   min-height: 100svh;
   height: 100svh;
   overflow: clip;

@@ -347,7 +347,7 @@ body {
 html {
   background: var(--bg-color);
   color: var(--fg-color);
-  scrollbar-gutter: stable both-edges;
+  scrollbar-gutter: stable;
   scroll-behavior: auto;
 }
 
@@ -491,13 +491,46 @@ html [data-app-footer="true"] {
 }
 
 html.is-overlay-open [data-app-navbar="true"] {
+  z-index: 499;
   pointer-events: none;
 }
 
-html.is-overlay-open [data-app-footer="true"] {
+/*
+ * Opt-in for fixed UI that sits under the modal layer (z-index < overlay backdrop): fades out while
+ * `is-overlay-open`, then fades/slides back when the overlay unmounts — mirrors navbar `.inner` timing.
+ * Add `data-overlay-chrome-conceal="true"` on any comparable control.
+ */
+html [data-overlay-chrome-conceal="true"] {
+  transition:
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0ms linear 0ms;
+}
+
+html.is-overlay-open [data-overlay-chrome-conceal="true"] {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  transform: translateY(0.42rem);
+  transition:
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.45, 0, 0.55, 1),
+    visibility 0ms linear 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html [data-overlay-chrome-conceal="true"] {
+    transition:
+      opacity 85ms ease,
+      visibility 0ms linear 0ms;
+  }
+
+  html.is-overlay-open [data-overlay-chrome-conceal="true"] {
+    transform: none;
+    transition:
+      opacity 85ms ease,
+      visibility 0ms linear 85ms;
+  }
 }
 
 html.is-loading:not(.is-preloader-exiting) [data-app-shell="true"] {

@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     const dev = process.env.NODE_ENV === "development";
     let message = error.message;
     if (dev && /domain/i.test(message) && /invalid/i.test(message)) {
-      message = `${message} Verify the domain in Resend (Domains), then set RESEND_FROM to an address @ that domain — or remove RESEND_FROM to use the default test sender.`;
+      message = `${message} Verify the domain in Resend (Domains), then set RESEND_FROM to an address @ that domain, or remove RESEND_FROM to use the default test sender.`;
     }
     return Response.json(
       {

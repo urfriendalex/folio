@@ -1,0 +1,29 @@
+---
+description: Regenerate committed media outputs after changing archive or project sources
+globs:
+  - media/project-sources/**/*
+  - public/archive/**/*
+  - scripts/generate-project-media.mjs
+  - scripts/generate-archive-manifest.mjs
+---
+
+When you change anything under `media/project-sources/`, `public/archive/`, or edit either generator script, committed outputs must stay in sync.
+
+Run:
+
+```bash
+pnpm generate:project-media
+pnpm generate:archive-manifest
+```
+
+`pnpm generate:project-media` clears each `public/projects/<slug>/` before writing that project’s outputs (no leftover media/thumbnails for that slug). Use `pnpm generate:project-media:clean` to delete all of `public/projects` first (drops orphaned folders if you removed a project slug). CI `verify:generated` uses the clean variant.
+
+Or either command alone if only one area changed. Then commit:
+
+- `content/projects/generated-media.ts`
+- `public/projects/**`
+- `lib/generated/archive-manifest.ts`
+
+CI runs `pnpm verify:generated` on push/PR so stale outputs fail the build.
+
+After `pnpm install`, `prepare` points this repo at `.githooks` (`git config core.hooksPath .githooks`). The pre-commit hook only regenerates `lib/generated/archive-manifest.ts` when `public/archive/` or `scripts/generate-archive-manifest.mjs` is staged. Project media (`pnpm generate:project-media`) is intentionally not run on commit — run it yourself after changing `media/project-sources/`, and CI `verify:generated` enforces a clean full regen.

@@ -59,12 +59,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
   const { total, get } = useMemo(() => buildProjectOverlayOffsets(project), [project]);
   const techLine = project.technologies.join(", ");
 
-  const linkList =
-    project.links && project.links.length > 0
-      ? project.links
-      : project.optionalLink
-        ? [{ label: "visit site", url: project.optionalLink }]
-        : [];
+  const linkList = project.links && project.links.length > 0 ? project.links : [];
 
   const rootMotionStyle = {
     "--project-overlay-step": `${PROJECT_OVERLAY_REVEAL_STEP_MS}ms`,

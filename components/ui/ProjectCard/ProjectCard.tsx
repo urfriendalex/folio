@@ -1,7 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import type { ProjectEntry } from "@/content/projects/types";
+import { thumbnailToMediaSlot } from "@/lib/projectMedia";
 import styles from "./ProjectCard.module.scss";
 
 /** Looser than `useRevealOnView` defaults: no bottom inset, any intersection ratio fires. */
@@ -28,7 +29,8 @@ export function ProjectCard({
   cardRef,
 }: ProjectCardProps) {
   const projectHref = `/projects/${project.slug}`;
-  const externalUrl = project.optionalLink ?? project.links?.[0]?.url;
+  const externalUrl = project.links?.[0]?.url;
+  const thumbnailMedia = thumbnailToMediaSlot(project.thumbnail);
 
   return (
     <ScrollReveal
@@ -39,13 +41,16 @@ export function ProjectCard({
       staggerStepMs={72}
     >
       <article className={styles.card} ref={cardRef}>
-        <Link href={projectHref} className={styles.media} aria-label={`${project.title} — explore project`}>
-          <Image
-            src={project.thumbnail}
+        <Link href={projectHref} className={styles.media} aria-label={`${project.title}, explore project`}>
+          <ProjectMedia
+            media={thumbnailMedia}
             alt=""
-            width={1920}
-            height={1080}
+            className={styles.mediaAsset}
             sizes="(max-width: 48rem) 100vw, 48rem"
+            fill
+            fit="contain"
+            loading={index < 2 ? "eager" : "lazy"}
+            priority={index < 2}
           />
         </Link>
         <footer className={styles.meta}>

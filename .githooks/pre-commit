@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+set -e
+
+# Only archive manifest runs here: it is quick (scan + one TS file).
+# Do NOT run generate:project-media — it re-encodes all projects, wipes each
+# slug’s public/projects output, and belongs in prebuild / CI / manual workflow.
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMRT)
+CHANGED_ARCHIVE=false
+
+for f in $STAGED; do
+  case "$f" in
+  public/archive/*|scripts/generate-archive-manifest.mjs)
+    CHANGED_ARCHIVE=true
+    break
+    ;;
+  esac
+done
+
+if [ "$CHANGED_ARCHIVE" != true ]; then
+  exit 0
+fi
+
+pnpm generate:archive-manifest
+git add lib/generated/archive-manifest.ts

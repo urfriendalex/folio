@@ -20,6 +20,9 @@
 # production
 /build
 
+# local media (symlink to ~/Desktop/project-screens/project-media-organized)
+/media/project-sources
+
 # misc
 .DS_Store
 *.pem

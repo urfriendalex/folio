@@ -18,7 +18,8 @@ const INVIS_THRESHOLD = 0.01;
 const KEYBOARD_SPEED = 0.18;
 const VELOCITY_LERP = 0.16;
 const VELOCITY_DECAY = 0.9;
-const TOUCH_DRAG_SPEED = 0.026;
+const TOUCH_DRAG_SPEED = 0.02;
+const MOBILE_TOUCH_DRAG_MULTIPLIER = 1.3;
 const INITIAL_CAMERA_Z = 50;
 const MAX_PLANE_CACHE = 256;
 const PIXELS_PER_WORLD_UNIT = 120;
@@ -686,6 +687,9 @@ function SceneController({
 }) {
   const { camera, gl, scene } = useThree();
   const isTouchDevice = useIsTouchDevice();
+  const touchDragSpeed = isTouchDevice
+    ? TOUCH_DRAG_SPEED * MOBILE_TOUCH_DRAG_MULTIPLIER
+    : TOUCH_DRAG_SPEED;
   const lastFocusLabelRef = useRef<string | null>(null);
   const [, getKeys] = useKeyboardControls<KeyboardKey>();
   const state = useRef<ControllerState>(createInitialState(INITIAL_CAMERA_Z));
@@ -765,8 +769,8 @@ function SceneController({
         const [lastTouch] = currentState.lastTouches;
 
         if (touch && lastTouch) {
-          currentState.targetVel.x -= (touch.clientX - lastTouch.clientX) * TOUCH_DRAG_SPEED;
-          currentState.targetVel.y += (touch.clientY - lastTouch.clientY) * TOUCH_DRAG_SPEED;
+          currentState.targetVel.x -= (touch.clientX - lastTouch.clientX) * touchDragSpeed;
+          currentState.targetVel.y += (touch.clientY - lastTouch.clientY) * touchDragSpeed;
         }
       } else if (touches.length === 2 && currentState.lastTouchDist > 0) {
         const distance = getTouchDistance(touches);
@@ -802,7 +806,7 @@ function SceneController({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
-  }, [gl, onHoverLabelChange]);
+  }, [gl, onHoverLabelChange, touchDragSpeed]);
 
   useEffect(() => {
     if (isTouchDevice) {

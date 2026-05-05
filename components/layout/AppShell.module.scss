@@ -37,20 +37,19 @@
   }
 }
 
-/* Above main (20); below footer chrome (35) and navbar (400). */
+/* Above main + navbar (400); below footer chrome so the taskbar/menu stay readable. */
 .toolbarAsciiBackdrop {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  /* Do not use `100vw` here — it includes the vertical scrollbar width and causes horizontal overflow. */
   margin: 0;
   padding: 0;
   pointer-events: none;
-  z-index: 25;
+  z-index: 450;
 }
 
 .footerChrome {
   position: relative;
-  /* Above main + ASCII backdrop so editorial footer and wordmark composite over project toolbar. */
-  z-index: 35;
+  /* Highest non-modal chrome layer: footer stays above the hover ASCII field and navbar. */
+  z-index: 460;
 }

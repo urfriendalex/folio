@@ -14,7 +14,7 @@ import { createPortal } from "react-dom";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
-import { contactContent } from "@/content/contact";
+import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
@@ -32,12 +32,6 @@ async function waitForFooterModePaint() {
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   await waitForAnimationFrame();
-}
-
-function footerCopyrightLine(year: number, legalEntity?: string) {
-  const base = `© ${year} Alexander Yansons`;
-  const trimmed = legalEntity?.trim();
-  return trimmed ? `${base} · ${trimmed}` : base;
 }
 
 function portalIntoHost(hostId: string, node: ReactNode) {
@@ -279,7 +273,7 @@ export function Footer() {
   const localClock =
     timeZoneStatus.visitorTimeZone !== "Resolving local timezone..."
       ? formatLocalTimeWithShortZone(new Date(), timeZoneStatus.visitorTimeZone)
-      : "—";
+      : "…";
 
   /** Same offset as Warsaw — avoid repeating local vs studio clocks. */
   const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
@@ -736,7 +730,7 @@ export function Footer() {
                     <span className={styles.brandTagline}>{heroContent.position}</span>
                   </div>
                   <span className={styles.brandCopyright}>
-                    {footerCopyrightLine(year, contactContent.footerLegalEntity)}
+                    {formatCopyrightLine(year, contactContent.footerLegalEntity)}
                   </span>
                 </div>
               </div>
@@ -761,10 +755,10 @@ export function Footer() {
                 key={asciiRevealKey}
                 fillParent
                 randomCellReveal
-                randomCellRevealDurationMs={560}
+                randomCellRevealDurationMs={322}
                 transparentCanvasBackground
                 className={styles.asciiViewportInner}
-                frameFolder="animations/0be291eb7c81020bd899984d1fdfdb48"
+                frameFolder="animations/windows"
                 frameCount={1}
                 fps={15}
                 lazy={false}
@@ -889,7 +883,7 @@ export function Footer() {
             >
               <div className={styles.menuRail} aria-hidden="true">
                 <span className={styles.menuRailCopyright}>
-                  {footerCopyrightLine(year, contactContent.footerLegalEntity)}
+                  {formatCopyrightLine(year, contactContent.footerLegalEntity)}
                 </span>
               </div>
 
@@ -930,11 +924,13 @@ export function Footer() {
                             {contactContent.availabilityAi.trim() ? (
                               <p className={styles.menuProse}>{contactContent.availabilityAi}</p>
                             ) : null}
-                            <p className={styles.menuProse}>
-                              <CalBookingTrigger className={`link-underline ${styles.menuActionLink}`}>
-                                Book a call on Cal.com
-                              </CalBookingTrigger>
-                            </p>
+                            <CalBookingTrigger
+                              className={styles.winMenuLink}
+                              role="menuitem"
+                              onClick={() => closeMenu()}
+                            >
+                              Book a call on Cal.com
+                            </CalBookingTrigger>
                           </div>
                         </div>
                       ) : null}

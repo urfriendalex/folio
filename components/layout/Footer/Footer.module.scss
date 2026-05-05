@@ -41,7 +41,7 @@
   background: transparent;
 }
 
-/* Fills `.toolbarAsciiBackdrop` in AppShell (z-index 25) — above main/footer, below navbar (400). */
+/* Fills `.toolbarAsciiBackdrop` in AppShell — dark layer + ASCII stay in sync via short fades + reveal duration. */
 .asciiViewportOverlay {
   position: absolute;
   inset: 0;
@@ -55,20 +55,20 @@
   /* Match original color-ASCII look (meta `bgMode: black`) — not page theme */
   background: #000;
   opacity: 0;
-  transition: opacity 320ms cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 140ms cubic-bezier(0.33, 1, 0.68, 1);
 
   &[data-visible="true"] {
     opacity: 1;
-    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 130ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .asciiViewportOverlay {
-    transition-duration: 60ms;
+    transition-duration: 50ms;
 
     &[data-visible="true"] {
-      transition-duration: 60ms;
+      transition-duration: 50ms;
     }
   }
 }
@@ -227,10 +227,6 @@
   font-weight: 400;
   font-synthesis: none;
   opacity: 0.92;
-}
-
-.menuActionLink {
-  color: inherit;
 }
 
 .editorialIntro {
@@ -1034,17 +1030,6 @@
   font-size: 0.82rem;
   line-height: 1.45;
   color: var(--fg-color);
-}
-
-.menuActionLink {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
 }
 
 .menuProseMuted {

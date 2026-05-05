@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { projects } from "@/content/projects";
 import { archiveManifest } from "@/lib/generated/archive-manifest";
+import { getThumbnailPosterSources } from "@/lib/projectMedia";
 
 export type PreloadAsset =
   | {
@@ -21,12 +22,11 @@ export type PreloadAsset =
       type: "fonts" | "lenis" | "window-load";
     };
 
-const FOOTER_ASCII_FRAME_FOLDER = "/animations/0be291eb7c81020bd899984d1fdfdb48/high";
+const FOOTER_ASCII_FRAME_FOLDER = "/animations/windows/high";
 
 const sharedImageSources = Array.from(
   new Set([
-    ...projects.map((project) => project.thumbnail),
-    ...projects.flatMap((project) => project.stills),
+    ...projects.slice(0, 3).flatMap((project) => getThumbnailPosterSources(project)),
     ...archiveManifest.map((entry) => entry.src),
   ]),
 );

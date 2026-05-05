@@ -1,18 +1,20 @@
 import type { ProjectEntry } from "./types";
+import { generatedProjectMedia } from "./generated-media";
 
 export const kinoprobyProject: ProjectEntry = {
   slug: "kinoproby",
+  orderIndex: 6,
   title: "KINOPROBY",
-  descriptor: "Portfolio website for a filmmaking duo",
+  descriptor: "Website for a production studio / creative duo",
   year: "2019",
   role: "Solo Designer & Developer",
   technologies: ["Tilda", "HTML", "CSS", "JavaScript"],
   shortDescription:
-    "Bold, image-led portfolio for a film/photo duo—magazine feel, built on Tilda + custom code.",
+    "Website for a production studio and creative duo, built on Tilda with custom HTML, CSS, and JS.",
   description:
-    "Solo design and build: Tilda as the base, extended with custom HTML/CSS/JS for a bespoke, editorial portfolio across filmmaking and photography.",
-  overview: "Show a wide body of work without losing a strong visual POV or identity.",
-  roleSummary: "End-to-end: direction, IA, development, and custom front-of-site details.",
+    "Solo design and build: Tilda underneath, custom code for loaders, sections, and an editorial pass across the studio's film work.",
+  overview: "Show a deep archive without muting a clear visual point of view.",
+  roleSummary: "Direction, IA, build, and the custom details at the top of the experience.",
   responsibilities: [
     "Design & development",
     "Information architecture",
@@ -21,18 +23,18 @@ export const kinoprobyProject: ProjectEntry = {
   ],
   client: {
     name: "Kinoproby",
-    type: "Filmmaking duo / production studio",
-    industry: "Film, visual production, photography",
+    type: "Production studio / creative duo",
+    industry: "Film production",
   },
   collaboration: {
     team: "Solo",
     withClient: true,
-    details: "Client supplied assets; I owned design and implementation.",
+    details: "They supplied assets; I owned design and implementation.",
   },
   stack: {
     platform: ["Tilda"],
     frontend: ["HTML", "CSS", "JavaScript"],
-    notes: "Heavy customization beyond typical Tilda output.",
+    notes: "Heavy customization past typical Tilda output.",
   },
   features: [
     "Multi-page portfolio",
@@ -40,11 +42,11 @@ export const kinoprobyProject: ProjectEntry = {
     "Custom loading & section browsing",
   ],
   impact: {
-    summary: "Portfolio that reflects the studio’s character instead of reading as a template.",
+    summary: "Reads like the studio, not like a stock builder template.",
     highlights: [
-      "Identity carried into the web",
-      "Custom code pushing a site-builder",
-      "Flexible showcase across media types",
+      "Identity carried into layout",
+      "JS stretching a site builder instead of fighting it",
+      "Single showcase across film and stills",
     ],
   },
   tags: [
@@ -57,7 +59,5 @@ export const kinoprobyProject: ProjectEntry = {
     "JavaScript",
   ],
   links: [{ label: "Live Site", url: "https://kino-proby.com" }],
-  featured: false,
-  thumbnail: "/images/project-placeholder.svg",
-  stills: ["/archive/artboard-1.webp", "/archive/cards1.webp", "/archive/explore-wall.webp"],
+  ...generatedProjectMedia["kinoproby"],
 };

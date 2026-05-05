@@ -1,5 +1,11 @@
 export const archiveManifest = [
   {
+    "src": "/archive/404-eye.mov",
+    "width": 1958,
+    "height": 1042,
+    "kind": "video"
+  },
+  {
     "src": "/archive/artboard-1.webp",
     "width": 1080,
     "height": 1920,
@@ -40,6 +46,12 @@ export const archiveManifest = [
     "width": 1920,
     "height": 1200,
     "kind": "image"
+  },
+  {
+    "src": "/archive/eye_asci_screen_recording.mov",
+    "width": 2286,
+    "height": 1166,
+    "kind": "video"
   },
   {
     "src": "/archive/gradient-bg-1.webp",
@@ -84,6 +96,12 @@ export const archiveManifest = [
     "kind": "image"
   },
   {
+    "src": "/archive/poster-video.mov",
+    "width": 2154,
+    "height": 3840,
+    "kind": "video"
+  },
+  {
     "src": "/archive/price-tag.webp",
     "width": 650,
     "height": 827,
@@ -106,6 +124,12 @@ export const archiveManifest = [
     "width": 1890,
     "height": 1417,
     "kind": "image"
+  },
+  {
+    "src": "/archive/walking.mov",
+    "width": 1958,
+    "height": 1042,
+    "kind": "video"
   },
   {
     "src": "/archive/work-liquid-wall-2.webp",
