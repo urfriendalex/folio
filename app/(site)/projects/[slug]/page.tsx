@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProjectPage } from "@/components/projects/ProjectPage";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+import { projectShareDescription, SITE_OG_IMAGE } from "@/lib/metadata";
 
 type RouteProps = {
   params: Promise<{ slug: string }> | { slug: string };
@@ -23,32 +24,26 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   }
 
   const canonical = `/projects/${project.slug}`;
+  const description = projectShareDescription(project);
 
   return {
     title: `${project.title} | Alexander Y.`,
-    description: project.shortDescription ?? project.description,
+    description,
     alternates: {
       canonical,
     },
     openGraph: {
       title: `${project.title} | Alexander Y.`,
-      description: project.shortDescription ?? project.description,
+      description,
       type: "article",
       url: `${SITE_URL}${canonical}`,
-      images: [
-        {
-          url: project.thumbnail.desktop.poster,
-          width: project.thumbnail.desktop.width,
-          height: project.thumbnail.desktop.height,
-          alt: `${project.title} project thumbnail`,
-        },
-      ],
+      images: [SITE_OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title: `${project.title} | Alexander Y.`,
-      description: project.shortDescription ?? project.description,
-      images: [project.thumbnail.desktop.poster],
+      description,
+      images: [SITE_OG_IMAGE.url],
     },
   };
 }
@@ -71,7 +66,7 @@ export default async function ProjectRoute({ params }: RouteProps) {
     name: project.title,
     url: pageUrl,
     headline: project.title,
-    description: project.shortDescription ?? project.description,
+    description: projectShareDescription(project),
     dateModified: SITE_LAST_UPDATED.toISOString(),
     author: {
       "@type": "Person",
