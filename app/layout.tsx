@@ -10,6 +10,7 @@ import {
   ROOT_THEME_ATTRIBUTE,
 } from "@/lib/browserChrome";
 import { SITE_URL } from "@/lib/site";
+import { SITE_OG_IMAGE } from "@/lib/metadata";
 import "@/styles/globals.scss";
 
 const screenBody = Geist({
@@ -32,21 +33,14 @@ export const metadata: Metadata = {
       "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
     type: "website",
     url: SITE_URL,
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-        alt: "Alexander Yansons — AY wordmark on textured gradient background",
-      },
-    ],
+    images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "Alexander Yansons | Web Developer & Creative Technologist",
     description:
       "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
-    images: ["/og.png"],
+    images: [SITE_OG_IMAGE.url],
   },
 };
 

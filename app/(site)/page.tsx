@@ -5,11 +5,18 @@ import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectio
 import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+import { SITE_OG_IMAGE } from "@/lib/metadata";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    images: [SITE_OG_IMAGE.url],
   },
 };
 
