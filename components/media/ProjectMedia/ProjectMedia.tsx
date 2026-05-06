@@ -51,9 +51,42 @@ type ProjectMediaProps = {
 };
 
 type UseIntersectionOptions = {
-  threshold?: number;
   enabled?: boolean;
 };
+
+/** Enough samples that fast mobile scroll still delivers callbacks before layout settles. */
+const VIEWPORT_THRESHOLD_STEPS = [0, 0.05, 0.1, 0.25, 0.5, 0.75, 1] as const;
+
+function useIntersectionState<T extends HTMLElement>(
+  ref: RefObject<T | null>,
+  { enabled = true }: UseIntersectionOptions,
+) {
+  const [intersecting, setIntersecting] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+
+    if (!enabled || !node) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) {
+          setIntersecting(false);
+          return;
+        }
+        setIntersecting(Boolean(entry.isIntersecting && entry.intersectionRatio > 0));
+      },
+      { threshold: [...VIEWPORT_THRESHOLD_STEPS] },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [enabled, ref]);
+
+  return enabled ? intersecting : false;
+}
 
 let projectMediaMobileMql: MediaQueryList | null = null;
 const projectMediaMobileSubscribers = new Set<() => void>();
@@ -98,33 +131,6 @@ function projectMediaMobileServerSnapshot() {
   return false;
 }
 
-function useIntersectionState<T extends HTMLElement>(
-  ref: RefObject<T | null>,
-  { threshold = 0, enabled = true }: UseIntersectionOptions,
-) {
-  const [intersecting, setIntersecting] = useState(false);
-
-  useEffect(() => {
-    const node = ref.current;
-
-    if (!enabled || !node) {
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIntersecting(Boolean(entry?.isIntersecting && entry.intersectionRatio >= threshold));
-      },
-      { threshold },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [enabled, ref, threshold]);
-
-  return enabled ? intersecting : false;
-}
-
 async function ensureVideoPlayback(video: HTMLVideoElement) {
   video.muted = true;
   video.defaultMuted = true;
@@ -162,7 +168,6 @@ function ProjectMediaInner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isInViewport = useIntersectionState(rootRef, {
     enabled: media.kind === "video",
-    threshold: 0.3,
   });
   const [assetReady, setAssetReady] = useState(false);
   const [posterReady, setPosterReady] = useState(false);
@@ -229,6 +234,17 @@ function ProjectMediaInner({
 
     void ensureVideoPlayback(video);
     return undefined;
+  }, [isInViewport, media.kind]);
+
+  /** When the `<video>` unmounts off-screen, clear readiness so we do not hide the poster while the next decode is pending (avoids a black frame on scroll-back). */
+  useEffect(() => {
+    if (media.kind !== "video") {
+      return;
+    }
+
+    if (!isInViewport) {
+      setVideoReady(false);
+    }
   }, [isInViewport, media.kind]);
 
   const handleImageLoad = useCallback((image: HTMLImageElement, onReady: () => void) => {
