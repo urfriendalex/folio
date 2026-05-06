@@ -637,8 +637,8 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     alt={label}
                     className={styles.stillMedia}
                     fit="contain"
+                    imagePreload={index === 0}
                     loading={index < 2 ? "eager" : "lazy"}
-                    priority={index < 2}
                   />
                 </div>
                 {isPortrait && !isPortraitMobileLayout ? (

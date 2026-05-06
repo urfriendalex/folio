@@ -46,7 +46,8 @@ type ProjectMediaProps = {
   fill?: boolean;
   fit?: "cover" | "contain";
   loading?: "eager" | "lazy";
-  priority?: boolean;
+  /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
+  imagePreload?: boolean;
 };
 
 type UseIntersectionOptions = {
@@ -155,7 +156,7 @@ function ProjectMediaInner({
   fill = false,
   fit = "contain",
   loading = "lazy",
-  priority = false,
+  imagePreload = false,
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -291,7 +292,7 @@ function ProjectMediaInner({
                 fill
                 sizes={sizes}
                 loading={loading}
-                priority={priority}
+                preload={imagePreload}
                 className={styles.asset}
                 onLoad={(event) => {
                   handleImageLoad(event.currentTarget, () => setPosterReady(true));
@@ -326,7 +327,7 @@ function ProjectMediaInner({
               fill
               sizes={sizes}
               loading={loading}
-              priority={priority}
+              preload={imagePreload}
               className={styles.asset}
               onLoad={(event) => {
                 handleImageLoad(event.currentTarget, () => setAssetReady(true));

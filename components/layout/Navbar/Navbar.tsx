@@ -97,6 +97,34 @@ export function Navbar() {
   }, [pathname, router]);
 
   useEffect(() => {
+    if (pathname === "/archive") {
+      return;
+    }
+
+    let idleId = 0;
+    let timeoutId = 0;
+
+    const warmArchive = () => {
+      router.prefetch("/archive");
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(warmArchive);
+    } else {
+      timeoutId = window.setTimeout(warmArchive, 2500);
+    }
+
+    return () => {
+      if (idleId) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [pathname, router]);
+
+  useEffect(() => {
     const html = document.documentElement;
 
     if (menuOpen) {

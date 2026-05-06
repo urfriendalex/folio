@@ -1,9 +1,13 @@
+import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ProjectPage } from "@/components/projects/ProjectPage";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
-import { projectShareDescription, SITE_OG_IMAGE } from "@/lib/metadata";
+import { projectShareDescription, projectShareOgImage } from "@/lib/metadata";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+
+const ProjectPage = dynamic(() =>
+  import("@/components/projects/ProjectPage").then((mod) => ({ default: mod.ProjectPage })),
+);
 
 type RouteProps = {
   params: Promise<{ slug: string }> | { slug: string };
@@ -25,6 +29,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
   const canonical = `/projects/${project.slug}`;
   const description = projectShareDescription(project);
+  const og = projectShareOgImage(project);
 
   return {
     title: `${project.title} | Alexander Y.`,
@@ -37,13 +42,13 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
       description,
       type: "article",
       url: `${SITE_URL}${canonical}`,
-      images: [SITE_OG_IMAGE],
+      images: [og],
     },
     twitter: {
       card: "summary_large_image",
       title: `${project.title} | Alexander Y.`,
       description,
-      images: [SITE_OG_IMAGE.url],
+      images: [og.url],
     },
   };
 }
@@ -58,6 +63,7 @@ export default async function ProjectRoute({ params }: RouteProps) {
 
   const { previous, next } = getProjectSiblings(project.slug);
   const pageUrl = `${SITE_URL}/projects/${project.slug}`;
+  const og = projectShareOgImage(project);
 
   const creativeWorkSchema = {
     "@context": "https://schema.org",
@@ -67,6 +73,7 @@ export default async function ProjectRoute({ params }: RouteProps) {
     url: pageUrl,
     headline: project.title,
     description: projectShareDescription(project),
+    image: og.url,
     dateModified: SITE_LAST_UPDATED.toISOString(),
     author: {
       "@type": "Person",

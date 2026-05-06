@@ -48,8 +48,8 @@ export function ProjectCard({
             className={styles.mediaAsset}
             fill
             fit="contain"
+            imagePreload={index === 0}
             loading={index < 2 ? "eager" : "lazy"}
-            priority={index < 2}
           />
         </Link>
         <footer className={styles.meta}>
