@@ -8,6 +8,13 @@
   z-index: 400;
 }
 
+/* Mobile nav overlay lives inside the navbar; child z-index cannot escape this stacking
+   context, so the whole chrome must sit above `.footerChrome` (460) while nav is open.
+   Stay below modal `Overlay` (500). */
+:global(html.is-nav-open) .navbar {
+  z-index: 470;
+}
+
 .main {
   position: relative;
   /* Below footer chrome so fixed UI in main (e.g. project `.toolbarShell`) stays under the full footer + wordmark. */
