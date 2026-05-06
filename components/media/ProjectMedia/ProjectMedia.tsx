@@ -286,7 +286,7 @@ function ProjectMediaInner({
             <div className={styles.posterLayer} data-loaded={posterReady ? "true" : "false"}>
               <Image
                 src={activeAsset.poster ?? activeAsset.src}
-                alt=""
+                alt={videoLabel ? `${videoLabel} poster frame` : "Video poster frame"}
                 fill
                 sizes={sizes}
                 loading={loading}

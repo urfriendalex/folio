@@ -1,0 +1,41 @@
+# Alexander Yansons
+
+> Portfolio site for Alexander Yansons — independent web developer and creative technologist based in Warsaw, Poland.
+
+## Summary
+
+Alexander builds custom websites, e-commerce, portfolios, and product UI for brands, studios, and product teams. The site showcases selected case studies, an experimental archive, and a contact path for new work.
+
+## About this site
+
+The live portfolio is at https://yansons.online/. Case study pages describe stack, role, and outcomes. The spatial archive at https://yansons.online/archive/ collects experiments and visual studies. The work grid on the homepage anchors at https://yansons.online/#work.
+
+## Common questions
+
+### What kinds of projects do you take on?
+
+I work on marketing sites, portfolios, e-commerce, and product UI—anything where structure, UX, and performance matter. Briefs range from brand-led launches to more technical dashboards and internal tools.
+
+### How should I get in touch for a new project?
+
+Email hello@yansons.online with a short note: goals, timeline, budget range if you can share it, and links to references or live products. That context makes the first reply much more useful.
+
+### Where are you based, and do you work remotely?
+
+I am based in Warsaw, Poland, and collaborate with teams and clients internationally. Most work is remote-first; on-site sessions are possible when the project needs them.
+
+## Primary pages
+
+- Home: https://yansons.online/
+- Project index (from home): https://yansons.online/#work
+- Archive: https://yansons.online/archive/
+
+## Contact
+
+- Email: hello@yansons.online
+- Scheduling: use the “Schedule a call” control on the homepage when available.
+
+## For automated agents
+
+- Machine-readable sitemap: https://yansons.online/sitemap.xml
+- Crawl policy: https://yansons.online/robots.txt
