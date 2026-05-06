@@ -33,10 +33,10 @@ export const metadata: Metadata = {
     url: SITE_URL,
     images: [
       {
-        url: "/favicons/dark/apple-touch-icon.png",
-        width: 180,
-        height: 180,
-        alt: "Alexander Yansons portfolio mark",
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Alexander Yansons — AY wordmark on textured gradient background",
       },
     ],
   },
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "Alexander Yansons | Web Developer & Creative Technologist",
     description:
       "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
-    images: ["/favicons/dark/apple-touch-icon.png"],
+    images: ["/og.png"],
   },
 };
 
