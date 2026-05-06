@@ -89,9 +89,13 @@
 
 @media (max-width: 48rem) {
   .focusLabel {
-    right: 0.75rem;
-    /* Closer to the bottom than 4.15rem; still clears typical in-app UI. */
-    bottom: 3.4rem;
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    /* Sit slightly lower than the old fixed offset, while respecting the home /
+       gesture inset plus a little breathing room (viewport-fit: cover). */
+    bottom: max(
+      2.125rem,
+      calc(env(safe-area-inset-bottom, 0px) + 1rem)
+    );
     max-width: min(85vw, 20rem);
     font-size: clamp(0.8rem, 2.9vw, 0.95rem);
     line-height: 1.3;
