@@ -639,6 +639,8 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     className={styles.stillMedia}
                     sizes={isPortrait ? "(max-width: 48rem) 20rem, 24rem" : "(max-width: 48rem) 100vw, 72rem"}
                     fit="contain"
+                    loading={index < 2 ? "eager" : "lazy"}
+                    priority={index < 2}
                   />
                 </div>
                 {isPortrait && !isPortraitMobileLayout ? (

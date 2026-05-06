@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { projects } from "@/content/projects";
-import { archiveManifest } from "@/lib/generated/archive-manifest";
 import { getThumbnailPosterSources } from "@/lib/projectMedia";
 
 export type PreloadAsset =
@@ -19,23 +18,17 @@ export type PreloadAsset =
     }
   | {
       id: string;
-      type: "fonts" | "lenis" | "window-load";
+      type: "fonts" | "lenis";
     };
 
 const FOOTER_ASCII_FRAME_FOLDER = "/animations/windows/high";
 
+/** Home grid thumbnails only — archive assets load when `/archive` is visited (see `archive-manifest`). */
 const sharedImageSources = Array.from(
-  new Set([
-    ...projects.slice(0, 3).flatMap((project) => getThumbnailPosterSources(project)),
-    ...archiveManifest.map((entry) => entry.src),
-  ]),
+  new Set(projects.slice(0, 3).flatMap((project) => getThumbnailPosterSources(project))),
 );
 
 export const CRITICAL_PRELOAD_ASSETS: readonly PreloadAsset[] = [
-  {
-    id: "window-load",
-    type: "window-load",
-  },
   {
     id: "fonts",
     type: "fonts",
@@ -100,17 +93,6 @@ function loadImage(src: string): Promise<void> {
 
       void image.decode().catch(() => undefined).finally(finish);
     }
-  });
-}
-
-function waitForWindowLoad(): Promise<void> {
-  return new Promise((resolve) => {
-    if (document.readyState === "complete") {
-      resolve();
-      return;
-    }
-
-    window.addEventListener("load", () => resolve(), { once: true });
   });
 }
 
@@ -188,8 +170,6 @@ function loadAsset(asset: PreloadAsset): Promise<void> {
       return waitForFonts();
     case "lenis":
       return waitForLenis();
-    case "window-load":
-      return waitForWindowLoad();
     default:
       return Promise.resolve();
   }
