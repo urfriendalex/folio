@@ -97,7 +97,7 @@ export function Preloader({ onDone }: PreloaderProps) {
 
     const setProgressText = (value: number, isComplete = false) => {
       const clamped = Math.max(0, Math.min(isComplete ? 1 : 0.99, value));
-      const percent = isComplete ? 100 : Math.min(99, Math.floor(clamped * 100));
+      const percent = isComplete ? 100 : Math.min(99, Math.round(clamped * 100));
       progressNode.textContent = `${percent}%`;
     };
 

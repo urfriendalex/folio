@@ -572,7 +572,6 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     media={mobileOverlayMedia}
                     alt={mobileOverlayMedia.alt ?? `${project.title} media ${(mobileMediaIndex ?? 0) + 1}`}
                     className={styles.stillMedia}
-                    sizes="100vw"
                     fill
                     fit="contain"
                   />
@@ -637,8 +636,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     media={item}
                     alt={label}
                     className={styles.stillMedia}
-                    sizes={isPortrait ? "(max-width: 48rem) 20rem, 24rem" : "(max-width: 48rem) 100vw, 72rem"}
                     fit="contain"
+                    imagePreload={index === 0}
+                    loading={index < 2 ? "eager" : "lazy"}
                   />
                 </div>
                 {isPortrait && !isPortraitMobileLayout ? (

@@ -46,11 +46,10 @@ export function ProjectCard({
             media={thumbnailMedia}
             alt={`${project.title} project preview`}
             className={styles.mediaAsset}
-            sizes="(max-width: 48rem) 100vw, 48rem"
             fill
             fit="contain"
+            imagePreload={index === 0}
             loading={index < 2 ? "eager" : "lazy"}
-            priority={index < 2}
           />
         </Link>
         <footer className={styles.meta}>
