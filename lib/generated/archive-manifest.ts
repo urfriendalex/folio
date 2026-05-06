@@ -1,8 +1,8 @@
 export const archiveManifest = [
   {
     "src": "/archive/404-eye.mov",
-    "width": 1958,
-    "height": 1042,
+    "width": 1200,
+    "height": 1500,
     "kind": "video"
   },
   {
@@ -49,8 +49,8 @@ export const archiveManifest = [
   },
   {
     "src": "/archive/eye_asci_screen_recording.mov",
-    "width": 2286,
-    "height": 1166,
+    "width": 1200,
+    "height": 1500,
     "kind": "video"
   },
   {
@@ -97,8 +97,8 @@ export const archiveManifest = [
   },
   {
     "src": "/archive/poster-video.mov",
-    "width": 2154,
-    "height": 3840,
+    "width": 1200,
+    "height": 1500,
     "kind": "video"
   },
   {
@@ -127,8 +127,8 @@ export const archiveManifest = [
   },
   {
     "src": "/archive/walking.mov",
-    "width": 1958,
-    "height": 1042,
+    "width": 1200,
+    "height": 1500,
     "kind": "video"
   },
   {
