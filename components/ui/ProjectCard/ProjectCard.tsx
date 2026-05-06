@@ -46,7 +46,6 @@ export function ProjectCard({
             media={thumbnailMedia}
             alt={`${project.title} project preview`}
             className={styles.mediaAsset}
-            sizes="(max-width: 48rem) 100vw, 48rem"
             fill
             fit="contain"
             loading={index < 2 ? "eager" : "lazy"}

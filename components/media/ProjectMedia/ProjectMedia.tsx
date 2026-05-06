@@ -41,7 +41,8 @@ type ProjectMediaProps = {
   media: ProjectMediaSlot;
   alt?: string;
   className?: string;
-  sizes: string;
+  /** Passed to `next/image`; defaults to `"auto"` (browser-derived slot width for responsive images). */
+  sizes?: string;
   fill?: boolean;
   fit?: "cover" | "contain";
   loading?: "eager" | "lazy";
@@ -150,7 +151,7 @@ function ProjectMediaInner({
   activeAsset,
   alt,
   className,
-  sizes,
+  sizes = "auto",
   fill = false,
   fit = "contain",
   loading = "lazy",
