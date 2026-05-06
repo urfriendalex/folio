@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectPage } from "@/components/projects/ProjectPage";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
-import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 import { projectShareDescription, SITE_OG_IMAGE } from "@/lib/metadata";
+import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 
 type RouteProps = {
   params: Promise<{ slug: string }> | { slug: string };
