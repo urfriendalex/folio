@@ -408,16 +408,48 @@ function getTexture(item: ArchiveMediaItem, onLoad?: TextureLoadCallback) {
   return texture;
 }
 
-function getDisplayScale(media: ArchiveMediaItem) {
-  if (media.width > 0 && media.height > 0) {
+function getDisplayScaleFromPixelSize(width: number, height: number) {
+  if (width > 0 && height > 0) {
     return new THREE.Vector3(
-      media.width / PIXELS_PER_WORLD_UNIT,
-      media.height / PIXELS_PER_WORLD_UNIT,
+      width / PIXELS_PER_WORLD_UNIT,
+      height / PIXELS_PER_WORLD_UNIT,
       1,
     );
   }
 
   return new THREE.Vector3(FALLBACK_WORLD_SIZE, FALLBACK_WORLD_SIZE, 1);
+}
+
+function readIntrinsicPixelSize(texture: THREE.Texture) {
+  const image = texture.image as HTMLImageElement | HTMLVideoElement | undefined;
+
+  if (!image) {
+    return null;
+  }
+
+  if (image instanceof HTMLVideoElement) {
+    const width = image.videoWidth;
+    const height = image.videoHeight;
+
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
+
+    return null;
+  }
+
+  if (image instanceof HTMLImageElement) {
+    const width = image.naturalWidth;
+    const height = image.naturalHeight;
+
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
+
+    return null;
+  }
+
+  return null;
 }
 
 function MediaPlane({
@@ -439,6 +471,7 @@ function MediaPlane({
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const localState = useRef({ opacity: 0, frame: 0, ready: false });
   const [, forceRender] = useState(0);
+  const [intrinsicSize, setIntrinsicSize] = useState<{ width: number; height: number } | null>(null);
   const texture = useMemo(() => getTexture(media), [media]);
   const isReady = isTextureLoaded(texture);
 
@@ -507,8 +540,71 @@ function MediaPlane({
   });
 
   const displayScale = useMemo(() => {
-    return getDisplayScale(media);
-  }, [media]);
+    const width = intrinsicSize?.width ?? media.width;
+    const height = intrinsicSize?.height ?? media.height;
+
+    return getDisplayScaleFromPixelSize(width, height);
+  }, [intrinsicSize, media.height, media.width]);
+
+  useEffect(() => {
+    setIntrinsicSize(null);
+  }, [media.url]);
+
+  useEffect(() => {
+    if (!texture || !isReady) {
+      return;
+    }
+
+    const nextIntrinsic = readIntrinsicPixelSize(texture);
+
+    if (nextIntrinsic) {
+      setIntrinsicSize((previous) => {
+        if (
+          previous &&
+          previous.width === nextIntrinsic.width &&
+          previous.height === nextIntrinsic.height
+        ) {
+          return previous;
+        }
+
+        return nextIntrinsic;
+      });
+    }
+  }, [isReady, texture]);
+
+  useEffect(() => {
+    const image = texture?.image;
+
+    if (!(image instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    const syncFromVideo = () => {
+      const width = image.videoWidth;
+      const height = image.videoHeight;
+
+      if (width > 0 && height > 0) {
+        setIntrinsicSize((previous) => {
+          if (
+            previous &&
+            previous.width === width &&
+            previous.height === height
+          ) {
+            return previous;
+          }
+
+          return { width, height };
+        });
+      }
+    };
+
+    syncFromVideo();
+    image.addEventListener("loadedmetadata", syncFromVideo);
+
+    return () => {
+      image.removeEventListener("loadedmetadata", syncFromVideo);
+    };
+  }, [texture]);
 
   useEffect(() => {
     let isCancelled = false;

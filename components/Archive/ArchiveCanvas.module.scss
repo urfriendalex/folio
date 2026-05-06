@@ -90,11 +90,11 @@
 @media (max-width: 48rem) {
   .focusLabel {
     right: max(0.75rem, env(safe-area-inset-right, 0px));
-    /* Sit slightly lower than the old fixed offset, while respecting the home /
-       gesture inset plus a little breathing room (viewport-fit: cover). */
+    /* Nudged ~50% closer to the bottom edge than the prior touch offset so the
+       name reads nearer the thumb / home indicator while still clearing safe area. */
     bottom: max(
-      2.125rem,
-      calc(env(safe-area-inset-bottom, 0px) + 1rem)
+      1.0625rem,
+      calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
     );
     max-width: min(85vw, 20rem);
     font-size: clamp(0.8rem, 2.9vw, 0.95rem);
