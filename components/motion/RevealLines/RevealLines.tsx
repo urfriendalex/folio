@@ -11,7 +11,11 @@ import {
   usePretextLines,
   type PretextLinesWhiteSpace,
 } from "@/components/motion/shared/usePretextLines";
-import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
+import {
+  useRevealOnView,
+  type UseRevealOnViewOptions,
+} from "@/components/motion/shared/useRevealOnView";
+import { useWorkRevealOnView } from "@/lib/useWorkRevealOnView";
 import { lockInternalHyphenWrapping } from "@/lib/lockInternalHyphenWrapping";
 import styles from "@/components/motion/shared/reveal.module.scss";
 
@@ -46,6 +50,10 @@ export type RevealLinesProps = {
    * `--token-index` timeline (can be negative for overlap).
    */
   revealDelayMs?: number;
+  /** Intersection observer tuning when `visible` is not controlled by the parent. */
+  revealOptions?: UseRevealOnViewOptions;
+  /** `work`: waits for hero CTA stagger when wrapped in `HeroRevealTimelineProvider`. */
+  revealVariant?: "default" | "work";
 };
 
 export function RevealLines({
@@ -63,9 +71,29 @@ export function RevealLines({
   pretextWhiteSpace = "pre-wrap",
   renderToken,
   revealDelayMs,
+  revealOptions,
+  revealVariant = "default",
 }: RevealLinesProps) {
   const internalRef = useRef<HTMLElement | null>(null);
-  const visibleOnView = useRevealOnView(internalRef);
+  const controlled = visible !== undefined;
+  const disableObservers =
+    controlled || revealVariant === "work"
+      ? ({ observerDisabled: true } as const)
+      : {};
+  const disableObserversWork =
+    controlled || revealVariant !== "work"
+      ? ({ observerDisabled: true } as const)
+      : {};
+
+  const visibleScroll = useRevealOnView(internalRef, {
+    ...revealOptions,
+    ...disableObservers,
+  });
+  const visibleWork = useWorkRevealOnView(internalRef, {
+    ...revealOptions,
+    ...disableObserversWork,
+  });
+  const visibleOnView = revealVariant === "work" ? visibleWork : visibleScroll;
   const resolvedVisible = visible ?? visibleOnView;
   const shouldMeasure = measureLines && linesFromParent === undefined;
   const measuredLines = usePretextLines(text, internalRef, pretextWhiteSpace, shouldMeasure);

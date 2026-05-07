@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
+import type { UseRevealOnViewOptions } from "@/components/motion/shared/useRevealOnView";
 import type { ProjectEntry } from "@/content/projects/types";
 import { thumbnailToMediaSlot } from "@/lib/projectMedia";
 import styles from "./ProjectCard.module.scss";
@@ -17,6 +18,9 @@ type ProjectCardProps = {
   immediate?: boolean;
   visible?: boolean;
   staggerIndexOffset?: number;
+  revealVariant?: "default" | "work";
+  /** Overrides default card observer tuning (e.g. Work rootMargin/threshold). */
+  revealOptions?: UseRevealOnViewOptions;
   cardRef?: (node: HTMLElement | null) => void;
 };
 
@@ -26,6 +30,8 @@ export function ProjectCard({
   immediate = false,
   visible,
   staggerIndexOffset = 0,
+  revealVariant = "default",
+  revealOptions,
   cardRef,
 }: ProjectCardProps) {
   const projectHref = `/projects/${project.slug}`;
@@ -36,7 +42,8 @@ export function ProjectCard({
     <ScrollReveal
       immediate={immediate}
       visible={visible}
-      revealOptions={projectCardRevealOptions}
+      revealVariant={revealVariant}
+      revealOptions={revealOptions ?? projectCardRevealOptions}
       staggerIndex={staggerIndexOffset + index}
       staggerStepMs={72}
     >

@@ -6,6 +6,7 @@ import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 import { SITE_OG_IMAGE } from "@/lib/metadata";
+import { HeroRevealTimelineProvider } from "@/lib/heroRevealTimeline";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -103,8 +104,10 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }}
       />
-      <HeroSection content={heroContent} />
-      <WorkSection projects={projects} />
+      <HeroRevealTimelineProvider>
+        <HeroSection content={heroContent} />
+        <WorkSection projects={projects} />
+      </HeroRevealTimelineProvider>
       <ContactSectionGooey
         content={contactContent}
         hoverPhrase={contactContent.emailHoverPhrase ?? "Let's work together"}

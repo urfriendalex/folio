@@ -19,6 +19,8 @@ import {
 } from "@/components/Preloader/frameFolder";
 import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
+import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
+import { useOptionalHeroRevealTimeline } from "@/lib/heroRevealTimeline";
 import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
 import {
   getHomeHeroRevealDone,
@@ -137,6 +139,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const introRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const ctaRef = useRef<HTMLParagraphElement>(null);
+  const contentRevealGateRef = useRef<HTMLDivElement>(null);
   const stuffAnchorRef = useRef<HTMLSpanElement | null>(null);
   const strikeLineRef = useRef<HTMLSpanElement | null>(null);
   const stuffGlyphRef = useRef<HTMLSpanElement | null>(null);
@@ -162,6 +165,9 @@ export function HeroSection({ content }: HeroSectionProps) {
     getHomeHeroRevealDone,
     () => false,
   );
+
+  const heroContentRevealVisible = useRevealOnView(contentRevealGateRef);
+  const setHeroCtaAligned = useOptionalHeroRevealTimeline()?.setCtaAligned;
 
   const coarsePointer = useSyncExternalStore(
     subscribeCoarsePointer,
@@ -586,6 +592,49 @@ export function HeroSection({ content }: HeroSectionProps) {
     skipRepeatReveal,
   ]);
 
+  /** Publish CTA stagger phase to {@link HeroRevealTimelineProvider} for Work reveals. */
+  useEffect(() => {
+    if (!setHeroCtaAligned) {
+      return undefined;
+    }
+
+    if (!preloaderComplete) {
+      setHeroCtaAligned(false);
+      return () => setHeroCtaAligned(false);
+    }
+
+    if (skipRepeatReveal) {
+      setHeroCtaAligned(true);
+      return () => setHeroCtaAligned(false);
+    }
+
+    if (!heroContentRevealVisible) {
+      setHeroCtaAligned(false);
+      return () => setHeroCtaAligned(false);
+    }
+
+    const ctaPhaseStartMs = hasCta
+      ? (introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS
+      : 0;
+
+    const timeoutId = window.setTimeout(() => {
+      setHeroCtaAligned(true);
+    }, ctaPhaseStartMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      setHeroCtaAligned(false);
+    };
+  }, [
+    setHeroCtaAligned,
+    preloaderComplete,
+    skipRepeatReveal,
+    heroContentRevealVisible,
+    hasCta,
+    headingLines.length,
+    introLines.length,
+  ]);
+
   useEffect(() => {
     const html = document.documentElement;
     const syncThemeFolder = () => {
@@ -784,6 +833,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       <div className={`page-shell ${styles.inner}`}>
         <div className={styles.stage}>
           <div
+            ref={contentRevealGateRef}
             className={styles.content}
             onPointerEnter={handleContentPointerEnter}
             onPointerLeave={handleContentPointerLeave}
@@ -799,7 +849,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               stepMs={INTRO_REVEAL_STEP_MS}
               renderToken={renderIntroToken}
               immediate={skipRepeatReveal}
-              visible={skipRepeatReveal ? true : undefined}
+              visible={skipRepeatReveal ? true : heroContentRevealVisible}
             />
             <RevealLines
               elementRef={headingRef}
@@ -812,7 +862,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               stepMs={HEADING_REVEAL_STEP_MS}
               renderToken={renderHeadingToken}
               immediate={skipRepeatReveal}
-              visible={skipRepeatReveal ? true : undefined}
+              visible={skipRepeatReveal ? true : heroContentRevealVisible}
             />
             {hasCta ? (
               <RevealLines
@@ -827,7 +877,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 stepMs={HEADING_REVEAL_STEP_MS}
                 renderToken={renderCtaToken}
                 immediate={skipRepeatReveal}
-                visible={skipRepeatReveal ? true : undefined}
+                visible={skipRepeatReveal ? true : heroContentRevealVisible}
               />
             ) : null}
           </div>

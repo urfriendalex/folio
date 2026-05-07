@@ -7,6 +7,10 @@ export type UseRevealOnViewOptions = {
   once?: boolean;
   rootMargin?: string;
   threshold?: number;
+  /** After intersection, wait before flipping visible. */
+  revealDelayMs?: number;
+  /** Skip observers — controlled visibility from parent or {@link useWorkRevealOnView}. */
+  observerDisabled?: boolean;
 };
 
 export function useRevealOnView<T extends HTMLElement>(
@@ -22,6 +26,10 @@ export function useRevealOnView<T extends HTMLElement>(
   );
 
   useEffect(() => {
+    if (options?.observerDisabled) {
+      return undefined;
+    }
+
     const node = ref.current;
 
     if (!node) {
@@ -38,17 +46,31 @@ export function useRevealOnView<T extends HTMLElement>(
       return undefined;
     }
 
+    let revealTimerId: number | undefined;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) {
           return;
         }
 
-        setVisible(true);
+        const delayMs = options?.revealDelayMs ?? 0;
 
-        if (options?.once !== false) {
-          observer.disconnect();
+        const finish = () => {
+          revealTimerId = undefined;
+          setVisible(true);
+
+          if (options?.once !== false) {
+            observer.disconnect();
+          }
+        };
+
+        if (delayMs <= 0) {
+          finish();
+          return;
         }
+
+        revealTimerId = window.setTimeout(finish, delayMs);
       },
       {
         rootMargin: options?.rootMargin ?? "0px 0px -10% 0px",
@@ -58,8 +80,22 @@ export function useRevealOnView<T extends HTMLElement>(
 
     observer.observe(node);
 
-    return () => observer.disconnect();
-  }, [preloaderComplete, options?.once, options?.rootMargin, options?.threshold, ref]);
+    return () => {
+      if (revealTimerId !== undefined) {
+        window.clearTimeout(revealTimerId);
+      }
+
+      observer.disconnect();
+    };
+  }, [
+    preloaderComplete,
+    options?.observerDisabled,
+    options?.once,
+    options?.rootMargin,
+    options?.threshold,
+    options?.revealDelayMs,
+    ref,
+  ]);
 
   return visible;
 }

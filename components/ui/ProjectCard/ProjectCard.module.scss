@@ -20,11 +20,21 @@
 }
 
 .mediaAsset {
-  --project-media-surface: transparent;
+  /*
+   * Loading: non-transparent surface so `ProjectMedia` cell fills (`color-mix` from
+   * `--project-media-surface`) stay visible — same idea as `ProjectPage` `.still`.
+   * Loaded (`data-ready` on `ProjectMedia` root): transparent so `contain` letterboxing
+   * does not show a matte slab around shorter assets.
+   */
+  --project-media-surface: color-mix(in srgb, var(--surface-color) 58%, transparent);
 
   width: 100%;
   height: 100%;
   transition: transform 260ms ease;
+}
+
+.mediaAsset[data-ready="true"] {
+  --project-media-surface: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
