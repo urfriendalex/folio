@@ -260,7 +260,6 @@ export function Footer() {
     getServerMobileViewportSnapshot,
   );
   const [toolbarHovered, setToolbarHovered] = useState(false);
-  const [asciiRevealKey, setAsciiRevealKey] = useState(0);
   const [clientPortalsReady, setClientPortalsReady] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
   const minimalFooterCoverRef = useRef<HTMLDivElement | null>(null);
@@ -750,22 +749,20 @@ export function Footer() {
             data-visible={toolbarHovered}
             aria-hidden={!toolbarHovered}
           >
-            {toolbarHovered ? (
-              <ASCIIAnimation
-                key={asciiRevealKey}
-                fillParent
-                randomCellReveal
-                randomCellRevealDurationMs={322}
-                transparentCanvasBackground
-                className={styles.asciiViewportInner}
-                frameFolder="animations/windows"
-                frameCount={1}
-                fps={15}
-                lazy={false}
-                quality="high"
-                sourceFormat="color"
-              />
-            ) : null}
+            <ASCIIAnimation
+              fillParent
+              randomCellReveal
+              revealActive={toolbarHovered}
+              randomCellRevealDurationMs={322}
+              transparentCanvasBackground
+              className={styles.asciiViewportInner}
+              frameFolder="animations/windows"
+              frameCount={1}
+              fps={15}
+              lazy={false}
+              quality="high"
+              sourceFormat="color"
+            />
           </div>,
         )}
 
@@ -773,10 +770,7 @@ export function Footer() {
         <div className={styles.taskbarOuter}>
           <div
             className={styles.toolbarShell}
-            onMouseEnter={() => {
-              setToolbarHovered(true);
-              setAsciiRevealKey((k) => k + 1);
-            }}
+            onMouseEnter={() => setToolbarHovered(true)}
             onMouseLeave={() => setToolbarHovered(false)}
           >
             <div className={styles.taskbar} role="group" aria-label="Portfolio footer taskbar">

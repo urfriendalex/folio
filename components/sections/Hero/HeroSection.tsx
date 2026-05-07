@@ -654,11 +654,11 @@ export function HeroSection({ content }: HeroSectionProps) {
     };
   }, []);
 
-  const handleContentPointerEnter = useCallback(() => {
+  const handleHeroPointerEnter = useCallback(() => {
     setHoverAccent((current) => current ?? "default");
   }, []);
 
-  const handleContentPointerLeave = useCallback(() => {
+  const handleHeroPointerLeave = useCallback(() => {
     setHoverAccent(null);
   }, []);
 
@@ -829,15 +829,15 @@ export function HeroSection({ content }: HeroSectionProps) {
   }, []);
 
   return (
-    <section id="hero" className={styles.section}>
+    <section
+      id="hero"
+      className={styles.section}
+      onPointerEnter={handleHeroPointerEnter}
+      onPointerLeave={handleHeroPointerLeave}
+    >
       <div className={`page-shell ${styles.inner}`}>
         <div className={styles.stage}>
-          <div
-            ref={contentRevealGateRef}
-            className={styles.content}
-            onPointerEnter={handleContentPointerEnter}
-            onPointerLeave={handleContentPointerLeave}
-          >
+          <div ref={contentRevealGateRef} className={styles.content}>
             <RevealLines
               elementRef={introRef}
               as="p"

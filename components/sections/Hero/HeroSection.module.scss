@@ -368,4 +368,9 @@
   .intro {
     max-width: 38ch;
   }
+
+  /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */
+  .heroCtaLink {
+    color: var(--signal-color);
+  }
 }

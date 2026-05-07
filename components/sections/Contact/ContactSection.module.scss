@@ -1,6 +1,21 @@
 .section {
+  position: relative;
   padding-bottom: var(--section-padding-y);
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
+}
+
+/* Matches `/#contact-form` URL when the gooey inline form is open (back / gesture closes UI). */
+.contactFormHashAnchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  scroll-margin-top: calc(var(--header-height) + 0.5rem);
+  pointer-events: none;
+  left: 0;
+  top: 0;
 }
 
 /* Full-viewport, centered form; main document scroll (Lenis) — no nested scroll on .stage */

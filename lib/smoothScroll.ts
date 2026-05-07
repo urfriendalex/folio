@@ -11,6 +11,56 @@ type SmoothScrollOptions = {
   force?: boolean;
 };
 
+function usesViewportCenterAlignment(target: ScrollTarget): boolean {
+  if (typeof target === "number") {
+    return false;
+  }
+
+  if (typeof target === "string") {
+    const t = target.trim();
+    return t === "#contact" || t === "#contact-form";
+  }
+
+  return target.id === "contact" || target.id === "contact-form";
+}
+
+/** `#contact-form` is a small in-section anchor; center the `#contact` block instead. */
+function resolveViewportCenterElement(target: ScrollTarget): HTMLElement | null {
+  const el = typeof target === "number" ? null : resolveTargetElement(target);
+
+  if (!el) {
+    return null;
+  }
+
+  if (el.id === "contact") {
+    return el;
+  }
+
+  if (el.id === "contact-form") {
+    return document.getElementById("contact") ?? el;
+  }
+
+  return null;
+}
+
+function getContactSectionScrollTop(element: HTMLElement): number {
+  const rect = element.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop;
+  const elementTopDoc = rect.top + scrollY;
+  const elementCenterDoc = elementTopDoc + rect.height / 2;
+  const viewH = window.innerHeight;
+  const clearancePx =
+    readRootCssLengthPx("--header-height", DEFAULT_HEADER_HEIGHT_PX) + DEFAULT_SECTION_SCROLL_MARGIN_PX;
+  const lenis = getLenis();
+  const maxY = lenis ? lenis.limit : Math.max(0, document.documentElement.scrollHeight - viewH);
+  /** Vertical center of the viewport region below the navbar (same clearance as `#work`). */
+  const usableH = Math.max(0, viewH - clearancePx);
+  const viewportCenterBelowNav = clearancePx + usableH / 2;
+  const y = elementCenterDoc - viewportCenterBelowNav;
+
+  return Math.min(maxY, Math.max(0, y));
+}
+
 declare global {
   interface Window {
     __lenis?: Lenis;
@@ -95,6 +145,29 @@ export function getLenis() {
 export function scrollToTarget(target: ScrollTarget | null | undefined, options: SmoothScrollOptions = {}) {
   if (typeof window === "undefined" || target == null) {
     return;
+  }
+
+  if (usesViewportCenterAlignment(target)) {
+    const centerEl = resolveViewportCenterElement(target);
+
+    if (centerEl) {
+      const top = getContactSectionScrollTop(centerEl);
+      const lenis = getLenis();
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (lenis && !reduceMotion) {
+        lenis.scrollTo(top, {
+          offset: 0,
+          immediate: options.immediate ?? false,
+          lock: options.lock ?? false,
+          force: options.force ?? false,
+        });
+      } else {
+        window.scrollTo({ top, left: 0, behavior: getFallbackBehavior(options.immediate) });
+      }
+
+      return;
+    }
   }
 
   const clearancePx = options.offset ?? getScrollClearancePx(target);

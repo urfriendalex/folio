@@ -4,9 +4,9 @@ import Lenis from "lenis";
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
-import { clearLocationHash, getAnchorScrollOffset, getLenis, scrollElementIntoView } from "@/lib/smoothScroll";
+import { clearLocationHash, getLenis, scrollElementIntoView, scrollToTarget } from "@/lib/smoothScroll";
 
-const HOME_SECTION_IDS = new Set(["work", "contact"]);
+const HOME_SECTION_IDS = new Set(["work", "contact", "contact-form"]);
 
 function scrollToTopImmediate() {
   const lenis = getLenis();
@@ -76,9 +76,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       smoothWheel: true,
       syncTouch: false,
       wheelMultiplier: 1.12,
-      anchors: {
-        offset: getAnchorScrollOffset("#work"),
-      },
+      anchors: false,
     });
 
     window.__lenis = lenis;
@@ -110,6 +108,66 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       window.cancelAnimationFrame(frameId);
       lenis.destroy();
       delete window.__lenis;
+    };
+  }, []);
+
+  /**
+   * In-page section links (work / contact). Lenis `anchors` are off so we can center `#contact` while keeping
+   * header clearance for `#work`. Runs in bubble phase so `preventDefault()` from handlers like the hero CTA still skips us.
+   */
+  useEffect(() => {
+    const onSamePageSectionHashClick = (event: MouseEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      const link = event.target.closest("a[href]");
+
+      if (!link || !(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      let url: URL;
+
+      try {
+        url = new URL(link.href);
+      } catch {
+        return;
+      }
+
+      const here = new URL(window.location.href);
+
+      if (url.origin !== here.origin || url.pathname !== here.pathname) {
+        return;
+      }
+
+      const hash = url.hash.slice(1);
+
+      if (hash !== "work" && hash !== "contact" && hash !== "contact-form") {
+        return;
+      }
+
+      event.preventDefault();
+      window.history.pushState(window.history.state, "", `${url.pathname}${url.search}#${hash}`);
+      scrollToTarget(`#${hash}`, {});
+    };
+
+    document.addEventListener("click", onSamePageSectionHashClick);
+
+    return () => {
+      document.removeEventListener("click", onSamePageSectionHashClick);
     };
   }, []);
 

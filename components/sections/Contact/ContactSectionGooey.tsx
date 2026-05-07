@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -38,6 +39,43 @@ type ContactView = "email" | "form";
 const EMAIL_TRANSITION_MS = 760;
 const FORM_EXIT_MS = 420;
 
+/** Inline form open — distinct from `#contact` (email/actions) so back closes the form, not history. */
+const CONTACT_FORM_ELEMENT_ID = "contact-form";
+
+function peekHash(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return window.location.hash.replace(/^#/, "");
+}
+
+/** Pushes `#contact-form` unless the URL already has it (e.g. shared link); callers set `contactFormHistorySealRef` only when this returns true. */
+function pushContactFormHistoryEntry(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  if (peekHash() === CONTACT_FORM_ELEMENT_ID) {
+    return false;
+  }
+
+  const url = new URL(window.location.href);
+  url.hash = CONTACT_FORM_ELEMENT_ID;
+  window.history.pushState({ folioContactForm: true }, "", url.toString());
+  return true;
+}
+
+function stripContactFormHashIfPresent(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (peekHash() !== CONTACT_FORM_ELEMENT_ID) {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.hash = "contact";
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
 export function ContactSectionGooey({
   content,
   hoverPhrase = "Let's work together",
@@ -52,6 +90,13 @@ export function ContactSectionGooey({
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
+  const viewRef = useRef(view);
+  useLayoutEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+  /** Extra `history.pushState` is active — Back / Escape should use `history.back()` so gestures match. */
+  const contactFormHistorySealRef = useRef(false);
+
   useEffect(() => {
     return () => {
       if (switchTimerRef.current) {
@@ -111,6 +156,9 @@ export function ContactSectionGooey({
           setFormVisible(false);
         });
         scrollElementIntoView(sectionRef.current, { immediate: true });
+        if (pushContactFormHistoryEntry()) {
+          contactFormHistorySealRef.current = true;
+        }
         frameRef.current = window.requestAnimationFrame(() => {
           setFormVisible(true);
           frameRef.current = null;
@@ -124,6 +172,9 @@ export function ContactSectionGooey({
         setView("form");
         setFormVisible(false);
         switchTimerRef.current = null;
+        if (pushContactFormHistoryEntry()) {
+          contactFormHistorySealRef.current = true;
+        }
         frameRef.current = window.requestAnimationFrame(() => {
           setFormVisible(true);
           frameRef.current = null;
@@ -143,6 +194,9 @@ export function ContactSectionGooey({
       return;
     }
 
+    contactFormHistorySealRef.current = false;
+    stripContactFormHashIfPresent();
+
     clearScheduledMotion();
     setFormError(null);
     setFormSuccess(false);
@@ -159,6 +213,45 @@ export function ContactSectionGooey({
     }, FORM_EXIT_MS);
   }, [view, clearScheduledMotion]);
 
+  const showEmailRef = useRef(showEmail);
+  useLayoutEffect(() => {
+    showEmailRef.current = showEmail;
+  }, [showEmail]);
+
+  /** UI control or Escape — prefer `history.back()` when we own the `#contact-form` stack entry. */
+  const dismissFormSheet = useCallback(() => {
+    if (contactFormHistorySealRef.current) {
+      window.history.back();
+      return;
+    }
+    showEmail();
+  }, [showEmail]);
+
+  useEffect(() => {
+    function onPopState() {
+      if (document.documentElement.classList.contains("is-overlay-open")) {
+        return;
+      }
+      if (viewRef.current !== "form") {
+        return;
+      }
+      contactFormHistorySealRef.current = false;
+      showEmailRef.current();
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (peekHash() !== CONTACT_FORM_ELEMENT_ID || view !== "email") {
+      return;
+    }
+    const id = window.requestAnimationFrame(() => {
+      openForm({ instant: true });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [view, openForm]);
+
   useEffect(() => {
     if (view !== "form") {
       return;
@@ -168,11 +261,11 @@ export function ContactSectionGooey({
         return;
       }
       event.preventDefault();
-      showEmail();
+      dismissFormSheet();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view, showEmail]);
+  }, [view, dismissFormSheet]);
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -212,6 +305,12 @@ export function ContactSectionGooey({
       id="contact"
       className={`page-shell ${styles.section} ${view === "form" ? styles.sectionFormOpen : ""}`}
     >
+      <span
+        id={CONTACT_FORM_ELEMENT_ID}
+        className={styles.contactFormHashAnchor}
+        aria-hidden
+        tabIndex={-1}
+      />
       <div className={styles.stage}>
         {view === "email" ? (
           <div className={styles.emailView} data-visible={emailVisible}>
@@ -242,7 +341,7 @@ export function ContactSectionGooey({
                 type="button"
                 className={styles.formBackScreen}
                 data-visible={formVisible}
-                onClick={showEmail}
+                onClick={dismissFormSheet}
               >
                 Back
               </button>

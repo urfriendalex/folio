@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -24,6 +25,33 @@ import styles from "./OverlayProvider.module.scss";
 
 type OverlayType = "about" | "contact" | "project" | "booking" | null;
 type OpenOverlayType = Exclude<OverlayType, "project" | null>;
+
+/** `history.state` flag: an overlay modal session is on the stack (browser Back should close it). */
+const FOLIO_OVERLAY_HISTORY_KEY = "folioOverlay" as const;
+
+function augmentOverlayHistoryStack(
+  replace: boolean,
+  sealRef: { current: boolean },
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const prev = window.history.state;
+  const base =
+    prev && typeof prev === "object" && !Array.isArray(prev)
+      ? { ...(prev as Record<string, unknown>) }
+      : {};
+  const next = { ...base, [FOLIO_OVERLAY_HISTORY_KEY]: true };
+
+  if (replace) {
+    window.history.replaceState(next, "", window.location.href);
+  } else {
+    window.history.pushState(next, "", window.location.href);
+  }
+
+  sealRef.current = true;
+}
 
 type OverlayContextValue = {
   activeOverlay: OverlayType;
@@ -267,6 +295,14 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const closeUnmountTimerRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
   const openContentFrameRef = useRef<number | null>(null);
+  /** We pushed/replaced a history entry for the open overlay — Back / Escape / close should `history.back()` so gestures match. */
+  const overlayHistorySealRef = useRef(false);
+  const activeOverlayRef = useRef<OverlayType>(null);
+  const performCloseOverlayRef = useRef<() => void>(() => {});
+
+  useLayoutEffect(() => {
+    activeOverlayRef.current = activeOverlay;
+  }, [activeOverlay]);
 
   useEffect(() => {
     return () => {
@@ -313,7 +349,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     }
   }, []);
 
-  const closeOverlay = useCallback(() => {
+  const performCloseOverlay = useCallback(() => {
     if (!activeOverlay) {
       clearPendingBlurHandoff();
       clearClosingBlurHandoff();
@@ -359,43 +395,82 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     closeUnmountTimerRef.current = window.setTimeout(finishClose, BASE_OVERLAY_EXIT_MS);
   }, [activeOverlay, clearOverlayTimers]);
 
-  const openOverlay = useCallback((type: OpenOverlayType) => {
-    clearOverlayTimers();
-    setPendingBlurHandoff();
-    clearClosingBlurHandoff();
-    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setProjectOverlay(null);
-    setActiveOverlay(type);
-    setOverlayVisible(false);
-    setOverlayContentVisible(false);
-    openFrameRef.current = window.requestAnimationFrame(() => {
-      setOverlayVisible(true);
-      openFrameRef.current = null;
-      openContentFrameRef.current = window.requestAnimationFrame(() => {
-        setOverlayContentVisible(true);
-        openContentFrameRef.current = null;
-      });
-    });
-  }, [clearOverlayTimers]);
+  useLayoutEffect(() => {
+    performCloseOverlayRef.current = performCloseOverlay;
+  }, [performCloseOverlay]);
 
-  const openProjectFullInfo = useCallback((project: ProjectEntry) => {
-    clearOverlayTimers();
-    setPendingBlurHandoff();
-    clearClosingBlurHandoff();
-    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setProjectOverlay(project);
-    setActiveOverlay("project");
-    setOverlayVisible(false);
-    setOverlayContentVisible(false);
-    openFrameRef.current = window.requestAnimationFrame(() => {
-      setOverlayVisible(true);
-      openFrameRef.current = null;
-      openContentFrameRef.current = window.requestAnimationFrame(() => {
-        setOverlayContentVisible(true);
-        openContentFrameRef.current = null;
+  const dismissOverlay = useCallback(() => {
+    if (overlayHistorySealRef.current) {
+      window.history.back();
+      return;
+    }
+
+    performCloseOverlay();
+  }, [performCloseOverlay]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      overlayHistorySealRef.current = false;
+      if (!activeOverlayRef.current) {
+        return;
+      }
+      performCloseOverlayRef.current();
+    };
+
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
+  const openOverlay = useCallback(
+    (type: OpenOverlayType) => {
+      const wasAlreadyOpen = activeOverlay !== null;
+      clearOverlayTimers();
+      setPendingBlurHandoff();
+      clearClosingBlurHandoff();
+      triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setProjectOverlay(null);
+      setActiveOverlay(type);
+      setOverlayVisible(false);
+      setOverlayContentVisible(false);
+      openFrameRef.current = window.requestAnimationFrame(() => {
+        setOverlayVisible(true);
+        openFrameRef.current = null;
+        openContentFrameRef.current = window.requestAnimationFrame(() => {
+          setOverlayContentVisible(true);
+          openContentFrameRef.current = null;
+        });
       });
-    });
-  }, [clearOverlayTimers]);
+      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef);
+    },
+    [activeOverlay, clearOverlayTimers],
+  );
+
+  const openProjectFullInfo = useCallback(
+    (project: ProjectEntry) => {
+      const wasAlreadyOpen = activeOverlay !== null;
+      clearOverlayTimers();
+      setPendingBlurHandoff();
+      clearClosingBlurHandoff();
+      triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setProjectOverlay(project);
+      setActiveOverlay("project");
+      setOverlayVisible(false);
+      setOverlayContentVisible(false);
+      openFrameRef.current = window.requestAnimationFrame(() => {
+        setOverlayVisible(true);
+        openFrameRef.current = null;
+        openContentFrameRef.current = window.requestAnimationFrame(() => {
+          setOverlayContentVisible(true);
+          openContentFrameRef.current = null;
+        });
+      });
+      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef);
+    },
+    [activeOverlay, clearOverlayTimers],
+  );
 
   const openAbout = useCallback(() => openOverlay("about"), [openOverlay]);
   const openCalBooking = useCallback(() => openOverlay("booking"), [openOverlay]);
@@ -403,7 +478,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
   const overlayContextValue = useMemo<OverlayContextValue>(
     () => ({
       activeOverlay,
-      closeOverlay,
+      closeOverlay: dismissOverlay,
       openAbout,
       openCalBooking,
       openContactForm,
@@ -411,7 +486,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     }),
     [
       activeOverlay,
-      closeOverlay,
+      dismissOverlay,
       openAbout,
       openCalBooking,
       openContactForm,
@@ -424,7 +499,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       {children}
       {activeOverlay === "about" ? (
         <Overlay
-          onClose={closeOverlay}
+          onClose={dismissOverlay}
           title="Information"
           variant="immersive"
           showTitle={false}
@@ -561,7 +636,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       ) : null}
       {activeOverlay === "project" && projectOverlay ? (
         <Overlay
-          onClose={closeOverlay}
+          onClose={dismissOverlay}
           title={projectOverlay.title}
           variant="immersive"
           showTitle={false}
@@ -573,7 +648,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       ) : null}
       {activeOverlay === "booking" ? (
         <Overlay
-          onClose={closeOverlay}
+          onClose={dismissOverlay}
           title="Schedule a call"
           variant="immersive"
           showTitle={false}
@@ -587,7 +662,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       ) : null}
       {activeOverlay === "contact" ? (
         <Overlay
-          onClose={closeOverlay}
+          onClose={dismissOverlay}
           title="Contact"
           visible={overlayVisible}
           contentVisible={overlayContentVisible}

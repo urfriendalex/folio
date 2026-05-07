@@ -73,6 +73,11 @@ interface ASCIIAnimationProps {
   randomVisibilityDurationMs?: number;
   /** Color frames: skip solid background so empty areas stay transparent (overrides meta `bgMode` when true). */
   transparentCanvasBackground?: boolean;
+  /**
+   * Color frames + `randomCellReveal`: when false, paints the full frame immediately (no pop-in).
+   * Lets the asset load off-hover while avoiding repeated decode/network work on each hover.
+   */
+  revealActive?: boolean;
 }
 
 const FALLBACK_ORDER: Record<Quality, Quality[]> = {
@@ -281,6 +286,7 @@ export default function ASCIIAnimation({
   randomVisibilityReveal = false,
   randomVisibilityDurationMs = 520,
   transparentCanvasBackground = false,
+  revealActive = true,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -576,44 +582,93 @@ export default function ASCIIAnimation({
   }, [fps, shouldPlay, totalFrames]);
 
   useEffect(() => {
-    if (format !== "color" || !meta || !colorFrames[currentFrameIndex] || !canvasRef.current) {
+    if (format !== "color" || !meta || !colorFrames[currentFrameIndex]) {
       return;
     }
 
-    const canvas = canvasRef.current;
     const buffer = colorFrames[currentFrameIndex];
-
     const drawOpts = { transparentBackground: transparentCanvasBackground };
+    let cancelled = false;
+
+    const cancelRaf = () => {
+      window.cancelAnimationFrame(revealRafRef.current);
+      revealRafRef.current = 0;
+    };
+
+    const tryDrawFull = (): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return false;
+      }
+
+      drawColorFrame(canvas, meta, buffer, drawOpts);
+      return true;
+    };
+
+    const scheduleFullUntilMounted = () => {
+      const run = () => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!tryDrawFull()) {
+          revealRafRef.current = window.requestAnimationFrame(run);
+        }
+      };
+
+      cancelRaf();
+      run();
+    };
 
     if (!randomCellReveal) {
-      drawColorFrame(canvas, meta, buffer, drawOpts);
-      return;
+      scheduleFullUntilMounted();
+      return () => {
+        cancelled = true;
+        cancelRaf();
+      };
+    }
+
+    if (!revealActive) {
+      scheduleFullUntilMounted();
+      return () => {
+        cancelled = true;
+        cancelRaf();
+      };
     }
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
-      drawColorFrame(canvas, meta, buffer, drawOpts);
-      return;
+      scheduleFullUntilMounted();
+      return () => {
+        cancelled = true;
+        cancelRaf();
+      };
     }
 
     const duration = Math.max(120, randomCellRevealDurationMs);
     const frameKey = currentFrameIndex;
     const start = performance.now();
-    let cancelled = false;
 
     const tick = () => {
-      if (cancelled || !canvasRef.current) {
+      if (cancelled) {
+        return;
+      }
+
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        revealRafRef.current = window.requestAnimationFrame(tick);
         return;
       }
 
       const latest = colorFrames[currentFrameIndex];
       if (!latest) {
+        revealRafRef.current = window.requestAnimationFrame(tick);
         return;
       }
 
       const elapsed = performance.now() - start;
       const progress = Math.min(1, elapsed / duration);
-      drawColorFrame(canvasRef.current, meta, latest, {
+      drawColorFrame(canvas, meta, latest, {
         revealProgress: progress,
         frameKey,
         transparentBackground: transparentCanvasBackground,
@@ -624,11 +679,20 @@ export default function ASCIIAnimation({
       }
     };
 
+    cancelRaf();
+    const canvas0 = canvasRef.current;
+    if (canvas0 && buffer) {
+      drawColorFrame(canvas0, meta, buffer, {
+        revealProgress: 0,
+        frameKey,
+        transparentBackground: transparentCanvasBackground,
+      });
+    }
     revealRafRef.current = window.requestAnimationFrame(tick);
 
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(revealRafRef.current);
+      cancelRaf();
     };
   }, [
     colorFrames,
@@ -638,6 +702,7 @@ export default function ASCIIAnimation({
     randomCellReveal,
     randomCellRevealDurationMs,
     transparentCanvasBackground,
+    revealActive,
   ]);
 
   useEffect(() => {
