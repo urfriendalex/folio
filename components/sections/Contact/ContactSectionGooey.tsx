@@ -18,6 +18,7 @@ import {
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { scrollElementIntoView } from "@/lib/smoothScroll";
 import { GooeyContactEmail } from "./GooeyContactEmail";
+import workSectionStyles from "../Work/WorkSection.module.scss";
 import styles from "./ContactSection.module.scss";
 
 type ContactSectionGooeyProps = {
@@ -314,18 +315,23 @@ export function ContactSectionGooey({
       <div className={styles.stage}>
         {view === "email" ? (
           <div className={styles.emailView} data-visible={emailVisible}>
+            <div className={styles.mobileSectionTitle}>
+              <h2 className={workSectionStyles.title}>Contact Me</h2>
+            </div>
             <CalBookingTrigger
-              className={`link-underline ${styles.contactAction}`}
+              className={`link-underline ${styles.contactChannelButton}`}
               data-visible={emailVisible}
             >
               Schedule a call
             </CalBookingTrigger>
 
-            <GooeyContactEmail email={content.email} hoverPhrase={hoverPhrase} visible={emailVisible} />
+            <div className={styles.contactGooeyCard} data-visible={emailVisible}>
+              <GooeyContactEmail email={content.email} hoverPhrase={hoverPhrase} visible={emailVisible} />
+            </div>
 
             <button
               type="button"
-              className={`link-underline ${styles.contactAction}`}
+              className={`link-underline ${styles.contactChannelButton}`}
               data-visible={emailVisible}
               onClick={() => openForm()}
             >
