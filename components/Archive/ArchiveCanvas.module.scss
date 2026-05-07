@@ -223,11 +223,12 @@
 
 .interactionHintText {
   margin: 0;
-  padding: 0;
+  padding: 0 1.25rem;
   font-family: var(--font-pixel-square-stack);
-  font-size: clamp(0.42rem, 1.75vw, 0.78rem);
+  font-size: clamp(0.62rem, 0.95vw, 0.85rem);
   line-height: 1.35;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--signal-color);
   text-align: center;
   text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
@@ -262,8 +263,7 @@
   }
 
   .interactionHintText {
-    font-size: clamp(0.34rem, 1.65vw, 0.68rem);
-    letter-spacing: 0.05em;
+    font-size: clamp(0.72rem, 3vw, 0.88rem);
   }
 
   .focusLabel {
