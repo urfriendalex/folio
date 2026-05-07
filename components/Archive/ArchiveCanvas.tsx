@@ -6,32 +6,76 @@ import type { ArchiveEntry } from "@/content/archive/archive-data";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
 
+const PREPARING_EXIT_MS = 640;
+/** Visible time before the interaction hint begins to fade out */
+const HINT_VISIBLE_MS = 3200;
+const HINT_FADE_MS = 336;
+
 type SceneLoadState = {
   active: boolean;
   loaded: number;
   total: number;
 };
 
-function ArchiveLoadingStatus({
-  loadState,
+function ArchivePreparingOverlay({
   ariaHidden = false,
+  className,
 }: {
-  loadState?: SceneLoadState;
   ariaHidden?: boolean;
+  className?: string;
 }) {
-  const total = loadState?.total ?? 0;
-  const loaded = loadState?.loaded ?? 0;
-  const statusLabel = total > 0 && loaded > 0 ? "Loading archive..." : "Preparing archive...";
-
   return (
     <div
-      className={styles.loadingStatus}
+      className={[styles.preparingOverlay, className].filter(Boolean).join(" ")}
       aria-hidden={ariaHidden || undefined}
       aria-live={ariaHidden ? undefined : "polite"}
       aria-atomic={ariaHidden ? undefined : "true"}
       role={ariaHidden ? undefined : "status"}
     >
-      <p className={styles.loadingText}>{statusLabel}</p>
+      <p className={styles.preparingText}>
+        <span className={styles.assetsLoadingLabel}>Preparing archive</span>
+        <span className={styles.loadingDots} aria-hidden="true">
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function ArchiveAssetsLoadingIndicator() {
+  return (
+    <div className={styles.assetsLoadingIndicator}>
+      <p className={styles.assetsLoadingText} role="status" aria-live="polite">
+        <span className={styles.assetsLoadingLabel}>Loading</span>
+        <span className={styles.loadingDots} aria-hidden="true">
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function ArchiveInteractionHint({
+  exiting,
+  ariaHidden = false,
+}: {
+  exiting: boolean;
+  ariaHidden?: boolean;
+}) {
+  return (
+    <div
+      aria-hidden={ariaHidden || undefined}
+      aria-live={ariaHidden ? undefined : "polite"}
+      className={[styles.interactionHint, exiting ? styles.interactionHintExiting : ""]
+        .filter(Boolean)
+        .join(" ")}
+      role={ariaHidden ? undefined : "status"}
+    >
+      <p className={styles.interactionHintText}>drag, scroll, zoom, explore, have fun</p>
     </div>
   );
 }
@@ -61,6 +105,11 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
   const [focusLabel, setFocusLabel] = useState<string>("");
   const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState | null>(null);
+  /** Lets the preparing overlay play its exit animation after the scene begins reporting load progress. */
+  const [preparingOverlayDismissed, setPreparingOverlayDismissed] = useState(false);
+  const [hintVisible, setHintVisible] = useState(false);
+  const [hintExiting, setHintExiting] = useState(false);
+  const hintPlayedRef = useRef(false);
   const lastHoverLabelRef = useRef<string>("");
   const lastFocusLabelRef = useRef<string>("");
 
@@ -97,13 +146,62 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     };
   }, []);
 
-  const archiveBusy = sceneLoadState === null || sceneLoadState.active;
-  const hideSceneUntilReady = archiveBusy;
+  const isPreparing = sceneLoadState === null;
+  const assetsStillLoading = sceneLoadState?.active === true;
+  const experienceReady = sceneLoadState !== null && !sceneLoadState.active;
+
+  const hideSceneUntilReady = isPreparing;
+
+  useEffect(() => {
+    if (!isPreparing) return;
+    queueMicrotask(() => {
+      setPreparingOverlayDismissed(false);
+    });
+  }, [isPreparing]);
+
+  useEffect(() => {
+    if (isPreparing || preparingOverlayDismissed) return;
+    const id = window.setTimeout(() => setPreparingOverlayDismissed(true), PREPARING_EXIT_MS);
+    return () => window.clearTimeout(id);
+  }, [isPreparing, preparingOverlayDismissed]);
+
+  const showPreparingOverlay = isPreparing || !preparingOverlayDismissed;
+  const preparingOverlayExiting = !isPreparing && showPreparingOverlay;
+
+  useEffect(() => {
+    if (!experienceReady || hintPlayedRef.current) return;
+    if (sceneLoadState && sceneLoadState.total === 0) return;
+
+    hintPlayedRef.current = true;
+
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const visibleMs = reducedMotion ? 1440 : HINT_VISIBLE_MS;
+    const fadeMs = reducedMotion ? 128 : HINT_FADE_MS;
+
+    const showId = window.setTimeout(() => {
+      setHintVisible(true);
+      setHintExiting(false);
+    }, 0);
+
+    const fadeId = window.setTimeout(() => setHintExiting(true), visibleMs);
+    const hideId = window.setTimeout(() => {
+      setHintVisible(false);
+      setHintExiting(false);
+    }, visibleMs + fadeMs);
+
+    return () => {
+      window.clearTimeout(showId);
+      window.clearTimeout(fadeId);
+      window.clearTimeout(hideId);
+    };
+  }, [experienceReady, sceneLoadState]);
 
   return (
     <section
       className={styles.viewport}
-      aria-busy={archiveBusy}
+      aria-busy={isPreparing}
       aria-label="Archive canvas"
       data-archive-experience="true"
     >
@@ -120,13 +218,23 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
       </div>
 
       <div className={styles.hud} aria-live="polite">
-        {archiveBusy ? (
-          <ArchiveLoadingStatus loadState={sceneLoadState ?? undefined} />
-        ) : null}
-        {activeLabel ? (
+        {sceneLoadState !== null && activeLabel ? (
           <span className={styles.focusLabel}>
             {fileNameFromArchivePath(activeLabel)}
           </span>
+        ) : null}
+        {hintVisible ? (
+          <ArchiveInteractionHint
+            ariaHidden={hintExiting}
+            exiting={hintExiting}
+          />
+        ) : null}
+        {assetsStillLoading ? <ArchiveAssetsLoadingIndicator /> : null}
+        {showPreparingOverlay ? (
+          <ArchivePreparingOverlay
+            ariaHidden={preparingOverlayExiting}
+            className={preparingOverlayExiting ? styles.preparingOverlayExiting : undefined}
+          />
         ) : null}
       </div>
     </section>
