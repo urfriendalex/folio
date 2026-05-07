@@ -15,9 +15,11 @@ type SceneLoadState = {
 function ArchiveLoadingStatus({
   loadState,
   ariaHidden = false,
+  className,
 }: {
   loadState?: SceneLoadState;
   ariaHidden?: boolean;
+  className?: string;
 }) {
   const total = loadState?.total ?? 0;
   const loaded = loadState?.loaded ?? 0;
@@ -25,7 +27,7 @@ function ArchiveLoadingStatus({
 
   return (
     <div
-      className={styles.loadingStatus}
+      className={[styles.loadingStatus, className].filter(Boolean).join(" ")}
       aria-hidden={ariaHidden || undefined}
       aria-live={ariaHidden ? undefined : "polite"}
       aria-atomic={ariaHidden ? undefined : "true"}
@@ -61,6 +63,8 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
   const [focusLabel, setFocusLabel] = useState<string>("");
   const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState | null>(null);
+  /** After load completes, keep the overlay mounted briefly so it can blur/fade out like the site preloader. */
+  const [loadingOverlayDismissed, setLoadingOverlayDismissed] = useState(false);
   const lastHoverLabelRef = useRef<string>("");
   const lastFocusLabelRef = useRef<string>("");
 
@@ -100,6 +104,22 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const archiveBusy = sceneLoadState === null || sceneLoadState.active;
   const hideSceneUntilReady = archiveBusy;
 
+  useEffect(() => {
+    if (!archiveBusy) return;
+    queueMicrotask(() => {
+      setLoadingOverlayDismissed(false);
+    });
+  }, [archiveBusy]);
+
+  useEffect(() => {
+    if (archiveBusy || loadingOverlayDismissed) return;
+    const id = window.setTimeout(() => setLoadingOverlayDismissed(true), 640);
+    return () => window.clearTimeout(id);
+  }, [archiveBusy, loadingOverlayDismissed]);
+
+  const showLoadingOverlay = archiveBusy || !loadingOverlayDismissed;
+  const loadingOverlayExiting = !archiveBusy && showLoadingOverlay;
+
   return (
     <section
       className={styles.viewport}
@@ -120,10 +140,14 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
       </div>
 
       <div className={styles.hud} aria-live="polite">
-        {archiveBusy ? (
-          <ArchiveLoadingStatus loadState={sceneLoadState ?? undefined} />
+        {showLoadingOverlay ? (
+          <ArchiveLoadingStatus
+            ariaHidden={loadingOverlayExiting}
+            className={loadingOverlayExiting ? styles.loadingStatusExiting : undefined}
+            loadState={sceneLoadState ?? undefined}
+          />
         ) : null}
-        {activeLabel ? (
+        {!archiveBusy && activeLabel ? (
           <span className={styles.focusLabel}>
             {fileNameFromArchivePath(activeLabel)}
           </span>
