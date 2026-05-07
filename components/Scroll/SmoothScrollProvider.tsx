@@ -161,7 +161,17 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       event.preventDefault();
       window.history.pushState(window.history.state, "", `${url.pathname}${url.search}#${hash}`);
-      scrollToTarget(`#${hash}`, {});
+
+      const scrollToHash = () => scrollToTarget(`#${hash}`, {});
+
+      // Mobile nav locks `body` (`position: fixed`). Scrolling in the same tick runs before React
+      // unlocks scroll; `skipNextScrollRestore()` would leave scroll at 0 after unlock. Defer until
+      // after `unlockBodyScroll` runs (next macrotask, after layout effects).
+      if (document.documentElement.classList.contains("is-nav-open")) {
+        window.setTimeout(scrollToHash, 0);
+      } else {
+        scrollToHash();
+      }
     };
 
     document.addEventListener("click", onSamePageSectionHashClick);

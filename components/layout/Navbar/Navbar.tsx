@@ -15,7 +15,7 @@ import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
-import { lockBodyScroll, skipNextScrollRestore, unlockBodyScroll } from "@/lib/scrollLock";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
@@ -213,10 +213,6 @@ export function Navbar() {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       setMenuOpen(false);
       return;
-    }
-
-    if (pathname === "/") {
-      skipNextScrollRestore();
     }
 
     setMenuOpen(false);
