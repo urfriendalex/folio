@@ -8,8 +8,8 @@ import styles from "./ArchiveCanvas.module.scss";
 
 const PREPARING_EXIT_MS = 640;
 /** Visible time before the interaction hint begins to fade out */
-const HINT_VISIBLE_MS = 4000;
-const HINT_FADE_MS = 420;
+const HINT_VISIBLE_MS = 3200;
+const HINT_FADE_MS = 336;
 
 type SceneLoadState = {
   active: boolean;
@@ -75,7 +75,7 @@ function ArchiveInteractionHint({
         .join(" ")}
       role={ariaHidden ? undefined : "status"}
     >
-      <p className={styles.interactionHintText}>Drag and scroll to explore</p>
+      <p className={styles.interactionHintText}>drag, scroll, zoom, explore, have fun</p>
     </div>
   );
 }
@@ -177,8 +177,8 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     const reducedMotion =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const visibleMs = reducedMotion ? 1800 : HINT_VISIBLE_MS;
-    const fadeMs = reducedMotion ? 160 : HINT_FADE_MS;
+    const visibleMs = reducedMotion ? 1440 : HINT_VISIBLE_MS;
+    const fadeMs = reducedMotion ? 128 : HINT_FADE_MS;
 
     const showId = window.setTimeout(() => {
       setHintVisible(true);
