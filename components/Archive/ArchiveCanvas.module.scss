@@ -17,6 +17,19 @@
   display: none;
 }
 
+.sceneShell {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.sceneShellHidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .scene {
   position: absolute;
   inset: 0;

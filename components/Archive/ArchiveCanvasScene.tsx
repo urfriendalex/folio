@@ -2,7 +2,14 @@
 
 import { KeyboardControls, useKeyboardControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import * as THREE from "three";
 import type { ArchiveAssetKind, ArchiveEntry } from "@/content/archive/archive-data";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
@@ -462,7 +469,7 @@ function MediaPlane({
 }: {
   plane: PlaneData;
   media: ArchiveMediaItem;
-  cameraGridRef: MutableRefObject<CameraGridState>;
+  cameraGridRef: RefObject<CameraGridState>;
   onHoverLabelChange: (label: string | null) => void;
   placeholderColor: string;
   pointerHoverForLabel: boolean;
@@ -709,7 +716,7 @@ function Chunk({
   cy: number;
   cz: number;
   media: ArchiveMediaItem[];
-  cameraGridRef: MutableRefObject<CameraGridState>;
+  cameraGridRef: RefObject<CameraGridState>;
   onHoverLabelChange: (label: string | null) => void;
   placeholderColor: string;
   pointerHoverForLabel: boolean;
@@ -1213,7 +1220,7 @@ export function ArchiveCanvasScene({
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!onSceneLoadStateChange) {
       return;
     }

@@ -41,9 +41,7 @@ const ArchiveCanvasScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className={styles.scene} aria-hidden="true">
-        <ArchiveLoadingStatus ariaHidden />
-      </div>
+      <div className={styles.scene} aria-hidden="true" />
     ),
   },
 );
@@ -62,11 +60,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const isTouchPrimary = useIsTouchDevice();
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
   const [focusLabel, setFocusLabel] = useState<string>("");
-  const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState>({
-    active: false,
-    loaded: 0,
-    total: 0,
-  });
+  const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState | null>(null);
   const lastHoverLabelRef = useRef<string>("");
   const lastFocusLabelRef = useRef<string>("");
 
@@ -103,22 +97,32 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     };
   }, []);
 
+  const archiveBusy = sceneLoadState === null || sceneLoadState.active;
+  const hideSceneUntilReady = archiveBusy;
+
   return (
     <section
       className={styles.viewport}
-      aria-busy={sceneLoadState.active}
+      aria-busy={archiveBusy}
       aria-label="Archive canvas"
       data-archive-experience="true"
     >
-      <ArchiveCanvasScene
-        items={items}
-        onFocusLabelChange={onFocusLabelChange}
-        onSceneLoadStateChange={setSceneLoadState}
-        onHoverLabelChange={onHoverLabelChange}
-      />
+      <div
+        className={`${styles.sceneShell} ${hideSceneUntilReady ? styles.sceneShellHidden : ""}`}
+        aria-hidden={hideSceneUntilReady || undefined}
+      >
+        <ArchiveCanvasScene
+          items={items}
+          onFocusLabelChange={onFocusLabelChange}
+          onSceneLoadStateChange={setSceneLoadState}
+          onHoverLabelChange={onHoverLabelChange}
+        />
+      </div>
 
       <div className={styles.hud} aria-live="polite">
-        {sceneLoadState.active ? <ArchiveLoadingStatus loadState={sceneLoadState} /> : null}
+        {archiveBusy ? (
+          <ArchiveLoadingStatus loadState={sceneLoadState ?? undefined} />
+        ) : null}
         {activeLabel ? (
           <span className={styles.focusLabel}>
             {fileNameFromArchivePath(activeLabel)}
