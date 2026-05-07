@@ -32,7 +32,14 @@ function ArchivePreparingOverlay({
       aria-atomic={ariaHidden ? undefined : "true"}
       role={ariaHidden ? undefined : "status"}
     >
-      <p className={styles.preparingText}>Preparing archive...</p>
+      <p className={styles.preparingText}>
+        <span className={styles.assetsLoadingLabel}>Preparing archive</span>
+        <span className={styles.loadingDots} aria-hidden="true">
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+          <span className={styles.loadingDot} />
+        </span>
+      </p>
     </div>
   );
 }

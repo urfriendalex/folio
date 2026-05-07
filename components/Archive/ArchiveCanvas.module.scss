@@ -110,6 +110,9 @@
 }
 
 .preparingText {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
   margin: 0;
   padding: 0 1.25rem;
   font-family: var(--font-pixel-square-stack);
@@ -124,10 +127,12 @@
 
 .assetsLoadingIndicator {
   position: absolute;
-  top: calc(var(--header-height) + 0.5rem);
-  left: 50%;
+  inset: 0;
   z-index: 2;
-  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .assetsLoadingText {
@@ -196,10 +201,12 @@
 .interactionHint {
   position: absolute;
   left: 50%;
-  bottom: max(6rem, calc(env(safe-area-inset-bottom, 0px) + 5.25rem));
+  top: 50%;
+  bottom: auto;
   z-index: 2;
-  max-width: min(92vw, 26rem);
-  transform: translateX(-50%);
+  max-width: min(calc(100vw - 2rem), 36rem);
+  padding: 0 1rem;
+  transform: translate(-50%, -50%);
   opacity: 1;
   transition: opacity 380ms cubic-bezier(0.23, 0.96, 0.32, 1);
 }
@@ -216,15 +223,16 @@
 
 .interactionHintText {
   margin: 0;
-  padding: 0 1rem;
+  padding: 0;
   font-family: var(--font-pixel-square-stack);
-  font-size: clamp(0.62rem, 1vw, 0.82rem);
-  line-height: 1.45;
-  letter-spacing: 0.14em;
+  font-size: clamp(0.52rem, 2.35vw, 0.82rem);
+  line-height: 1.35;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--signal-color);
   text-align: center;
   text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
+  white-space: nowrap;
 }
 
 .focusLabel {
@@ -245,23 +253,18 @@
 }
 
 @media (max-width: 48rem) {
-  .assetsLoadingIndicator {
-    top: calc(var(--header-height) + 0.35rem);
-    left: 50%;
-    max-width: min(94vw, 22rem);
-  }
-
   .assetsLoadingText {
     font-size: clamp(0.72rem, 3vw, 0.88rem);
     padding: 0.3rem 0.55rem;
   }
 
-  .interactionHint {
-    bottom: max(7rem, calc(env(safe-area-inset-bottom, 0px) + 6rem));
+  .preparingText {
+    font-size: clamp(0.72rem, 3vw, 0.88rem);
   }
 
   .interactionHintText {
-    font-size: clamp(0.72rem, 3.2vw, 0.88rem);
+    font-size: clamp(0.48rem, 2.6vw, 0.72rem);
+    letter-spacing: 0.08em;
   }
 
   .focusLabel {
