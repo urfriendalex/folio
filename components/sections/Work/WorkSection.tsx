@@ -13,6 +13,7 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import type { ProjectEntry } from "@/content/projects/types";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
+import { useWorkRevealOnView } from "@/lib/useWorkRevealOnView";
 import styles from "./WorkSection.module.scss";
 
 type WorkSectionProps = {
@@ -112,10 +113,15 @@ export function WorkSection({ projects }: WorkSectionProps) {
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousRectsRef = useRef(new Map<string, DOMRect>());
   const hasMountedRef = useRef(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const viewOptions = isMobile ? mobileViewOptions : desktopViewOptions;
   const skipEntranceReveal = useRestoredScrollBypass();
-  /** Restored scroll / reload mid-page: show immediately. Otherwise work timeline + intersection. */
-  const workRevealVisible = skipEntranceReveal ? true : undefined;
+  const workSectionRevealVisible = useWorkRevealOnView(sectionRef, {
+    ...WORK_SECTION_REVEAL_OPTIONS,
+    observerDisabled: skipEntranceReveal,
+  });
+  /** Restored scroll / reload mid-page: show immediately. Otherwise section-level timeline + intersection. */
+  const workRevealVisible = skipEntranceReveal ? true : workSectionRevealVisible;
 
   const setCardNode = (slug: string, node: HTMLElement | null) => {
     if (node) {
@@ -219,7 +225,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
   }, []);
 
   return (
-    <section id="work" className={styles.section}>
+    <section ref={sectionRef} id="work" className={styles.section}>
       <div className={`page-shell ${styles.inner}`}>
         <header className={styles.header}>
           <RevealLines
@@ -228,15 +234,11 @@ export function WorkSection({ projects }: WorkSectionProps) {
             immediate={skipEntranceReveal}
             text={WORK_TITLE}
             measureLines={false}
-            revealVariant="work"
             visible={workRevealVisible}
-            revealOptions={WORK_SECTION_REVEAL_OPTIONS}
           />
           <ScrollReveal
             immediate={skipEntranceReveal}
-            revealVariant="work"
             visible={workRevealVisible}
-            revealOptions={WORK_SECTION_REVEAL_OPTIONS}
             staggerIndex={1}
             staggerStepMs={WORK_CHROME_STAGGER_STEP_MS}
           >
@@ -295,9 +297,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
               project={project}
               index={index}
               immediate={skipEntranceReveal}
-              revealVariant="work"
               visible={workRevealVisible}
-              revealOptions={WORK_SECTION_REVEAL_OPTIONS}
               staggerIndexOffset={WORK_CARD_STAGGER_OFFSET}
               cardRef={(node) => setCardNode(project.slug, node)}
             />

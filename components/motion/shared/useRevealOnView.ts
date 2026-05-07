@@ -9,7 +9,7 @@ export type UseRevealOnViewOptions = {
   threshold?: number;
   /** After intersection, wait before flipping visible. */
   revealDelayMs?: number;
-  /** Skip observers — controlled visibility from parent or {@link useWorkRevealOnView}. */
+  /** Skip observers when visibility is controlled by a parent. */
   observerDisabled?: boolean;
 };
 

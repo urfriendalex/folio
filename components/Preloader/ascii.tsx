@@ -727,7 +727,7 @@ export default function ASCIIAnimation({
     height: "100%",
     objectFit: "cover" as const,
     opacity: fillVisible ? 1 : 0,
-    transition: "opacity 0.11s ease-out",
+    transition: "opacity 0.18s ease-out",
   };
 
   return (

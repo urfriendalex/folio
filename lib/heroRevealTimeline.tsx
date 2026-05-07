@@ -14,8 +14,7 @@ export type HeroRevealTimelineContextValue = {
   setCtaAligned: (next: boolean) => void;
 };
 
-export const HeroRevealTimelineContext =
-  createContext<HeroRevealTimelineContextValue | null>(null);
+const HeroRevealTimelineContext = createContext<HeroRevealTimelineContextValue | null>(null);
 
 export function HeroRevealTimelineProvider({ children }: { children: ReactNode }) {
   const [ctaAligned, setCtaAlignedState] = useState(false);

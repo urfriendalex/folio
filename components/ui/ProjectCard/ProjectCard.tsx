@@ -18,7 +18,6 @@ type ProjectCardProps = {
   immediate?: boolean;
   visible?: boolean;
   staggerIndexOffset?: number;
-  revealVariant?: "default" | "work";
   /** Overrides default card observer tuning (e.g. Work rootMargin/threshold). */
   revealOptions?: UseRevealOnViewOptions;
   cardRef?: (node: HTMLElement | null) => void;
@@ -30,7 +29,6 @@ export function ProjectCard({
   immediate = false,
   visible,
   staggerIndexOffset = 0,
-  revealVariant = "default",
   revealOptions,
   cardRef,
 }: ProjectCardProps) {
@@ -42,7 +40,6 @@ export function ProjectCard({
     <ScrollReveal
       immediate={immediate}
       visible={visible}
-      revealVariant={revealVariant}
       revealOptions={revealOptions ?? projectCardRevealOptions}
       staggerIndex={staggerIndexOffset + index}
       staggerStepMs={72}

@@ -45,3 +45,13 @@ export function setHomeHeroRevealDone(): void {
     // ignore quota / private mode
   }
 }
+
+/** Clears “hero reveal already played” so returning to `/` replays stagger (SPA navigation). */
+export function clearHomeHeroRevealDone(): void {
+  try {
+    window.sessionStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new Event(STORAGE_EVENT));
+  } catch {
+    // ignore
+  }
+}
