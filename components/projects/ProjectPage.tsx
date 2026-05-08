@@ -1,7 +1,6 @@
 "use client";
 
 import gsap from "gsap";
-import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -18,6 +17,7 @@ import {
 } from "react";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ImageReveal, RevealLines } from "@/components/motion";
+import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";

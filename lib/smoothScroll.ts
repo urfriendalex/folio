@@ -215,3 +215,20 @@ export function scrollToHeroSection() {
     scrollToTop();
   }
 }
+
+/** After browser / Next restores scroll position, Lenis can be out of sync — snap immediately. */
+export function syncLenisToWindowScroll() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const lenis = getLenis();
+
+  if (!lenis) {
+    return;
+  }
+
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+
+  lenis.scrollTo(y, { immediate: true, force: true });
+}

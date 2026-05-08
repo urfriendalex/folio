@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
+import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import type { UseRevealOnViewOptions } from "@/components/motion/shared/useRevealOnView";
 import type { ProjectEntry } from "@/content/projects/types";
 import { thumbnailToMediaSlot } from "@/lib/projectMedia";
@@ -45,7 +45,11 @@ export function ProjectCard({
       staggerStepMs={72}
     >
       <article className={styles.card} ref={cardRef}>
-        <Link href={projectHref} className={styles.media} aria-label={`${project.title}, explore project`}>
+        <IntentPrefetchLink
+          href={projectHref}
+          className={styles.media}
+          aria-label={`${project.title}, explore project`}
+        >
           <ProjectMedia
             media={thumbnailMedia}
             alt={`${project.title} project preview`}
@@ -55,7 +59,7 @@ export function ProjectCard({
             imagePreload={index === 0}
             loading={index < 2 ? "eager" : "lazy"}
           />
-        </Link>
+        </IntentPrefetchLink>
         <footer className={styles.meta}>
           <div className={styles.identity}>
             <div className={styles.titleRow}>
@@ -76,9 +80,9 @@ export function ProjectCard({
                 </a>
               ) : null}
             </span>
-            <Link href={projectHref} className={`link-underline ${styles.actionLink}`}>
+            <IntentPrefetchLink href={projectHref} className={`link-underline ${styles.actionLink}`}>
               explore project
-            </Link>
+            </IntentPrefetchLink>
           </div>
         </footer>
       </article>

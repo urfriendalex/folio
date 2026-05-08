@@ -4,7 +4,14 @@ import Lenis from "lenis";
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
-import { clearLocationHash, getLenis, scrollElementIntoView, scrollToTarget } from "@/lib/smoothScroll";
+import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
+import {
+  clearLocationHash,
+  getLenis,
+  scrollElementIntoView,
+  scrollToTarget,
+  syncLenisToWindowScroll,
+} from "@/lib/smoothScroll";
 
 const HOME_SECTION_IDS = new Set(["work", "contact", "contact-form"]);
 
@@ -62,6 +69,17 @@ function shouldPauseSmoothScroll(root: HTMLElement) {
 export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const pathname = usePathname();
   const hasHandledInitialNavigation = useRef(false);
+  /** True after `popstate` until the next `/` scroll policy runs (Next.js restores scroll on back/forward). */
+  const historyScrollRestorePendingRef = useRef(false);
+
+  useEffect(() => {
+    const onPopState = () => {
+      historyScrollRestorePendingRef.current = true;
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -187,6 +205,9 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     const shouldRespectInitialHash = isInitialNavigation && !isReloadNavigation();
 
     if (pathname !== "/") {
+      historyScrollRestorePendingRef.current = false;
+      clearHomeHistoryPopReveal();
+
       if (isInitialNavigation) {
         return;
       }
@@ -197,11 +218,25 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
     const id = window.location.hash.slice(1);
 
+    const scheduleLenisSyncToRestoredScroll = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          syncLenisToWindowScroll();
+        });
+      });
+    };
+
     if (id === "hero") {
       if (!shouldRespectInitialHash) {
+        if (historyScrollRestorePendingRef.current) {
+          historyScrollRestorePendingRef.current = false;
+          scheduleLenisSyncToRestoredScroll();
+        }
+
         return;
       }
 
+      historyScrollRestorePendingRef.current = false;
       clearLocationHash();
       scrollToTopImmediate();
       return;
@@ -209,9 +244,15 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
     if (id && HOME_SECTION_IDS.has(id)) {
       if (!shouldRespectInitialHash) {
+        if (historyScrollRestorePendingRef.current) {
+          historyScrollRestorePendingRef.current = false;
+          scheduleLenisSyncToRestoredScroll();
+        }
+
         return;
       }
 
+      historyScrollRestorePendingRef.current = false;
       scrollToHomeSectionById(id);
       return;
     }
@@ -219,6 +260,14 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     if (isInitialNavigation) {
       return;
     }
+
+    if (historyScrollRestorePendingRef.current) {
+      historyScrollRestorePendingRef.current = false;
+      scheduleLenisSyncToRestoredScroll();
+      return;
+    }
+
+    clearHomeHistoryPopReveal();
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   useCallback,
@@ -12,6 +11,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import ASCIIAnimation from "@/components/Preloader/ascii";
+import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
 import { notFoundContent } from "@/content/not-found";
 import { getAnchor } from "@/lib/navLinks";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
@@ -219,7 +219,6 @@ function NotFoundWindowContent({
           scroll={false}
           className={styles.closeButton}
           aria-label="Go back home"
-          prefetch={false}
           onClick={onHomeClick}
         >
           {notFoundContent.closeLabel}

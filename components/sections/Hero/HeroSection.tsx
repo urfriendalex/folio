@@ -28,6 +28,7 @@ import {
   subscribeHomeHeroRevealDone,
 } from "@/lib/homeHeroRevealSession";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
+import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { getLenis } from "@/lib/smoothScroll";
 import styles from "./HeroSection.module.scss";
 
@@ -165,6 +166,10 @@ export function HeroSection({ content }: HeroSectionProps) {
     getHomeHeroRevealDone,
     () => false,
   );
+
+  /** Back/forward to `/`: skip long hero choreography so restoring scroll reads as instant. */
+  const historyScrollRevealBypass = useRestoredScrollBypass();
+  const bypassHeroReplay = skipRepeatReveal || historyScrollRevealBypass;
 
   const heroContentRevealVisible = useRevealOnView(contentRevealGateRef);
   const setHeroCtaAligned = useOptionalHeroRevealTimeline()?.setCtaAligned;
@@ -534,12 +539,12 @@ export function HeroSection({ content }: HeroSectionProps) {
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
 
   useLayoutEffect(() => {
-    if (!preloaderComplete || !skipRepeatReveal) {
+    if (!preloaderComplete || !bypassHeroReplay) {
       return;
     }
 
     document.documentElement.setAttribute("data-hero-reveal", "complete");
-  }, [preloaderComplete, skipRepeatReveal]);
+  }, [preloaderComplete, bypassHeroReplay]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -551,7 +556,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       };
     }
 
-    if (skipRepeatReveal) {
+    if (bypassHeroReplay) {
       html.setAttribute("data-hero-reveal", "complete");
       return () => {
         html.setAttribute("data-hero-reveal", "pending");
@@ -583,17 +588,17 @@ export function HeroSection({ content }: HeroSectionProps) {
       html.setAttribute("data-hero-reveal", "pending");
     };
   }, [
+    bypassHeroReplay,
     ctaLines.length,
     hasCta,
     headingLines.length,
     introLines.length,
     preloaderComplete,
     sequenceTotal,
-    skipRepeatReveal,
   ]);
 
   /** Publish CTA stagger phase to {@link HeroRevealTimelineProvider} for Work reveals. */
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!setHeroCtaAligned) {
       return undefined;
     }
@@ -603,12 +608,21 @@ export function HeroSection({ content }: HeroSectionProps) {
       return () => setHeroCtaAligned(false);
     }
 
-    if (skipRepeatReveal) {
+    if (bypassHeroReplay) {
       setHeroCtaAligned(true);
       return () => setHeroCtaAligned(false);
     }
 
+    const gate = contentRevealGateRef.current;
+    /** Hero replay + scroll restored below the fold (e.g. back from a project): IO never intersects hero, but Work must not stay opacity-gated forever. */
+    const scrolledPastHero = gate !== null && gate.getBoundingClientRect().bottom < 0;
+
     if (!heroContentRevealVisible) {
+      if (scrolledPastHero) {
+        setHeroCtaAligned(true);
+        return () => setHeroCtaAligned(false);
+      }
+
       setHeroCtaAligned(false);
       return () => setHeroCtaAligned(false);
     }
@@ -626,9 +640,9 @@ export function HeroSection({ content }: HeroSectionProps) {
       setHeroCtaAligned(false);
     };
   }, [
+    bypassHeroReplay,
     setHeroCtaAligned,
     preloaderComplete,
-    skipRepeatReveal,
     heroContentRevealVisible,
     hasCta,
     headingLines.length,
@@ -848,8 +862,8 @@ export function HeroSection({ content }: HeroSectionProps) {
               total={sequenceTotal}
               stepMs={INTRO_REVEAL_STEP_MS}
               renderToken={renderIntroToken}
-              immediate={skipRepeatReveal}
-              visible={skipRepeatReveal ? true : heroContentRevealVisible}
+              immediate={bypassHeroReplay}
+              visible={bypassHeroReplay ? true : heroContentRevealVisible}
             />
             <RevealLines
               elementRef={headingRef}
@@ -861,8 +875,8 @@ export function HeroSection({ content }: HeroSectionProps) {
               total={sequenceTotal}
               stepMs={HEADING_REVEAL_STEP_MS}
               renderToken={renderHeadingToken}
-              immediate={skipRepeatReveal}
-              visible={skipRepeatReveal ? true : heroContentRevealVisible}
+              immediate={bypassHeroReplay}
+              visible={bypassHeroReplay ? true : heroContentRevealVisible}
             />
             {hasCta ? (
               <RevealLines
@@ -876,8 +890,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 total={sequenceTotal}
                 stepMs={HEADING_REVEAL_STEP_MS}
                 renderToken={renderCtaToken}
-                immediate={skipRepeatReveal}
-                visible={skipRepeatReveal ? true : heroContentRevealVisible}
+                immediate={bypassHeroReplay}
+                visible={bypassHeroReplay ? true : heroContentRevealVisible}
               />
             ) : null}
           </div>

@@ -9,8 +9,8 @@ import {
   type CSSProperties,
   type MouseEvent,
 } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -87,42 +87,12 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    closeMenuOnRouteChange();
-  }, [pathname]);
-
-  useEffect(() => {
-    if (pathname === "/archive") {
-      router.prefetch("/");
-    }
-  }, [pathname, router]);
-
-  useEffect(() => {
-    if (pathname === "/archive") {
-      return;
-    }
-
-    let idleId = 0;
-    let timeoutId = 0;
-
-    const warmArchive = () => {
-      router.prefetch("/archive");
-    };
-
-    if (typeof window.requestIdleCallback === "function") {
-      idleId = window.requestIdleCallback(warmArchive);
-    } else {
-      timeoutId = window.setTimeout(warmArchive, 2500);
-    }
+    const frame = window.requestAnimationFrame(closeMenuOnRouteChange);
 
     return () => {
-      if (idleId) {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
+      window.cancelAnimationFrame(frame);
     };
-  }, [pathname, router]);
+  }, [pathname]);
 
   useEffect(() => {
     const html = document.documentElement;
