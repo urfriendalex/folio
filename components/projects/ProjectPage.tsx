@@ -15,13 +15,15 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ImageReveal, RevealLines } from "@/components/motion";
-import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";
+import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { estimateWrappedLines } from "@/lib/projectOverlaySequence";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import styles from "./ProjectPage.module.scss";
 
 /** Line stagger for toolbar copy — aligned with immersive overlays (~28ms), slightly tighter for this bar. */
@@ -106,6 +108,19 @@ function mediaIndexFromTarget(target: HTMLElement) {
 
 export function ProjectPage({ nextProject, previousProject, project }: ProjectPageProps) {
   const { openProjectFullInfo } = useOverlay();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
+
+  useEffect(() => {
+    if (!allowNavigatorRoutePrefetch()) {
+      return;
+    }
+
+    router.prefetch(`/projects/${previousProject.slug}`);
+    router.prefetch(`/projects/${nextProject.slug}`);
+  }, [nextProject.slug, previousProject.slug, router]);
+
   const [toolbarPinnedOpen, setToolbarPinnedOpen] = useState(false);
   const [toolbarHovered, setToolbarHovered] = useState(false);
   const [mobileMediaIndex, setMobileMediaIndex] = useState<number | null>(null);
@@ -661,12 +676,17 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
       <div className={styles.toolbarShell} data-overlay-chrome-conceal="true" data-expanded={toolbarExpanded}>
         <div className={styles.toolbarTrack}>
-          <Link
-            href={`/projects/${previousProject.slug}`}
+          <button
+            type="button"
+            disabled={isPendingNav}
+            aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.previousButton}`}
+            onClick={() => {
+              guardedPush(`/projects/${previousProject.slug}`);
+            }}
           >
             Previous
-          </Link>
+          </button>
 
           <div
             className={styles.toolbarCore}
@@ -753,12 +773,17 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
             </section>
           </div>
 
-          <Link
-            href={`/projects/${nextProject.slug}`}
+          <button
+            type="button"
+            disabled={isPendingNav}
+            aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.nextButton}`}
+            onClick={() => {
+              guardedPush(`/projects/${nextProject.slug}`);
+            }}
           >
             Next
-          </Link>
+          </button>
         </div>
       </div>
     </article>

@@ -12,6 +12,7 @@ import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -50,6 +51,7 @@ export function Navbar() {
   });
   const timeZoneStatus = useTimeZoneStatus();
   const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
+  const { guardedPush } = useNavigationFlightLock(pathname);
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {
@@ -115,12 +117,13 @@ export function Navbar() {
       html.classList.add("is-nav-open");
     } else {
       html.classList.remove("is-nav-open");
-      unlockBodyScroll();
     }
 
     return () => {
-      html.classList.remove("is-nav-open");
-      unlockBodyScroll();
+      if (menuOpen) {
+        html.classList.remove("is-nav-open");
+        unlockBodyScroll();
+      }
     };
   }, [menuOpen]);
 
@@ -187,17 +190,43 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    router.push("/");
+    guardedPush("/", { scroll: false });
   };
 
-  const handleMobileSectionClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+  const auxiliaryPointerOpen = (
+    event: Pick<MouseEvent, "metaKey" | "ctrlKey" | "shiftKey" | "altKey" | "button">,
+  ) => event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+
+  const handleInboundHomeSectionClickDesktop =
+    (section: "work" | "contact") => (event: MouseEvent<HTMLAnchorElement>) => {
+      if (pathname === "/") {
+        return;
+      }
+
+      if (auxiliaryPointerOpen(event)) {
+        return;
+      }
+
+      event.preventDefault();
+      guardedPush(`/#${section}`);
+    };
+
+  const handleInboundHomeSectionClickMobile =
+    (section: "work" | "contact") => (event: MouseEvent<HTMLAnchorElement>) => {
+      if (auxiliaryPointerOpen(event)) {
+        setMenuOpen(false);
+        return;
+      }
+
       setMenuOpen(false);
-      return;
-    }
 
-    setMenuOpen(false);
-  };
+      if (pathname === "/") {
+        return;
+      }
+
+      event.preventDefault();
+      guardedPush(`/#${section}`);
+    };
 
   return (
     <header className={styles.header}>
@@ -230,7 +259,11 @@ export function Navbar() {
           <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
             About
           </button>
-          <a href={getAnchor(pathname, "work")} className={`link-underline ${styles.navLink}`}>
+          <a
+            href={getAnchor(pathname, "work")}
+            className={`link-underline ${styles.navLink}`}
+            onClick={handleInboundHomeSectionClickDesktop("work")}
+          >
             Work
           </a>
           <IntentPrefetchLink
@@ -239,7 +272,11 @@ export function Navbar() {
           >
             Archive
           </IntentPrefetchLink>
-          <a href={getAnchor(pathname, "contact")} className={`link-underline ${styles.navLink}`}>
+          <a
+            href={getAnchor(pathname, "contact")}
+            className={`link-underline ${styles.navLink}`}
+            onClick={handleInboundHomeSectionClickDesktop("contact")}
+          >
             Contact
           </a>
         </nav>
@@ -278,7 +315,7 @@ export function Navbar() {
               href={getAnchor(pathname, "work")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 1 } as CSSProperties}
-              onClick={handleMobileSectionClick}
+              onClick={handleInboundHomeSectionClickMobile("work")}
             >
               Work
             </a>
@@ -294,7 +331,7 @@ export function Navbar() {
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 3 } as CSSProperties}
-              onClick={handleMobileSectionClick}
+              onClick={handleInboundHomeSectionClickMobile("contact")}
             >
               Contact
             </a>

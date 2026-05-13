@@ -663,6 +663,8 @@ button.toolbarAction {
 }
 
 .navButton {
+  appearance: none;
+  cursor: pointer;
   width: 100%;
   min-width: 0;
   height: var(--toolbar-block-height);
@@ -676,8 +678,9 @@ button.toolbarAction {
   background: var(--project-toolbar-block-bg);
   box-shadow: var(--project-toolbar-panel-shadow);
   backdrop-filter: var(--project-toolbar-panel-backdrop);
-  display: grid;
+  display: flex;
   align-items: center;
+  justify-content: flex-start;
   pointer-events: auto;
   color: var(--project-toolbar-text);
   font-family: var(--font-body-stack);
@@ -701,6 +704,11 @@ button.toolbarAction {
   background: var(--project-toolbar-block-bg-hover);
   border-color: var(--project-toolbar-border-strong);
   box-shadow: var(--project-toolbar-panel-shadow-strong);
+}
+
+.navButton:disabled {
+  cursor: progress;
+  opacity: 0.55;
 }
 
 .previousButton {
