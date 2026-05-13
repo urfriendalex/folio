@@ -11,6 +11,7 @@ import {
   type PointerEvent,
   type TouchEvent,
 } from "react";
+import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 
 type LinkComponentProps = ComponentProps<typeof Link>;
 
@@ -23,13 +24,6 @@ type IntentPrefetchLinkProps = Omit<
   onPointerLeave?: LinkComponentProps["onPointerLeave"];
   onTouchStart?: LinkComponentProps["onTouchStart"];
   prefetchDelayMs?: number;
-};
-
-type NavigatorWithConnection = Navigator & {
-  connection?: {
-    effectiveType?: string;
-    saveData?: boolean;
-  };
 };
 
 const prefetchedHrefs = new Set<string>();
@@ -45,20 +39,6 @@ function prefetchHrefFromProp(href: LinkComponentProps["href"]) {
   }
 
   return href;
-}
-
-function shouldSpeculativelyPrefetch() {
-  const connection = (navigator as NavigatorWithConnection).connection;
-
-  if (!connection) {
-    return true;
-  }
-
-  if (connection.saveData) {
-    return false;
-  }
-
-  return connection.effectiveType !== "slow-2g" && connection.effectiveType !== "2g";
 }
 
 export function IntentPrefetchLink({
@@ -82,7 +62,7 @@ export function IntentPrefetchLink({
   }, []);
 
   const prefetch = useCallback(() => {
-    if (!prefetchHref || prefetchedHrefs.has(prefetchHref) || !shouldSpeculativelyPrefetch()) {
+    if (!prefetchHref || prefetchedHrefs.has(prefetchHref) || !allowNavigatorRoutePrefetch()) {
       return;
     }
 

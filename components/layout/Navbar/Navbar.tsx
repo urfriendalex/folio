@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  startTransition,
   useEffect,
   useEffectEvent,
   useRef,
@@ -9,8 +8,10 @@ import {
   type CSSProperties,
   type MouseEvent,
 } from "react";
+import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
+import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
+import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -49,6 +50,18 @@ export function Navbar() {
   });
   const timeZoneStatus = useTimeZoneStatus();
   const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
+
+  useEffect(() => {
+    if (!allowNavigatorRoutePrefetch()) {
+      return;
+    }
+
+    if (pathname !== "/archive" && !pathname.startsWith("/projects/")) {
+      return;
+    }
+
+    router.prefetch("/");
+  }, [pathname, router]);
 
   useEffect(() => {
     let frame = 0;
@@ -174,9 +187,7 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    startTransition(() => {
-      router.push("/");
-    });
+    router.push("/");
   };
 
   const handleMobileSectionClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -192,8 +203,9 @@ export function Navbar() {
     <header className={styles.header}>
       <GradientBlur />
       <div className={`page-shell ${styles.inner}`}>
-        <Link
+        <NextLink
           href="/"
+          prefetch={false}
           scroll={false}
           className={styles.logo}
           aria-label="Alexander Yansons"
@@ -212,7 +224,7 @@ export function Navbar() {
           <span aria-hidden="true" className={styles.dot}>
             .
           </span>
-        </Link>
+        </NextLink>
 
         <nav className={styles.nav} aria-label="Primary">
           <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
@@ -221,12 +233,12 @@ export function Navbar() {
           <a href={getAnchor(pathname, "work")} className={`link-underline ${styles.navLink}`}>
             Work
           </a>
-          <Link
+          <IntentPrefetchLink
             href="/archive"
             className={`link-underline ${styles.navLink} ${styles.archiveNavLink}`}
           >
             Archive
-          </Link>
+          </IntentPrefetchLink>
           <a href={getAnchor(pathname, "contact")} className={`link-underline ${styles.navLink}`}>
             Contact
           </a>
@@ -270,14 +282,14 @@ export function Navbar() {
             >
               Work
             </a>
-            <Link
+            <IntentPrefetchLink
               href="/archive"
               className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}
               style={{ "--item-index": 2 } as CSSProperties}
               onClick={() => setMenuOpen(false)}
             >
               Archive
-            </Link>
+            </IntentPrefetchLink>
             <a
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.mobileNavLink}`}
