@@ -70,7 +70,7 @@
   min-height: 0;
   background: var(--project-media-placeholder-cell);
   /* Smooth fade when leaving a cell; no delay so the next cell can highlight immediately */
-  transition: background-color 320ms ease-out;
+  transition: background-color 640ms ease-out;
 }
 
 .placeholderCell:hover {
