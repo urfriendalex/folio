@@ -838,14 +838,20 @@ function SceneController({
     startY: 0,
     maxMoveSq: 0,
   });
-  const isTouchDeviceRef = useRef(isTouchDevice);
-  isTouchDeviceRef.current = isTouchDevice;
-  const desktopImageFocusRef = useRef<{
+  const archiveCameraFocusRef = useRef<{
     active: boolean;
     goalX: number;
     goalY: number;
     goalZ: number;
   }>({ active: false, goalX: 0, goalY: 0, goalZ: INITIAL_CAMERA_Z });
+  const touchTapRef = useRef({
+    gestureActive: false,
+    /** True once a second finger joins — avoids focusing after a pinch. */
+    disallowTap: false,
+    startX: 0,
+    startY: 0,
+    maxMoveSq: 0,
+  });
   const [chunks, setChunks] = useState<ChunkData[]>(() =>
     CHUNK_OFFSETS.map((offset) => ({
       key: `${offset.dx},${offset.dy},${offset.dz}`,
@@ -860,10 +866,6 @@ function SceneController({
     const tapThresholdSq = ARCHIVE_IMAGE_TAP_MAX_MOVE_PX * ARCHIVE_IMAGE_TAP_MAX_MOVE_PX;
 
     const tryCenterOnArchiveImage = (clientX: number, clientY: number) => {
-      if (isTouchDeviceRef.current) {
-        return;
-      }
-
       const rect = canvas.getBoundingClientRect();
 
       if (rect.width <= 0 || rect.height <= 0) {
@@ -894,7 +896,7 @@ function SceneController({
       const py = archiveImageCenterScratch.y;
       const pz = archiveImageCenterScratch.z;
 
-      desktopImageFocusRef.current = {
+      archiveCameraFocusRef.current = {
         active: true,
         goalX: px,
         goalY: py,
@@ -977,12 +979,29 @@ function SceneController({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       state.current.scrollAccum += event.deltaY * 0.006;
-      desktopImageFocusRef.current.active = false;
+      archiveCameraFocusRef.current.active = false;
     };
 
     const onTouchStart = (event: TouchEvent) => {
       event.preventDefault();
       const currentState = state.current;
+      const tap = touchTapRef.current;
+
+      if (event.touches.length >= 2) {
+        tap.disallowTap = true;
+        archiveCameraFocusRef.current.active = false;
+      }
+
+      if (event.touches.length === 1 && !tap.disallowTap) {
+        const [finger] = event.touches;
+
+        if (finger) {
+          tap.gestureActive = true;
+          tap.startX = finger.clientX;
+          tap.startY = finger.clientY;
+          tap.maxMoveSq = 0;
+        }
+      }
 
       currentState.lastTouches = Array.from(event.touches);
       currentState.lastTouchDist = getTouchDistance(currentState.lastTouches);
@@ -993,6 +1012,17 @@ function SceneController({
       event.preventDefault();
       const currentState = state.current;
       const touches = Array.from(event.touches);
+      const tap = touchTapRef.current;
+
+      if (tap.gestureActive && touches.length === 1) {
+        const [finger] = touches;
+
+        if (finger) {
+          const dx = finger.clientX - tap.startX;
+          const dy = finger.clientY - tap.startY;
+          tap.maxMoveSq = Math.max(tap.maxMoveSq, dx * dx + dy * dy);
+        }
+      }
 
       if (touches.length === 1 && currentState.lastTouches.length >= 1) {
         const [touch] = touches;
@@ -1016,6 +1046,22 @@ function SceneController({
 
       currentState.lastTouches = Array.from(event.touches);
       currentState.lastTouchDist = getTouchDistance(currentState.lastTouches);
+
+      if (event.touches.length === 0) {
+        const tap = touchTapRef.current;
+
+        if (tap.gestureActive && !tap.disallowTap && tap.maxMoveSq <= tapThresholdSq) {
+          const [ct] = event.changedTouches;
+
+          if (ct) {
+            tryCenterOnArchiveImage(ct.clientX, ct.clientY);
+          }
+        }
+
+        tap.gestureActive = false;
+        tap.disallowTap = false;
+        tap.maxMoveSq = 0;
+      }
     };
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -1054,11 +1100,11 @@ function SceneController({
     const cappedDelta = Math.min(delta, 0.085);
     const { forward, backward, left, right, up, down } = getKeys();
 
-    const focusRef = desktopImageFocusRef.current;
-    let desktopImageFocus = focusRef.active && !isTouchDevice;
+    const focusRef = archiveCameraFocusRef.current;
+    let cameraFocusFlight = focusRef.active;
 
     if (
-      desktopImageFocus &&
+      cameraFocusFlight &&
       (forward ||
         backward ||
         left ||
@@ -1068,10 +1114,10 @@ function SceneController({
         Math.abs(currentState.scrollAccum) > 0.018)
     ) {
       focusRef.active = false;
-      desktopImageFocus = false;
+      cameraFocusFlight = false;
     }
 
-    if (!desktopImageFocus) {
+    if (!cameraFocusFlight) {
       if (forward) {
         currentState.targetVel.z -= KEYBOARD_SPEED;
       }
@@ -1184,7 +1230,7 @@ function SceneController({
     );
 
     const isZooming =
-      desktopImageFocus ||
+      cameraFocusFlight ||
       Math.abs(currentState.velocity.z) > 0.05 ||
       Math.abs(currentState.scrollAccum) > 0.02;
 
