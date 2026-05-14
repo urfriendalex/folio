@@ -4,6 +4,16 @@ import type { NavigateOptions } from "next/dist/shared/lib/app-router-context.sh
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useTransition } from "react";
 
+function pathnameFromHref(href: string) {
+  const pathname = href.split(/[?#]/, 1)[0] ?? href;
+
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+
+  return pathname;
+}
+
 /**
  * One in-flight soft navigation at a time: avoids stacked `_rsc` fetches when users
  * click Next/Prev or primary nav repeatedly while other assets compete for bandwidth.
@@ -22,6 +32,10 @@ export function useNavigationFlightLock(pathname: string | null) {
 
   const guardedPush = useCallback(
     (href: string, options?: NavigateOptions): boolean => {
+      if (pathname && pathnameFromHref(href) === pathnameFromHref(pathname)) {
+        return false;
+      }
+
       if (inFlightRef.current) {
         return false;
       }
@@ -34,7 +48,7 @@ export function useNavigationFlightLock(pathname: string | null) {
 
       return true;
     },
-    [router],
+    [pathname, router],
   );
 
   return { guardedPush, isPendingNav };

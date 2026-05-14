@@ -28,6 +28,15 @@ const VELOCITY_DECAY = 0.9;
 const TOUCH_DRAG_SPEED = 0.02;
 const MOBILE_TOUCH_DRAG_MULTIPLIER = 1.3;
 const INITIAL_CAMERA_Z = 50;
+/** Must match `<Canvas camera={{ fov: … }}>` below so click-to-focus framing stays accurate. */
+const ARCHIVE_CAMERA_FOV = 85;
+const ARCHIVE_FOCUS_VIEWPORT_FILL = 0.33;
+/** Multiplier on computed click-focus distance (<1 = closer / larger on screen). 0.65 ⇒ 35% closer. */
+const ARCHIVE_FOCUS_CLICK_DISTANCE_SCALE = 0.65;
+const ARCHIVE_FOCUS_LAMBDA = 4.35;
+const ARCHIVE_FOCUS_MIN_PLANE_DISTANCE = 14;
+const ARCHIVE_FOCUS_MAX_PLANE_DISTANCE = 240;
+const ARCHIVE_FOCUS_COMPLETE_TOL = 0.075;
 const MAX_PLANE_CACHE = 256;
 const PIXELS_PER_WORLD_UNIT = 120;
 const FALLBACK_WORLD_SIZE = 14;
@@ -39,6 +48,27 @@ const planeCache = new Map<string, PlaneData[]>();
 const textureLoader = new THREE.TextureLoader();
 const centerRaycaster = new THREE.Raycaster();
 const centerNdc = new THREE.Vector2(0, 0);
+const clickRaycaster = new THREE.Raycaster();
+/** Treat as tap/click when the pointer moved less than this between down and up (screen px). */
+const ARCHIVE_IMAGE_TAP_MAX_MOVE_PX = 12;
+const archiveImageCenterScratch = new THREE.Vector3();
+const archiveFocusBounds = new THREE.Box3();
+const archiveFocusSize = new THREE.Vector3();
+
+function archiveDistanceForViewportFill(
+  planeWorldWidth: number,
+  planeWorldHeight: number,
+  viewportAspect: number,
+): number {
+  const tanHalfV = Math.tan((ARCHIVE_CAMERA_FOV * Math.PI) / 360);
+  const denomBase = 2 * ARCHIVE_FOCUS_VIEWPORT_FILL * tanHalfV;
+  const dFromH = planeWorldHeight / denomBase;
+  const dFromW = planeWorldWidth / Math.max(denomBase * viewportAspect, 1e-6);
+
+  const rawD = Math.max(dFromH, dFromW) * ARCHIVE_FOCUS_CLICK_DISTANCE_SCALE;
+
+  return clamp(rawD, ARCHIVE_FOCUS_MIN_PLANE_DISTANCE, ARCHIVE_FOCUS_MAX_PLANE_DISTANCE);
+}
 
 const KEYBOARD_MAP: Array<{ name: KeyboardKey; keys: string[] }> = [
   { name: "forward", keys: ["w", "W", "ArrowUp"] },
@@ -802,6 +832,20 @@ function SceneController({
     cz: 0,
     camZ: INITIAL_CAMERA_Z,
   });
+  const tapGestureRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    maxMoveSq: 0,
+  });
+  const isTouchDeviceRef = useRef(isTouchDevice);
+  isTouchDeviceRef.current = isTouchDevice;
+  const desktopImageFocusRef = useRef<{
+    active: boolean;
+    goalX: number;
+    goalY: number;
+    goalZ: number;
+  }>({ active: false, goalX: 0, goalY: 0, goalZ: INITIAL_CAMERA_Z });
   const [chunks, setChunks] = useState<ChunkData[]>(() =>
     CHUNK_OFFSETS.map((offset) => ({
       key: `${offset.dx},${offset.dy},${offset.dz}`,
@@ -813,21 +857,95 @@ function SceneController({
 
   useEffect(() => {
     const canvas = gl.domElement;
+    const tapThresholdSq = ARCHIVE_IMAGE_TAP_MAX_MOVE_PX * ARCHIVE_IMAGE_TAP_MAX_MOVE_PX;
+
+    const tryCenterOnArchiveImage = (clientX: number, clientY: number) => {
+      if (isTouchDeviceRef.current) {
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+
+      if (rect.width <= 0 || rect.height <= 0) {
+        return;
+      }
+
+      const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+      const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+      clickRaycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+      const hits = clickRaycaster.intersectObjects(scene.children, true);
+      const hit = hits.find((h) => typeof h.object.userData?.archiveImageLabel === "string");
+
+      if (!hit) {
+        return;
+      }
+
+      hit.object.updateWorldMatrix(true, false);
+      archiveFocusBounds.setFromObject(hit.object);
+      archiveFocusBounds.getSize(archiveFocusSize);
+
+      const planeH = Math.max(archiveFocusSize.y, 1e-3);
+      const planeW = Math.max(archiveFocusSize.x, 1e-3);
+      const viewportAspect = rect.width / Math.max(rect.height, 1);
+      const distance = archiveDistanceForViewportFill(planeW, planeH, viewportAspect);
+
+      hit.object.getWorldPosition(archiveImageCenterScratch);
+      const px = archiveImageCenterScratch.x;
+      const py = archiveImageCenterScratch.y;
+      const pz = archiveImageCenterScratch.z;
+
+      desktopImageFocusRef.current = {
+        active: true,
+        goalX: px,
+        goalY: py,
+        goalZ: pz + distance,
+      };
+
+      const currentState = state.current;
+      currentState.velocity.x = 0;
+      currentState.velocity.y = 0;
+      currentState.velocity.z = 0;
+      currentState.targetVel.x = 0;
+      currentState.targetVel.y = 0;
+      currentState.targetVel.z = 0;
+      currentState.scrollAccum = 0;
+    };
 
     const onMouseDown = (event: MouseEvent) => {
       const currentState = state.current;
       currentState.isDragging = true;
       currentState.lastMouse = { x: event.clientX, y: event.clientY };
       onHoverLabelChange(null);
+
+      if (event.button === 0) {
+        const g = tapGestureRef.current;
+        g.active = true;
+        g.startX = event.clientX;
+        g.startY = event.clientY;
+        g.maxMoveSq = 0;
+      }
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (event: MouseEvent) => {
+      const g = tapGestureRef.current;
+
+      if (g.active && event.button === 0) {
+        if (g.maxMoveSq <= tapThresholdSq) {
+          tryCenterOnArchiveImage(event.clientX, event.clientY);
+        }
+
+        g.active = false;
+        g.maxMoveSq = 0;
+      }
+
       state.current.isDragging = false;
     };
 
     const onMouseLeave = () => {
       state.current.mouse = { x: 0, y: 0 };
       state.current.isDragging = false;
+      tapGestureRef.current.active = false;
+      tapGestureRef.current.maxMoveSq = 0;
       onHoverLabelChange(null);
     };
 
@@ -838,6 +956,14 @@ function SceneController({
         x: (event.clientX / window.innerWidth) * 2 - 1,
         y: -(event.clientY / window.innerHeight) * 2 + 1,
       };
+
+      const g = tapGestureRef.current;
+
+      if (g.active) {
+        const dx = event.clientX - g.startX;
+        const dy = event.clientY - g.startY;
+        g.maxMoveSq = Math.max(g.maxMoveSq, dx * dx + dy * dy);
+      }
 
       if (!currentState.isDragging) {
         return;
@@ -851,6 +977,7 @@ function SceneController({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       state.current.scrollAccum += event.deltaY * 0.006;
+      desktopImageFocusRef.current.active = false;
     };
 
     const onTouchStart = (event: TouchEvent) => {
@@ -886,6 +1013,7 @@ function SceneController({
 
     const onTouchEnd = (event: TouchEvent) => {
       const currentState = state.current;
+
       currentState.lastTouches = Array.from(event.touches);
       currentState.lastTouchDist = getTouchDistance(currentState.lastTouches);
     };
@@ -909,7 +1037,7 @@ function SceneController({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
-  }, [gl, onHoverLabelChange, touchDragSpeed]);
+  }, [camera, gl, onHoverLabelChange, scene, touchDragSpeed]);
 
   useEffect(() => {
     if (isTouchDevice) {
@@ -920,84 +1048,134 @@ function SceneController({
     onFocusLabelChange(null);
   }, [isTouchDevice, onFocusLabelChange]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const currentState = state.current;
     const now = performance.now();
+    const cappedDelta = Math.min(delta, 0.085);
     const { forward, backward, left, right, up, down } = getKeys();
 
-    if (forward) {
-      currentState.targetVel.z -= KEYBOARD_SPEED;
+    const focusRef = desktopImageFocusRef.current;
+    let desktopImageFocus = focusRef.active && !isTouchDevice;
+
+    if (
+      desktopImageFocus &&
+      (forward ||
+        backward ||
+        left ||
+        right ||
+        up ||
+        down ||
+        Math.abs(currentState.scrollAccum) > 0.018)
+    ) {
+      focusRef.active = false;
+      desktopImageFocus = false;
     }
 
-    if (backward) {
-      currentState.targetVel.z += KEYBOARD_SPEED;
-    }
+    if (!desktopImageFocus) {
+      if (forward) {
+        currentState.targetVel.z -= KEYBOARD_SPEED;
+      }
 
-    if (left) {
-      currentState.targetVel.x -= KEYBOARD_SPEED;
-    }
+      if (backward) {
+        currentState.targetVel.z += KEYBOARD_SPEED;
+      }
 
-    if (right) {
-      currentState.targetVel.x += KEYBOARD_SPEED;
-    }
+      if (left) {
+        currentState.targetVel.x -= KEYBOARD_SPEED;
+      }
 
-    if (down) {
-      currentState.targetVel.y -= KEYBOARD_SPEED;
-    }
+      if (right) {
+        currentState.targetVel.x += KEYBOARD_SPEED;
+      }
 
-    if (up) {
-      currentState.targetVel.y += KEYBOARD_SPEED;
-    }
+      if (down) {
+        currentState.targetVel.y -= KEYBOARD_SPEED;
+      }
 
-    const isZooming = Math.abs(currentState.velocity.z) > 0.05;
-    const zoomFactor = clamp(currentState.basePos.z / INITIAL_CAMERA_Z, 0.3, 2);
-    const driftAmount = 8 * zoomFactor;
-    const driftLerp = isZooming ? 0.2 : 0.12;
+      if (up) {
+        currentState.targetVel.y += KEYBOARD_SPEED;
+      }
 
-    if (currentState.isDragging) {
-      // Preserve the current drift while dragging, matching the reference interaction.
-    } else if (isTouchDevice) {
-      currentState.drift.x = lerp(currentState.drift.x, 0, driftLerp);
-      currentState.drift.y = lerp(currentState.drift.y, 0, driftLerp);
+      const isZoomingPhysics = Math.abs(currentState.velocity.z) > 0.05;
+      const zoomFactor = clamp(currentState.basePos.z / INITIAL_CAMERA_Z, 0.3, 2);
+      const driftAmount = 8 * zoomFactor;
+      const driftLerp = isZoomingPhysics ? 0.2 : 0.12;
+
+      if (currentState.isDragging) {
+        // Preserve the current drift while dragging, matching the reference interaction.
+      } else if (isTouchDevice) {
+        currentState.drift.x = lerp(currentState.drift.x, 0, driftLerp);
+        currentState.drift.y = lerp(currentState.drift.y, 0, driftLerp);
+      } else {
+        currentState.drift.x = lerp(
+          currentState.drift.x,
+          currentState.mouse.x * driftAmount,
+          driftLerp,
+        );
+        currentState.drift.y = lerp(
+          currentState.drift.y,
+          currentState.mouse.y * driftAmount,
+          driftLerp,
+        );
+      }
+
+      currentState.targetVel.z += currentState.scrollAccum;
+      currentState.scrollAccum *= 0.8;
+
+      currentState.targetVel.x = clamp(currentState.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
+      currentState.targetVel.y = clamp(currentState.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
+      currentState.targetVel.z = clamp(currentState.targetVel.z, -MAX_VELOCITY, MAX_VELOCITY);
+
+      currentState.velocity.x = lerp(
+        currentState.velocity.x,
+        currentState.targetVel.x,
+        VELOCITY_LERP,
+      );
+      currentState.velocity.y = lerp(
+        currentState.velocity.y,
+        currentState.targetVel.y,
+        VELOCITY_LERP,
+      );
+      currentState.velocity.z = lerp(
+        currentState.velocity.z,
+        currentState.targetVel.z,
+        VELOCITY_LERP,
+      );
+
+      currentState.basePos.x += currentState.velocity.x;
+      currentState.basePos.y += currentState.velocity.y;
+      currentState.basePos.z += currentState.velocity.z;
+
+      currentState.targetVel.x *= VELOCITY_DECAY;
+      currentState.targetVel.y *= VELOCITY_DECAY;
+      currentState.targetVel.z *= VELOCITY_DECAY;
     } else {
-      currentState.drift.x = lerp(
-        currentState.drift.x,
-        currentState.mouse.x * driftAmount,
-        driftLerp,
-      );
-      currentState.drift.y = lerp(
-        currentState.drift.y,
-        currentState.mouse.y * driftAmount,
-        driftLerp,
-      );
+      const focusSmooth = 1 - Math.exp(-ARCHIVE_FOCUS_LAMBDA * cappedDelta);
+      const tx = focusRef.goalX - currentState.drift.x;
+      const ty = focusRef.goalY - currentState.drift.y;
+      const tz = focusRef.goalZ;
+
+      currentState.basePos.x = lerp(currentState.basePos.x, tx, focusSmooth);
+      currentState.basePos.y = lerp(currentState.basePos.y, ty, focusSmooth);
+      currentState.basePos.z = lerp(currentState.basePos.z, tz, focusSmooth);
+      currentState.drift.x = lerp(currentState.drift.x, 0, focusSmooth * 1.05);
+      currentState.drift.y = lerp(currentState.drift.y, 0, focusSmooth * 1.05);
+      currentState.velocity.x = 0;
+      currentState.velocity.y = 0;
+      currentState.velocity.z = 0;
+      currentState.targetVel.x = 0;
+      currentState.targetVel.y = 0;
+      currentState.targetVel.z = 0;
+      currentState.scrollAccum *= 0.78;
+
+      if (
+        Math.abs(currentState.basePos.x - tx) < ARCHIVE_FOCUS_COMPLETE_TOL &&
+        Math.abs(currentState.basePos.y - ty) < ARCHIVE_FOCUS_COMPLETE_TOL &&
+        Math.abs(currentState.basePos.z - tz) < ARCHIVE_FOCUS_COMPLETE_TOL
+      ) {
+        focusRef.active = false;
+      }
     }
-
-    currentState.targetVel.z += currentState.scrollAccum;
-    currentState.scrollAccum *= 0.8;
-
-    currentState.targetVel.x = clamp(currentState.targetVel.x, -MAX_VELOCITY, MAX_VELOCITY);
-    currentState.targetVel.y = clamp(currentState.targetVel.y, -MAX_VELOCITY, MAX_VELOCITY);
-    currentState.targetVel.z = clamp(currentState.targetVel.z, -MAX_VELOCITY, MAX_VELOCITY);
-
-    currentState.velocity.x = lerp(
-      currentState.velocity.x,
-      currentState.targetVel.x,
-      VELOCITY_LERP,
-    );
-    currentState.velocity.y = lerp(
-      currentState.velocity.y,
-      currentState.targetVel.y,
-      VELOCITY_LERP,
-    );
-    currentState.velocity.z = lerp(
-      currentState.velocity.z,
-      currentState.targetVel.z,
-      VELOCITY_LERP,
-    );
-
-    currentState.basePos.x += currentState.velocity.x;
-    currentState.basePos.y += currentState.velocity.y;
-    currentState.basePos.z += currentState.velocity.z;
 
     camera.position.set(
       currentState.basePos.x + currentState.drift.x,
@@ -1005,9 +1183,10 @@ function SceneController({
       currentState.basePos.z,
     );
 
-    currentState.targetVel.x *= VELOCITY_DECAY;
-    currentState.targetVel.y *= VELOCITY_DECAY;
-    currentState.targetVel.z *= VELOCITY_DECAY;
+    const isZooming =
+      desktopImageFocus ||
+      Math.abs(currentState.velocity.z) > 0.05 ||
+      Math.abs(currentState.scrollAccum) > 0.02;
 
     const cx = Math.floor(currentState.basePos.x / CHUNK_SIZE);
     const cy = Math.floor(currentState.basePos.y / CHUNK_SIZE);
@@ -1276,7 +1455,12 @@ export function ArchiveCanvasScene({
     <KeyboardControls map={KEYBOARD_MAP}>
       <div className={styles.scene}>
         <Canvas
-          camera={{ position: [0, 0, INITIAL_CAMERA_Z], fov: 60, near: 1, far: 500 }}
+          camera={{
+            position: [0, 0, INITIAL_CAMERA_Z],
+            fov: ARCHIVE_CAMERA_FOV,
+            near: 1,
+            far: 500,
+          }}
           className={styles.sceneCanvas}
           dpr={dpr}
           flat

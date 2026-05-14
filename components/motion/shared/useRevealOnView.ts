@@ -47,6 +47,73 @@ export function useRevealOnView<T extends HTMLElement>(
     }
 
     let revealTimerId: number | undefined;
+    let frameId: number | undefined;
+    let revealed = false;
+
+    const clearRevealTimer = () => {
+      if (revealTimerId !== undefined) {
+        window.clearTimeout(revealTimerId);
+        revealTimerId = undefined;
+      }
+    };
+
+    const cleanupPassiveChecks = () => {
+      window.removeEventListener("scroll", scheduleViewportCheck, { capture: true });
+      window.removeEventListener("resize", scheduleViewportCheck);
+      window.removeEventListener("hashchange", scheduleViewportCheck);
+      window.removeEventListener("folio:home-section-arrive", scheduleViewportCheck);
+
+      if (frameId !== undefined) {
+        window.cancelAnimationFrame(frameId);
+        frameId = undefined;
+      }
+    };
+
+    const finish = () => {
+      revealTimerId = undefined;
+      revealed = true;
+      setVisible(true);
+
+      if (options?.once !== false) {
+        observer.disconnect();
+        cleanupPassiveChecks();
+      }
+    };
+
+    const reveal = () => {
+      if (revealed || revealTimerId !== undefined) {
+        return;
+      }
+
+      const delayMs = options?.revealDelayMs ?? 0;
+
+      if (delayMs <= 0) {
+        finish();
+        return;
+      }
+
+      revealTimerId = window.setTimeout(finish, delayMs);
+    };
+
+    const isNodeInViewport = () => {
+      const rect = node.getBoundingClientRect();
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      return rect.bottom > 0 && rect.top < viewportHeight;
+    };
+
+    function scheduleViewportCheck() {
+      if (revealed || frameId !== undefined) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = undefined;
+
+        if (isNodeInViewport()) {
+          reveal();
+        }
+      });
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -54,23 +121,7 @@ export function useRevealOnView<T extends HTMLElement>(
           return;
         }
 
-        const delayMs = options?.revealDelayMs ?? 0;
-
-        const finish = () => {
-          revealTimerId = undefined;
-          setVisible(true);
-
-          if (options?.once !== false) {
-            observer.disconnect();
-          }
-        };
-
-        if (delayMs <= 0) {
-          finish();
-          return;
-        }
-
-        revealTimerId = window.setTimeout(finish, delayMs);
+        reveal();
       },
       {
         rootMargin: options?.rootMargin ?? "0px 0px -10% 0px",
@@ -79,11 +130,15 @@ export function useRevealOnView<T extends HTMLElement>(
     );
 
     observer.observe(node);
+    window.addEventListener("scroll", scheduleViewportCheck, { capture: true, passive: true });
+    window.addEventListener("resize", scheduleViewportCheck, { passive: true });
+    window.addEventListener("hashchange", scheduleViewportCheck);
+    window.addEventListener("folio:home-section-arrive", scheduleViewportCheck);
+    scheduleViewportCheck();
 
     return () => {
-      if (revealTimerId !== undefined) {
-        window.clearTimeout(revealTimerId);
-      }
+      clearRevealTimer();
+      cleanupPassiveChecks();
 
       observer.disconnect();
     };

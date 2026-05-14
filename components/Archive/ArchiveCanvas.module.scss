@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: var(--bg-color);
   will-change: opacity, filter;
   opacity: 1;
   filter: blur(0);

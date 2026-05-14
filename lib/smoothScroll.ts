@@ -44,6 +44,8 @@ function resolveViewportCenterElement(target: ScrollTarget): HTMLElement | null 
 }
 
 function getContactSectionScrollTop(element: HTMLElement): number {
+  getLenis()?.resize();
+
   const rect = element.getBoundingClientRect();
   const scrollY = window.scrollY || document.documentElement.scrollTop;
   const elementTopDoc = rect.top + scrollY;
@@ -146,6 +148,8 @@ export function scrollToTarget(target: ScrollTarget | null | undefined, options:
   if (typeof window === "undefined" || target == null) {
     return;
   }
+
+  getLenis()?.resize();
 
   if (usesViewportCenterAlignment(target)) {
     const centerEl = resolveViewportCenterElement(target);

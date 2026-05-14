@@ -2,7 +2,7 @@
 
 import Lenis from "lenis";
 import { useEffect, useRef, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import {
@@ -26,15 +26,20 @@ function scrollToTopImmediate() {
   window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
-function scrollToHomeSectionById(sectionId: string) {
+function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boolean }) {
   let attempts = 0;
   const maxAttempts = 90;
 
   const tryScroll = () => {
     const el = document.getElementById(sectionId);
 
-    if (el) {
-      scrollElementIntoView(el);
+    if (el && !shouldPauseSmoothScroll(document.documentElement)) {
+      if (options?.updateHash) {
+        window.history.replaceState(window.history.state, "", `/#${sectionId}`);
+        window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
+      }
+
+      scrollElementIntoView(el, { force: true, immediate: options?.updateHash ?? false });
       return;
     }
 
@@ -68,7 +73,9 @@ function shouldPauseSmoothScroll(root: HTMLElement) {
 
 export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const hasHandledInitialNavigation = useRef(false);
+  const pendingHomeSectionIdRef = useRef<string | null>(null);
   /** True after `popstate` until the next `/` scroll policy runs (Next.js restores scroll on back/forward). */
   const historyScrollRestorePendingRef = useRef(false);
 
@@ -130,11 +137,12 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   }, []);
 
   /**
-   * In-page section links (work / contact). Lenis `anchors` are off so we can center `#contact` while keeping
-   * header clearance for `#work`. Runs in bubble phase so `preventDefault()` from handlers like the hero CTA still skips us.
+   * Home section links (work / contact). Lenis `anchors` are off so every click, whether already
+   * on `/` or coming from another route, resolves through the same scroll target helper.
+   * Runs in bubble phase so `preventDefault()` from handlers like the hero CTA still skips us.
    */
   useEffect(() => {
-    const onSamePageSectionHashClick = (event: MouseEvent) => {
+    const onHomeSectionHashClick = (event: MouseEvent) => {
       if (event.defaultPrevented) {
         return;
       }
@@ -167,7 +175,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       const here = new URL(window.location.href);
 
-      if (url.origin !== here.origin || url.pathname !== here.pathname) {
+      if (url.origin !== here.origin || (url.pathname !== here.pathname && url.pathname !== "/")) {
         return;
       }
 
@@ -178,9 +186,16 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       }
 
       event.preventDefault();
-      window.history.pushState(window.history.state, "", `${url.pathname}${url.search}#${hash}`);
 
       const scrollToHash = () => scrollToTarget(`#${hash}`, {});
+
+      if (url.pathname !== here.pathname) {
+        pendingHomeSectionIdRef.current = hash;
+        router.push("/", { scroll: false });
+        return;
+      }
+
+      window.history.pushState(window.history.state, "", `${url.pathname}${url.search}#${hash}`);
 
       // Mobile nav locks `body` (`position: fixed`). Scrolling in the same tick runs before React
       // unlocks scroll; `skipNextScrollRestore()` would leave scroll at 0 after unlock. Defer until
@@ -192,12 +207,12 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       }
     };
 
-    document.addEventListener("click", onSamePageSectionHashClick);
+    document.addEventListener("click", onHomeSectionHashClick);
 
     return () => {
-      document.removeEventListener("click", onSamePageSectionHashClick);
+      document.removeEventListener("click", onHomeSectionHashClick);
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const isInitialNavigation = !hasHandledInitialNavigation.current;
@@ -216,7 +231,8 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       return;
     }
 
-    const id = window.location.hash.slice(1);
+    const pendingHomeSectionId = pendingHomeSectionIdRef.current;
+    const id = pendingHomeSectionId ?? window.location.hash.slice(1);
 
     const scheduleLenisSyncToRestoredScroll = () => {
       requestAnimationFrame(() => {
@@ -243,13 +259,19 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     }
 
     if (id && HOME_SECTION_IDS.has(id)) {
+      if (pendingHomeSectionId) {
+        pendingHomeSectionIdRef.current = null;
+        historyScrollRestorePendingRef.current = false;
+        scrollToHomeSectionById(id, { updateHash: true });
+        return;
+      }
+
       if (!shouldRespectInitialHash) {
         if (historyScrollRestorePendingRef.current) {
           historyScrollRestorePendingRef.current = false;
           scheduleLenisSyncToRestoredScroll();
+          return;
         }
-
-        return;
       }
 
       historyScrollRestorePendingRef.current = false;
