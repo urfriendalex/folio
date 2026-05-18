@@ -49,6 +49,7 @@ export function ProjectCard({
           href={projectHref}
           className={styles.media}
           aria-label={`${project.title}, explore project`}
+          nativeNavigation
         >
           <ProjectMedia
             media={thumbnailMedia}
@@ -80,7 +81,7 @@ export function ProjectCard({
                 </a>
               ) : null}
             </span>
-            <IntentPrefetchLink href={projectHref} className={`link-underline ${styles.actionLink}`}>
+            <IntentPrefetchLink href={projectHref} className={`link-underline ${styles.actionLink}`} nativeNavigation>
               explore project
             </IntentPrefetchLink>
           </div>

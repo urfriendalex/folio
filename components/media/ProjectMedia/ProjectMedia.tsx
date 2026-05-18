@@ -148,6 +148,20 @@ function resolveVariant(media: ProjectMediaSlot, isMobile: boolean): ProjectMedi
   return isMobile && media.mobile ? media.mobile : media.desktop;
 }
 
+const loadedProjectMediaSources = new Set<string>();
+
+function markProjectMediaSourceLoaded(...sources: Array<string | null | undefined>) {
+  sources.forEach((source) => {
+    if (source) {
+      loadedProjectMediaSources.add(source);
+    }
+  });
+}
+
+function hasLoadedProjectMediaSource(...sources: Array<string | null | undefined>) {
+  return sources.some((source) => Boolean(source && loadedProjectMediaSources.has(source)));
+}
+
 type ProjectMediaInnerProps = Omit<ProjectMediaProps, "media"> & {
   media: ProjectMediaSlot;
   activeAsset: ProjectMediaAsset;
@@ -169,9 +183,11 @@ function ProjectMediaInner({
   const isInViewport = useIntersectionState(rootRef, {
     enabled: media.kind === "video",
   });
-  const [assetReady, setAssetReady] = useState(false);
-  const [posterReady, setPosterReady] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const [assetReady, setAssetReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
+  const [posterReady, setPosterReady] = useState(() => (
+    hasLoadedProjectMediaSource(activeAsset.poster, activeAsset.src)
+  ));
+  const [videoReady, setVideoReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const [placeholderGrid, setPlaceholderGrid] = useState({ cols: 12, rows: 12 });
   const placeholderFrameRef = useRef<number | null>(null);
   const placeholderCells = useMemo(
@@ -311,7 +327,11 @@ function ProjectMediaInner({
                 preload={imagePreload}
                 className={styles.asset}
                 onLoad={(event) => {
-                  handleImageLoad(event.currentTarget, () => setPosterReady(true));
+                  const image = event.currentTarget;
+                  handleImageLoad(image, () => {
+                    markProjectMediaSourceLoaded(activeAsset.poster, activeAsset.src, image.currentSrc);
+                    setPosterReady(true);
+                  });
                 }}
               />
             </div>
@@ -330,7 +350,10 @@ function ProjectMediaInner({
                   loop={media.loop !== false}
                   disablePictureInPicture
                   aria-label={videoLabel}
-                  onLoadedData={() => setVideoReady(true)}
+                  onLoadedData={(event) => {
+                    markProjectMediaSourceLoaded(activeAsset.src, event.currentTarget.currentSrc);
+                    setVideoReady(true);
+                  }}
                 />
               </div>
             ) : null}
@@ -346,7 +369,11 @@ function ProjectMediaInner({
               preload={imagePreload}
               className={styles.asset}
               onLoad={(event) => {
-                handleImageLoad(event.currentTarget, () => setAssetReady(true));
+                const image = event.currentTarget;
+                handleImageLoad(image, () => {
+                  markProjectMediaSourceLoaded(activeAsset.src, image.currentSrc);
+                  setAssetReady(true);
+                });
               }}
             />
           </div>

@@ -21,6 +21,7 @@ type IntentPrefetchLinkProps = Omit<
   LinkComponentProps,
   "onFocus" | "onPointerEnter" | "onPointerLeave" | "onTouchStart" | "prefetch"
 > & {
+  nativeNavigation?: boolean;
   onFocus?: LinkComponentProps["onFocus"];
   onPointerEnter?: LinkComponentProps["onPointerEnter"];
   onPointerLeave?: LinkComponentProps["onPointerLeave"];
@@ -45,6 +46,7 @@ function prefetchHrefFromProp(href: LinkComponentProps["href"]) {
 
 export function IntentPrefetchLink({
   href,
+  nativeNavigation = false,
   onFocus,
   onPointerEnter,
   onPointerLeave,
@@ -76,10 +78,14 @@ export function IntentPrefetchLink({
         return;
       }
 
+      if (nativeNavigation) {
+        return;
+      }
+
       event.preventDefault();
       guardedPush(prefetchHref, scroll === false ? { scroll: false } : undefined);
     },
-    [guardedPush, onClick, prefetchHref, scroll],
+    [guardedPush, nativeNavigation, onClick, prefetchHref, scroll],
   );
 
   const clearPendingPrefetch = useCallback(() => {

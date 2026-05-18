@@ -678,7 +678,6 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
         <div className={styles.toolbarTrack}>
           <button
             type="button"
-            disabled={isPendingNav}
             aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.previousButton}`}
             onClick={() => {
@@ -775,7 +774,6 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
           <button
             type="button"
-            disabled={isPendingNav}
             aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.nextButton}`}
             onClick={() => {

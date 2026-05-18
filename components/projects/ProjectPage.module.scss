@@ -176,6 +176,60 @@
   outline-offset: 2px;
 }
 
+.loadingStills {
+  min-height: calc(100svh - var(--header-height) - var(--page-pad-bottom));
+}
+
+.loadingStill {
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(18rem, 54vw, 42rem);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      110deg,
+      color-mix(in srgb, var(--surface-color) 52%, transparent) 0%,
+      color-mix(in srgb, var(--fg-color) 7%, var(--surface-color)) 42%,
+      color-mix(in srgb, var(--surface-color) 52%, transparent) 78%
+    );
+  background-size: 220% 100%;
+  animation: project-loading-sweep 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.loadingStill:nth-child(2n) {
+  min-height: clamp(14rem, 38vw, 30rem);
+}
+
+.loadingStill span {
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--fg-color) 7%, transparent);
+}
+
+.loadingToolbar {
+  opacity: 0.82;
+}
+
+.loadingToolbar .navButton,
+.loadingToolbar .toolbarPanel {
+  cursor: progress;
+}
+
+.loadingToolbar .toolbarCopy h1 {
+  color: color-mix(in srgb, var(--project-toolbar-text) 66%, transparent);
+}
+
+@keyframes project-loading-sweep {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
 @media (max-width: 48rem) {
   .portraitStill {
     padding: clamp(0.65rem, 2vw, 0.9rem);
@@ -785,6 +839,15 @@ button.toolbarAction {
 
   .still {
     border-radius: var(--radius-panel-md);
+  }
+
+  .loadingStill {
+    min-height: clamp(15rem, 74vw, 28rem);
+    border-radius: var(--radius-panel-md);
+  }
+
+  .loadingStill:nth-child(2n) {
+    min-height: clamp(12rem, 58vw, 22rem);
   }
 }
 
