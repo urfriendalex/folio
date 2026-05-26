@@ -1,3 +1,59 @@
+@use "sass:math";
+
+/// Layer index: `0` = ::before, `1–6` = stacked divs, `7` = ::after
+@function navbar-gradient-blur-mask-layer($layer) {
+  @if $layer == 0 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 0%,
+      var(--navbar-gradient-blur-mask) 12.5%,
+      var(--navbar-gradient-blur-mask) 25%,
+      var(--navbar-gradient-blur-mask-transparent) 37.5%
+    );
+  }
+  @if $layer == 7 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 87.5%,
+      var(--navbar-gradient-blur-mask) 100%
+    );
+  }
+  @if $layer == 6 {
+    @return linear-gradient(
+      to top,
+      var(--navbar-gradient-blur-mask-transparent) 75%,
+      var(--navbar-gradient-blur-mask) 87.5%,
+      var(--navbar-gradient-blur-mask) 100%
+    );
+  }
+  // Layers 1–5: first transparent stop at `12.5% * n` (div 1 → 12.5% … 50%)
+  $start: 12.5% * $layer;
+  @return linear-gradient(
+    to top,
+    var(--navbar-gradient-blur-mask-transparent) $start,
+    var(--navbar-gradient-blur-mask) $start + 12.5%,
+    var(--navbar-gradient-blur-mask) $start + 25%,
+    var(--navbar-gradient-blur-mask-transparent) $start + 37.5%
+  );
+}
+
+@mixin navbar-gradient-blur-layer($layer) {
+  mask: navbar-gradient-blur-mask-layer($layer);
+  -webkit-mask: navbar-gradient-blur-mask-layer($layer);
+
+  @if $layer == 0 {
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+  } @else if $layer == 7 {
+    -webkit-backdrop-filter: blur(64px);
+    backdrop-filter: blur(64px);
+  } @else {
+    $blur: math.pow(2, $layer - 1) * 1px;
+    -webkit-backdrop-filter: blur($blur);
+    backdrop-filter: blur($blur);
+  }
+}
+
 .header {
   position: relative;
   isolation: isolate;
@@ -45,11 +101,20 @@
   }
 }
 
+// Gradient fade only (no stacked backdrop-filter layers — perf experiment).
 .gradientBlurStrip {
   position: absolute;
   inset: 0;
   transform: translateY(0);
   transition: transform var(--navbar-gradient-blur-transition);
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-color) 92%, transparent) 0%,
+    color-mix(in srgb, var(--bg-color) 72%, transparent) 28%,
+    color-mix(in srgb, var(--bg-color) 38%, transparent) 52%,
+    transparent 100%
+  );
 }
 
 :global(html.is-archive-route) .gradientBlurStrip {
@@ -57,45 +122,6 @@
     to bottom,
     color-mix(in srgb, var(--bg-color) 68%, transparent) 0%,
     color-mix(in srgb, var(--bg-color) 28%, transparent) 44%,
-    transparent 100%
-  );
-}
-
-.gradientBlurLayer,
-.gradientBlurAtmosphere {
-  position: absolute;
-  inset: 0;
-}
-
-:global(html.is-archive-route) .gradientBlurLayer {
-  display: none;
-}
-
-.gradientBlurLayer[data-layer="0"] {
-  z-index: 1;
-  @include navbar-gradient-blur-layer(0);
-}
-
-@for $i from 1 through 6 {
-  .gradientBlurLayer[data-layer="#{$i}"] {
-    z-index: $i + 1;
-    @include navbar-gradient-blur-layer($i);
-  }
-}
-
-.gradientBlurLayer[data-layer="7"] {
-  z-index: 8;
-  @include navbar-gradient-blur-layer(7);
-}
-
-// Single smooth wash — undertone on each masked blur layer caused banded / comb artifacts.
-.gradientBlurAtmosphere {
-  z-index: 9;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    var(--navbar-gradient-blur-undertone) 0%,
-    var(--navbar-gradient-blur-undertone-mid) 38%,
     transparent 100%
   );
 }
