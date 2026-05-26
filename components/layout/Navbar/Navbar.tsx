@@ -24,16 +24,7 @@ import styles from "./Navbar.module.scss";
 function GradientBlur() {
   return (
     <div className={styles.gradientBlur} aria-hidden="true">
-      <div className={styles.gradientBlurStrip}>
-        {Array.from({ length: 8 }, (_, index) => (
-          <span
-            key={index}
-            className={styles.gradientBlurLayer}
-            data-layer={index}
-          />
-        ))}
-        <div className={styles.gradientBlurAtmosphere} />
-      </div>
+      <div className={styles.gradientBlurStrip} />
       <div className={styles.gradientBlurOverlay} />
     </div>
   );
