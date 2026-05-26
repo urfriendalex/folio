@@ -18,13 +18,27 @@ import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
+import { isPerfOff } from "@/lib/perfExperiments";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
 function GradientBlur() {
+  if (isPerfOff("navbar-blur")) {
+    return null;
+  }
+
   return (
     <div className={styles.gradientBlur} aria-hidden="true">
-      <div className={styles.gradientBlurStrip} />
+      <div className={styles.gradientBlurStrip}>
+        {Array.from({ length: 8 }, (_, index) => (
+          <span
+            key={index}
+            className={styles.gradientBlurLayer}
+            data-layer={index}
+          />
+        ))}
+        <div className={styles.gradientBlurAtmosphere} />
+      </div>
       <div className={styles.gradientBlurOverlay} />
     </div>
   );

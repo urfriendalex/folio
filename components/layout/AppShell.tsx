@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PerfExperimentIndicator } from "@/components/debug/PerfExperimentIndicator";
 import { SmoothScrollProvider } from "@/components/Scroll/SmoothScrollProvider";
 import { Footer } from "@/components/layout/Footer/Footer";
 import { Navbar } from "@/components/layout/Navbar/Navbar";

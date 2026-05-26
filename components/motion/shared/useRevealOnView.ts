@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
+import { isPerfOff } from "@/lib/perfExperiments";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 
 export type UseRevealOnViewOptions = {

@@ -101,20 +101,11 @@
   }
 }
 
-// Gradient fade only (no stacked backdrop-filter layers — perf experiment).
 .gradientBlurStrip {
   position: absolute;
   inset: 0;
   transform: translateY(0);
   transition: transform var(--navbar-gradient-blur-transition);
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg-color) 92%, transparent) 0%,
-    color-mix(in srgb, var(--bg-color) 72%, transparent) 28%,
-    color-mix(in srgb, var(--bg-color) 38%, transparent) 52%,
-    transparent 100%
-  );
 }
 
 :global(html.is-archive-route) .gradientBlurStrip {
@@ -122,6 +113,45 @@
     to bottom,
     color-mix(in srgb, var(--bg-color) 68%, transparent) 0%,
     color-mix(in srgb, var(--bg-color) 28%, transparent) 44%,
+    transparent 100%
+  );
+}
+
+.gradientBlurLayer,
+.gradientBlurAtmosphere {
+  position: absolute;
+  inset: 0;
+}
+
+:global(html.is-archive-route) .gradientBlurLayer {
+  display: none;
+}
+
+.gradientBlurLayer[data-layer="0"] {
+  z-index: 1;
+  @include navbar-gradient-blur-layer(0);
+}
+
+@for $i from 1 through 6 {
+  .gradientBlurLayer[data-layer="#{$i}"] {
+    z-index: $i + 1;
+    @include navbar-gradient-blur-layer($i);
+  }
+}
+
+.gradientBlurLayer[data-layer="7"] {
+  z-index: 8;
+  @include navbar-gradient-blur-layer(7);
+}
+
+// Single smooth wash — undertone on each masked blur layer caused banded / comb artifacts.
+.gradientBlurAtmosphere {
+  z-index: 9;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--navbar-gradient-blur-undertone) 0%,
+    var(--navbar-gradient-blur-undertone-mid) 38%,
     transparent 100%
   );
 }

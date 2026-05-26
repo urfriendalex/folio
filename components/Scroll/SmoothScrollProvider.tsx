@@ -5,6 +5,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
+import { isPerfOff } from "@/lib/perfExperiments";
 import {
   clearLocationHash,
   getLenis,

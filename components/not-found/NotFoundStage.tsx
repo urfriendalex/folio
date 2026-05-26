@@ -13,6 +13,7 @@ import {
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { IntentPrefetchLink as Link } from "@/components/navigation/IntentPrefetchLink";
 import { notFoundContent } from "@/content/not-found";
+import { isAsciiPerfOff } from "@/lib/perfExperiments";
 import { getAnchor } from "@/lib/navLinks";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import { TrailCanvasLayer } from "./TrailGpuLayer";

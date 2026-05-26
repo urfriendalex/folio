@@ -17,6 +17,7 @@ import ASCIIAnimation from "@/components/Preloader/ascii";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
+import { isAsciiPerfOff } from "@/lib/perfExperiments";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
 import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
 import { useTimeZoneStatus } from "./TimeZoneStatus";
