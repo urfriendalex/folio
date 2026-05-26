@@ -765,7 +765,10 @@ export default function ASCIIAnimation({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [colorFrames.length, currentFrameIndex, currentTextFrame, format, meta, scale, scaled, fillParent]);
+  // currentFrameIndex and currentTextFrame are intentionally omitted: they change every
+  // animation tick and would tear down + recreate the ResizeObserver on every frame.
+  // The observer only needs to re-run when structural props change.
+  }, [colorFrames.length, format, meta, scale, scaled, fillParent]);
 
   if (isLoading && !frames.length && !colorFrames.length) {
     return <div ref={containerRef} className={className} aria-hidden="true" />;
