@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
-import { isPerfOff } from "@/lib/perfExperiments";
+import { usePerfOff } from "@/lib/usePerfExperiments";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 
 export type UseRevealOnViewOptions = {
@@ -18,6 +18,7 @@ export function useRevealOnView<T extends HTMLElement>(
   ref: RefObject<T | null>,
   options?: UseRevealOnViewOptions,
 ) {
+  const revealsOff = usePerfOff("reveals");
   const preloaderComplete = usePreloaderComplete();
 
   const [visible, setVisible] = useState(
@@ -27,6 +28,11 @@ export function useRevealOnView<T extends HTMLElement>(
   );
 
   useEffect(() => {
+    if (revealsOff) {
+      setVisible(true);
+      return undefined;
+    }
+
     if (options?.observerDisabled) {
       return undefined;
     }

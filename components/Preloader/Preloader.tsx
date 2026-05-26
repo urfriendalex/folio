@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAsciiPerfOff } from "@/lib/perfExperiments";
+import { useAsciiPerfOff } from "@/lib/usePerfExperiments";
 import ASCIIAnimation from "./ascii";
 import { getFrameFolderForTheme, getInitialFrameFolder } from "./frameFolder";
 import styles from "./preloader.module.scss";

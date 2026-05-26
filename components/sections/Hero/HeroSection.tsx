@@ -27,7 +27,7 @@ import {
   setHomeHeroRevealDone,
   subscribeHomeHeroRevealDone,
 } from "@/lib/homeHeroRevealSession";
-import { isAsciiPerfOff } from "@/lib/perfExperiments";
+import { useAsciiPerfOff } from "@/lib/usePerfExperiments";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { getLenis } from "@/lib/smoothScroll";

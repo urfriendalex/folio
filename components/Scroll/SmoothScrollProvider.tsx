@@ -4,8 +4,8 @@ import Lenis from "lenis";
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
+import { usePerfOff } from "@/lib/usePerfExperiments";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
-import { isPerfOff } from "@/lib/perfExperiments";
 import {
   clearLocationHash,
   getLenis,

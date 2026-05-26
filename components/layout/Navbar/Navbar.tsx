@@ -18,12 +18,14 @@ import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
-import { isPerfOff } from "@/lib/perfExperiments";
+import { usePerfOff } from "@/lib/usePerfExperiments";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
 function GradientBlur() {
-  if (isPerfOff("navbar-blur")) {
+  const navbarBlurOff = usePerfOff("navbar-blur");
+
+  if (navbarBlurOff) {
     return null;
   }
 
