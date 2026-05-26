@@ -144,6 +144,14 @@ async function ensureVideoPlayback(video: HTMLVideoElement) {
   }
 }
 
+function releaseVideoSource(video: HTMLVideoElement, detachSource = false) {
+  video.pause();
+  if (detachSource) {
+    video.removeAttribute("src");
+    video.load();
+  }
+}
+
 function resolveVariant(media: ProjectMediaSlot, isMobile: boolean): ProjectMediaAsset {
   return isMobile && media.mobile ? media.mobile : media.desktop;
 }
@@ -188,6 +196,7 @@ function ProjectMediaInner({
     hasLoadedProjectMediaSource(activeAsset.poster, activeAsset.src)
   ));
   const [videoReady, setVideoReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
+  const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
   const [placeholderGrid, setPlaceholderGrid] = useState({ cols: 12, rows: 12 });
   const placeholderFrameRef = useRef<number | null>(null);
   const placeholderCells = useMemo(
@@ -196,6 +205,10 @@ function ProjectMediaInner({
   );
 
   useLayoutEffect(() => {
+    if (ready) {
+      return undefined;
+    }
+
     const node = rootRef.current;
 
     if (!node) {
@@ -230,7 +243,7 @@ function ProjectMediaInner({
         placeholderFrameRef.current = null;
       }
     };
-  }, []);
+  }, [ready]);
 
   useEffect(() => {
     if (media.kind !== "video") {
@@ -239,17 +252,14 @@ function ProjectMediaInner({
 
     const video = videoRef.current;
 
-    if (!video) {
-      return undefined;
-    }
-
-    if (!isInViewport) {
-      video.pause();
+    if (!video || !isInViewport) {
       return undefined;
     }
 
     void ensureVideoPlayback(video);
-    return undefined;
+    return () => {
+      releaseVideoSource(video, process.env.NODE_ENV === "production");
+    };
   }, [isInViewport, media.kind]);
 
   /** When the `<video>` unmounts off-screen, clear readiness so we do not hide the poster while the next decode is pending (avoids a black frame on scroll-back). */
@@ -287,7 +297,6 @@ function ProjectMediaInner({
   const showVideo = media.kind === "video" && isInViewport;
   /** Poster must stay visible when the `<video>` is unmounted off-viewport; do not tie to `videoReady` alone. */
   const videoPlayingInView = showVideo && videoReady;
-  const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
 
   return (
     <div
@@ -310,9 +319,11 @@ function ProjectMediaInner({
           } as CSSProperties
         }
       >
-        {placeholderCells.map((cellIndex) => (
-          <span key={cellIndex} className={styles.placeholderCell} />
-        ))}
+        {ready
+          ? null
+          : placeholderCells.map((cellIndex) => (
+              <span key={cellIndex} className={styles.placeholderCell} />
+            ))}
       </div>
       <div className={styles.frame} style={sharedStyle}>
         {media.kind === "video" ? (
