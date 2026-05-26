@@ -259,18 +259,8 @@ function ProjectMediaInner({
     void ensureVideoPlayback(video);
     return () => {
       releaseVideoSource(video, process.env.NODE_ENV === "production");
-    };
-  }, [isInViewport, media.kind]);
-
-  /** When the `<video>` unmounts off-screen, clear readiness so we do not hide the poster while the next decode is pending (avoids a black frame on scroll-back). */
-  useEffect(() => {
-    if (media.kind !== "video") {
-      return;
-    }
-
-    if (!isInViewport) {
       setVideoReady(false);
-    }
+    };
   }, [isInViewport, media.kind]);
 
   const handleImageLoad = useCallback((image: HTMLImageElement, onReady: () => void) => {
