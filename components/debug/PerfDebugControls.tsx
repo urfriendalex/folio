@@ -42,7 +42,7 @@ export function PerfDebugControls() {
 
   const activeFlags = useSyncExternalStore(
     subscribePerfExperiments,
-    getActivePerfOffFlags,
+    () => getActivePerfOffFlags(),
     () => [] as PerfExperimentFlag[],
   );
 
@@ -55,6 +55,16 @@ export function PerfDebugControls() {
   useEffect(() => {
     if (storedOpen) {
       setPanelOpen(true);
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (new URLSearchParams(window.location.search).get("perf-debug") === "1") {
+      setPanelOpen(true);
+      setPerfDebugPanelOpen(true);
     }
   }, [storedOpen]);
 
@@ -160,7 +170,7 @@ export function PerfDebugControls() {
           <div className={styles.header}>
             <div>
               <p className={styles.title}>Perf bisect</p>
-              <p className={styles.subtitle}>Disable subsystems to find jank · ` backtick toggles panel</p>
+              <p className={styles.subtitle}>Check boxes to disable subsystems · perf-debug=1 only opens this panel · ` toggles</p>
             </div>
           </div>
 

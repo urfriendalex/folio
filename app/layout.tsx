@@ -4,6 +4,7 @@ import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { PerfDebugMount } from "@/components/debug/PerfDebugMount";
 import { PreloaderGate } from "@/components/Preloader/PreloaderGate";
 import {
   FALLBACK_THEME_COLORS,
