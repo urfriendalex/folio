@@ -41,17 +41,9 @@
   mask: navbar-gradient-blur-mask-layer($layer);
   -webkit-mask: navbar-gradient-blur-mask-layer($layer);
 
-  @if $layer == 0 {
-    -webkit-backdrop-filter: blur(0.5px);
-    backdrop-filter: blur(0.5px);
-  } @else if $layer == 7 {
-    -webkit-backdrop-filter: blur(64px);
-    backdrop-filter: blur(64px);
-  } @else {
-    $blur: math.pow(2, $layer - 1) * 1px;
-    -webkit-backdrop-filter: blur($blur);
-    backdrop-filter: blur($blur);
-  }
+  $blur: math.pow(1.55, $layer) * 0.75px;
+  -webkit-backdrop-filter: blur($blur);
+  backdrop-filter: blur($blur);
 }
 
 .header {
