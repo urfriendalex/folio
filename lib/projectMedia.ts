@@ -2,6 +2,31 @@ import type { ProjectEntry, ProjectMediaSlot, ProjectThumbnail } from "@/content
 
 export const PROJECT_MEDIA_MOBILE_QUERY = "(max-width: 48rem)";
 
+export type ProjectMediaPlaceholderGrid = {
+  cols: number;
+  rows: number;
+};
+
+const LANDSCAPE_PLACEHOLDER_GRID: ProjectMediaPlaceholderGrid = { cols: 16, rows: 9 };
+const PORTRAIT_PLACEHOLDER_GRID: ProjectMediaPlaceholderGrid = { cols: 9, rows: 16 };
+const SQUARE_PLACEHOLDER_GRID: ProjectMediaPlaceholderGrid = { cols: 12, rows: 12 };
+
+export function projectMediaPlaceholderGridForAsset(
+  asset: { width: number; height: number },
+): ProjectMediaPlaceholderGrid {
+  const ratio = asset.width / asset.height;
+
+  if (ratio > 1.15) {
+    return LANDSCAPE_PLACEHOLDER_GRID;
+  }
+
+  if (ratio < 0.87) {
+    return PORTRAIT_PLACEHOLDER_GRID;
+  }
+
+  return SQUARE_PLACEHOLDER_GRID;
+}
+
 /** Filename segment of a `/projects/...` URL (e.g. `media-02.mp4`). */
 export function publicSrcBasename(src: string): string {
   const i = src.lastIndexOf("/");

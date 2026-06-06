@@ -1,8 +1,5 @@
 .root {
   --project-media-surface: color-mix(in srgb, var(--surface-color) 72%, transparent);
-  --project-media-grid: color-mix(in srgb, var(--fg-color) 12%, transparent);
-  --project-media-shimmer: color-mix(in srgb, var(--fg-color) 4%, transparent);
-  --project-media-placeholder-cell: color-mix(in srgb, var(--project-media-surface) 78%, transparent);
   position: relative;
   display: block;
   min-width: 0;
@@ -35,53 +32,6 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: repeat(var(--placeholder-cols, 12), var(--placeholder-cell-px, 22.5px));
-  grid-template-rows: repeat(var(--placeholder-rows, 12), var(--placeholder-cell-px, 22.5px));
-  gap: 1px;
-  padding: 1px;
-  background: var(--project-media-grid);
-  opacity: 1;
-  transition: opacity 260ms ease;
-}
-
-.placeholder::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    transparent 36%,
-    var(--project-media-shimmer) 50%,
-    transparent 64%,
-    transparent 100%
-  );
-  background-size: 240% 100%;
-  background-position: 135% 0;
-  opacity: 0.38;
-  animation: projectMediaShimmer 4.4s linear infinite;
-}
-
-.placeholderCell {
-  min-width: 0;
-  min-height: 0;
-  background: var(--project-media-placeholder-cell);
-  /* Smooth fade when leaving a cell; no delay so the next cell can highlight immediately */
-  transition: background-color 640ms ease-out;
-}
-
-.placeholderCell:hover {
-  background: var(--project-media-grid);
-  /* Instant feedback on hover — no duration or delay */
-  transition: none;
-}
-
-.root[data-ready="true"] .placeholder {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .layer,
@@ -135,26 +85,4 @@
 
 .root[data-video-playing="true"] .posterLayer {
   opacity: 0;
-}
-
-
-@keyframes projectMediaShimmer {
-  from {
-    background-position: 135% 0;
-  }
-
-  to {
-    background-position: -105% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .placeholder::after {
-    animation: none;
-    opacity: 0.28;
-  }
-
-  .placeholderCell {
-    transition: none;
-  }
 }
