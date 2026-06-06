@@ -4,7 +4,6 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -13,29 +12,13 @@ import {
   type RefObject,
 } from "react";
 import type { ProjectMediaAsset, ProjectMediaSlot } from "@/content/projects/types";
-import { PROJECT_MEDIA_MOBILE_QUERY } from "@/lib/projectMedia";
+import { ProjectMediaPlaceholderGrid } from "@/components/media/ProjectMediaPlaceholderGrid";
+import {
+  PROJECT_MEDIA_MOBILE_QUERY,
+  projectMediaPlaceholderGridForAsset,
+  type ProjectMediaPlaceholderGrid as ProjectMediaPlaceholderGridShape,
+} from "@/lib/projectMedia";
 import styles from "./ProjectMedia.module.scss";
-
-/** Fixed square cell size (px); overflow is clipped by the placeholder. 50% larger than original 15px. */
-const PLACEHOLDER_CELL_PX = 15 * 1.5;
-const PLACEHOLDER_GRID_GAP_PX = 1;
-/** Placeholder has `padding: 1px` — measure grid inside the content box. */
-const PLACEHOLDER_INSET_PAD_PX = 2;
-
-function placeholderFixedCellGridDims(widthPx: number, heightPx: number, cellPx = PLACEHOLDER_CELL_PX) {
-  if (widthPx <= 0 || heightPx <= 0) {
-    return { cols: 12, rows: 12 };
-  }
-
-  const gap = PLACEHOLDER_GRID_GAP_PX;
-  const innerW = Math.max(0, widthPx - PLACEHOLDER_INSET_PAD_PX);
-  const innerH = Math.max(0, heightPx - PLACEHOLDER_INSET_PAD_PX);
-  const step = cellPx + gap;
-  const cols = Math.max(1, Math.ceil((innerW + gap) / step));
-  const rows = Math.max(1, Math.ceil((innerH + gap) / step));
-
-  return { cols, rows };
-}
 
 type ProjectMediaProps = {
   media: ProjectMediaSlot;
@@ -46,6 +29,7 @@ type ProjectMediaProps = {
   fill?: boolean;
   fit?: "cover" | "contain";
   loading?: "eager" | "lazy";
+  placeholderGrid?: ProjectMediaPlaceholderGridShape;
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
 };
@@ -54,8 +38,8 @@ type UseIntersectionOptions = {
   enabled?: boolean;
 };
 
-/** Enough samples that fast mobile scroll still delivers callbacks before layout settles. */
-const VIEWPORT_THRESHOLD_STEPS = [0, 0.05, 0.1, 0.25, 0.5, 0.75, 1] as const;
+/** Keep video observers cheap; we only need enter/exit state for mount/playback. */
+const VIEWPORT_THRESHOLD_STEPS = [0] as const;
 
 function useIntersectionState<T extends HTMLElement>(
   ref: RefObject<T | null>,
@@ -173,11 +157,13 @@ function hasLoadedProjectMediaSource(...sources: Array<string | null | undefined
 type ProjectMediaInnerProps = Omit<ProjectMediaProps, "media"> & {
   media: ProjectMediaSlot;
   activeAsset: ProjectMediaAsset;
+  placeholderGrid: ProjectMediaPlaceholderGridShape;
 };
 
 function ProjectMediaInner({
   media,
   activeAsset,
+  placeholderGrid,
   alt,
   className,
   sizes = "auto",
@@ -197,53 +183,6 @@ function ProjectMediaInner({
   ));
   const [videoReady, setVideoReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
-  const [placeholderGrid, setPlaceholderGrid] = useState({ cols: 12, rows: 12 });
-  const placeholderFrameRef = useRef<number | null>(null);
-  const placeholderCells = useMemo(
-    () => Array.from({ length: placeholderGrid.cols * placeholderGrid.rows }, (_, index) => index),
-    [placeholderGrid.cols, placeholderGrid.rows],
-  );
-
-  useLayoutEffect(() => {
-    if (ready) {
-      return undefined;
-    }
-
-    const node = rootRef.current;
-
-    if (!node) {
-      return undefined;
-    }
-
-    const update = () => {
-      const rect = node.getBoundingClientRect();
-      const next = placeholderFixedCellGridDims(rect.width, rect.height);
-      setPlaceholderGrid((current) => (
-        current.cols === next.cols && current.rows === next.rows ? current : next
-      ));
-    };
-
-    update();
-
-    const observer = new ResizeObserver(() => {
-      if (placeholderFrameRef.current) {
-        window.cancelAnimationFrame(placeholderFrameRef.current);
-      }
-      placeholderFrameRef.current = window.requestAnimationFrame(() => {
-        update();
-        placeholderFrameRef.current = null;
-      });
-    });
-
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-      if (placeholderFrameRef.current) {
-        window.cancelAnimationFrame(placeholderFrameRef.current);
-        placeholderFrameRef.current = null;
-      }
-    };
-  }, [ready]);
 
   useEffect(() => {
     if (media.kind !== "video") {
@@ -298,23 +237,11 @@ function ProjectMediaInner({
       data-ready={ready ? "true" : "false"}
       data-video-playing={videoPlayingInView ? "true" : "false"}
     >
-      <div
+      <ProjectMediaPlaceholderGrid
+        grid={placeholderGrid}
         className={styles.placeholder}
-        aria-hidden="true"
-        style={
-          {
-            "--placeholder-cols": placeholderGrid.cols,
-            "--placeholder-rows": placeholderGrid.rows,
-            "--placeholder-cell-px": `${PLACEHOLDER_CELL_PX}px`,
-          } as CSSProperties
-        }
-      >
-        {ready
-          ? null
-          : placeholderCells.map((cellIndex) => (
-              <span key={cellIndex} className={styles.placeholderCell} />
-            ))}
-      </div>
+        visible={!ready}
+      />
       <div className={styles.frame} style={sharedStyle}>
         {media.kind === "video" ? (
           <>
@@ -391,7 +318,15 @@ export function ProjectMedia(props: ProjectMediaProps) {
     projectMediaMobileServerSnapshot,
   );
   const activeAsset = useMemo(() => resolveVariant(props.media, isMobile), [isMobile, props.media]);
+  const placeholderGrid = props.placeholderGrid ?? projectMediaPlaceholderGridForAsset(activeAsset);
   const assetKey = `${props.media.kind}:${activeAsset.src}:${activeAsset.poster ?? ""}:${activeAsset.width}x${activeAsset.height}`;
 
-  return <ProjectMediaInner key={assetKey} {...props} activeAsset={activeAsset} />;
+  return (
+    <ProjectMediaInner
+      key={assetKey}
+      {...props}
+      activeAsset={activeAsset}
+      placeholderGrid={placeholderGrid}
+    />
+  );
 }

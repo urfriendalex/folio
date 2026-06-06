@@ -1,0 +1,38 @@
+.root {
+  --project-media-surface: color-mix(in srgb, var(--surface-color) 72%, transparent);
+  --project-media-grid: color-mix(in srgb, var(--fg-color) 12%, transparent);
+  --project-media-placeholder-cell: color-mix(in srgb, var(--project-media-surface) 78%, transparent);
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--placeholder-cols, 16), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--placeholder-rows, 9), minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  padding: 1px;
+  background: var(--project-media-grid);
+  opacity: 1;
+  transition: opacity 260ms ease;
+}
+
+.root[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cell {
+  min-width: 0;
+  min-height: 0;
+  background: var(--project-media-placeholder-cell);
+  transition: background-color 640ms ease-out;
+}
+
+.cell:hover {
+  background: var(--project-media-grid);
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    transition: none;
+  }
+}

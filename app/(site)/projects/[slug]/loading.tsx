@@ -1,15 +1,27 @@
+import { ProjectMediaPlaceholderGrid } from "@/components/media/ProjectMediaPlaceholderGrid";
 import styles from "@/components/projects/ProjectPage.module.scss";
+import { projects } from "@/content/projects";
+import { projectMediaPlaceholderGridForAsset } from "@/lib/projectMedia";
 
-const SKELETON_ITEMS = Array.from({ length: 5 }, (_, index) => index);
+const projectWithMostMedia = projects.reduce((largest, project) => (
+  project.media.length > largest.media.length ? project : largest
+), projects[0]!);
+
+const SKELETON_ITEMS = projectWithMostMedia.media.map((media, index) => ({
+  grid: projectMediaPlaceholderGridForAsset(media.desktop),
+  id: `${media.desktop.src}-${index}`,
+}));
 
 export default function ProjectLoading() {
   return (
     <article className={`page-shell ${styles.page}`} aria-busy="true" aria-label="Loading project">
       <section className={`${styles.stills} ${styles.loadingStills}`}>
         {SKELETON_ITEMS.map((item) => (
-          <div key={item} className={styles.loadingStill} aria-hidden="true">
-            <span />
-          </div>
+          <ProjectMediaPlaceholderGrid
+            key={item.id}
+            grid={item.grid}
+            className={styles.loadingStill}
+          />
         ))}
       </section>
 
