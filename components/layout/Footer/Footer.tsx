@@ -18,6 +18,7 @@ import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
+import { replayPreloader } from "@/lib/preloaderReplay";
 import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
 import { useTimeZoneStatus } from "./TimeZoneStatus";
 import styles from "./Footer.module.scss";
@@ -538,6 +539,11 @@ export function Footer() {
     closeMenu();
   };
 
+  const handleReplayIntro = () => {
+    closeMenu();
+    replayPreloader();
+  };
+
   const handleCascadingRowEnter = (key: StartSubmenuKey) => () => {
     setDisplayMenuOpen(false);
     setStartSubmenu(key);
@@ -1019,6 +1025,9 @@ export function Footer() {
                     <div className={styles.winMenuSeparator} aria-hidden="true" />
                     <button type="button" className={styles.winMenuItem} onClick={handleBackToTop}>
                       Back to top
+                    </button>
+                    <button type="button" className={styles.winMenuItem} onClick={handleReplayIntro}>
+                      Replay intro
                     </button>
                     <div
                       className={`${styles.startMenuRow} ${styles.displayControl}`}

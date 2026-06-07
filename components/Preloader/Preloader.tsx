@@ -17,39 +17,13 @@ const PROGRESS_SMOOTHING = 0.08;
 const COMPLETION_PROGRESS_SMOOTHING = 0.22;
 const EXIT_TIMEOUT_MS = 1200;
 const ENTER_DURATION_MS = 320;
-const CONSTRAINED_ASCII_FRAME_DELAY_MS = 2400;
 const ASCII_SCALE = 1;
-
-function hasConstrainedConnection() {
-  if (typeof navigator === "undefined") {
-    return false;
-  }
-
-  const connection = (
-    navigator as Navigator & {
-      connection?: {
-        effectiveType?: string;
-        saveData?: boolean;
-      };
-    }
-  ).connection;
-
-  return Boolean(
-    connection?.saveData
-      || connection?.effectiveType === "slow-2g"
-      || connection?.effectiveType === "2g"
-      || connection?.effectiveType === "3g",
-  );
-}
 
 export function Preloader({ onDone }: PreloaderProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLSpanElement | null>(null);
 
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
-  const [asciiFullLoadDelayMs] = useState(() => (
-    hasConstrainedConnection() ? CONSTRAINED_ASCII_FRAME_DELAY_MS : 0
-  ));
   const [isAsciiReady, setIsAsciiReady] = useState(false);
   const [hasStartedAssetLoading, setHasStartedAssetLoading] = useState(false);
   const { actualProgressRef, isCompleteRef } = usePreloaderAssets(
@@ -279,8 +253,7 @@ export function Preloader({ onDone }: PreloaderProps) {
         quality="high"
         frameCount={37}
         fps={20}
-        lazy
-        fullLoadDelayMs={asciiFullLoadDelayMs}
+        lazy={false}
         scale={ASCII_SCALE}
         onReady={handleAsciiReady}
         ariaLabel="ASCII walking animation"
