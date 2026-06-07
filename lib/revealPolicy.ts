@@ -12,6 +12,13 @@ function notifyRevealPolicyChanged() {
   window.dispatchEvent(new CustomEvent(REVEAL_POLICY_EVENT));
 }
 
+export function applyImmediateRevealPolicy() {
+  revealMotionEnabled = false;
+  document.documentElement.classList.remove("reveals-enabled");
+  document.documentElement.classList.add("reveals-bypassed");
+  notifyRevealPolicyChanged();
+}
+
 export function markNextHomeNavigationForImmediateReveal(sectionId: string) {
   try {
     sessionStorage.setItem(HOME_REVEAL_BYPASS_KEY, sectionId);
@@ -19,10 +26,7 @@ export function markNextHomeNavigationForImmediateReveal(sectionId: string) {
     // Ignore storage failures; content still has the progressive-enhancement fallback.
   }
 
-  revealMotionEnabled = false;
-  document.documentElement.classList.remove("reveals-enabled");
-  document.documentElement.classList.add("reveals-bypassed");
-  notifyRevealPolicyChanged();
+  applyImmediateRevealPolicy();
 }
 
 function consumeHomeNavigationRevealBypass(): boolean {
