@@ -3,6 +3,7 @@ import type Lenis from "lenis";
 type ScrollTarget = number | string | HTMLElement;
 const DEFAULT_HEADER_HEIGHT_PX = 72;
 const DEFAULT_SECTION_SCROLL_MARGIN_PX = 16;
+const MOBILE_MEDIA_QUERY = "(max-width: 48rem)";
 
 type SmoothScrollOptions = {
   offset?: number;
@@ -12,6 +13,10 @@ type SmoothScrollOptions = {
 };
 
 function usesViewportCenterAlignment(target: ScrollTarget): boolean {
+  if (typeof window !== "undefined" && window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+    return false;
+  }
+
   if (typeof target === "number") {
     return false;
   }
