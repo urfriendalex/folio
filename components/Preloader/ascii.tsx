@@ -49,6 +49,8 @@ interface ASCIIAnimationProps {
   quality?: Quality;
   ariaLabel?: string;
   lazy?: boolean;
+  /** Delay loading the remaining animation frames after the preview becomes visible. */
+  fullLoadDelayMs?: number;
   onReady?: () => void;
   scale?: number;
   color?: string;
@@ -272,6 +274,7 @@ export default function ASCIIAnimation({
   ariaLabel,
   quality = "medium",
   lazy = true,
+  fullLoadDelayMs = 0,
   onReady,
   scale = 1,
   color,
@@ -475,13 +478,22 @@ export default function ASCIIAnimation({
       return;
     }
 
+    let fullLoadTimer: number | null = null;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           setIsIntersecting(entry.isIntersecting);
 
           if (entry.isIntersecting && !fullLoadTriggered.current) {
-            void loadAllFrames();
+            if (fullLoadDelayMs <= 0) {
+              void loadAllFrames();
+              return;
+            }
+
+            fullLoadTimer ??= window.setTimeout(() => {
+              fullLoadTimer = null;
+              void loadAllFrames();
+            }, fullLoadDelayMs);
           }
         });
       },
@@ -492,8 +504,11 @@ export default function ASCIIAnimation({
 
     return () => {
       observer.disconnect();
+      if (fullLoadTimer !== null) {
+        window.clearTimeout(fullLoadTimer);
+      }
     };
-  }, [lazy, loadAllFrames]);
+  }, [fullLoadDelayMs, lazy, loadAllFrames]);
 
   const shouldPlay = isIntersecting && (!playOnHover || isHovered) && !paused;
   const totalFrames = format === "color" ? colorFrames.length : frames.length;

@@ -17,13 +17,36 @@ const PROGRESS_SMOOTHING = 0.08;
 const COMPLETION_PROGRESS_SMOOTHING = 0.22;
 const EXIT_TIMEOUT_MS = 1200;
 const ENTER_DURATION_MS = 320;
+const COMPLETE_HOLD_MS = 320;
+const CONSTRAINED_ASCII_FRAME_DELAY_MS = 2400;
 const ASCII_SCALE = 1;
+
+function hasConstrainedConnection() {
+  const connection = (
+    navigator as Navigator & {
+      connection?: {
+        effectiveType?: string;
+        saveData?: boolean;
+      };
+    }
+  ).connection;
+
+  return Boolean(
+    connection?.saveData
+      || connection?.effectiveType === "slow-2g"
+      || connection?.effectiveType === "2g"
+      || connection?.effectiveType === "3g",
+  );
+}
 
 export function Preloader({ onDone }: PreloaderProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLSpanElement | null>(null);
 
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
+  const [asciiFullLoadDelayMs] = useState(() => (
+    hasConstrainedConnection() ? CONSTRAINED_ASCII_FRAME_DELAY_MS : 0
+  ));
   const [isAsciiReady, setIsAsciiReady] = useState(false);
   const [hasStartedAssetLoading, setHasStartedAssetLoading] = useState(false);
   const { actualProgressRef, isCompleteRef } = usePreloaderAssets(
@@ -91,6 +114,7 @@ export function Preloader({ onDone }: PreloaderProps) {
 
     let rafId: number | null = null;
     let exitFallbackTimer: number | null = null;
+    let completeHoldTimer: number | null = null;
     let isExiting = false;
     let didFinalize = false;
     let displayedProgress = 0;
@@ -108,7 +132,7 @@ export function Preloader({ onDone }: PreloaderProps) {
       return;
     }
 
-    const finishPreloader = () => {
+    const beginPreloaderExit = () => {
       if (isExiting) {
         return;
       }
@@ -170,6 +194,25 @@ export function Preloader({ onDone }: PreloaderProps) {
       }, EXIT_TIMEOUT_MS);
     };
 
+    const finishPreloader = () => {
+      if (isExiting || completeHoldTimer !== null) {
+        return;
+      }
+
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+
+      displayedProgress = 1;
+      setProgressText(1, true);
+
+      completeHoldTimer = window.setTimeout(() => {
+        completeHoldTimer = null;
+        beginPreloaderExit();
+      }, COMPLETE_HOLD_MS);
+    };
+
     const animate = () => {
       if (isExiting) {
         return;
@@ -209,6 +252,10 @@ export function Preloader({ onDone }: PreloaderProps) {
         window.clearTimeout(exitFallbackTimer);
       }
 
+      if (completeHoldTimer !== null) {
+        window.clearTimeout(completeHoldTimer);
+      }
+
       html.classList.remove("is-preloader-exiting");
     };
   }, [actualProgressRef, hasStartedAssetLoading, isCompleteRef, onDone]);
@@ -227,13 +274,14 @@ export function Preloader({ onDone }: PreloaderProps) {
         quality="high"
         frameCount={37}
         fps={20}
-        lazy={false}
+        lazy
+        fullLoadDelayMs={asciiFullLoadDelayMs}
         scale={ASCII_SCALE}
         onReady={handleAsciiReady}
         ariaLabel="ASCII walking animation"
       />
       <div
-        className={`${styles.progress} ${hasStartedAssetLoading ? styles.progressVisible : ""}`.trim()}
+        className={`${styles.progress} ${styles.progressVisible}`}
         role="status"
         aria-live="polite"
         aria-label="Loading progress"
