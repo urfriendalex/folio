@@ -640,12 +640,12 @@
   }
 }
 
-/* Degraded/direct navigation mode: prioritize the actionable controls and skip the measured SVG banner. */
-:global(html.reveals-bypassed) .section .contactGooeyCard {
+/* Genuine loading degradation: prioritize actionable controls and skip the measured SVG banner. */
+:global(html.contact-degraded) .section .contactGooeyCard {
   display: none;
 }
 
-:global(html.reveals-bypassed) .section .contactChannelButton {
+:global(html.contact-degraded) .section .contactChannelButton {
   opacity: 1;
   filter: none;
   transform: none;

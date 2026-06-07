@@ -89,6 +89,45 @@ const FALLBACK_ORDER: Record<Quality, Quality[]> = {
 const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
+const FRAME_FETCH_ATTEMPTS = 2;
+
+async function fetchFrame(url: string): Promise<Response> {
+  let lastResponse: Response | null = null;
+
+  for (let attempt = 0; attempt < FRAME_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return response;
+      }
+      lastResponse = response;
+    } catch {
+      // Retry once before allowing the sequence fallback to fill this slot.
+    }
+  }
+
+  throw new Error(`Failed to fetch ${url}: ${lastResponse?.status ?? "network error"}`);
+}
+
+function fillMissingFrames<T extends string | Uint8Array>(
+  results: PromiseSettledResult<T>[],
+): T[] {
+  const firstLoaded = results.find(
+    (result): result is PromiseFulfilledResult<T> => result.status === "fulfilled",
+  )?.value;
+
+  if (firstLoaded === undefined) {
+    throw new Error("No ASCII animation frames could be loaded");
+  }
+
+  let previousLoaded = firstLoaded;
+  return results.map((result) => {
+    if (result.status === "fulfilled") {
+      previousLoaded = result.value;
+    }
+    return previousLoaded;
+  });
+}
 
 async function resolveFrameSource(
   frameFolder: string,
@@ -345,31 +384,27 @@ export default function ASCIIAnimation({
         }
 
         const resolvedMeta = (await metaResponse.json()) as ColorAsciiMeta;
-        const loadedFrames = await Promise.all(
+        const frameResults = await Promise.allSettled(
           Array.from({ length: resolvedMeta.frameCount }, async (_, index) => {
-            const response = await fetch(
+            const response = await fetchFrame(
               `${resolved.baseUrl}/frame_${String(index + 1).padStart(5, "0")}.bin`,
             );
-            if (!response.ok) {
-              throw new Error(`Failed to fetch color frame ${index + 1}: ${response.status}`);
-            }
             return new Uint8Array(await response.arrayBuffer());
           }),
         );
+        const loadedFrames = fillMissingFrames(frameResults);
 
         setMeta(resolvedMeta);
         setColorFrames(loadedFrames);
         setFrames([]);
       } else {
-        const loadedFrames = await Promise.all(
+        const frameResults = await Promise.allSettled(
           frameFiles.map(async (filename) => {
-            const response = await fetch(`${resolved.baseUrl}/${filename}`);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch ${filename}: ${response.status}`);
-            }
+            const response = await fetchFrame(`${resolved.baseUrl}/${filename}`);
             return response.text();
           }),
         );
+        const loadedFrames = fillMissingFrames(frameResults);
 
         setFrames(loadedFrames);
         setColorFrames([]);

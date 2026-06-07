@@ -56,15 +56,17 @@ export function initializeRevealPolicy(): boolean {
   const preloaderWillRun = document.documentElement.getAttribute("data-preloader") === "run";
   const initializedPromptly =
     preloaderWillRun || performance.now() <= REPEAT_VISIT_REVEAL_DEADLINE_MS;
+  const degraded = shouldBypassRevealMotion() || !initializedPromptly;
   const bypassMotion =
     reduceMotion
-    || shouldBypassRevealMotion()
-    || !initializedPromptly
+    || degraded
     || consumeHomeNavigationRevealBypass();
 
   revealMotionEnabled = !bypassMotion;
+  document.documentElement.setAttribute("data-reveal-policy-ready", "true");
   document.documentElement.classList.toggle("reveals-enabled", revealMotionEnabled);
   document.documentElement.classList.toggle("reveals-bypassed", bypassMotion);
+  document.documentElement.classList.toggle("contact-degraded", degraded);
   notifyRevealPolicyChanged();
 
   return revealMotionEnabled;
@@ -72,7 +74,12 @@ export function initializeRevealPolicy(): boolean {
 
 export function clearRevealPolicy() {
   revealMotionEnabled = false;
-  document.documentElement.classList.remove("reveals-enabled", "reveals-bypassed");
+  document.documentElement.removeAttribute("data-reveal-policy-ready");
+  document.documentElement.classList.remove(
+    "reveals-enabled",
+    "reveals-bypassed",
+    "contact-degraded",
+  );
   notifyRevealPolicyChanged();
 }
 

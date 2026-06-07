@@ -107,13 +107,14 @@ const bootstrapScript = `
   }
 
   let bypassReveals = false;
+  let degradeContact = false;
   try {
     const connection = navigator.connection;
     const pendingHomeSection = sessionStorage.getItem("folio:home-reveal-bypass");
+    degradeContact = connection?.saveData === true;
     bypassReveals =
-      !shouldRun ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      connection?.saveData === true ||
+      degradeContact ||
       pendingHomeSection === "work" ||
       pendingHomeSection === "contact" ||
       pendingHomeSection === "contact-form";
@@ -121,6 +122,15 @@ const bootstrapScript = `
 
   html.classList.toggle("reveals-enabled", !bypassReveals);
   html.classList.toggle("reveals-bypassed", bypassReveals);
+  html.classList.toggle("contact-degraded", degradeContact);
+
+  if (!shouldRun && !bypassReveals) {
+    window.setTimeout(() => {
+      if (html.getAttribute("data-reveal-policy-ready") === "true") return;
+      html.classList.remove("reveals-enabled");
+      html.classList.add("reveals-bypassed", "contact-degraded");
+    }, 1200);
+  }
 })();
 `;
 
