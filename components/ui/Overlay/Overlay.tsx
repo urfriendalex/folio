@@ -5,6 +5,87 @@ import { createPortal } from "react-dom";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import styles from "./Overlay.module.scss";
 
+const TOOLBAR_EXIT_ARM_MS = 40;
+const TOOLBAR_RETURN_FALLBACK_MS = 700;
+const TOOLBAR_SELECTOR = '[data-overlay-toolbar-slide="true"]';
+
+let toolbarExitTimer: number | null = null;
+let toolbarReleaseTimer: number | null = null;
+let toolbarTransitionTarget: HTMLElement | null = null;
+let toolbarTransitionEnd: ((event: TransitionEvent) => void) | null = null;
+
+function clearToolbarExitTimer() {
+  if (toolbarExitTimer === null) {
+    return;
+  }
+
+  window.clearTimeout(toolbarExitTimer);
+  toolbarExitTimer = null;
+}
+
+function clearToolbarRelease() {
+  if (toolbarReleaseTimer !== null) {
+    window.clearTimeout(toolbarReleaseTimer);
+    toolbarReleaseTimer = null;
+  }
+
+  if (toolbarTransitionTarget && toolbarTransitionEnd) {
+    toolbarTransitionTarget.removeEventListener("transitionend", toolbarTransitionEnd);
+  }
+
+  toolbarTransitionTarget = null;
+  toolbarTransitionEnd = null;
+}
+
+function releaseToolbar() {
+  clearToolbarRelease();
+  document.documentElement.classList.remove("is-overlay-toolbar-fixed");
+}
+
+function pinToolbar() {
+  const html = document.documentElement;
+  clearToolbarExitTimer();
+  clearToolbarRelease();
+  html.classList.add("is-overlay-toolbar-fixed");
+  html.classList.remove("is-overlay-toolbar-out");
+}
+
+function slideToolbarOut() {
+  pinToolbar();
+  toolbarExitTimer = window.setTimeout(() => {
+    document.documentElement.classList.add("is-overlay-toolbar-out");
+    toolbarExitTimer = null;
+  }, TOOLBAR_EXIT_ARM_MS);
+}
+
+function slideToolbarIn() {
+  const html = document.documentElement;
+  clearToolbarExitTimer();
+  clearToolbarRelease();
+
+  if (!html.classList.contains("is-overlay-toolbar-fixed")) {
+    html.classList.remove("is-overlay-toolbar-out");
+    return;
+  }
+
+  const toolbar = document.querySelector<HTMLElement>(TOOLBAR_SELECTOR);
+  html.classList.remove("is-overlay-toolbar-out");
+
+  if (!toolbar) {
+    releaseToolbar();
+    return;
+  }
+
+  toolbarTransitionTarget = toolbar;
+  toolbarTransitionEnd = (event) => {
+    if (event.target === toolbar && event.propertyName === "transform") {
+      releaseToolbar();
+    }
+  };
+  toolbar.addEventListener("transitionend", toolbarTransitionEnd);
+  toolbarReleaseTimer = window.setTimeout(releaseToolbar, TOOLBAR_RETURN_FALLBACK_MS);
+}
+
 type OverlayProps = {
   children: ReactNode;
   closeLabel?: string;
@@ -52,14 +133,25 @@ export function Overlay({
     const html = document.documentElement;
     lockBodyScroll();
     html.classList.add("is-overlay-open");
+    pinToolbar();
 
     return () => {
       /* Drop overflow lock first: while `is-overlay-open` is on, `overflow: hidden` on `html` makes
          Lenis’s scroll `limit` ~0, so `scrollTo(savedY)` clamps to the top. Sync scroll + body in `unlock`. */
       html.classList.remove("is-overlay-open");
+      slideToolbarIn();
       unlockBodyScroll();
     };
   }, [portalRoot]);
+
+  useEffect(() => {
+    if (visible) {
+      slideToolbarOut();
+      return;
+    }
+
+    slideToolbarIn();
+  }, [visible]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

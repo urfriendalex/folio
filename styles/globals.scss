@@ -496,40 +496,35 @@ html.is-overlay-open [data-app-navbar="true"] {
 }
 
 /*
- * Opt-in for fixed UI that sits under the modal layer (z-index < overlay backdrop): fades out while
- * `is-overlay-open`, then fades/slides back when the overlay unmounts — mirrors navbar `.inner` timing.
- * Add `data-overlay-chrome-conceal="true"` on any comparable control.
+ * Keep the project toolbar composited while an overlay is open. Moving the existing glass surface
+ * below the viewport avoids rebuilding its backdrop blur when the overlay closes.
  */
-html [data-overlay-chrome-conceal="true"] {
-  transition:
-    opacity 220ms ease,
-    transform 280ms cubic-bezier(0.23, 1, 0.32, 1),
-    visibility 0ms linear 0ms;
+html [data-overlay-toolbar-slide="true"] {
+  will-change: transform;
+  /* Match text reveals: the toolbar rises back into place with the site's soft ease-out. */
+  transition: transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
-html.is-overlay-open [data-overlay-chrome-conceal="true"] {
-  opacity: 0;
-  visibility: hidden;
+html.is-overlay-toolbar-fixed [data-overlay-toolbar-slide="true"] {
+  position: fixed;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--toolbar-sticky-inset, clamp(1.3rem, 3vw, 1.85rem)));
+  left: 0;
+  z-index: 520;
   pointer-events: none;
-  transform: translateY(0.42rem);
-  transition:
-    opacity 220ms ease,
-    transform 280ms cubic-bezier(0.45, 0, 0.55, 1),
-    visibility 0ms linear 220ms;
+  transform: translate3d(0, 0, 0);
+}
+
+html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"] {
+  transform: translate3d(0, calc(100% + env(safe-area-inset-bottom, 0px) + 2rem), 0);
+  /* Exit stays direct, but remains visible above the opening overlay while it slides down. */
+  transition-duration: 560ms;
+  transition-timing-function: cubic-bezier(0.32, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html [data-overlay-chrome-conceal="true"] {
-    transition:
-      opacity 85ms ease,
-      visibility 0ms linear 0ms;
-  }
-
-  html.is-overlay-open [data-overlay-chrome-conceal="true"] {
-    transform: none;
-    transition:
-      opacity 85ms ease,
-      visibility 0ms linear 85ms;
+  html [data-overlay-toolbar-slide="true"] {
+    transition-duration: 85ms;
   }
 }
 
