@@ -17,11 +17,14 @@ const PROGRESS_SMOOTHING = 0.08;
 const COMPLETION_PROGRESS_SMOOTHING = 0.22;
 const EXIT_TIMEOUT_MS = 1200;
 const ENTER_DURATION_MS = 320;
-const COMPLETE_HOLD_MS = 320;
 const CONSTRAINED_ASCII_FRAME_DELAY_MS = 2400;
 const ASCII_SCALE = 1;
 
 function hasConstrainedConnection() {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
   const connection = (
     navigator as Navigator & {
       connection?: {
@@ -114,7 +117,7 @@ export function Preloader({ onDone }: PreloaderProps) {
 
     let rafId: number | null = null;
     let exitFallbackTimer: number | null = null;
-    let completeHoldTimer: number | null = null;
+    let completionFrameId: number | null = null;
     let isExiting = false;
     let didFinalize = false;
     let displayedProgress = 0;
@@ -195,7 +198,7 @@ export function Preloader({ onDone }: PreloaderProps) {
     };
 
     const finishPreloader = () => {
-      if (isExiting || completeHoldTimer !== null) {
+      if (isExiting || completionFrameId !== null) {
         return;
       }
 
@@ -207,10 +210,12 @@ export function Preloader({ onDone }: PreloaderProps) {
       displayedProgress = 1;
       setProgressText(1, true);
 
-      completeHoldTimer = window.setTimeout(() => {
-        completeHoldTimer = null;
-        beginPreloaderExit();
-      }, COMPLETE_HOLD_MS);
+      completionFrameId = window.requestAnimationFrame(() => {
+        completionFrameId = window.requestAnimationFrame(() => {
+          completionFrameId = null;
+          beginPreloaderExit();
+        });
+      });
     };
 
     const animate = () => {
@@ -252,8 +257,8 @@ export function Preloader({ onDone }: PreloaderProps) {
         window.clearTimeout(exitFallbackTimer);
       }
 
-      if (completeHoldTimer !== null) {
-        window.clearTimeout(completeHoldTimer);
+      if (completionFrameId !== null) {
+        window.cancelAnimationFrame(completionFrameId);
       }
 
       html.classList.remove("is-preloader-exiting");

@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 
 const HOME_REVEAL_BYPASS_KEY = "folio:home-reveal-bypass";
 const REVEAL_POLICY_EVENT = "folio:reveal-policy";
+const REPEAT_VISIT_REVEAL_DEADLINE_MS = 1200;
 
 let revealMotionEnabled = false;
 
@@ -34,29 +35,27 @@ function consumeHomeNavigationRevealBypass(): boolean {
   }
 }
 
-function hasConstrainedConnection(): boolean {
+function shouldBypassRevealMotion(): boolean {
   const connection = (
     navigator as Navigator & {
       connection?: {
-        effectiveType?: string;
         saveData?: boolean;
       };
     }
   ).connection;
 
-  return Boolean(
-    connection?.saveData
-      || connection?.effectiveType === "slow-2g"
-      || connection?.effectiveType === "2g"
-      || connection?.effectiveType === "3g",
-  );
+  return connection?.saveData === true;
 }
 
 export function initializeRevealPolicy(): boolean {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const preloaderWillRun = document.documentElement.getAttribute("data-preloader") === "run";
+  const initializedPromptly =
+    preloaderWillRun || performance.now() <= REPEAT_VISIT_REVEAL_DEADLINE_MS;
   const bypassMotion =
     reduceMotion
-    || hasConstrainedConnection()
+    || shouldBypassRevealMotion()
+    || !initializedPromptly
     || consumeHomeNavigationRevealBypass();
 
   revealMotionEnabled = !bypassMotion;

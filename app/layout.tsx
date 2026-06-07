@@ -111,11 +111,9 @@ const bootstrapScript = `
     const connection = navigator.connection;
     const pendingHomeSection = sessionStorage.getItem("folio:home-reveal-bypass");
     bypassReveals =
+      !shouldRun ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
       connection?.saveData === true ||
-      connection?.effectiveType === "slow-2g" ||
-      connection?.effectiveType === "2g" ||
-      connection?.effectiveType === "3g" ||
       pendingHomeSection === "work" ||
       pendingHomeSection === "contact" ||
       pendingHomeSection === "contact-form";

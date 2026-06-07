@@ -78,11 +78,11 @@
   transition: opacity 280ms ease;
 }
 
-/* Only while the video node is mounted and has fired loadeddata — not when off-viewport (poster must show again). */
-.root[data-video-playing="true"] .videoLayer {
+/* Once decoded, keep the video frame visible while playback pauses outside the viewport. */
+.root[data-video-ready="true"] .videoLayer {
   opacity: 1;
 }
 
-.root[data-video-playing="true"] .posterLayer {
+.root[data-video-ready="true"] .posterLayer {
   opacity: 0;
 }
