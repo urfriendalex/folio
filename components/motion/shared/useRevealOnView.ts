@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
+import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 
 export type UseRevealOnViewOptions = {
   once?: boolean;
@@ -18,6 +19,7 @@ export function useRevealOnView<T extends HTMLElement>(
   options?: UseRevealOnViewOptions,
 ) {
   const preloaderComplete = usePreloaderComplete();
+  const revealMotionEnabled = useRevealMotionEnabled();
 
   const [visible, setVisible] = useState(
     () =>
@@ -26,7 +28,7 @@ export function useRevealOnView<T extends HTMLElement>(
   );
 
   useEffect(() => {
-    if (options?.observerDisabled) {
+    if (options?.observerDisabled || !revealMotionEnabled) {
       return undefined;
     }
 
@@ -144,6 +146,7 @@ export function useRevealOnView<T extends HTMLElement>(
     };
   }, [
     preloaderComplete,
+    revealMotionEnabled,
     options?.observerDisabled,
     options?.once,
     options?.rootMargin,
@@ -152,5 +155,5 @@ export function useRevealOnView<T extends HTMLElement>(
     ref,
   ]);
 
-  return visible;
+  return revealMotionEnabled ? visible : true;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useWorkCtaRevealAligned } from "@/lib/heroRevealTimeline";
+import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 
 export type UseWorkRevealOnViewOptions = {
   once?: boolean;
@@ -20,6 +21,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
 ) {
   const preloaderComplete = usePreloaderComplete();
   const ctaAligned = useWorkCtaRevealAligned();
+  const revealMotionEnabled = useRevealMotionEnabled();
 
   const [visible, setVisible] = useState(
     () =>
@@ -32,7 +34,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
   const observerDisabled = options?.observerDisabled === true;
 
   useEffect(() => {
-    if (observerDisabled) {
+    if (observerDisabled || !revealMotionEnabled) {
       return undefined;
     }
 
@@ -77,6 +79,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
     };
   }, [
     preloaderComplete,
+    revealMotionEnabled,
     observerDisabled,
     options?.once,
     options?.rootMargin,
@@ -85,7 +88,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
   ]);
 
   useEffect(() => {
-    if (observerDisabled) {
+    if (observerDisabled || !revealMotionEnabled) {
       return undefined;
     }
 
@@ -99,10 +102,6 @@ export function useWorkRevealOnView<T extends HTMLElement>(
       return undefined;
     }
 
-    if (!ctaAligned) {
-      return undefined;
-    }
-
     let revealTimerId: number | undefined;
 
     const commit = () => {
@@ -110,7 +109,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
       setVisible(true);
     };
 
-    const delayMs = options?.revealDelayMs ?? 0;
+    const delayMs = ctaAligned ? options?.revealDelayMs ?? 0 : 480;
 
     if (delayMs <= 0) {
       commit();
@@ -128,9 +127,10 @@ export function useWorkRevealOnView<T extends HTMLElement>(
     hasIntersected,
     preloaderComplete,
     ctaAligned,
+    revealMotionEnabled,
     observerDisabled,
     options?.revealDelayMs,
   ]);
 
-  return visible;
+  return revealMotionEnabled ? visible : true;
 }

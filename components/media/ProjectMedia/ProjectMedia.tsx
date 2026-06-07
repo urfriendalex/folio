@@ -179,7 +179,7 @@ function ProjectMediaInner({
   });
   const [assetReady, setAssetReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const [posterReady, setPosterReady] = useState(() => (
-    hasLoadedProjectMediaSource(activeAsset.poster, activeAsset.src)
+    hasLoadedProjectMediaSource(activeAsset.poster)
   ));
   const [videoReady, setVideoReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
@@ -257,7 +257,7 @@ function ProjectMediaInner({
                 onLoad={(event) => {
                   const image = event.currentTarget;
                   handleImageLoad(image, () => {
-                    markProjectMediaSourceLoaded(activeAsset.poster, activeAsset.src, image.currentSrc);
+                    markProjectMediaSourceLoaded(activeAsset.poster, image.currentSrc);
                     setPosterReady(true);
                   });
                 }}

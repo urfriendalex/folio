@@ -28,6 +28,7 @@ import {
   subscribeHomeHeroRevealDone,
 } from "@/lib/homeHeroRevealSession";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
+import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { getLenis } from "@/lib/smoothScroll";
 import styles from "./HeroSection.module.scss";
@@ -161,6 +162,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const [portalHoldOpen, setPortalHoldOpen] = useState(false);
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const preloaderComplete = usePreloaderComplete();
+  const revealMotionEnabled = useRevealMotionEnabled();
   const skipRepeatReveal = useSyncExternalStore(
     subscribeHomeHeroRevealDone,
     getHomeHeroRevealDone,
@@ -169,7 +171,8 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   /** Back/forward to `/`: skip long hero choreography so restoring scroll reads as instant. */
   const historyScrollRevealBypass = useRestoredScrollBypass();
-  const bypassHeroReplay = skipRepeatReveal || historyScrollRevealBypass;
+  const bypassHeroReplay =
+    skipRepeatReveal || historyScrollRevealBypass || !revealMotionEnabled;
 
   const heroContentRevealVisible = useRevealOnView(contentRevealGateRef);
   const setHeroCtaAligned = useOptionalHeroRevealTimeline()?.setCtaAligned;

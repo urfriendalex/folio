@@ -5,6 +5,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
+import { markNextHomeNavigationForImmediateReveal } from "@/lib/revealPolicy";
 import {
   clearLocationHash,
   getLenis,
@@ -191,6 +192,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       if (url.pathname !== here.pathname) {
         pendingHomeSectionIdRef.current = hash;
+        markNextHomeNavigationForImmediateReveal(hash);
         router.push("/", { scroll: false });
         return;
       }
