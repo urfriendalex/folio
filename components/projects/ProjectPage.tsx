@@ -674,7 +674,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
         })}
       </section>
 
-      <div className={styles.toolbarShell} data-overlay-chrome-conceal="true" data-expanded={toolbarExpanded}>
+      <div className={styles.toolbarShell} data-overlay-toolbar-slide="true" data-expanded={toolbarExpanded}>
         <div className={styles.toolbarTrack}>
           <button
             type="button"

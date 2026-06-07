@@ -25,7 +25,7 @@ export default function ProjectLoading() {
         ))}
       </section>
 
-      <div className={`${styles.toolbarShell} ${styles.loadingToolbar}`} data-overlay-chrome-conceal="true">
+      <div className={`${styles.toolbarShell} ${styles.loadingToolbar}`} data-overlay-toolbar-slide="true">
         <div className={styles.toolbarTrack}>
           <div className={`${styles.navButton} ${styles.previousButton}`} aria-hidden="true" />
           <div className={styles.toolbarCore}>
