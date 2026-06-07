@@ -640,6 +640,19 @@
   }
 }
 
+/* Degraded/direct navigation mode: prioritize the actionable controls and skip the measured SVG banner. */
+:global(html.reveals-bypassed) .section .contactGooeyCard {
+  display: none;
+}
+
+:global(html.reveals-bypassed) .section .contactChannelButton {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  pointer-events: auto;
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .formView,
   .emailWord,
