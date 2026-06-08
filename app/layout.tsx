@@ -105,6 +105,24 @@ const bootstrapScript = `
   } else {
     html.classList.remove("is-loading");
   }
+
+  let bypassReveals = false;
+  let degradeContact = false;
+  try {
+    const connection = navigator.connection;
+    const pendingHomeSection = sessionStorage.getItem("folio:home-reveal-bypass");
+    degradeContact = connection?.saveData === true;
+    bypassReveals =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      degradeContact ||
+      pendingHomeSection === "work" ||
+      pendingHomeSection === "contact" ||
+      pendingHomeSection === "contact-form";
+  } catch (_error) {}
+
+  html.classList.toggle("reveals-enabled", !bypassReveals);
+  html.classList.toggle("reveals-bypassed", bypassReveals);
+  html.classList.toggle("contact-degraded", degradeContact);
 })();
 `;
 

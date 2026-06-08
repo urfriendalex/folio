@@ -91,6 +91,7 @@ export function Preloader({ onDone }: PreloaderProps) {
 
     let rafId: number | null = null;
     let exitFallbackTimer: number | null = null;
+    let completionFrameId: number | null = null;
     let isExiting = false;
     let didFinalize = false;
     let displayedProgress = 0;
@@ -108,7 +109,7 @@ export function Preloader({ onDone }: PreloaderProps) {
       return;
     }
 
-    const finishPreloader = () => {
+    const beginPreloaderExit = () => {
       if (isExiting) {
         return;
       }
@@ -170,6 +171,27 @@ export function Preloader({ onDone }: PreloaderProps) {
       }, EXIT_TIMEOUT_MS);
     };
 
+    const finishPreloader = () => {
+      if (isExiting || completionFrameId !== null) {
+        return;
+      }
+
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+
+      displayedProgress = 1;
+      setProgressText(1, true);
+
+      completionFrameId = window.requestAnimationFrame(() => {
+        completionFrameId = window.requestAnimationFrame(() => {
+          completionFrameId = null;
+          beginPreloaderExit();
+        });
+      });
+    };
+
     const animate = () => {
       if (isExiting) {
         return;
@@ -209,6 +231,10 @@ export function Preloader({ onDone }: PreloaderProps) {
         window.clearTimeout(exitFallbackTimer);
       }
 
+      if (completionFrameId !== null) {
+        window.cancelAnimationFrame(completionFrameId);
+      }
+
       html.classList.remove("is-preloader-exiting");
     };
   }, [actualProgressRef, hasStartedAssetLoading, isCompleteRef, onDone]);
@@ -233,7 +259,7 @@ export function Preloader({ onDone }: PreloaderProps) {
         ariaLabel="ASCII walking animation"
       />
       <div
-        className={`${styles.progress} ${hasStartedAssetLoading ? styles.progressVisible : ""}`.trim()}
+        className={`${styles.progress} ${styles.progressVisible}`}
         role="status"
         aria-live="polite"
         aria-label="Loading progress"

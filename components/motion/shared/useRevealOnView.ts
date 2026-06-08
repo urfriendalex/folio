@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
+import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 
 export type UseRevealOnViewOptions = {
   once?: boolean;
@@ -32,6 +33,7 @@ export function useRevealOnView<T extends HTMLElement>(
   options?: UseRevealOnViewOptions,
 ) {
   const preloaderComplete = usePreloaderComplete();
+  const revealMotionEnabled = useRevealMotionEnabled();
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     reducedMotionSnapshot,
@@ -41,7 +43,7 @@ export function useRevealOnView<T extends HTMLElement>(
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (options?.observerDisabled || reducedMotion) {
+    if (options?.observerDisabled || reducedMotion || !revealMotionEnabled) {
       return undefined;
     }
 
@@ -153,6 +155,7 @@ export function useRevealOnView<T extends HTMLElement>(
     };
   }, [
     preloaderComplete,
+    revealMotionEnabled,
     reducedMotion,
     options?.observerDisabled,
     options?.once,
@@ -162,5 +165,5 @@ export function useRevealOnView<T extends HTMLElement>(
     ref,
   ]);
 
-  return reducedMotion || visible;
+  return reducedMotion || !revealMotionEnabled || visible;
 }

@@ -21,8 +21,6 @@ export type PreloadAsset =
       type: "fonts" | "lenis";
     };
 
-const FOOTER_ASCII_FRAME_FOLDER = "/animations/windows/high";
-
 /** Home grid thumbnails only — archive assets load when `/archive` is visited (see `archive-manifest`). */
 const sharedImageSources = Array.from(
   new Set(projects.slice(0, 3).flatMap((project) => getThumbnailPosterSources(project))),
@@ -42,18 +40,6 @@ export const CRITICAL_PRELOAD_ASSETS: readonly PreloadAsset[] = [
     type: "image" as const,
     src,
   })),
-  {
-    id: "toolbar-ascii-meta",
-    type: "fetch",
-    src: `${FOOTER_ASCII_FRAME_FOLDER}/meta.json`,
-    responseType: "json",
-  },
-  {
-    id: "toolbar-ascii-frame",
-    type: "fetch",
-    src: `${FOOTER_ASCII_FRAME_FOLDER}/frame_00001.bin`,
-    responseType: "arrayBuffer",
-  },
 ] as const;
 
 const MAX_DURATION_MS = 12000;

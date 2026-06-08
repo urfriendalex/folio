@@ -6,6 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import {
+  applyImmediateRevealPolicy,
+  markNextHomeNavigationForImmediateReveal,
+} from "@/lib/revealPolicy";
+import {
   clearLocationHash,
   getLenis,
   scrollElementIntoView,
@@ -34,6 +38,8 @@ function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boo
     const el = document.getElementById(sectionId);
 
     if (el && !shouldPauseSmoothScroll(document.documentElement)) {
+      applyImmediateRevealPolicy();
+
       if (options?.updateHash) {
         window.history.replaceState(window.history.state, "", `/#${sectionId}`);
         window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
@@ -191,6 +197,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       if (url.pathname !== here.pathname) {
         pendingHomeSectionIdRef.current = hash;
+        markNextHomeNavigationForImmediateReveal(hash);
         router.push("/", { scroll: false });
         return;
       }

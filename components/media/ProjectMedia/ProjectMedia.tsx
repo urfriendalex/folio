@@ -46,6 +46,7 @@ function useIntersectionState<T extends HTMLElement>(
   { enabled = true }: UseIntersectionOptions,
 ) {
   const [intersecting, setIntersecting] = useState(false);
+  const [hasIntersected, setHasIntersected] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
@@ -60,7 +61,11 @@ function useIntersectionState<T extends HTMLElement>(
           setIntersecting(false);
           return;
         }
-        setIntersecting(Boolean(entry.isIntersecting && entry.intersectionRatio > 0));
+        const nextIntersecting = Boolean(entry.isIntersecting && entry.intersectionRatio > 0);
+        setIntersecting(nextIntersecting);
+        if (nextIntersecting) {
+          setHasIntersected(true);
+        }
       },
       { threshold: [...VIEWPORT_THRESHOLD_STEPS] },
     );
@@ -69,7 +74,10 @@ function useIntersectionState<T extends HTMLElement>(
     return () => observer.disconnect();
   }, [enabled, ref]);
 
-  return enabled ? intersecting : false;
+  return {
+    hasIntersected: enabled ? hasIntersected : false,
+    intersecting: enabled ? intersecting : false,
+  };
 }
 
 let projectMediaMobileMql: MediaQueryList | null = null;
@@ -128,14 +136,6 @@ async function ensureVideoPlayback(video: HTMLVideoElement) {
   }
 }
 
-function releaseVideoSource(video: HTMLVideoElement, detachSource = false) {
-  video.pause();
-  if (detachSource) {
-    video.removeAttribute("src");
-    video.load();
-  }
-}
-
 function resolveVariant(media: ProjectMediaSlot, isMobile: boolean): ProjectMediaAsset {
   return isMobile && media.mobile ? media.mobile : media.desktop;
 }
@@ -174,33 +174,38 @@ function ProjectMediaInner({
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const isInViewport = useIntersectionState(rootRef, {
+  const {
+    hasIntersected: hasMountedVideo,
+    intersecting: isInViewport,
+  } = useIntersectionState(rootRef, {
     enabled: media.kind === "video",
   });
   const [assetReady, setAssetReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const [posterReady, setPosterReady] = useState(() => (
-    hasLoadedProjectMediaSource(activeAsset.poster, activeAsset.src)
+    hasLoadedProjectMediaSource(activeAsset.poster)
   ));
-  const [videoReady, setVideoReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
+  const [videoReady, setVideoReady] = useState(false);
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
 
   useEffect(() => {
-    if (media.kind !== "video") {
+    if (media.kind !== "video" || !hasMountedVideo) {
       return undefined;
     }
 
     const video = videoRef.current;
 
-    if (!video || !isInViewport) {
+    if (!video) {
       return undefined;
     }
 
-    void ensureVideoPlayback(video);
-    return () => {
-      releaseVideoSource(video, process.env.NODE_ENV === "production");
-      setVideoReady(false);
-    };
-  }, [isInViewport, media.kind]);
+    if (isInViewport) {
+      void ensureVideoPlayback(video);
+    } else {
+      video.pause();
+    }
+
+    return undefined;
+  }, [hasMountedVideo, isInViewport, media.kind]);
 
   const handleImageLoad = useCallback((image: HTMLImageElement, onReady: () => void) => {
     if (typeof image.decode !== "function") {
@@ -223,9 +228,7 @@ function ProjectMediaInner({
 
   const imageAlt = media.kind === "image" ? alt ?? media.alt ?? "" : "";
   const videoLabel = media.kind === "video" ? alt ?? media.alt : undefined;
-  const showVideo = media.kind === "video" && isInViewport;
-  /** Poster must stay visible when the `<video>` is unmounted off-viewport; do not tie to `videoReady` alone. */
-  const videoPlayingInView = showVideo && videoReady;
+  const showVideo = media.kind === "video" && hasMountedVideo;
 
   return (
     <div
@@ -235,7 +238,7 @@ function ProjectMediaInner({
       data-fit={fit}
       data-kind={media.kind}
       data-ready={ready ? "true" : "false"}
-      data-video-playing={videoPlayingInView ? "true" : "false"}
+      data-video-ready={videoReady ? "true" : "false"}
     >
       <ProjectMediaPlaceholderGrid
         grid={placeholderGrid}
@@ -257,7 +260,7 @@ function ProjectMediaInner({
                 onLoad={(event) => {
                   const image = event.currentTarget;
                   handleImageLoad(image, () => {
-                    markProjectMediaSourceLoaded(activeAsset.poster, activeAsset.src, image.currentSrc);
+                    markProjectMediaSourceLoaded(activeAsset.poster, image.currentSrc);
                     setPosterReady(true);
                   });
                 }}
@@ -274,7 +277,7 @@ function ProjectMediaInner({
                   muted
                   playsInline
                   autoPlay
-                  preload={isInViewport ? "auto" : "metadata"}
+                  preload="auto"
                   loop={media.loop !== false}
                   disablePictureInPicture
                   aria-label={videoLabel}

@@ -294,6 +294,17 @@
   transition-delay: 0ms;
 }
 
+/* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
+:global(html:not(.reveals-enabled)) .emailWord,
+:global(html:not(.reveals-enabled)) .contactChannelButton,
+:global(html:not(.reveals-enabled)) .contactGooeyCard {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  pointer-events: auto;
+  transition: none;
+}
+
 /* Room for globals `.link-underline::after` (desktop); stripped on mobile below */
 .contactChannelButton:global(.link-underline) {
   padding-bottom: 0.18em;
@@ -627,6 +638,19 @@
   .formActions {
     grid-column: auto;
   }
+}
+
+/* Genuine loading degradation: prioritize actionable controls and skip the measured SVG banner. */
+:global(html.contact-degraded) .section .contactGooeyCard {
+  display: none;
+}
+
+:global(html.contact-degraded) .section .contactChannelButton {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  pointer-events: auto;
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
