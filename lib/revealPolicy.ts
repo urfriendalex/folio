@@ -2,40 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 
-const HOME_REVEAL_BYPASS_KEY = "folio:home-reveal-bypass";
 const REVEAL_POLICY_EVENT = "folio:reveal-policy";
 
 let revealMotionEnabled = false;
 
 function notifyRevealPolicyChanged() {
   window.dispatchEvent(new CustomEvent(REVEAL_POLICY_EVENT));
-}
-
-export function applyImmediateRevealPolicy() {
-  revealMotionEnabled = false;
-  document.documentElement.classList.remove("reveals-enabled", "contact-degraded");
-  document.documentElement.classList.add("reveals-bypassed");
-  notifyRevealPolicyChanged();
-}
-
-export function markNextHomeNavigationForImmediateReveal(sectionId: string) {
-  try {
-    sessionStorage.setItem(HOME_REVEAL_BYPASS_KEY, sectionId);
-  } catch {
-    // Ignore storage failures; content still has the progressive-enhancement fallback.
-  }
-
-  applyImmediateRevealPolicy();
-}
-
-function consumeHomeNavigationRevealBypass(): boolean {
-  try {
-    const sectionId = sessionStorage.getItem(HOME_REVEAL_BYPASS_KEY);
-    sessionStorage.removeItem(HOME_REVEAL_BYPASS_KEY);
-    return sectionId === "work" || sectionId === "contact" || sectionId === "contact-form";
-  } catch {
-    return false;
-  }
 }
 
 function shouldBypassRevealMotion(): boolean {
@@ -53,7 +25,7 @@ function shouldBypassRevealMotion(): boolean {
 export function initializeRevealPolicy(): boolean {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const degraded = shouldBypassRevealMotion();
-  const bypassMotion = reduceMotion || degraded || consumeHomeNavigationRevealBypass();
+  const bypassMotion = reduceMotion || degraded;
 
   revealMotionEnabled = !bypassMotion;
   document.documentElement.classList.toggle("reveals-enabled", revealMotionEnabled);

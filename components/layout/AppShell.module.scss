@@ -23,6 +23,31 @@
   background: var(--bg-color);
 }
 
+/* Cross-route Work/Contact links mount Home at the top before its target exists.
+   Hold only that incoming Home paint until the immediate destination scroll is positioned. */
+:global(html.home-section-arrival-pending) .main:has(#work) {
+  opacity: 0;
+}
+
+:global(html.home-section-arrival-reveal) .main:has(#work) {
+  animation: home-section-arrival 180ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes home-section-arrival {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(html.home-section-arrival-reveal) .main:has(#work) {
+    animation: none;
+  }
+}
+
 /* Viewport-fixed strip; visibility toggled from Footer via `data-footer-wordmark-active` + IO (hidden off-footer). */
 .footerWordmarkUnderlay {
   position: fixed;

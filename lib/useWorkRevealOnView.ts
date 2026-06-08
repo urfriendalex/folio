@@ -109,7 +109,10 @@ export function useWorkRevealOnView<T extends HTMLElement>(
       setVisible(true);
     };
 
-    const delayMs = ctaAligned ? options?.revealDelayMs ?? 0 : 480;
+    const destinationArrival = document.documentElement.classList.contains(
+      "home-section-arrival-pending",
+    );
+    const delayMs = destinationArrival ? 0 : ctaAligned ? options?.revealDelayMs ?? 0 : 480;
 
     if (delayMs <= 0) {
       commit();
