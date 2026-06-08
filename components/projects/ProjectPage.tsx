@@ -18,11 +18,12 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ImageReveal, RevealLines } from "@/components/motion";
+import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
-import { estimateWrappedLines } from "@/lib/projectOverlaySequence";
+import { useClientMounted } from "@/lib/useClientMounted";
 import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import styles from "./ProjectPage.module.scss";
 
@@ -123,6 +124,8 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
   const [toolbarPinnedOpen, setToolbarPinnedOpen] = useState(false);
   const [toolbarHovered, setToolbarHovered] = useState(false);
+  const hasMounted = useClientMounted();
+  const toolbarMeasureRef = useRef<HTMLElement | null>(null);
   const [mobileMediaIndex, setMobileMediaIndex] = useState<number | null>(null);
   /** When false, grid slot fades back in while the overlay finishes closing (avoids an empty card gap). */
   const [mediaViewerHidesGridSlot, setMediaViewerHidesGridSlot] = useState(false);
@@ -151,11 +154,12 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     reducedMotionSnapshot,
     reducedMotionServerSnapshot,
   );
-  const isPortraitMobileLayout = useSyncExternalStore(
+  const isPortraitMobileLayoutLive = useSyncExternalStore(
     subscribePortraitMobileLayout,
     portraitMobileLayoutSnapshot,
     portraitMobileLayoutServerSnapshot,
   );
+  const isPortraitMobileLayout = hasMounted ? isPortraitMobileLayoutLive : false;
   const overviewLabel = "show full overview";
   const visitLabel = "visit site";
   const primaryProjectUrl = project.links?.[0]?.url;
@@ -163,19 +167,25 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
   const mediaViewerOpen = mobileMediaIndex !== null;
 
   const lineStepMs = reducedMotion ? 8 : TOOLBAR_LINE_STEP_MS;
+  const descriptorLines = usePretextLines(
+    project.descriptor,
+    toolbarMeasureRef,
+    "pre-wrap",
+    hasMounted,
+  );
 
   const { total, descriptorOffset, visitOffset, overviewOffset } = useMemo(() => {
-    const hasVisit = Boolean(project.links?.[0]?.url);
-    const dLines = estimateWrappedLines(project.descriptor, 24, 4);
-    const visitLines = hasVisit ? 1 : 0;
-    const overviewLines = 1;
+    const hasVisit = Boolean(primaryProjectUrl);
+    const descriptorLineCount = Math.max(1, descriptorLines.length);
+    const visitOffsetValue = descriptorLineCount;
+    const overviewOffsetValue = descriptorLineCount + (hasVisit ? 1 : 0);
     return {
-      total: dLines + visitLines + overviewLines,
+      total: overviewOffsetValue + 1,
       descriptorOffset: 0,
-      visitOffset: dLines,
-      overviewOffset: dLines + visitLines,
+      visitOffset: visitOffsetValue,
+      overviewOffset: overviewOffsetValue,
     };
-  }, [project]);
+  }, [descriptorLines.length, primaryProjectUrl]);
 
   const handleToolbarPointerEnter = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") {
@@ -656,7 +666,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     loading={index < 2 ? "eager" : "lazy"}
                   />
                 </div>
-                {isPortrait && !isPortraitMobileLayout ? (
+                {isPortrait ? (
                   <button
                     type="button"
                     className={`link-underline ${styles.fullscreenLink}`}
@@ -695,7 +705,11 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
             onFocusCapture={handleToolbarFocus}
             onBlurCapture={handleToolbarBlur}
           >
-            <section className={styles.toolbarPanel} aria-label={`${project.title} project toolbar`}>
+            <section
+              ref={toolbarMeasureRef}
+              className={styles.toolbarPanel}
+              aria-label={`${project.title} project toolbar`}
+            >
               <div className={styles.toolbarHeader}>
                 <div className={styles.toolbarCopy}>
                   <h1>{project.title}</h1>
@@ -717,6 +731,8 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                   <RevealLines
                     as="p"
                     className={styles.toolbarDescription}
+                    lines={descriptorLines}
+                    measureLines={false}
                     text={project.descriptor}
                     offset={descriptorOffset}
                     stepMs={lineStepMs}

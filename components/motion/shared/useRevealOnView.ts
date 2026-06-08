@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 
 export type UseRevealOnViewOptions = {
@@ -13,32 +13,41 @@ export type UseRevealOnViewOptions = {
   observerDisabled?: boolean;
 };
 
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function reducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function reducedMotionServerSnapshot() {
+  return false;
+}
+
 export function useRevealOnView<T extends HTMLElement>(
   ref: RefObject<T | null>,
   options?: UseRevealOnViewOptions,
 ) {
   const preloaderComplete = usePreloaderComplete();
-
-  const [visible, setVisible] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    reducedMotionSnapshot,
+    reducedMotionServerSnapshot,
   );
 
+  const [visible, setVisible] = useState(false);
+
   useEffect(() => {
-    if (options?.observerDisabled) {
+    if (options?.observerDisabled || reducedMotion) {
       return undefined;
     }
 
     const node = ref.current;
 
     if (!node) {
-      return undefined;
-    }
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduceMotion) {
       return undefined;
     }
 
@@ -144,6 +153,7 @@ export function useRevealOnView<T extends HTMLElement>(
     };
   }, [
     preloaderComplete,
+    reducedMotion,
     options?.observerDisabled,
     options?.once,
     options?.rootMargin,
@@ -152,5 +162,5 @@ export function useRevealOnView<T extends HTMLElement>(
     ref,
   ]);
 
-  return visible;
+  return reducedMotion || visible;
 }

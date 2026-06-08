@@ -16,6 +16,7 @@ import {
   type UseRevealOnViewOptions,
 } from "@/components/motion/shared/useRevealOnView";
 import { lockInternalHyphenWrapping } from "@/lib/lockInternalHyphenWrapping";
+import { resolveRevealOffset, resolveTokenIndex } from "@/lib/revealOffset";
 import styles from "@/components/motion/shared/reveal.module.scss";
 
 type RevealLinesTag = "p" | "span" | "h1" | "h2" | "li" | "dt" | "dd";
@@ -96,16 +97,17 @@ export function RevealLines({
     }
   }, [elementRef]);
   const classNames = [styles.root, className].filter(Boolean).join(" ");
+  const baseOffset = resolveRevealOffset(offset);
   const style = {
     "--reveal-step": `${stepMs}ms`,
-    "--reveal-total": total ?? tokens.length + offset,
+    "--reveal-total": total ?? tokens.length + baseOffset,
     ...(revealDelayMs !== undefined && { "--reveal-delay": `${revealDelayMs}ms` }),
   } as CSSProperties;
   const children = tokens.map((token, index) => (
     <span key={`${token}-${index}`} className={styles.tokenClip}>
       <span
         className={styles.token}
-        style={{ "--token-index": offset + index } as CSSProperties}
+        style={{ "--token-index": resolveTokenIndex(offset, index) } as CSSProperties}
       >
         {renderToken ? renderToken(token, index) : token}
       </span>

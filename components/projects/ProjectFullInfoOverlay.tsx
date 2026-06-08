@@ -11,8 +11,8 @@ import {
 } from "@/lib/projectOverlaySequence";
 import styles from "./ProjectFullInfoOverlay.module.scss";
 
-/** Stagger between line tokens — dense case study; keep total reveal time short. */
-const PROJECT_OVERLAY_REVEAL_STEP_MS = 11;
+/** About-style masked reveal, compressed for the denser project sheet. Keep in sync with `--project-overlay-step` in SCSS. */
+const PROJECT_OVERLAY_REVEAL_STEP_MS = 16;
 
 type ProjectFullInfoOverlayProps = {
   project: ProjectEntry;
@@ -29,7 +29,7 @@ function OverlayBulletList({
 }: {
   items: string[];
   keyPrefix: "resp" | "feat" | "impactH";
-  get: (key: string) => number | undefined;
+  get: (key: string) => number;
   total: number;
   visible: boolean;
 }) {
@@ -45,7 +45,7 @@ function OverlayBulletList({
           as="li"
           className={styles.detailListItem}
           text={`– ${text}`}
-          offset={get(`${keyPrefix}${index}`) ?? 0}
+          offset={get(`${keyPrefix}${index}`)}
           stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
           total={total}
           visible={visible}
@@ -61,12 +61,8 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
 
   const linkList = project.links && project.links.length > 0 ? project.links : [];
 
-  const rootMotionStyle = {
-    "--project-overlay-step": `${PROJECT_OVERLAY_REVEAL_STEP_MS}ms`,
-  } as CSSProperties;
-
   return (
-    <div className={styles.root} data-content-visible={contentVisible} style={rootMotionStyle}>
+    <div className={styles.root} data-content-visible={contentVisible}>
       <header className={styles.header}>
         <RevealLines
           as="p"
@@ -207,7 +203,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                     className={styles.visitSiteLink}
                     style={
                       {
-                        "--link-token-index": get(`link${i}`) ?? 0,
+                        "--link-token-index": get(`link${i}`),
                       } as CSSProperties
                     }
                     target="_blank"
@@ -413,7 +409,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                   className={styles.tagPill}
                   style={
                     {
-                      "--tag-token-index": get(`tag${i}`) ?? 0,
+                      "--tag-token-index": get(`tag${i}`),
                     } as CSSProperties
                   }
                 >

@@ -5,6 +5,7 @@ import type {
   ProjectImpact,
   ProjectStack,
 } from "@/content/projects/types";
+import { resolveRevealOffset } from "@/lib/revealOffset";
 
 /**
  * Upper bound on wrapped lines for stagger `total` / offsets (real tokens from Pretext may be fewer;
@@ -54,7 +55,8 @@ export function formatBulletLines(items: string[], bullet = "·"): string {
 
 export type ProjectOverlayOffsets = {
   total: number;
-  get(key: string): number | undefined;
+  /** Returns `0` when `key` was not registered (e.g. conditional block omitted from the map). */
+  get(key: string): number;
 };
 
 /**
@@ -151,6 +153,6 @@ export function buildProjectOverlayOffsets(project: ProjectEntry): ProjectOverla
 
   return {
     total: paddedTotal,
-    get: (key: string) => map.get(key),
+    get: (key: string) => resolveRevealOffset(map.get(key)),
   };
 }

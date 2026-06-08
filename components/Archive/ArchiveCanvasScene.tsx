@@ -508,9 +508,25 @@ function MediaPlane({
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const localState = useRef({ opacity: 0, frame: 0, ready: false });
   const [, forceRender] = useState(0);
-  const [intrinsicSize, setIntrinsicSize] = useState<{ width: number; height: number } | null>(null);
+  const [videoIntrinsic, setVideoIntrinsic] = useState<{ width: number; height: number } | null>(null);
+  const [trackedMediaUrl, setTrackedMediaUrl] = useState(media.url);
   const texture = useMemo(() => getTexture(media), [media]);
   const isReady = isTextureLoaded(texture);
+
+  if (trackedMediaUrl !== media.url) {
+    setTrackedMediaUrl(media.url);
+    setVideoIntrinsic(null);
+  }
+
+  const textureIntrinsic = useMemo(() => {
+    if (!texture || !isReady) {
+      return null;
+    }
+
+    return readIntrinsicPixelSize(texture);
+  }, [isReady, texture]);
+
+  const intrinsicSize = videoIntrinsic ?? textureIntrinsic;
 
   useFrame(() => {
     const material = materialRef.current;
@@ -584,32 +600,6 @@ function MediaPlane({
   }, [intrinsicSize, media.height, media.width]);
 
   useEffect(() => {
-    setIntrinsicSize(null);
-  }, [media.url]);
-
-  useEffect(() => {
-    if (!texture || !isReady) {
-      return;
-    }
-
-    const nextIntrinsic = readIntrinsicPixelSize(texture);
-
-    if (nextIntrinsic) {
-      setIntrinsicSize((previous) => {
-        if (
-          previous &&
-          previous.width === nextIntrinsic.width &&
-          previous.height === nextIntrinsic.height
-        ) {
-          return previous;
-        }
-
-        return nextIntrinsic;
-      });
-    }
-  }, [isReady, texture]);
-
-  useEffect(() => {
     const image = texture?.image;
 
     if (!(image instanceof HTMLVideoElement)) {
@@ -621,7 +611,7 @@ function MediaPlane({
       const height = image.videoHeight;
 
       if (width > 0 && height > 0) {
-        setIntrinsicSize((previous) => {
+        setVideoIntrinsic((previous) => {
           if (
             previous &&
             previous.width === width &&
