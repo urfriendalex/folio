@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
   useRef,
   type ComponentProps,
   type FocusEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent,
   type TouchEvent,
 } from "react";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 
 type LinkComponentProps = ComponentProps<typeof Link>;
 
@@ -19,6 +21,7 @@ type IntentPrefetchLinkProps = Omit<
   LinkComponentProps,
   "onFocus" | "onPointerEnter" | "onPointerLeave" | "onTouchStart" | "prefetch"
 > & {
+  nativeNavigation?: boolean;
   onFocus?: LinkComponentProps["onFocus"];
   onPointerEnter?: LinkComponentProps["onPointerEnter"];
   onPointerLeave?: LinkComponentProps["onPointerLeave"];
@@ -43,6 +46,7 @@ function prefetchHrefFromProp(href: LinkComponentProps["href"]) {
 
 export function IntentPrefetchLink({
   href,
+  nativeNavigation = false,
   onFocus,
   onPointerEnter,
   onPointerLeave,
@@ -52,9 +56,37 @@ export function IntentPrefetchLink({
   prefetchDelayMs = DEFAULT_PREFETCH_DELAY_MS,
   ...rest
 }: IntentPrefetchLinkProps) {
+  const pathname = usePathname();
   const router = useRouter();
+  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
   const timeoutRef = useRef<number | null>(null);
   const prefetchHref = prefetchHrefFromProp(href);
+
+  const handleClick = useCallback(
+    (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      onClick?.(event);
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (!prefetchHref) {
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      if (event.button !== 0) {
+        return;
+      }
+
+      if (nativeNavigation) {
+        return;
+      }
+
+      event.preventDefault();
+      guardedPush(prefetchHref, scroll === false ? { scroll: false } : undefined);
+    },
+    [guardedPush, nativeNavigation, onClick, prefetchHref, scroll],
+  );
 
   const clearPendingPrefetch = useCallback(() => {
     if (timeoutRef.current !== null) {
@@ -117,7 +149,8 @@ export function IntentPrefetchLink({
       href={href}
       scroll={scroll}
       prefetch={false}
-      onClick={onClick}
+      aria-busy={isPendingNav || undefined}
+      onClick={handleClick}
       onFocus={handleFocus}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}

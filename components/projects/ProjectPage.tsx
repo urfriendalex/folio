@@ -15,7 +15,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ImageReveal, RevealLines } from "@/components/motion";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
@@ -24,6 +24,7 @@ import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { useClientMounted } from "@/lib/useClientMounted";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import styles from "./ProjectPage.module.scss";
 
 /** Line stagger for toolbar copy — aligned with immersive overlays (~28ms), slightly tighter for this bar. */
@@ -108,7 +109,9 @@ function mediaIndexFromTarget(target: HTMLElement) {
 
 export function ProjectPage({ nextProject, previousProject, project }: ProjectPageProps) {
   const { openProjectFullInfo } = useOverlay();
+  const pathname = usePathname();
   const router = useRouter();
+  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {
@@ -685,9 +688,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
         <div className={styles.toolbarTrack}>
           <button
             type="button"
+            aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.previousButton}`}
             onClick={() => {
-              router.push(`/projects/${previousProject.slug}`);
+              guardedPush(`/projects/${previousProject.slug}`);
             }}
           >
             Previous
@@ -786,9 +790,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
           <button
             type="button"
+            aria-busy={isPendingNav || undefined}
             className={`${styles.navButton} ${styles.nextButton}`}
             onClick={() => {
-              router.push(`/projects/${nextProject.slug}`);
+              guardedPush(`/projects/${nextProject.slug}`);
             }}
           >
             Next

@@ -12,6 +12,7 @@ import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -50,6 +51,7 @@ export function Navbar() {
   });
   const timeZoneStatus = useTimeZoneStatus();
   const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
+  const { guardedPush } = useNavigationFlightLock(pathname);
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {
@@ -188,7 +190,7 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    router.push("/", { scroll: false });
+    guardedPush("/", { scroll: false });
   };
 
   const handleMobileNavLinkClick = () => {
