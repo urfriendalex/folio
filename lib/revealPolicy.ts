@@ -4,7 +4,6 @@ import { useSyncExternalStore } from "react";
 
 const HOME_REVEAL_BYPASS_KEY = "folio:home-reveal-bypass";
 const REVEAL_POLICY_EVENT = "folio:reveal-policy";
-const REPEAT_VISIT_REVEAL_DEADLINE_MS = 1200;
 
 let revealMotionEnabled = false;
 
@@ -14,7 +13,7 @@ function notifyRevealPolicyChanged() {
 
 export function applyImmediateRevealPolicy() {
   revealMotionEnabled = false;
-  document.documentElement.classList.remove("reveals-enabled");
+  document.documentElement.classList.remove("reveals-enabled", "contact-degraded");
   document.documentElement.classList.add("reveals-bypassed");
   notifyRevealPolicyChanged();
 }
@@ -53,17 +52,10 @@ function shouldBypassRevealMotion(): boolean {
 
 export function initializeRevealPolicy(): boolean {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const preloaderWillRun = document.documentElement.getAttribute("data-preloader") === "run";
-  const initializedPromptly =
-    preloaderWillRun || performance.now() <= REPEAT_VISIT_REVEAL_DEADLINE_MS;
-  const degraded = shouldBypassRevealMotion() || !initializedPromptly;
-  const bypassMotion =
-    reduceMotion
-    || degraded
-    || consumeHomeNavigationRevealBypass();
+  const degraded = shouldBypassRevealMotion();
+  const bypassMotion = reduceMotion || degraded || consumeHomeNavigationRevealBypass();
 
   revealMotionEnabled = !bypassMotion;
-  document.documentElement.setAttribute("data-reveal-policy-ready", "true");
   document.documentElement.classList.toggle("reveals-enabled", revealMotionEnabled);
   document.documentElement.classList.toggle("reveals-bypassed", bypassMotion);
   document.documentElement.classList.toggle("contact-degraded", degraded);
@@ -74,7 +66,6 @@ export function initializeRevealPolicy(): boolean {
 
 export function clearRevealPolicy() {
   revealMotionEnabled = false;
-  document.documentElement.removeAttribute("data-reveal-policy-ready");
   document.documentElement.classList.remove(
     "reveals-enabled",
     "reveals-bypassed",

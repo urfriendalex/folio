@@ -111,12 +111,13 @@ async function fetchFrame(url: string): Promise<Response> {
 
 function fillMissingFrames<T extends string | Uint8Array>(
   results: PromiseSettledResult<T>[],
+  fallback?: T | null,
 ): T[] {
   const firstLoaded = results.find(
     (result): result is PromiseFulfilledResult<T> => result.status === "fulfilled",
-  )?.value;
+  )?.value ?? fallback;
 
-  if (firstLoaded === undefined) {
+  if (firstLoaded == null) {
     throw new Error("No ASCII animation frames could be loaded");
   }
 
@@ -345,6 +346,7 @@ export default function ASCIIAnimation({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fullLoadTriggered = useRef(false);
   const resolvedSource = useRef<ResolvedSource | null>(null);
+  const previewFrameRef = useRef<string | Uint8Array | null>(null);
   const hasNotifiedReadyRef = useRef(false);
   const revealRafRef = useRef<number>(0);
   const visibilityRafRef = useRef<number>(0);
@@ -369,7 +371,10 @@ export default function ASCIIAnimation({
     [frameCount],
   );
 
-  const loadAllFrames = useCallback(async (resolved = resolvedSource.current) => {
+  const loadAllFrames = useCallback(async (
+    resolved = resolvedSource.current,
+    fallbackFrame = previewFrameRef.current,
+  ) => {
     if (!resolved || fullLoadTriggered.current) {
       return;
     }
@@ -392,7 +397,8 @@ export default function ASCIIAnimation({
             return new Uint8Array(await response.arrayBuffer());
           }),
         );
-        const loadedFrames = fillMissingFrames(frameResults);
+        const fallback = fallbackFrame instanceof Uint8Array ? fallbackFrame : null;
+        const loadedFrames = fillMissingFrames(frameResults, fallback);
 
         setMeta(resolvedMeta);
         setColorFrames(loadedFrames);
@@ -404,7 +410,8 @@ export default function ASCIIAnimation({
             return response.text();
           }),
         );
-        const loadedFrames = fillMissingFrames(frameResults);
+        const fallback = typeof fallbackFrame === "string" ? fallbackFrame : null;
+        const loadedFrames = fillMissingFrames(frameResults, fallback);
 
         setFrames(loadedFrames);
         setColorFrames([]);
@@ -423,6 +430,7 @@ export default function ASCIIAnimation({
   useEffect(() => {
     fullLoadTriggered.current = false;
     resolvedSource.current = null;
+    previewFrameRef.current = providedFrames?.[0] ?? null;
     hasNotifiedReadyRef.current = false;
     setFrames(providedFrames ?? []);
     setColorFrames([]);
@@ -461,6 +469,8 @@ export default function ASCIIAnimation({
       resolvedSource.current = source;
       setFormat(source.format);
 
+      let previewFrame: string | Uint8Array | undefined;
+
       try {
         if (source.format === "color") {
           const metaResponse = await fetch(`${source.baseUrl}/meta.json`);
@@ -474,8 +484,10 @@ export default function ASCIIAnimation({
             throw new Error(`Failed to fetch preview color frame: ${previewResponse.status}`);
           }
 
+          previewFrame = new Uint8Array(await previewResponse.arrayBuffer());
+          previewFrameRef.current = previewFrame;
           setMeta(resolvedMeta);
-          setColorFrames([new Uint8Array(await previewResponse.arrayBuffer())]);
+          setColorFrames([previewFrame]);
           setFrames([]);
         } else {
           const response = await fetch(`${source.baseUrl}/${firstFrameFile}`);
@@ -483,7 +495,9 @@ export default function ASCIIAnimation({
             throw new Error(`Failed to fetch preview frame: ${response.status}`);
           }
 
-          setFrames([await response.text()]);
+          previewFrame = await response.text();
+          previewFrameRef.current = previewFrame;
+          setFrames([previewFrame]);
           setColorFrames([]);
           setMeta(null);
         }
@@ -494,7 +508,7 @@ export default function ASCIIAnimation({
       }
 
       if (!lazy) {
-        await loadAllFrames(source);
+        await loadAllFrames(source, previewFrame);
       } else {
         setIsLoading(false);
         notifyReady();

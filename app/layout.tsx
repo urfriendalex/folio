@@ -123,14 +123,6 @@ const bootstrapScript = `
   html.classList.toggle("reveals-enabled", !bypassReveals);
   html.classList.toggle("reveals-bypassed", bypassReveals);
   html.classList.toggle("contact-degraded", degradeContact);
-
-  if (!shouldRun && !bypassReveals) {
-    window.setTimeout(() => {
-      if (html.getAttribute("data-reveal-policy-ready") === "true") return;
-      html.classList.remove("reveals-enabled");
-      html.classList.add("reveals-bypassed", "contact-degraded");
-    }, 1200);
-  }
 })();
 `;
 
