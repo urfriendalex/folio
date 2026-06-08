@@ -6,11 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import {
-  completeHomeSectionArrival,
-  getPendingHomeSectionArrival,
-  markNextHomeSectionArrival,
-} from "@/lib/revealPolicy";
-import {
   clearLocationHash,
   getLenis,
   scrollElementIntoView,
@@ -19,6 +14,16 @@ import {
 } from "@/lib/smoothScroll";
 
 const HOME_SECTION_IDS = new Set(["work", "contact", "contact-form"]);
+const HOME_SECTION_ARRIVAL_PENDING_CLASS = "home-section-arrival-pending";
+const HOME_SECTION_ARRIVAL_REVEAL_CLASS = "home-section-arrival-reveal";
+const HOME_SECTION_ARRIVAL_REVEAL_MS = 420;
+
+function clearHomeSectionArrivalClasses() {
+  document.documentElement.classList.remove(
+    HOME_SECTION_ARRIVAL_PENDING_CLASS,
+    HOME_SECTION_ARRIVAL_REVEAL_CLASS,
+  );
+}
 
 function scrollToTopImmediate() {
   const lenis = getLenis();
@@ -31,7 +36,10 @@ function scrollToTopImmediate() {
   window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
-function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boolean }) {
+function scrollToHomeSectionById(
+  sectionId: string,
+  options?: { onComplete?: () => void; updateHash?: boolean },
+) {
   let attempts = 0;
   const maxAttempts = 90;
 
@@ -46,9 +54,7 @@ function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boo
       scrollElementIntoView(el, { force: true, immediate: options?.updateHash ?? false });
       window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
 
-      requestAnimationFrame(() => {
-        requestAnimationFrame(completeHomeSectionArrival);
-      });
+      options?.onComplete?.();
       return;
     }
 
@@ -56,7 +62,10 @@ function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boo
 
     if (attempts < maxAttempts) {
       requestAnimationFrame(tryScroll);
+      return;
     }
+
+    options?.onComplete?.();
   };
 
   requestAnimationFrame(() => {
@@ -85,8 +94,18 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const router = useRouter();
   const hasHandledInitialNavigation = useRef(false);
   const pendingHomeSectionIdRef = useRef<string | null>(null);
+  const arrivalRevealTimerRef = useRef<number | null>(null);
   /** True after `popstate` until the next `/` scroll policy runs (Next.js restores scroll on back/forward). */
   const historyScrollRestorePendingRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (arrivalRevealTimerRef.current !== null) {
+        window.clearTimeout(arrivalRevealTimerRef.current);
+      }
+      clearHomeSectionArrivalClasses();
+    };
+  }, []);
 
   useEffect(() => {
     const onPopState = () => {
@@ -95,6 +114,46 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    const cancelSupersededHomeSectionArrival = (event: MouseEvent) => {
+      const pendingSectionId = pendingHomeSectionIdRef.current;
+
+      if (!pendingSectionId || !(event.target instanceof Element)) {
+        return;
+      }
+
+      const link = event.target.closest("a[href]");
+
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      let url: URL;
+
+      try {
+        url = new URL(link.href);
+      } catch {
+        return;
+      }
+
+      const stillTargetsPendingSection =
+        url.origin === window.location.origin &&
+        url.pathname === "/" &&
+        url.hash === `#${pendingSectionId}`;
+
+      if (!stillTargetsPendingSection) {
+        pendingHomeSectionIdRef.current = null;
+        clearHomeSectionArrivalClasses();
+      }
+    };
+
+    document.addEventListener("click", cancelSupersededHomeSectionArrival, true);
+
+    return () => {
+      document.removeEventListener("click", cancelSupersededHomeSectionArrival, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -200,7 +259,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       if (url.pathname !== here.pathname) {
         pendingHomeSectionIdRef.current = hash;
-        markNextHomeSectionArrival(hash);
+        document.documentElement.classList.add(HOME_SECTION_ARRIVAL_PENDING_CLASS);
         router.push("/", { scroll: false });
         return;
       }
@@ -230,6 +289,10 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     const shouldRespectInitialHash = isInitialNavigation && !isReloadNavigation();
 
     if (pathname !== "/") {
+      if (pendingHomeSectionIdRef.current !== null) {
+        pendingHomeSectionIdRef.current = null;
+        clearHomeSectionArrivalClasses();
+      }
       historyScrollRestorePendingRef.current = false;
       clearHomeHistoryPopReveal();
 
@@ -241,8 +304,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       return;
     }
 
-    const pendingHomeSectionId =
-      pendingHomeSectionIdRef.current ?? getPendingHomeSectionArrival();
+    const pendingHomeSectionId = pendingHomeSectionIdRef.current;
     const id = pendingHomeSectionId ?? window.location.hash.slice(1);
 
     const scheduleLenisSyncToRestoredScroll = () => {
@@ -273,7 +335,23 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       if (pendingHomeSectionId) {
         pendingHomeSectionIdRef.current = null;
         historyScrollRestorePendingRef.current = false;
-        scrollToHomeSectionById(id, { updateHash: true });
+        scrollToHomeSectionById(id, {
+          updateHash: true,
+          onComplete: () => {
+            const root = document.documentElement;
+            root.classList.remove(HOME_SECTION_ARRIVAL_PENDING_CLASS);
+            root.classList.add(HOME_SECTION_ARRIVAL_REVEAL_CLASS);
+
+            if (arrivalRevealTimerRef.current !== null) {
+              window.clearTimeout(arrivalRevealTimerRef.current);
+            }
+
+            arrivalRevealTimerRef.current = window.setTimeout(() => {
+              root.classList.remove(HOME_SECTION_ARRIVAL_REVEAL_CLASS);
+              arrivalRevealTimerRef.current = null;
+            }, HOME_SECTION_ARRIVAL_REVEAL_MS);
+          },
+        });
         return;
       }
 

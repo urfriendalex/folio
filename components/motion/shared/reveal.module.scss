@@ -99,6 +99,11 @@
   );
 }
 
+:global(html.home-section-arrival-reveal) .root[data-visible="true"] .token {
+  transition-duration: 220ms, 300ms;
+  transition-delay: calc(var(--token-index, 0) * 12ms);
+}
+
 .root[data-visible="true"][data-immediate="true"] .token {
   transition: none;
 }
@@ -126,6 +131,12 @@
 :global(html.reveals-enabled) .imageReveal[data-visible="true"] {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+}
+
+:global(html.home-section-arrival-reveal) .scrollReveal[data-visible="true"],
+:global(html.home-section-arrival-reveal) .imageReveal[data-visible="true"] {
+  transition-duration: 240ms, 320ms;
+  transition-delay: 0ms;
 }
 
 :global(html.reveals-enabled) .scrollReveal[data-stagger="true"][data-visible="true"] {

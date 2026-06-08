@@ -294,6 +294,16 @@
   transition-delay: 0ms;
 }
 
+:global(html.home-section-arrival-reveal) .section .emailWord,
+:global(html.home-section-arrival-reveal) .section .contactGooeyCard {
+  transition-duration: 240ms, 320ms, 320ms;
+}
+
+:global(html.home-section-arrival-reveal) .section .contactChannelButton {
+  transition-duration: 220ms, 300ms;
+  transition-delay: 40ms;
+}
+
 /* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
 :global(html:not(.reveals-enabled)) .emailWord,
 :global(html:not(.reveals-enabled)) .contactChannelButton,
