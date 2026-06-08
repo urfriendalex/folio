@@ -1,0 +1,63 @@
+/* Line-mask reveals driven by `data-visible` — not gated by page-load `html.reveals-enabled`. */
+
+@mixin controlled-line-reveal-tokens(
+  $roots,
+  $step-var: "--reveal-step",
+  $step-fallback: 24ms
+) {
+  #{$roots} > span > span {
+    opacity: 0;
+    transform: translate3d(0, 0.75em, 0);
+    transition:
+      opacity var(--reveal-line-opacity-ms, 380ms) ease,
+      transform var(--reveal-line-transform-ms, 480ms)
+        var(--reveal-line-transform-ease, cubic-bezier(0.16, 1, 0.32, 1));
+  }
+
+  #{$roots}:not([data-visible="true"]) > span > span {
+    transition-delay: calc(
+      (var(--reveal-total, 1) - var(--token-index, 0) - 1) *
+        var(#{$step-var}, #{$step-fallback})
+    );
+  }
+
+  #{$roots}[data-visible="true"] > span > span {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: calc(
+      var(--token-index, 0) * var(#{$step-var}, #{$step-fallback}) +
+        var(--reveal-delay, 0ms)
+    );
+  }
+}
+
+@mixin controlled-line-reveal-enter-delay(
+  $roots,
+  $step-var: "--reveal-step",
+  $step-fallback: 24ms,
+  $extra-delay-var: "--reveal-delay"
+) {
+  #{$roots}[data-visible="true"] > span > span {
+    transition-delay: calc(
+      var(--token-index, 0) * var(#{$step-var}, #{$step-fallback}) +
+        var(--reveal-delay, 0ms) + var(#{$extra-delay-var}, 0ms)
+    );
+  }
+}
+
+@mixin controlled-line-reveal-reduced-motion($roots) {
+  @media (prefers-reduced-motion: reduce) {
+    #{$roots} > span > span {
+      transform: none;
+      transition: none;
+    }
+
+    #{$roots}:not([data-visible="true"]) > span > span {
+      opacity: 0;
+    }
+
+    #{$roots}[data-visible="true"] > span > span {
+      opacity: 1;
+    }
+  }
+}
