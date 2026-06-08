@@ -4,7 +4,6 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -41,27 +40,6 @@ type UseIntersectionOptions = {
 
 /** Keep video observers cheap; we only need enter/exit state for mount/playback. */
 const VIEWPORT_THRESHOLD_STEPS = [0] as const;
-const MAX_RETAINED_VIDEO_NODES = 4;
-
-type RetainedVideo = {
-  id: string;
-  inViewport: boolean;
-  release: () => void;
-};
-
-const retainedVideos = new Map<string, RetainedVideo>();
-
-function enforceRetainedVideoLimit() {
-  while (retainedVideos.size > MAX_RETAINED_VIDEO_NODES) {
-    const candidate = retainedVideos.values().find((entry) => !entry.inViewport);
-    if (!candidate) {
-      return;
-    }
-
-    retainedVideos.delete(candidate.id);
-    candidate.release();
-  }
-}
 
 function useIntersectionState<T extends HTMLElement>(
   ref: RefObject<T | null>,
@@ -196,7 +174,6 @@ function ProjectMediaInner({
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const retainedVideoId = useId();
   const {
     hasIntersected: hasMountedVideo,
     intersecting: isInViewport,
@@ -208,33 +185,10 @@ function ProjectMediaInner({
     hasLoadedProjectMediaSource(activeAsset.poster)
   ));
   const [videoReady, setVideoReady] = useState(false);
-  const [videoRetained, setVideoRetained] = useState(false);
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
 
   useEffect(() => {
-    if (media.kind !== "video" || !videoRetained) {
-      retainedVideos.delete(retainedVideoId);
-      return undefined;
-    }
-
-    retainedVideos.delete(retainedVideoId);
-    retainedVideos.set(retainedVideoId, {
-      id: retainedVideoId,
-      inViewport: isInViewport,
-      release: () => {
-        setVideoReady(false);
-        setVideoRetained(false);
-      },
-    });
-    enforceRetainedVideoLimit();
-
-    return () => {
-      retainedVideos.delete(retainedVideoId);
-    };
-  }, [isInViewport, media.kind, retainedVideoId, videoRetained]);
-
-  useEffect(() => {
-    if (media.kind !== "video" || !hasMountedVideo || !videoRetained) {
+    if (media.kind !== "video" || !hasMountedVideo) {
       return undefined;
     }
 
@@ -251,7 +205,7 @@ function ProjectMediaInner({
     }
 
     return undefined;
-  }, [hasMountedVideo, isInViewport, media.kind, videoRetained]);
+  }, [hasMountedVideo, isInViewport, media.kind]);
 
   const handleImageLoad = useCallback((image: HTMLImageElement, onReady: () => void) => {
     if (typeof image.decode !== "function") {
@@ -274,8 +228,7 @@ function ProjectMediaInner({
 
   const imageAlt = media.kind === "image" ? alt ?? media.alt ?? "" : "";
   const videoLabel = media.kind === "video" ? alt ?? media.alt : undefined;
-  const showVideo =
-    media.kind === "video" && hasMountedVideo && (isInViewport || videoRetained);
+  const showVideo = media.kind === "video" && hasMountedVideo;
 
   return (
     <div
@@ -331,7 +284,6 @@ function ProjectMediaInner({
                   onLoadedData={(event) => {
                     markProjectMediaSourceLoaded(activeAsset.src, event.currentTarget.currentSrc);
                     setVideoReady(true);
-                    setVideoRetained(true);
                   }}
                 />
               </div>
