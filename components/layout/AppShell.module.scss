@@ -21,6 +21,20 @@
   z-index: 20;
   min-height: calc(100svh - var(--header-height));
   background: var(--bg-color);
+  opacity: 1;
+  transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Cross-route Work/Contact links mount Home at the top before its target exists.
+   Hold only that incoming Home paint until the immediate destination scroll is positioned. */
+:global(html.home-section-arrival-pending) .main:has(#work) {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main {
+    transition: none;
+  }
 }
 
 /* Viewport-fixed strip; visibility toggled from Footer via `data-footer-wordmark-active` + IO (hidden off-footer). */

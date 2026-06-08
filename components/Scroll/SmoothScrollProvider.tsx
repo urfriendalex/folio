@@ -6,8 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import {
-  applyImmediateRevealPolicy,
-  markNextHomeNavigationForImmediateReveal,
+  completeHomeSectionArrival,
+  getPendingHomeSectionArrival,
+  markNextHomeSectionArrival,
 } from "@/lib/revealPolicy";
 import {
   clearLocationHash,
@@ -38,14 +39,16 @@ function scrollToHomeSectionById(sectionId: string, options?: { updateHash?: boo
     const el = document.getElementById(sectionId);
 
     if (el && !shouldPauseSmoothScroll(document.documentElement)) {
-      applyImmediateRevealPolicy();
-
       if (options?.updateHash) {
         window.history.replaceState(window.history.state, "", `/#${sectionId}`);
-        window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
       }
 
       scrollElementIntoView(el, { force: true, immediate: options?.updateHash ?? false });
+      window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(completeHomeSectionArrival);
+      });
       return;
     }
 
@@ -197,7 +200,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       if (url.pathname !== here.pathname) {
         pendingHomeSectionIdRef.current = hash;
-        markNextHomeNavigationForImmediateReveal(hash);
+        markNextHomeSectionArrival(hash);
         router.push("/", { scroll: false });
         return;
       }
@@ -238,7 +241,8 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       return;
     }
 
-    const pendingHomeSectionId = pendingHomeSectionIdRef.current;
+    const pendingHomeSectionId =
+      pendingHomeSectionIdRef.current ?? getPendingHomeSectionArrival();
     const id = pendingHomeSectionId ?? window.location.hash.slice(1);
 
     const scheduleLenisSyncToRestoredScroll = () => {

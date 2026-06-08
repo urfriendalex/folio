@@ -110,14 +110,18 @@ const bootstrapScript = `
   let degradeContact = false;
   try {
     const connection = navigator.connection;
-    const pendingHomeSection = sessionStorage.getItem("folio:home-reveal-bypass");
+    const pendingHomeSection = sessionStorage.getItem("folio:home-section-arrival");
     degradeContact = connection?.saveData === true;
     bypassReveals =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      degradeContact ||
+      degradeContact;
+
+    html.classList.toggle(
+      "home-section-arrival-pending",
       pendingHomeSection === "work" ||
-      pendingHomeSection === "contact" ||
-      pendingHomeSection === "contact-form";
+        pendingHomeSection === "contact" ||
+        pendingHomeSection === "contact-form",
+    );
   } catch (_error) {}
 
   html.classList.toggle("reveals-enabled", !bypassReveals);
