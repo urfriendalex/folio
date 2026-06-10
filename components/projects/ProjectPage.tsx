@@ -14,6 +14,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type TransitionEvent as ReactTransitionEvent,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
@@ -27,8 +28,22 @@ import { useClientMounted } from "@/lib/useClientMounted";
 import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import styles from "./ProjectPage.module.scss";
 
-/** Line stagger for toolbar copy — aligned with immersive overlays (~28ms), slightly tighter for this bar. */
-const TOOLBAR_LINE_STEP_MS = 26;
+/** Keep in sync with `--reveal-step` in `ProjectPage.module.scss`. */
+const TOOLBAR_LINE_STEP_MS = 34;
+/** Keep in sync with `--toolbar-desc-transform-ms` in `ProjectPage.module.scss`. */
+const TOOLBAR_DESC_TRANSFORM_MS = 480;
+/** Keep in sync with action stagger buffer used by `toolbarActionUnderlineReadyMs`. */
+const TOOLBAR_UNDERLINE_BUFFER_MS = 220;
+
+function toolbarActionUnderlineReadyMs(tokenIndex: number, stepMs: number): number {
+  const revealActionsDelay = TOOLBAR_DESC_TRANSFORM_MS * 0.2 + stepMs * 2;
+  return (
+    revealActionsDelay
+    + tokenIndex * stepMs
+    + TOOLBAR_DESC_TRANSFORM_MS
+    + TOOLBAR_UNDERLINE_BUFFER_MS
+  );
+}
 const PORTRAIT_MEDIA_RATIO = 1.25;
 const PORTRAIT_ZOOM_MIN = 1;
 const PORTRAIT_ZOOM_MAX = 3;
@@ -48,8 +63,12 @@ type PortraitView = {
   scale: number;
 };
 
-function portraitIntrinsicCssVars(media: ProjectEntry["media"][number], useMobileVariant = false): CSSProperties {
-  const { width, height } = useMobileVariant && media.mobile ? media.mobile : media.desktop;
+function portraitIntrinsicCssVars(
+  media: ProjectEntry["media"][number],
+  useMobileVariant = false,
+): CSSProperties {
+  const { width, height } =
+    useMobileVariant && media.mobile ? media.mobile : media.desktop;
   return {
     "--pm-w": String(width),
     "--pm-h": String(height),
@@ -71,7 +90,10 @@ function subscribeReducedMotion(onChange: () => void) {
 }
 
 function reducedMotionSnapshot() {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
 function reducedMotionServerSnapshot() {
@@ -88,7 +110,10 @@ function subscribePortraitMobileLayout(onChange: () => void) {
 }
 
 function portraitMobileLayoutSnapshot() {
-  return typeof window !== "undefined" && window.matchMedia(PORTRAIT_MOBILE_MQ).matches;
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia(PORTRAIT_MOBILE_MQ).matches
+  );
 }
 
 function portraitMobileLayoutServerSnapshot() {
@@ -107,7 +132,11 @@ function mediaIndexFromTarget(target: HTMLElement) {
   return Number.isInteger(index) ? index : null;
 }
 
-export function ProjectPage({ nextProject, previousProject, project }: ProjectPageProps) {
+export function ProjectPage({
+  nextProject,
+  previousProject,
+  project,
+}: ProjectPageProps) {
   const { openProjectFullInfo } = useOverlay();
   const pathname = usePathname();
   const router = useRouter();
@@ -124,17 +153,28 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
   const [toolbarPinnedOpen, setToolbarPinnedOpen] = useState(false);
   const [toolbarHovered, setToolbarHovered] = useState(false);
+  const [toolbarLinesVisible, setToolbarLinesVisible] = useState(false);
+  const [visitUnderlineReady, setVisitUnderlineReady] = useState(false);
+  const [overviewUnderlineReady, setOverviewUnderlineReady] = useState(false);
+  const toolbarUnderlineTimersRef = useRef<number[]>([]);
   const hasMounted = useClientMounted();
   const toolbarMeasureRef = useRef<HTMLElement | null>(null);
   const [mobileMediaIndex, setMobileMediaIndex] = useState<number | null>(null);
   /** When false, grid slot fades back in while the overlay finishes closing (avoids an empty card gap). */
-  const [mediaViewerHidesGridSlot, setMediaViewerHidesGridSlot] = useState(false);
-  const [mobileMediaOverlayVisible, setMobileMediaOverlayVisible] = useState(false);
-  const [mobileMediaContentVisible, setMobileMediaContentVisible] = useState(false);
+  const [mediaViewerHidesGridSlot, setMediaViewerHidesGridSlot] =
+    useState(false);
+  const [mobileMediaOverlayVisible, setMobileMediaOverlayVisible] =
+    useState(false);
+  const [mobileMediaContentVisible, setMobileMediaContentVisible] =
+    useState(false);
   const [mediaZoom, setMediaZoom] = useState(PORTRAIT_ZOOM_MIN);
   const [mediaHasPan, setMediaHasPan] = useState(false);
   const portraitInteractiveSurfaceRef = useRef<HTMLDivElement | null>(null);
-  const portraitViewRef = useRef<PortraitView>({ x: 0, y: 0, scale: PORTRAIT_ZOOM_MIN });
+  const portraitViewRef = useRef<PortraitView>({
+    x: 0,
+    y: 0,
+    scale: PORTRAIT_ZOOM_MIN,
+  });
   const mobileMediaHideShellTimerRef = useRef<number | null>(null);
   const mobileMediaCloseTimerRef = useRef<number | null>(null);
   const mobileMediaOpenFrameRef = useRef<number | null>(null);
@@ -146,8 +186,13 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     panX: 0,
     panY: 0,
   });
-  const portraitPointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const portraitPinchRef = useRef<{ startDistance: number; startScale: number } | null>(null);
+  const portraitPointersRef = useRef(
+    new Map<number, { x: number; y: number }>(),
+  );
+  const portraitPinchRef = useRef<{
+    startDistance: number;
+    startScale: number;
+  } | null>(null);
   const toolbarExpanded = toolbarPinnedOpen || toolbarHovered;
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -159,11 +204,14 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     portraitMobileLayoutSnapshot,
     portraitMobileLayoutServerSnapshot,
   );
-  const isPortraitMobileLayout = hasMounted ? isPortraitMobileLayoutLive : false;
+  const isPortraitMobileLayout = hasMounted
+    ? isPortraitMobileLayoutLive
+    : false;
   const overviewLabel = "show full overview";
   const visitLabel = "visit site";
   const primaryProjectUrl = project.links?.[0]?.url;
-  const mobileOverlayMedia = mobileMediaIndex !== null ? project.media[mobileMediaIndex] : null;
+  const mobileOverlayMedia =
+    mobileMediaIndex !== null ? project.media[mobileMediaIndex] : null;
   const mediaViewerOpen = mobileMediaIndex !== null;
 
   const lineStepMs = reducedMotion ? 8 : TOOLBAR_LINE_STEP_MS;
@@ -174,26 +222,106 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     hasMounted,
   );
 
-  const { total, descriptorOffset, visitOffset, overviewOffset } = useMemo(() => {
-    const hasVisit = Boolean(primaryProjectUrl);
-    const descriptorLineCount = Math.max(1, descriptorLines.length);
-    const visitOffsetValue = descriptorLineCount;
-    const overviewOffsetValue = descriptorLineCount + (hasVisit ? 1 : 0);
-    return {
-      total: overviewOffsetValue + 1,
-      descriptorOffset: 0,
-      visitOffset: visitOffsetValue,
-      overviewOffset: overviewOffsetValue,
-    };
-  }, [descriptorLines.length, primaryProjectUrl]);
+  useEffect(() => {
+    if (!toolbarExpanded) {
+      setToolbarLinesVisible(false);
+      return;
+    }
 
-  const handleToolbarPointerEnter = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (reducedMotion) {
+      setToolbarLinesVisible(true);
+    }
+  }, [reducedMotion, toolbarExpanded]);
+
+  const handleToolbarTransitionEnd = (
+    event: ReactTransitionEvent<HTMLDivElement>,
+  ) => {
+    if (
+      event.target !== event.currentTarget ||
+      event.propertyName !== "height" ||
+      !toolbarExpanded ||
+      reducedMotion
+    ) {
+      return;
+    }
+
+    setToolbarLinesVisible(true);
+  };
+
+  const { total, descriptorOffset, visitOffset, overviewOffset } =
+    useMemo(() => {
+      const hasVisit = Boolean(primaryProjectUrl);
+      const descriptorLineCount = Math.max(1, descriptorLines.length);
+      const visitOffsetValue = descriptorLineCount;
+      const overviewOffsetValue = descriptorLineCount + (hasVisit ? 1 : 0);
+      return {
+        total: overviewOffsetValue + 1,
+        descriptorOffset: 0,
+        visitOffset: visitOffsetValue,
+        overviewOffset: overviewOffsetValue,
+      };
+    }, [descriptorLines.length, primaryProjectUrl]);
+
+  useEffect(() => {
+    toolbarUnderlineTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    toolbarUnderlineTimersRef.current = [];
+    setVisitUnderlineReady(false);
+    setOverviewUnderlineReady(false);
+
+    if (!toolbarLinesVisible) {
+      return;
+    }
+
+    if (reducedMotion) {
+      setVisitUnderlineReady(true);
+      setOverviewUnderlineReady(true);
+      return;
+    }
+
+    const scheduleUnderlineReady = (
+      tokenIndex: number,
+      markReady: (ready: boolean) => void,
+    ) => {
+      const timerId = window.setTimeout(() => {
+        markReady(true);
+      }, toolbarActionUnderlineReadyMs(tokenIndex, lineStepMs));
+      toolbarUnderlineTimersRef.current.push(timerId);
+    };
+
+    if (primaryProjectUrl) {
+      scheduleUnderlineReady(visitOffset, setVisitUnderlineReady);
+    }
+
+    scheduleUnderlineReady(overviewOffset, setOverviewUnderlineReady);
+
+    return () => {
+      toolbarUnderlineTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      toolbarUnderlineTimersRef.current = [];
+    };
+  }, [
+    lineStepMs,
+    overviewOffset,
+    primaryProjectUrl,
+    reducedMotion,
+    toolbarLinesVisible,
+    visitOffset,
+  ]);
+
+  const handleToolbarPointerEnter = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     if (event.pointerType === "mouse") {
       setToolbarHovered(true);
     }
   };
 
-  const handleToolbarPointerLeave = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleToolbarPointerLeave = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     if (event.pointerType === "mouse") {
       setToolbarHovered(false);
     }
@@ -206,7 +334,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
   const handleToolbarBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
     const nextTarget = event.relatedTarget;
 
-    if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+    if (
+      !(nextTarget instanceof Node) ||
+      !event.currentTarget.contains(nextTarget)
+    ) {
       setToolbarHovered(false);
     }
   };
@@ -283,10 +414,12 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
       mobileMediaOpenFrameRef.current = window.requestAnimationFrame(() => {
         setMobileMediaOverlayVisible(true);
         mobileMediaOpenFrameRef.current = null;
-        mobileMediaContentFrameRef.current = window.requestAnimationFrame(() => {
-          setMobileMediaContentVisible(true);
-          mobileMediaContentFrameRef.current = null;
-        });
+        mobileMediaContentFrameRef.current = window.requestAnimationFrame(
+          () => {
+            setMobileMediaContentVisible(true);
+            mobileMediaContentFrameRef.current = null;
+          },
+        );
       });
     },
     [clearMobileMediaTimers, clearPortraitTouchState],
@@ -315,49 +448,64 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     }, MEDIA_VIEWER_OVERLAY_EXIT_MS);
   }, [clearMobileMediaTimers, clearPortraitTouchState]);
 
-  const handlePortraitToggle = useCallback((event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const mediaIndex = mediaIndexFromTarget(event.currentTarget);
-    if (mediaIndex !== null) {
-      openMobileMediaOverlay(mediaIndex);
-    }
-  }, [openMobileMediaOverlay]);
+  const handlePortraitToggle = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const mediaIndex = mediaIndexFromTarget(event.currentTarget);
+      if (mediaIndex !== null) {
+        openMobileMediaOverlay(mediaIndex);
+      }
+    },
+    [openMobileMediaOverlay],
+  );
 
-  const handleMobileMediaOpenCapture = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-    if (mediaViewerOpen) {
-      return;
-    }
-    const target = event.target as HTMLElement;
-    if (target.closest("button, a[href], input, textarea, select, [data-skip-portrait-open='true']")) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    const mediaIndex = mediaIndexFromTarget(event.currentTarget);
-    if (mediaIndex !== null) {
-      openMobileMediaOverlay(mediaIndex);
-    }
-  }, [mediaViewerOpen, openMobileMediaOverlay]);
+  const handleMobileMediaOpenCapture = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (mediaViewerOpen) {
+        return;
+      }
+      const target = event.target as HTMLElement;
+      if (
+        target.closest(
+          "button, a[href], input, textarea, select, [data-skip-portrait-open='true']",
+        )
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const mediaIndex = mediaIndexFromTarget(event.currentTarget);
+      if (mediaIndex !== null) {
+        openMobileMediaOverlay(mediaIndex);
+      }
+    },
+    [mediaViewerOpen, openMobileMediaOverlay],
+  );
 
-  const handleMobileMediaKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (mediaViewerOpen) {
-      return;
-    }
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-    event.preventDefault();
-    const mediaIndex = mediaIndexFromTarget(event.currentTarget);
-    if (mediaIndex !== null) {
-      openMobileMediaOverlay(mediaIndex);
-    }
-  }, [mediaViewerOpen, openMobileMediaOverlay]);
+  const handleMobileMediaKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (mediaViewerOpen) {
+        return;
+      }
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      const mediaIndex = mediaIndexFromTarget(event.currentTarget);
+      if (mediaIndex !== null) {
+        openMobileMediaOverlay(mediaIndex);
+      }
+    },
+    [mediaViewerOpen, openMobileMediaOverlay],
+  );
 
   const handleMediaZoom = useCallback(
     (direction: 1 | -1) => {
       const surf = portraitInteractiveSurfaceRef.current;
-      const next = clampZoom(portraitViewRef.current.scale + direction * PORTRAIT_ZOOM_STEP);
+      const next = clampZoom(
+        portraitViewRef.current.scale + direction * PORTRAIT_ZOOM_STEP,
+      );
       portraitViewRef.current.scale = next;
       setMediaZoom(next);
       if (!surf) {
@@ -375,7 +523,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     [reducedMotion],
   );
 
-  const handlePortraitPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handlePortraitPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     if (!mediaViewerOpen) {
       return;
     }
@@ -390,7 +540,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
     if (map.size >= 2) {
       const points = [...map.values()];
-      const dist = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      const dist = Math.hypot(
+        points[0].x - points[1].x,
+        points[0].y - points[1].y,
+      );
       if (dist > 1e-3) {
         portraitPinchRef.current = {
           startDistance: dist,
@@ -420,7 +573,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     }
   };
 
-  const handlePortraitPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handlePortraitPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     if (!mediaViewerOpen) {
       return;
     }
@@ -438,7 +593,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
 
     if (map.size >= 2 && portraitPinchRef.current) {
       const points = [...map.values()];
-      const dist = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      const dist = Math.hypot(
+        points[0].x - points[1].x,
+        points[0].y - points[1].y,
+      );
       const pinch = portraitPinchRef.current;
       if (dist > 1e-3 && pinch.startDistance > 1e-3) {
         const next = clampZoom(pinch.startScale * (dist / pinch.startDistance));
@@ -468,7 +626,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     }
   };
 
-  const handlePortraitPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handlePortraitPointerEnd = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     const map = portraitPointersRef.current;
     map.delete(event.pointerId);
 
@@ -476,7 +636,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
       portraitPinchRef.current = null;
     }
 
-    if (event.pointerType === "mouse" && event.currentTarget.hasPointerCapture(event.pointerId)) {
+    if (
+      event.pointerType === "mouse" &&
+      event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
@@ -487,7 +650,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     if (portraitDragRef.current.pointerId === event.pointerId) {
       portraitDragRef.current.pointerId = -1;
       setMediaZoom(portraitViewRef.current.scale);
-      setMediaHasPan(portraitViewRef.current.x !== 0 || portraitViewRef.current.y !== 0);
+      setMediaHasPan(
+        portraitViewRef.current.x !== 0 || portraitViewRef.current.y !== 0,
+      );
       clearPortraitDragging(event.currentTarget);
     } else if (map.size === 1 && mediaViewerOpen) {
       setMediaZoom(portraitViewRef.current.scale);
@@ -502,7 +667,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
     }
   };
 
-  const handlePortraitPointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handlePortraitPointerCancel = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     handlePortraitPointerEnd(event);
   };
 
@@ -579,7 +746,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
           variant="immersive"
           visible={mobileMediaOverlayVisible}
         >
-          <div className={styles.mobileMediaViewer} data-visible={mobileMediaContentVisible ? "true" : "false"}>
+          <div
+            className={styles.mobileMediaViewer}
+            data-visible={mobileMediaContentVisible ? "true" : "false"}
+          >
             <div className={styles.mobileMediaStage}>
               <div
                 className={styles.mobileMediaReveal}
@@ -595,7 +765,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                 >
                   <ProjectMedia
                     media={mobileOverlayMedia}
-                    alt={mobileOverlayMedia.alt ?? `${project.title} media ${(mobileMediaIndex ?? 0) + 1}`}
+                    alt={
+                      mobileOverlayMedia.alt ??
+                      `${project.title} media ${(mobileMediaIndex ?? 0) + 1}`
+                    }
                     className={styles.stillMedia}
                     fill
                     fit="contain"
@@ -603,8 +776,15 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                 </div>
               </div>
             </div>
-            <div className={styles.mediaViewerControls} aria-label="Media zoom controls">
-              <button type="button" onClick={() => handleMediaZoom(-1)} disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}>
+            <div
+              className={styles.mediaViewerControls}
+              aria-label="Media zoom controls"
+            >
+              <button
+                type="button"
+                onClick={() => handleMediaZoom(-1)}
+                disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
+              >
                 -
               </button>
               <button
@@ -614,7 +794,11 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
               >
                 reset
               </button>
-              <button type="button" onClick={() => handleMediaZoom(1)} disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}>
+              <button
+                type="button"
+                onClick={() => handleMediaZoom(1)}
+                disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
+              >
                 +
               </button>
             </div>
@@ -627,14 +811,19 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
           const label = item.alt ?? `${project.title} visual ${index + 1}`;
           const mediaKey = `${item.desktop.src}-${index}`;
           const isActiveViewerItem = mobileMediaIndex === index;
-          const slotHiddenForViewer = mediaViewerHidesGridSlot && isActiveViewerItem;
+          const slotHiddenForViewer =
+            mediaViewerHidesGridSlot && isActiveViewerItem;
 
           return (
             <ImageReveal
               key={mediaKey}
               data-project-media-card="true"
-              data-media-viewer-hidden={slotHiddenForViewer ? "true" : undefined}
-              className={[styles.still, isPortrait ? styles.portraitStill : ""].filter(Boolean).join(" ")}
+              data-media-viewer-hidden={
+                slotHiddenForViewer ? "true" : undefined
+              }
+              className={[styles.still, isPortrait ? styles.portraitStill : ""]
+                .filter(Boolean)
+                .join(" ")}
               data-portrait-card={isPortrait ? "true" : undefined}
               aria-hidden={slotHiddenForViewer ? true : undefined}
             >
@@ -654,8 +843,14 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                 onKeyDown={handleMobileMediaKeyDown}
               >
                 <div
-                  className={isPortrait ? styles.portraitMediaSurface : undefined}
-                  style={isPortrait ? portraitIntrinsicCssVars(item, isPortraitMobileLayout) : undefined}
+                  className={
+                    isPortrait ? styles.portraitMediaSurface : undefined
+                  }
+                  style={
+                    isPortrait
+                      ? portraitIntrinsicCssVars(item, isPortraitMobileLayout)
+                      : undefined
+                  }
                 >
                   <ProjectMedia
                     media={item}
@@ -684,7 +879,11 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
         })}
       </section>
 
-      <div className={styles.toolbarShell} data-overlay-toolbar-slide="true" data-expanded={toolbarExpanded}>
+      <div
+        className={styles.toolbarShell}
+        data-overlay-toolbar-slide="true"
+        data-expanded={toolbarExpanded}
+      >
         <div className={styles.toolbarTrack}>
           <button
             type="button"
@@ -700,6 +899,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
           <div
             className={styles.toolbarCore}
             data-expanded={toolbarExpanded}
+            onTransitionEnd={handleToolbarTransitionEnd}
             onPointerEnter={handleToolbarPointerEnter}
             onPointerLeave={handleToolbarPointerLeave}
             onFocusCapture={handleToolbarFocus}
@@ -719,14 +919,23 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                   type="button"
                   className={styles.expandToggle}
                   aria-expanded={toolbarExpanded}
-                  aria-label={toolbarExpanded ? "Collapse project toolbar" : "Expand project toolbar"}
+                  aria-label={
+                    toolbarExpanded
+                      ? "Collapse project toolbar"
+                      : "Expand project toolbar"
+                  }
                   onClick={handleToggleClick}
                 >
                   <span className={styles.expandGlyph} aria-hidden="true" />
                 </button>
               </div>
 
-              <div className={styles.toolbarBodyWrap}>
+              <div
+                className={styles.toolbarBodyWrap}
+                aria-hidden={
+                  toolbarExpanded && !toolbarLinesVisible ? true : undefined
+                }
+              >
                 <div className={styles.toolbarBody}>
                   <RevealLines
                     as="p"
@@ -737,7 +946,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                     offset={descriptorOffset}
                     stepMs={lineStepMs}
                     total={total}
-                    visible={toolbarExpanded}
+                    visible={toolbarLinesVisible}
                   />
                   <div
                     className={styles.toolbarActions}
@@ -748,9 +957,10 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                         href={primaryProjectUrl}
                         className={`link-underline ${styles.toolbarAction}`}
                         data-align="start"
+                        data-underline-ready={visitUnderlineReady ? "true" : undefined}
                         target="_blank"
                         rel="noopener noreferrer"
-                        tabIndex={toolbarExpanded ? 0 : -1}
+                        tabIndex={toolbarLinesVisible ? 0 : -1}
                       >
                         <RevealLines
                           as="span"
@@ -760,7 +970,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                           offset={visitOffset}
                           stepMs={lineStepMs}
                           total={total}
-                          visible={toolbarExpanded}
+                          visible={toolbarLinesVisible}
                         />
                       </a>
                     ) : null}
@@ -768,8 +978,9 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                       type="button"
                       className={`link-underline ${styles.toolbarAction}`}
                       data-align="end"
+                      data-underline-ready={overviewUnderlineReady ? "true" : undefined}
                       onClick={() => openProjectFullInfo(project)}
-                      tabIndex={toolbarExpanded ? 0 : -1}
+                      tabIndex={toolbarLinesVisible ? 0 : -1}
                     >
                       <RevealLines
                         as="span"
@@ -779,7 +990,7 @@ export function ProjectPage({ nextProject, previousProject, project }: ProjectPa
                         offset={overviewOffset}
                         stepMs={lineStepMs}
                         total={total}
-                        visible={toolbarExpanded}
+                        visible={toolbarLinesVisible}
                       />
                     </button>
                   </div>

@@ -134,7 +134,8 @@
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 0 0.62rem;
-  border: 1px solid color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
   corner-shape: squircle;
   border-radius: var(--radius-panel-sm);
   background: color-mix(in srgb, var(--overlay-immersive-fg) 9%, transparent);
@@ -156,7 +157,11 @@
 .mediaViewerControls button:hover,
 .mediaViewerControls button:focus-visible {
   background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
-  border-color: color-mix(in srgb, var(--overlay-immersive-fg) 28%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--overlay-immersive-fg) 28%,
+    transparent
+  );
 }
 
 .mediaViewerControls button:active {
@@ -266,7 +271,11 @@
     display: grid;
     place-items: center;
     touch-action: none;
-    transform: translate3d(var(--portrait-media-x, 0), var(--portrait-media-y, 0), 0)
+    transform: translate3d(
+        var(--portrait-media-x, 0),
+        var(--portrait-media-y, 0),
+        0
+      )
       scale(var(--portrait-media-scale, 1));
     transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
     transform-origin: center;
@@ -301,13 +310,13 @@
   --toolbar-sticky-inset: clamp(1.3rem, 3vw, 1.85rem);
   --toolbar-block-height: clamp(3.35rem, 5.8vw, 3.95rem);
   --toolbar-preview-height: clamp(10.75rem, 15.25vw, 12.75rem);
-  /* Expand ~380ms soft ease-out; collapse faster + distinct curve (exit stays snappier than enter). */
-  --toolbar-motion-expand: 380ms;
-  --toolbar-motion-collapse: 190ms;
+  /* Keep hover changes measured enough that the content phases read clearly. */
+  --toolbar-motion-expand: 520ms;
+  --toolbar-motion-collapse: 280ms;
   /* No wait for per-char reverse — shell + grid collapse immediately with body fade */
   --toolbar-collapse-delay: 0ms;
-  --toolbar-expand-ease: cubic-bezier(0.16, 1, 0.32, 1);
-  --toolbar-collapse-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --toolbar-expand-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --toolbar-collapse-ease: cubic-bezier(0.32, 0, 0.24, 1);
   --toolbar-panel-p-inline: clamp(1rem, 1.9vw, 1.38rem);
   --toolbar-panel-p-block-collapsed: 0.55rem;
   --toolbar-panel-p-block-open: clamp(1.08rem, 2.05vw, 1.28rem);
@@ -336,7 +345,6 @@
   }
 
   .expandToggle:active,
-  .toolbarAction:active,
   .navButton:active {
     transform: none;
   }
@@ -393,10 +401,14 @@
   box-shadow: var(--project-toolbar-panel-shadow);
   backdrop-filter: var(--project-toolbar-panel-backdrop);
   transition:
-    background var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
-    border-color var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
-    box-shadow var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
-    padding var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1));
+    background var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    border-color var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    box-shadow var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    padding var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1));
   transition-delay: 0ms;
 }
 
@@ -418,7 +430,8 @@
   grid-template-columns: minmax(0, 1fr) auto;
   flex: 1 1 auto;
   min-height: calc(
-    var(--toolbar-block-height) - 2 * var(--toolbar-panel-p-block-collapsed) - 0.125rem
+    var(--toolbar-block-height) - 2 * var(--toolbar-panel-p-block-collapsed) -
+      0.125rem
   );
   align-content: center;
   align-items: center;
@@ -475,8 +488,10 @@
   display: grid;
   place-items: center;
   transition:
-    background var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
-    border-color var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    background var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    border-color var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
     transform 180ms cubic-bezier(0.16, 1, 0.32, 1);
 }
 
@@ -516,8 +531,10 @@
   background: currentColor;
   transform: translate(-50%, -50%);
   transition:
-    transform var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
-    opacity var(--toolbar-motion-duration, 380ms) var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1));
+    transform var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1)),
+    opacity var(--toolbar-motion-duration, 380ms)
+      var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1));
 }
 
 .expandGlyph::after {
@@ -557,9 +574,12 @@
   display: flex;
   flex-direction: column;
   padding-top: 0;
-  --reveal-step: 26ms;
-  /* Actions sit at the bottom of the opening clip — wait for most of the grid expand. */
-  --toolbar-reveal-actions-delay: calc(var(--toolbar-motion-expand, 380ms) * 0.7);
+  --reveal-step: 34ms;
+  --toolbar-desc-transform-ms: 480ms;
+  /* Actions trail descriptor — start after ~20% of line transform + 2-step stagger. */
+  --toolbar-reveal-actions-delay: calc(
+    var(--toolbar-desc-transform-ms) * 0.2 + var(--reveal-step) * 2
+  );
   transition: padding-top var(--toolbar-motion-duration, 380ms)
     var(--toolbar-ease, cubic-bezier(0.16, 1, 0.32, 1));
 }
@@ -571,20 +591,30 @@
 
 /* Hover-driven line mask reveals — always on (not gated by page-load reveal policy). */
 @include controlled-reveal.controlled-line-reveal-tokens(
-  ".toolbarDescription[data-mode=\"lines\"], .toolbarActionReveal[data-mode=\"lines\"]",
+  '.toolbarDescription[data-mode="lines"]',
   "--reveal-step",
-  26ms
+  34ms
+);
+
+@include controlled-reveal.controlled-line-reveal-tokens(
+  '.toolbarActionReveal[data-mode="lines"]',
+  "--reveal-step",
+  34ms
 );
 
 @include controlled-reveal.controlled-line-reveal-enter-delay(
-  ".toolbarActionReveal[data-mode=\"lines\"]",
+  '.toolbarActionReveal[data-mode="lines"]',
   "--reveal-step",
-  26ms,
+  34ms,
   "--toolbar-reveal-actions-delay"
 );
 
 @include controlled-reveal.controlled-line-reveal-reduced-motion(
-  ".toolbarDescription[data-mode=\"lines\"], .toolbarActionReveal[data-mode=\"lines\"]"
+  '.toolbarDescription[data-mode="lines"]'
+);
+
+@include controlled-reveal.controlled-line-reveal-reduced-motion(
+  '.toolbarActionReveal[data-mode="lines"]'
 );
 
 @media (prefers-reduced-motion: reduce) {
@@ -597,8 +627,8 @@
   flex: 0 1 auto;
   /* RevealLines grid gap stacks on top of line-height — keep row rhythm from line-height only. */
   --reveal-line-gap: 0;
-  --reveal-line-opacity-ms: 420ms;
-  --reveal-line-transform-ms: 560ms;
+  --reveal-line-opacity-ms: 360ms;
+  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 480ms);
   margin: 0;
   max-width: none;
   width: 100%;
@@ -624,8 +654,10 @@
 
 .toolbarActionReveal {
   --reveal-line-gap: 0;
-  --reveal-line-opacity-ms: 420ms;
-  --reveal-line-transform-ms: 560ms;
+  --reveal-line-opacity-ms: 360ms;
+  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 480ms);
+  /* `html.reveals-enabled` reads `--reveal-delay`, not `--toolbar-reveal-actions-delay`. */
+  --reveal-delay: var(--toolbar-reveal-actions-delay);
   width: auto;
   max-width: 100%;
   min-width: 0;
@@ -676,7 +708,7 @@
   flex: 0 0 auto;
   margin-top: auto;
   padding-top: 0.95rem;
-  padding-bottom: 0.12em;
+  padding-bottom: 0;
   gap: 0.65rem 1rem;
   overflow: visible;
 }
@@ -705,17 +737,24 @@
   font-family: var(--font-body-stack);
   font-size: clamp(0.74rem, 0.95vw, 0.81rem);
   font-weight: 400;
+  line-height: 1;
   font-synthesis: none;
   letter-spacing: var(--tracking-tight-sm);
   text-transform: none;
   text-decoration: none;
   cursor: pointer;
   overflow: visible;
-  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .toolbarAction:global(.link-underline)::after {
   z-index: 1;
+}
+
+/* Until armed, keep the global underline collapsed — no hover sweep mid-reveal. */
+.toolbarAction:not([data-underline-ready="true"]):global(.link-underline):hover::after,
+.toolbarAction:not([data-underline-ready="true"]):global(.link-underline):focus-visible::after {
+  transform-origin: 100% 50%;
+  transform: scale3d(0, 1, 1);
 }
 
 .toolbarAction > * {
@@ -735,10 +774,6 @@
 button.toolbarAction {
   appearance: none;
   font-weight: 400;
-}
-
-.toolbarAction:active {
-  transform: scale(0.96);
 }
 
 .navButton {
@@ -819,7 +854,10 @@ button.toolbarAction {
   .toolbarShell {
     --toolbar-track-gap: 0.4rem;
     width: calc(100% - 2 * var(--toolbar-track-gap));
-    height: calc(var(--toolbar-preview-height) + var(--toolbar-block-height) + var(--toolbar-track-gap));
+    height: calc(
+      var(--toolbar-preview-height) + var(--toolbar-block-height) +
+        var(--toolbar-track-gap)
+    );
     --toolbar-sticky-inset: clamp(1.2rem, 3.1vw, 1.55rem);
     --toolbar-panel-p-inline: clamp(0.82rem, 3.4vw, 1.05rem);
     --toolbar-panel-p-block-collapsed: 0.58rem;
@@ -834,14 +872,16 @@ button.toolbarAction {
       "panel panel"
       "prev next";
     /* Fixed rows: panel row reserves preview height so the core grows upward (align-self: end), not down over the nav */
-    grid-template-rows: var(--toolbar-preview-height) var(--toolbar-block-height);
+    grid-template-rows: var(--toolbar-preview-height) var(
+        --toolbar-block-height
+      );
     align-items: stretch;
     gap: var(--toolbar-track-gap);
   }
 
   .toolbarPanel {
-    padding: var(--toolbar-panel-p-block-collapsed) var(--toolbar-panel-p-inline)
-      var(--toolbar-panel-p-block-collapsed);
+    padding: var(--toolbar-panel-p-block-collapsed)
+      var(--toolbar-panel-p-inline) var(--toolbar-panel-p-block-collapsed);
   }
 
   .toolbarCore {

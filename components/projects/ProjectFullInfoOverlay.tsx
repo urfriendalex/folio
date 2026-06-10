@@ -12,7 +12,7 @@ import {
 import styles from "./ProjectFullInfoOverlay.module.scss";
 
 /** About-style masked reveal, compressed for the denser project sheet. Keep in sync with `--project-overlay-step` in SCSS. */
-const PROJECT_OVERLAY_REVEAL_STEP_MS = 16;
+const PROJECT_OVERLAY_REVEAL_STEP_MS = 10;
 
 type ProjectFullInfoOverlayProps = {
   project: ProjectEntry;

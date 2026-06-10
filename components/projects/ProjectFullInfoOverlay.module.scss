@@ -5,11 +5,11 @@
 
 .root {
   /* About's masked line motion, compressed for the denser project sheet. */
-  --reveal-line-opacity-ms: 300ms;
-  --reveal-line-transform-ms: 420ms;
-  --reveal-line-transform-ease: cubic-bezier(0.16, 1, 0.32, 1);
+  --reveal-line-opacity-ms: 200ms;
+  --reveal-line-transform-ms: 280ms;
+  --reveal-line-transform-ease: cubic-bezier(0.22, 1, 0.38, 1);
   /* Keep in sync with `PROJECT_OVERLAY_REVEAL_STEP_MS` in ProjectFullInfoOverlay.tsx */
-  --project-overlay-step: 16ms;
+  --project-overlay-step: 10ms;
   box-sizing: border-box;
   /* Bleed past `page-shell` padding so copy can use the full immersive surface; re-inset with fluid padding. */
   width: calc(100% + 2 * var(--content-padding-inline));
@@ -29,7 +29,7 @@
 @include controlled-reveal.controlled-line-reveal-tokens(
   ".root :global([data-mode=\"lines\"])",
   "--project-overlay-step",
-  16ms
+  10ms
 );
 
 @include controlled-reveal.controlled-line-reveal-reduced-motion(".root :global([data-mode=\"lines\"])");
