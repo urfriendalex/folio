@@ -131,21 +131,114 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         },
       });
     } else {
+      let hoverActivated = false;
+      let prewarmFrame = 0;
+      let prewarmTimer = 0;
+      let idleCallback = 0;
+      let restoreSvgPrewarm: (() => void) | null = null;
+      let restoreGroupPrewarm: (() => void) | null = null;
+
+      const prewarmFilter = () => {
+        const svg = svgRef.current;
+        if (hoverActivated || !svg || !document.contains(el)) {
+          return;
+        }
+
+        const rect = svg.getBoundingClientRect();
+        const svgStyle = svg.getAttribute("style");
+        const groupStyle = textsGroupEl.getAttribute("style");
+        restoreSvgPrewarm = () => {
+          if (svgStyle === null) {
+            svg.removeAttribute("style");
+          } else {
+            svg.setAttribute("style", svgStyle);
+          }
+          restoreSvgPrewarm = null;
+        };
+
+        restoreGroupPrewarm = () => {
+          if (groupStyle === null) {
+            textsGroupEl.removeAttribute("style");
+          } else {
+            textsGroupEl.setAttribute("style", groupStyle);
+          }
+          restoreGroupPrewarm = null;
+        };
+
+        svg.style.position = "fixed";
+        svg.style.inset = "0 auto auto 0";
+        svg.style.width = `${rect.width}px`;
+        svg.style.height = `${rect.height}px`;
+        svg.style.transform = "none";
+        svg.style.opacity = "0.001";
+        svg.style.pointerEvents = "none";
+        svg.style.zIndex = "2147483647";
+        (textsGroupEl as SVGGElement).style.filter = filterUrl;
+        // Render the most expensive point once: maximum blur plus both moving text layers.
+        tl.progress(0.5).pause();
+
+        prewarmFrame = window.requestAnimationFrame(() => {
+          prewarmFrame = 0;
+          restoreSvgPrewarm?.();
+
+          if (hoverActivated) {
+            restoreGroupPrewarm = null;
+            return;
+          }
+
+          tl.progress(0).pause();
+          restoreGroupPrewarm?.();
+        });
+      };
+
+      prewarmTimer = window.setTimeout(() => {
+        if ("requestIdleCallback" in window) {
+          idleCallback = window.requestIdleCallback(prewarmFilter, { timeout: 1500 });
+          return;
+        }
+
+        prewarmFilter();
+      }, 250);
+
       const onEnter = () => {
+        hoverActivated = false;
+      };
+      const onPointerMove = () => {
+        if (hoverActivated) {
+          return;
+        }
+
+        hoverActivated = true;
         (textsGroupEl as SVGGElement).style.filter = filterUrl;
         tl.play();
       };
       const onLeave = () => {
+        if (!hoverActivated) {
+          return;
+        }
+
+        hoverActivated = false;
         (textsGroupEl as SVGGElement).style.filter = filterUrl;
         tl.reverse();
       };
 
       el.addEventListener("mouseenter", onEnter);
+      el.addEventListener("pointermove", onPointerMove, { passive: true });
       el.addEventListener("mouseleave", onLeave);
 
       return () => {
         el.removeEventListener("mouseenter", onEnter);
+        el.removeEventListener("pointermove", onPointerMove);
         el.removeEventListener("mouseleave", onLeave);
+        window.clearTimeout(prewarmTimer);
+        if (idleCallback) {
+          window.cancelIdleCallback(idleCallback);
+        }
+        if (prewarmFrame) {
+          window.cancelAnimationFrame(prewarmFrame);
+        }
+        restoreSvgPrewarm?.();
+        restoreGroupPrewarm?.();
         progressTween?.kill();
         tl.kill();
         (textsGroupEl as SVGGElement).style.filter = "none";
@@ -219,7 +312,14 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
           aria-hidden
         >
           <defs>
-            <filter id={filterId}>
+            <filter
+              id={filterId}
+              x="-8%"
+              y="-45%"
+              width="116%"
+              height="190%"
+              colorInterpolationFilters="sRGB"
+            >
               <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" />
               <feColorMatrix
                 in="blur"
