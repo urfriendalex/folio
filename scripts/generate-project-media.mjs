@@ -43,6 +43,8 @@ const H264_CRF_GALLERY = 16;
 const FFMPEG_FIRST_FRAME = "select=eq(n\\,0)";
 
 const projectSlugs = [
+  "mon-nom-bakery",
+  "lina-tsapova",
   "studio-iskra",
   "ohgotmi",
   "axiros-axf-axess",
@@ -53,6 +55,8 @@ const projectSlugs = [
 ];
 
 const thumbnailPosterPositionBySlug = {
+  "mon-nom-bakery": "centre",
+  "lina-tsapova": "centre",
   "studio-iskra": "top",
   "ohgotmi": "centre",
   "axiros-axf-axess": "top",

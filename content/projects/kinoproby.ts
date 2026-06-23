@@ -5,7 +5,7 @@ export const kinoprobyProject: ProjectEntry = {
   slug: "kinoproby",
   orderIndex: 6,
   title: "KINOPROBY",
-  descriptor: "Website for a production studio / creative duo",
+  descriptor: "FILM PORTFOLIO",
   year: "2019",
   role: "Solo Designer & Developer",
   technologies: ["Tilda", "HTML", "CSS", "JavaScript"],

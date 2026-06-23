@@ -5,7 +5,7 @@ export const axirosAxfAxessProject: ProjectEntry = {
   slug: "axiros-axf-axess",
   orderIndex: 7,
   title: "AXIROS: AXF / AXESS",
-  descriptor: "Telecom device-management platform (AXF JS framework / component library + AXESS)",
+  descriptor: "ENTERPRISE WEB PLATFORM",
   year: "2019–2026",
   role: "Lead UI Engineer · Frontend Architect",
   technologies: ["JavaScript", "SCSS", "Handlebars", "Vite"],

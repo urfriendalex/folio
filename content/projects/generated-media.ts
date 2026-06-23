@@ -3,6 +3,82 @@ import type { ProjectEntry } from "./types";
 type ProjectGeneratedMedia = Pick<ProjectEntry, "thumbnail" | "media">;
 
 export const generatedProjectMedia = {
+  "mon-nom-bakery": {
+    "thumbnail": {
+      "desktop": {
+        "poster": "/projects/mon-nom-bakery/thumbnail.png",
+        "width": 1956,
+        "height": 1048
+      }
+    },
+    "media": [
+      {
+        "kind": "image",
+        "alt": "overview",
+        "desktop": {
+          "src": "/projects/mon-nom-bakery/media-01.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "detail",
+        "desktop": {
+          "src": "/projects/mon-nom-bakery/media-02.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "responsive",
+        "desktop": {
+          "src": "/projects/mon-nom-bakery/media-03.png",
+          "width": 1956,
+          "height": 1048
+        }
+      }
+    ]
+  },
+  "lina-tsapova": {
+    "thumbnail": {
+      "desktop": {
+        "poster": "/projects/lina-tsapova/thumbnail.png",
+        "width": 1956,
+        "height": 1048
+      }
+    },
+    "media": [
+      {
+        "kind": "image",
+        "alt": "overview",
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-01.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "detail",
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-02.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "responsive",
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-03.png",
+          "width": 1956,
+          "height": 1048
+        }
+      }
+    ]
+  },
   "studio-iskra": {
     "thumbnail": {
       "desktop": {

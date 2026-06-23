@@ -5,7 +5,7 @@ export const dianaMilkanovaProject: ProjectEntry = {
   slug: "diana-milkanova",
   orderIndex: 5,
   title: "DIANA MILKANOVA",
-  descriptor: "Independent fashion e-commerce",
+  descriptor: "E-COMMERCE STORE",
   year: "2021",
   role: "Frontend Developer",
   technologies: ["Shopify", "Liquid", "HTML", "CSS", "JavaScript"],
