@@ -7,36 +7,36 @@ export const generatedProjectMedia = {
     "thumbnail": {
       "desktop": {
         "poster": "/projects/mon-nom-bakery/thumbnail.png",
-        "width": 1956,
-        "height": 1048
+        "width": 780,
+        "height": 1680
       }
     },
     "media": [
       {
         "kind": "image",
-        "alt": "overview",
+        "alt": "Mon Nom Bakery mobile homepage",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-01.png",
-          "width": 1956,
-          "height": 1048
+          "width": 780,
+          "height": 1680
         }
       },
       {
         "kind": "image",
-        "alt": "detail",
+        "alt": "Mon Nom Bakery seasonal mobile menu",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-02.png",
-          "width": 1956,
-          "height": 1048
+          "width": 780,
+          "height": 1680
         }
       },
       {
         "kind": "image",
-        "alt": "responsive",
+        "alt": "Mon Nom Bakery mobile information and FAQ",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-03.png",
-          "width": 1956,
-          "height": 1048
+          "width": 780,
+          "height": 1680
         }
       }
     ]
@@ -52,7 +52,7 @@ export const generatedProjectMedia = {
     "media": [
       {
         "kind": "image",
-        "alt": "overview",
+        "alt": "Lina Tsapova modeling portfolio",
         "desktop": {
           "src": "/projects/lina-tsapova/media-01.png",
           "width": 1956,
@@ -61,7 +61,7 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "detail",
+        "alt": "Lina Tsapova photography portfolio",
         "desktop": {
           "src": "/projects/lina-tsapova/media-02.png",
           "width": 1956,
@@ -70,7 +70,7 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "responsive",
+        "alt": "Lina Tsapova about and contact page",
         "desktop": {
           "src": "/projects/lina-tsapova/media-03.png",
           "width": 1956,
