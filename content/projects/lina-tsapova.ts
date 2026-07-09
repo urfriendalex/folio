@@ -5,12 +5,13 @@ export const linaTsapovaProject: ProjectEntry = {
   slug: "lina-tsapova",
   orderIndex: 0.5,
   title: "LINA TSAPOVA",
-  descriptor: "PHOTO PORTFOLIO",
+  cardDescriptor: "PHOTO PORTFOLIO",
+  descriptor: "Image-led Svelte portfolio with browser-native view transitions",
   year: "2026",
   role: "Design + Frontend",
   technologies: ["Svelte", "View Transitions API", "JavaScript", "CSS"],
   shortDescription:
-    "Svelte portfolio with app-level transitions powered by the View Transitions API, prepared while the public domain verification is being completed.",
+    "Svelte portfolio with app-level transitions powered by the View Transitions API.",
   description:
     "Creative portfolio for Lina Tsapova, built in Svelte with View Transitions API motion between app states, plus a visual-first presentation of work, biography, and contact.",
   overview:
@@ -32,8 +33,7 @@ export const linaTsapovaProject: ProjectEntry = {
   collaboration: {
     team: "Solo",
     withClient: true,
-    details:
-      "Built the site and prepared the public link; domain verification is expected to complete soon.",
+    details: "Built and launched the site on Lina's public domain.",
   },
   stack: {
     platform: ["Svelte"],
@@ -45,19 +45,19 @@ export const linaTsapovaProject: ProjectEntry = {
     "Image-led portfolio structure",
     "View Transitions API route and state motion",
     "Clean biography and contact path",
-    "Launch-ready domain setup",
+    "Production domain launch",
   ],
   impact: {
     summary:
-      "A portfolio foundation ready for the public domain once verification passes.",
+      "A live portfolio that gives the photography a focused, continuous browsing experience.",
     highlights: [
       "Work and identity share one clear visual line",
       "App transitions make navigation feel continuous",
       "Simple route from browsing to contact",
-      "Built for the final domain rather than a temporary placeholder",
+      "Launched on the final public domain",
     ],
   },
   tags: ["Svelte", "View Transitions API", "Frontend", "Portfolio", "Creative Development"],
-  links: [{ label: "Domain Pending", url: "http://linatsapova.com/" }],
+  links: [{ label: "Live Site", url: "http://linatsapova.com/" }],
   ...generatedProjectMedia["lina-tsapova"],
 };

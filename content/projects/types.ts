@@ -60,6 +60,9 @@ export type ProjectEntry = {
   /** Lower sorts first; change only this to reorder listings and prev/next navigation. */
   orderIndex: number;
   title: string;
+  /** Concise category shown beside the title in project cards. */
+  cardDescriptor: string;
+  /** Fuller project summary shown on the project page. */
   descriptor: string;
   year: string;
   role: string;
