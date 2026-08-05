@@ -548,7 +548,11 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       return;
     }
 
-    openBookingFromUrl();
+    const frameId = window.requestAnimationFrame(() => {
+      openBookingFromUrl();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [openBookingFromUrl]);
 
   const openAbout = useCallback(() => openOverlay("about"), [openOverlay]);
