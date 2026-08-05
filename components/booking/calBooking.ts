@@ -1,5 +1,12 @@
 const CAL_ORIGIN = "https://cal.com";
 
+/** Shareable hash for the in-site schedule-call booking overlay (`/#schedule-call`). */
+export const SCHEDULE_CALL_HASH = "schedule-call";
+
+export function getScheduleCallHref() {
+  return `#${SCHEDULE_CALL_HASH}`;
+}
+
 export function normalizeCalLink(calLink: string) {
   return calLink
     .trim()
