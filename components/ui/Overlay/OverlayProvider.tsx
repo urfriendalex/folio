@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { CalBookingOverlayContent } from "@/components/booking/CalBookingOverlayContent";
+import { SCHEDULE_CALL_HASH } from "@/components/booking/calBooking";
 import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import { AboutOverlayContent } from "@/content/about";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
@@ -29,11 +30,60 @@ type OpenOverlayType = Exclude<OverlayType, "project" | null>;
 /** `history.state` flag: an overlay modal session is on the stack (browser Back should close it). */
 const FOLIO_OVERLAY_HISTORY_KEY = "folioOverlay" as const;
 
+function peekLocationHash(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.location.hash.replace(/^#/, "");
+}
+
+function buildScheduleCallHref(): string {
+  const url = new URL(window.location.href);
+  url.hash = SCHEDULE_CALL_HASH;
+  return url.toString();
+}
+
+/** Clears `#schedule-call` after a deep-linked booking close (no owned history entry). */
+function stripScheduleCallHashIfPresent(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (peekLocationHash() !== SCHEDULE_CALL_HASH) {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.hash = "";
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function resolveOverlayHistoryHref(overlayType: OverlayType): string {
+  if (overlayType === "booking") {
+    return buildScheduleCallHref();
+  }
+
+  if (peekLocationHash() === SCHEDULE_CALL_HASH) {
+    const url = new URL(window.location.href);
+    url.hash = "";
+    return url.toString();
+  }
+
+  return window.location.href;
+}
+
 function augmentOverlayHistoryStack(
   replace: boolean,
   sealRef: { current: boolean },
+  overlayType: OverlayType,
 ) {
   if (typeof window === "undefined") {
+    return;
+  }
+
+  // Shared `/#schedule-call` links already have the hash — open without stacking another entry.
+  if (overlayType === "booking" && !replace && peekLocationHash() === SCHEDULE_CALL_HASH) {
     return;
   }
 
@@ -43,11 +93,12 @@ function augmentOverlayHistoryStack(
       ? { ...(prev as Record<string, unknown>) }
       : {};
   const next = { ...base, [FOLIO_OVERLAY_HISTORY_KEY]: true };
+  const href = resolveOverlayHistoryHref(overlayType);
 
   if (replace) {
-    window.history.replaceState(next, "", window.location.href);
+    window.history.replaceState(next, "", href);
   } else {
-    window.history.pushState(next, "", window.location.href);
+    window.history.pushState(next, "", href);
   }
 
   sealRef.current = true;
@@ -356,7 +407,9 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       return;
     }
 
-    if (activeOverlay === "about") {
+    const closingOverlay = activeOverlay;
+
+    if (closingOverlay === "about") {
       window.dispatchEvent(new CustomEvent("folio:before-about-close"));
     }
 
@@ -373,12 +426,17 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
       setOverlayVisible(false);
       setOverlayContentVisible(false);
       closeUnmountTimerRef.current = null;
+
+      if (closingOverlay === "booking") {
+        stripScheduleCallHashIfPresent();
+      }
+
       window.requestAnimationFrame(() => {
         triggerRef.current?.focus({ preventScroll: true });
       });
     };
 
-    if (activeOverlay === "about") {
+    if (closingOverlay === "about") {
       closeShellTimerRef.current = window.setTimeout(() => {
         setOverlayVisible(false);
         closeShellTimerRef.current = null;
@@ -408,30 +466,13 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
     performCloseOverlay();
   }, [performCloseOverlay]);
 
-  useEffect(() => {
-    const onPopState = () => {
-      overlayHistorySealRef.current = false;
-      if (!activeOverlayRef.current) {
-        return;
-      }
-      performCloseOverlayRef.current();
-    };
-
-    window.addEventListener("popstate", onPopState);
-
-    return () => {
-      window.removeEventListener("popstate", onPopState);
-    };
-  }, []);
-
-  const openOverlay = useCallback(
-    (type: OpenOverlayType) => {
-      const wasAlreadyOpen = activeOverlay !== null;
+  const presentOverlayShell = useCallback(
+    (type: OverlayType, project: ProjectEntry | null = null) => {
       clearOverlayTimers();
       setPendingBlurHandoff();
       clearClosingBlurHandoff();
       triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setProjectOverlay(null);
+      setProjectOverlay(project);
       setActiveOverlay(type);
       setOverlayVisible(false);
       setOverlayContentVisible(false);
@@ -443,34 +484,72 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           openContentFrameRef.current = null;
         });
       });
-      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef);
     },
-    [activeOverlay, clearOverlayTimers],
+    [clearOverlayTimers],
+  );
+
+  const openOverlay = useCallback(
+    (type: OpenOverlayType) => {
+      const wasAlreadyOpen = activeOverlay !== null;
+      presentOverlayShell(type);
+      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef, type);
+    },
+    [activeOverlay, presentOverlayShell],
   );
 
   const openProjectFullInfo = useCallback(
     (project: ProjectEntry) => {
       const wasAlreadyOpen = activeOverlay !== null;
-      clearOverlayTimers();
-      setPendingBlurHandoff();
-      clearClosingBlurHandoff();
-      triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setProjectOverlay(project);
-      setActiveOverlay("project");
-      setOverlayVisible(false);
-      setOverlayContentVisible(false);
-      openFrameRef.current = window.requestAnimationFrame(() => {
-        setOverlayVisible(true);
-        openFrameRef.current = null;
-        openContentFrameRef.current = window.requestAnimationFrame(() => {
-          setOverlayContentVisible(true);
-          openContentFrameRef.current = null;
-        });
-      });
-      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef);
+      presentOverlayShell("project", project);
+      augmentOverlayHistoryStack(wasAlreadyOpen, overlayHistorySealRef, "project");
     },
-    [activeOverlay, clearOverlayTimers],
+    [activeOverlay, presentOverlayShell],
   );
+
+  const openBookingFromUrl = useCallback(() => {
+    if (activeOverlayRef.current === "booking") {
+      return;
+    }
+
+    presentOverlayShell("booking");
+  }, [presentOverlayShell]);
+
+  const openBookingFromUrlRef = useRef(openBookingFromUrl);
+  useLayoutEffect(() => {
+    openBookingFromUrlRef.current = openBookingFromUrl;
+  }, [openBookingFromUrl]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      overlayHistorySealRef.current = false;
+
+      if (peekLocationHash() === SCHEDULE_CALL_HASH) {
+        openBookingFromUrlRef.current();
+        return;
+      }
+
+      if (!activeOverlayRef.current) {
+        return;
+      }
+
+      performCloseOverlayRef.current();
+    };
+
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
+  /** Deep link: `/#schedule-call` (or any path with that hash) opens the booking overlay. */
+  useLayoutEffect(() => {
+    if (peekLocationHash() !== SCHEDULE_CALL_HASH) {
+      return;
+    }
+
+    openBookingFromUrl();
+  }, [openBookingFromUrl]);
 
   const openAbout = useCallback(() => openOverlay("about"), [openOverlay]);
   const openCalBooking = useCallback(() => openOverlay("booking"), [openOverlay]);

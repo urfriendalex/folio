@@ -1,9 +1,10 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
+import { getScheduleCallHref } from "@/components/booking/calBooking";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 
-type CalBookingTriggerProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> & {
+type CalBookingTriggerProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
   children: ReactNode;
 };
 
@@ -11,8 +12,8 @@ export function CalBookingTrigger({ children, onClick, ...props }: CalBookingTri
   const { openCalBooking } = useOverlay();
 
   return (
-    <button
-      type="button"
+    <a
+      href={getScheduleCallHref()}
       {...props}
       onClick={(event) => {
         onClick?.(event);
@@ -21,10 +22,11 @@ export function CalBookingTrigger({ children, onClick, ...props }: CalBookingTri
           return;
         }
 
+        event.preventDefault();
         openCalBooking();
       }}
     >
       {children}
-    </button>
+    </a>
   );
 }
