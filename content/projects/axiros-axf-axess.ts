@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const axirosAxfAxessProject: ProjectEntry = {
   slug: "axiros-axf-axess",
-  orderIndex: 7,
+  orderIndex: 9,
   title: "AXIROS: AXF / AXESS",
   cardDescriptor: "ENTERPRISE WEB PLATFORM",
   descriptor: "Telecom device-management platform (AXF JS framework / component library + AXESS)",

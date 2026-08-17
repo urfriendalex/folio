@@ -3,12 +3,12 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const linaTsapovaProject: ProjectEntry = {
   slug: "lina-tsapova",
-  orderIndex: 0.5,
+  orderIndex: 8,
   title: "LINA TSAPOVA",
   cardDescriptor: "PHOTO PORTFOLIO",
   descriptor: "Image-led Svelte portfolio with browser-native view transitions",
   year: "2026",
-  role: "Design + Frontend",
+  role: "Solo Designer & Developer",
   technologies: ["Svelte", "View Transitions API", "JavaScript", "CSS"],
   shortDescription:
     "Svelte portfolio with app-level transitions powered by the View Transitions API.",
@@ -58,6 +58,6 @@ export const linaTsapovaProject: ProjectEntry = {
     ],
   },
   tags: ["Svelte", "View Transitions API", "Frontend", "Portfolio", "Creative Development"],
-  links: [{ label: "Live Site", url: "http://linatsapova.com/" }],
+  links: [{ label: "Live Site", url: "https://www.linatsapova.com/" }],
   ...generatedProjectMedia["lina-tsapova"],
 };

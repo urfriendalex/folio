@@ -3,25 +3,27 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const monNomBakeryProject: ProjectEntry = {
   slug: "mon-nom-bakery",
-  orderIndex: 0,
+  orderIndex: 4,
   title: "MON NOM BAKERY",
-  cardDescriptor: "DIGITAL MENU",
-  descriptor: "Brand-led bakery website, digital menu, and custom content platform",
+  cardDescriptor: "BAKERY PLATFORM",
+  descriptor: "Localized bakery platform with configurable content and locations",
   year: "2026",
-  role: "Design + Frontend",
+  role: "Solo Designer & Developer",
   technologies: ["Next.js", "Sanity", "React", "SCSS"],
   shortDescription:
-    "Next.js bakery website with a custom Sanity admin panel, branded QR codes, and close alignment between the interface, content model, and brand identity.",
+    "Localized Next.js bakery experience with configurable locations, language switching, and a custom Sanity admin.",
   description:
-    "Brand-forward Next.js website for Mon Nom Bakery, with a custom Sanity admin panel behind the content and a public experience tuned to the bakery's visual identity.",
+    "Brand-forward Next.js experience for Mon Nom Bakery, now expanded with a landing flow, complete language switching, configurable location options, and a custom Sanity admin behind every operational detail.",
   overview:
-    "A compact site for a bakery where the product needs to feel immediate: food, tone, menu, and ordering without overexplaining the brand. The CMS side was shaped around the same brand logic, so updates stay clear for the team.",
+    "A mobile-first bakery experience where landing content, language, location choices, menu details, and ordering paths stay coherent. The full setup is managed in Sanity so the team can adjust the experience without code changes.",
   roleSummary:
-    "Design direction, Next.js frontend, custom Sanity admin setup, branded QR codes, and responsive polish for the public site.",
+    "Solo design and development: visual direction, Next.js frontend, custom Sanity admin, localization, location configuration, branded QR codes, and launch polish.",
   responsibilities: [
     "Website structure and visual direction",
     "Next.js frontend build",
     "Custom Sanity admin panel",
+    "Full-site language switching",
+    "Configurable multi-location options",
     "Custom QR code design",
     "Menu and order-oriented user flow",
     "Brand identity alignment across content and interface",
@@ -46,6 +48,8 @@ export const monNomBakeryProject: ProjectEntry = {
   features: [
     "Warm editorial product presentation",
     "Custom Sanity admin workflow",
+    "Localized landing and menu experience",
+    "Sanity-managed location configuration",
     "Branded QR codes",
     "Direct menu and order paths",
     "Responsive layouts for quick mobile browsing",
@@ -55,7 +59,7 @@ export const monNomBakeryProject: ProjectEntry = {
       "A bakery site that lets the product lead, while keeping practical actions easy to find.",
     highlights: [
       "Food-first visual rhythm",
-      "Admin content structure that matches day-to-day bakery updates",
+      "Admin controls for day-to-day content, language, and location updates",
       "QR codes that stay aligned with the visual identity",
       "Low-friction browsing on mobile",
       "Brand tone carried through layout and interaction",

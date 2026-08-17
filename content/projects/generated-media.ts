@@ -3,6 +3,85 @@ import type { ProjectEntry } from "./types";
 type ProjectGeneratedMedia = Pick<ProjectEntry, "thumbnail" | "media">;
 
 export const generatedProjectMedia = {
+  "lumano": {
+    "thumbnail": {
+      "desktop": {
+        "poster": "/projects/lumano/thumbnail.png",
+        "video": "/projects/lumano/thumbnail.mp4",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "media": [
+      {
+        "kind": "video",
+        "alt": "Lumano animated jewelry landing",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-01.mp4",
+          "poster": "/projects/lumano/media-01-poster.png",
+          "width": 1920,
+          "height": 1080
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lumano mobile landing",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-02.mp4",
+          "poster": "/projects/lumano/media-02-poster.png",
+          "width": 1080,
+          "height": 1920
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Lumano storefront homepage",
+        "desktop": {
+          "src": "/projects/lumano/media-03.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Lumano configurable product collection",
+        "desktop": {
+          "src": "/projects/lumano/media-04.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Lumano customized product page",
+        "desktop": {
+          "src": "/projects/lumano/media-05.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Lumano brand story page",
+        "desktop": {
+          "src": "/projects/lumano/media-06.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Lumano responsive mobile storefront",
+        "desktop": {
+          "src": "/projects/lumano/media-07.png",
+          "width": 780,
+          "height": 1680
+        }
+      }
+    ]
+  },
   "mon-nom-bakery": {
     "thumbnail": {
       "desktop": {
@@ -14,7 +93,7 @@ export const generatedProjectMedia = {
     "media": [
       {
         "kind": "image",
-        "alt": "Mon Nom Bakery mobile homepage",
+        "alt": "Mon Nom Bakery localized mobile landing",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-01.png",
           "width": 780,
@@ -23,7 +102,7 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "Mon Nom Bakery seasonal mobile menu",
+        "alt": "Mon Nom Bakery English language landing",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-02.png",
           "width": 780,
@@ -32,11 +111,22 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "Mon Nom Bakery mobile information and FAQ",
+        "alt": "Mon Nom Bakery Sanity-managed mobile menu",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-03.png",
           "width": 780,
           "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Mon Nom Bakery menu scroll",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/mon-nom-bakery/media-04.mp4",
+          "poster": "/projects/mon-nom-bakery/media-04-poster.png",
+          "width": 2400,
+          "height": 1194
         }
       }
     ]
@@ -45,8 +135,9 @@ export const generatedProjectMedia = {
     "thumbnail": {
       "desktop": {
         "poster": "/projects/lina-tsapova/thumbnail.png",
-        "width": 1956,
-        "height": 1048
+        "video": "/projects/lina-tsapova/thumbnail.mp4",
+        "width": 2404,
+        "height": 1192
       }
     },
     "media": [
@@ -75,6 +166,39 @@ export const generatedProjectMedia = {
           "src": "/projects/lina-tsapova/media-03.png",
           "width": 1956,
           "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lina Tsapova desktop view transitions",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-04.mp4",
+          "poster": "/projects/lina-tsapova/media-04-poster.png",
+          "width": 2404,
+          "height": 1192
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lina Tsapova mobile portfolio transition",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-05.mp4",
+          "poster": "/projects/lina-tsapova/media-05-poster.png",
+          "width": 432,
+          "height": 934
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lina Tsapova mobile gallery lightbox",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lina-tsapova/media-06.mp4",
+          "poster": "/projects/lina-tsapova/media-06-poster.png",
+          "width": 432,
+          "height": 934
         }
       }
     ]

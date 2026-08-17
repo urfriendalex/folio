@@ -43,6 +43,7 @@ const H264_CRF_GALLERY = 16;
 const FFMPEG_FIRST_FRAME = "select=eq(n\\,0)";
 
 const projectSlugs = [
+  "lumano",
   "mon-nom-bakery",
   "lina-tsapova",
   "studio-iskra",
@@ -55,6 +56,7 @@ const projectSlugs = [
 ];
 
 const thumbnailPosterPositionBySlug = {
+  "lumano": "centre",
   "mon-nom-bakery": "centre",
   "lina-tsapova": "centre",
   "studio-iskra": "top",
