@@ -15,7 +15,7 @@ export const generatedProjectMedia = {
     "media": [
       {
         "kind": "video",
-        "alt": "Lumano animated jewelry landing",
+        "alt": "Lumano live landing with animated typography and jewelry",
         "loop": true,
         "desktop": {
           "src": "/projects/lumano/media-01.mp4",
@@ -26,13 +26,13 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Lumano mobile landing",
+        "alt": "Lumano live storefront landing scroll",
         "loop": true,
         "desktop": {
           "src": "/projects/lumano/media-02.mp4",
           "poster": "/projects/lumano/media-02-poster.png",
-          "width": 1080,
-          "height": 1920
+          "width": 1920,
+          "height": 1080
         }
       },
       {
@@ -120,7 +120,7 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Mon Nom Bakery menu scroll",
+        "alt": "Mon Nom Bakery smooth menu scroll with animated images and active item highlights",
         "loop": true,
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-04.mp4",
