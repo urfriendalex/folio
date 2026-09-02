@@ -85,10 +85,10 @@ export const generatedProjectMedia = {
   "mon-nom-bakery": {
     "thumbnail": {
       "desktop": {
-        "poster": "/projects/mon-nom-bakery/media-04-poster.png",
-        "video": "/projects/mon-nom-bakery/media-04.mp4",
+        "poster": "/projects/mon-nom-bakery/thumbnail-video-poster.png",
+        "video": "/projects/mon-nom-bakery/thumbnail.mp4",
         "width": 2400,
-        "height": 1194
+        "height": 1190
       }
     },
     "media": [
@@ -123,7 +123,7 @@ export const generatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Mon Nom Bakery contextual food preview opening into the full-screen image viewer",
+        "alt": "Mon Nom Bakery real contextual preview click and full-screen image viewer",
         "loop": true,
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-05.mp4",
