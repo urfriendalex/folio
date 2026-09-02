@@ -85,9 +85,10 @@ export const generatedProjectMedia = {
   "mon-nom-bakery": {
     "thumbnail": {
       "desktop": {
-        "poster": "/projects/mon-nom-bakery/thumbnail.png",
-        "width": 780,
-        "height": 1680
+        "poster": "/projects/mon-nom-bakery/media-04-poster.png",
+        "video": "/projects/mon-nom-bakery/media-04.mp4",
+        "width": 2400,
+        "height": 1194
       }
     },
     "media": [
@@ -96,15 +97,6 @@ export const generatedProjectMedia = {
         "alt": "Mon Nom Bakery localized mobile landing",
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-01.png",
-          "width": 780,
-          "height": 1680
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Mon Nom Bakery English language landing",
-        "desktop": {
-          "src": "/projects/mon-nom-bakery/media-02.png",
           "width": 780,
           "height": 1680
         }
@@ -125,6 +117,17 @@ export const generatedProjectMedia = {
         "desktop": {
           "src": "/projects/mon-nom-bakery/media-04.mp4",
           "poster": "/projects/mon-nom-bakery/media-04-poster.png",
+          "width": 2400,
+          "height": 1194
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Mon Nom Bakery contextual food preview opening into the full-screen image viewer",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/mon-nom-bakery/media-05.mp4",
+          "poster": "/projects/mon-nom-bakery/media-05-poster.png",
           "width": 2400,
           "height": 1194
         }

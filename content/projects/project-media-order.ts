@@ -36,8 +36,8 @@ export const projectMediaOrderIndexBySlug: Partial<
   },
   "mon-nom-bakery": {
     "media-04.mp4": 1,
-    "media-01.png": 2,
-    "media-02.png": 3,
+    "media-05.mp4": 2,
+    "media-01.png": 3,
     "media-03.png": 4,
   },
   "lina-tsapova": {
