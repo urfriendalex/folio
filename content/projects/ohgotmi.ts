@@ -5,6 +5,7 @@ export const ohgotmiProject: ProjectEntry = {
   slug: "ohgotmi",
   orderIndex: 1,
   title: "OHGOTMI",
+  cardDescriptor: "FILM PORTFOLIO",
   descriptor: "Film producer / creative portfolio",
   year: "2026",
   role: "Solo Designer & Developer",

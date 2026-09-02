@@ -5,6 +5,7 @@ export const studioIskraProject: ProjectEntry = {
   slug: "studio-iskra",
   orderIndex: 2,
   title: "STUDIO ISKRA",
+  cardDescriptor: "PHOTO STUDIO",
   descriptor: "Warsaw photo studio website",
   year: "2025",
   role: "Solo Designer & Developer",

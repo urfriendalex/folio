@@ -25,6 +25,29 @@
 export const projectMediaOrderIndexBySlug: Partial<
   Record<string, Partial<Record<string, number>>>
 > = {
+  lumano: {
+    "media-01.mp4": 1,
+    "media-03.png": 2,
+    "media-02.mp4": 3,
+    "media-04.png": 4,
+    "media-05.png": 5,
+    "media-07.png": 6,
+    "media-06.png": 7,
+  },
+  "mon-nom-bakery": {
+    "media-04.mp4": 1,
+    "media-05.mp4": 2,
+    "media-01.png": 3,
+    "media-03.png": 4,
+  },
+  "lina-tsapova": {
+    "media-04.mp4": 1,
+    "media-01.png": 2,
+    "media-05.mp4": 3,
+    "media-02.png": 4,
+    "media-06.mp4": 5,
+    "media-03.png": 6,
+  },
   "axiros-axf-axess": {
     "media-06.png": 1,
   },

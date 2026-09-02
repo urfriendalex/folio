@@ -134,12 +134,16 @@ async function ensureDir(dir) {
 }
 
 /**
- * Ensures `public/projects` exists. With `--clean-public-projects`, deletes that folder entirely first
- * (e.g. orphaned dirs after removing a slug). Otherwise each project build clears only its own subfolder.
+ * Ensures `public/projects` exists. Clean mode removes only generator-owned project directories,
+ * preserving checked-in curated captures that do not have local source folders.
  */
 async function prepareOutputDir({ cleanPublicProjects }) {
   if (cleanPublicProjects) {
-    await fs.rm(outputDir, { recursive: true, force: true });
+    await Promise.all(
+      projectSlugs.map((slug) =>
+        fs.rm(path.join(outputDir, slug), { recursive: true, force: true }),
+      ),
+    );
   }
   await ensureDir(outputDir);
 }
@@ -272,7 +276,7 @@ if (wantsHelp) {
   console.log(`Usage: node scripts/generate-project-media.mjs [options]
 
 Options:
-  --clean-public-projects   Delete ${path.relative(rootDir, outputDir) || outputDir} entirely first (removes orphaned project folders too).
+  --clean-public-projects   Delete and rebuild generator-owned project folders; curated folders are preserved.
   --help, -h                Show this message.
 
 By default each project folder (public/projects/<slug>/) is removed and recreated so outputs exactly match this run — no leftover media-* or thumbnails for that slug.
@@ -654,9 +658,12 @@ async function buildProjectMedia(project, progress) {
 }
 
 function renderGeneratedFile(payload) {
-  return `import type { ProjectEntry } from "./types";\n\n` +
+  return `import type { ProjectEntry } from "./types";\n` +
+    `import { curatedProjectMedia } from "./curated-media";\n\n` +
     `type ProjectGeneratedMedia = Pick<ProjectEntry, "thumbnail" | "media">;\n\n` +
-    `export const generatedProjectMedia = ${JSON.stringify(payload, null, 2)} satisfies Record<string, ProjectGeneratedMedia>;\n`;
+    `export const generatedProjectMedia = {\n` +
+    `  ...curatedProjectMedia,\n` +
+    `${JSON.stringify(payload, null, 2).slice(2)} satisfies Record<string, ProjectGeneratedMedia>;\n`;
 }
 
 console.log("");

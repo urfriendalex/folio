@@ -3,8 +3,9 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const dianaMilkanovaProject: ProjectEntry = {
   slug: "diana-milkanova",
-  orderIndex: 5,
+  orderIndex: 6,
   title: "DIANA MILKANOVA",
+  cardDescriptor: "E-COMMERCE STORE",
   descriptor: "Independent fashion e-commerce",
   year: "2021",
   role: "Frontend Developer",

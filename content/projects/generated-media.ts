@@ -1,8 +1,10 @@
 import type { ProjectEntry } from "./types";
+import { curatedProjectMedia } from "./curated-media";
 
 type ProjectGeneratedMedia = Pick<ProjectEntry, "thumbnail" | "media">;
 
 export const generatedProjectMedia = {
+  ...curatedProjectMedia,
   "studio-iskra": {
     "thumbnail": {
       "desktop": {

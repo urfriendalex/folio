@@ -35,6 +35,7 @@ export function ProjectCard({
   const projectHref = `/projects/${project.slug}`;
   const externalUrl = project.links?.[0]?.url;
   const thumbnailMedia = thumbnailToMediaSlot(project.thumbnail);
+  const displayTitle = `${project.title} | ${project.cardDescriptor}`;
 
   return (
     <ScrollReveal
@@ -64,7 +65,13 @@ export function ProjectCard({
         <footer className={styles.meta}>
           <div className={styles.identity}>
             <div className={styles.titleRow}>
-              <h3 className={styles.title}>{project.title}</h3>
+              <h3 className={styles.title} aria-label={displayTitle}>
+                <span className={styles.titlePrimary}>{project.title}</span>
+                <span className={styles.titleSeparator} aria-hidden="true">
+                  |
+                </span>
+                <span className={styles.titleSecondary}>{project.cardDescriptor}</span>
+              </h3>
               <span className={styles.year}>{project.year}</span>
             </div>
           </div>

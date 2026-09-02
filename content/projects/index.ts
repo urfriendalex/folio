@@ -3,6 +3,9 @@ import { normalizeProjectMediaSlots } from "@/lib/projectMedia";
 import { axirosAxfAxessProject } from "./axiros-axf-axess";
 import { dianaMilkanovaProject } from "./diana-milkanova";
 import { kinoprobyProject } from "./kinoproby";
+import { linaTsapovaProject } from "./lina-tsapova";
+import { lumanoProject } from "./lumano";
+import { monNomBakeryProject } from "./mon-nom-bakery";
 import { ohgotmiProject } from "./ohgotmi";
 import { pastelMuseProject } from "./pastel-muse";
 import { portfolioV1YansonsProject } from "./portfolio-v1-yansons";
@@ -10,6 +13,9 @@ import { projectMediaOrderIndexBySlug } from "./project-media-order";
 import { studioIskraProject } from "./studio-iskra";
 
 const projectEntries = [
+  lumanoProject,
+  monNomBakeryProject,
+  linaTsapovaProject,
   axirosAxfAxessProject,
   dianaMilkanovaProject,
   kinoprobyProject,
