@@ -49,7 +49,6 @@ const projectSlugs = [
   "portfolio-v1-yansons",
   "kinoproby",
   "diana-milkanova",
-  "pastel-muse",
 ];
 
 const thumbnailPosterPositionBySlug = {
@@ -59,7 +58,6 @@ const thumbnailPosterPositionBySlug = {
   "portfolio-v1-yansons": "centre",
   "kinoproby": "centre",
   "diana-milkanova": "centre",
-  "pastel-muse": "top",
 };
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
