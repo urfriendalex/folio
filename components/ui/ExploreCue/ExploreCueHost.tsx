@@ -13,9 +13,6 @@ export function ExploreCueHost({
   label = "explore",
   onPointerEnter,
   onPointerMove,
-  onPointerDown,
-  onPointerUp,
-  onPointerCancel,
   onPointerLeave,
   onFocus,
   onBlur,
@@ -34,18 +31,6 @@ export function ExploreCueHost({
       onPointerMove={(event) => {
         onPointerMove?.(event);
         cue.onPointerMove(event);
-      }}
-      onPointerDown={(event) => {
-        onPointerDown?.(event);
-        cue.onPointerDown(event);
-      }}
-      onPointerUp={(event) => {
-        onPointerUp?.(event);
-        cue.onPointerUp();
-      }}
-      onPointerCancel={(event) => {
-        onPointerCancel?.(event);
-        cue.onPointerCancel();
       }}
       onPointerLeave={(event) => {
         onPointerLeave?.(event);

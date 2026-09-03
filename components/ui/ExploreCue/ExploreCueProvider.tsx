@@ -11,40 +11,33 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import gsap from "gsap";
-import { getLenis } from "@/lib/smoothScroll";
 import { useClientMounted } from "@/lib/useClientMounted";
 import styles from "./ExploreCue.module.scss";
 
 const FOLLOW_DURATION = 0.18;
 const FOLLOW_EASE = "power3.out";
 const EXIT_MS = 420;
-const HANDOFF_MS = 160;
+const HANDOFF_MS = 80;
 
 export type ExploreCueShowOptions = {
   label?: string;
+  /** Viewport pointer. Overlay follow only — never a host-local point. */
+  pointer?: { x: number; y: number };
+  /** Keyboard only. Ignored once a pointer has been seen. */
+  at?: { x: number; y: number };
 };
 
 type ExploreCueApi = {
-  show: (
-    host: HTMLElement,
-    clientX: number,
-    clientY: number,
-    options?: ExploreCueShowOptions,
-  ) => void;
-  move: (clientX: number, clientY: number) => void;
-  press: () => void;
-  release: () => void;
-  hide: (host?: HTMLElement, point?: { x: number; y: number }) => void;
+  show: (host: HTMLElement, options?: ExploreCueShowOptions) => void;
+  hide: (host?: HTMLElement) => void;
 };
 
 const ExploreCueContext = createContext<ExploreCueApi | null>(null);
 
 const noopApi: ExploreCueApi = {
   show() {},
-  move() {},
-  press() {},
-  release() {},
   hide() {},
 };
 
@@ -69,31 +62,16 @@ function overlayBlocksCue() {
   );
 }
 
-function localPoint(host: HTMLElement, clientX: number, clientY: number) {
-  const rect = host.getBoundingClientRect();
-  return {
-    x: clientX - rect.left,
-    y: clientY - rect.top,
-  };
-}
-
-function cueTargetFromPoint(clientX: number, clientY: number) {
-  const node = document.elementFromPoint(clientX, clientY);
-  if (!(node instanceof Element)) {
-    return null;
-  }
-
-  return node.closest<HTMLElement>("[data-explore-cue-target]");
-}
-
 type ExploreCueProviderProps = {
   children: ReactNode;
 };
 
 export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
-  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const frostRef = useRef<HTMLSpanElement | null>(null);
+  const blendRef = useRef<HTMLSpanElement | null>(null);
   const hostRef = useRef<HTMLElement | null>(null);
   const posRef = useRef({ x: 0, y: 0 });
+  const hasPointerRef = useRef(false);
   const followRef = useRef<{
     xTo: ReturnType<typeof gsap.quickTo>;
     yTo: ReturnType<typeof gsap.quickTo>;
@@ -101,80 +79,49 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   const exitTimerRef = useRef(0);
   const hideGenRef = useRef(0);
   const activeRef = useRef(false);
-  const pointerRef = useRef({ x: 0, y: 0 });
   const [active, setActive] = useState(false);
-  const [pressed, setPressed] = useState(false);
   const [label, setLabel] = useState("explore");
+  const labelRef = useRef("explore");
   const mounted = useClientMounted();
+  const pathname = usePathname();
 
   const layout = useCallback(() => {
-    const overlay = overlayRef.current;
-    const host = hostRef.current;
-    if (!overlay || !host) {
-      return;
-    }
-
-    const rect = host.getBoundingClientRect();
-    overlay.style.setProperty("--cue-x", `${rect.left + posRef.current.x}px`);
-    overlay.style.setProperty("--cue-y", `${rect.top + posRef.current.y}px`);
+    const x = `${posRef.current.x}px`;
+    const y = `${posRef.current.y}px`;
+    frostRef.current?.style.setProperty("--cue-x", x);
+    frostRef.current?.style.setProperty("--cue-y", y);
+    blendRef.current?.style.setProperty("--cue-x", x);
+    blendRef.current?.style.setProperty("--cue-y", y);
   }, []);
-
-  const pauseFollow = useCallback(() => {
-    followRef.current?.xTo.tween?.pause();
-    followRef.current?.yTo.tween?.pause();
-  }, []);
-
-  const rememberPointer = useCallback((clientX: number, clientY: number) => {
-    pointerRef.current.x = clientX;
-    pointerRef.current.y = clientY;
-  }, []);
-
-  const snapToPointer = useCallback(
-    (clientX: number, clientY: number) => {
-      const host = hostRef.current;
-      rememberPointer(clientX, clientY);
-      pauseFollow();
-
-      if (host) {
-        const next = localPoint(host, clientX, clientY);
-        posRef.current.x = next.x;
-        posRef.current.y = next.y;
-      }
-
-      const overlay = overlayRef.current;
-      if (overlay) {
-        overlay.style.setProperty("--cue-x", `${clientX}px`);
-        overlay.style.setProperty("--cue-y", `${clientY}px`);
-      }
-    },
-    [pauseFollow, rememberPointer],
-  );
 
   const followTo = useCallback(
-    (host: HTMLElement, clientX: number, clientY: number) => {
-      rememberPointer(clientX, clientY);
-      const next = localPoint(host, clientX, clientY);
+    (clientX: number, clientY: number) => {
+      hasPointerRef.current = true;
 
       if (prefersReducedMotion() || !followRef.current) {
-        posRef.current.x = next.x;
-        posRef.current.y = next.y;
+        posRef.current.x = clientX;
+        posRef.current.y = clientY;
         layout();
         return;
       }
 
-      followRef.current.xTo(next.x);
-      followRef.current.yTo(next.y);
+      followRef.current.xTo(clientX);
+      followRef.current.yTo(clientY);
     },
-    [layout, rememberPointer],
+    [layout],
+  );
+
+  const seedAt = useCallback(
+    (clientX: number, clientY: number) => {
+      posRef.current.x = clientX;
+      posRef.current.y = clientY;
+      layout();
+    },
+    [layout],
   );
 
   const show = useCallback(
-    (
-      host: HTMLElement,
-      clientX: number,
-      clientY: number,
-      options?: ExploreCueShowOptions,
-    ) => {
+    (host: HTMLElement, options?: ExploreCueShowOptions) => {
       if (overlayBlocksCue()) {
         return;
       }
@@ -185,106 +132,86 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
       }
 
       hideGenRef.current += 1;
+      hostRef.current = host;
 
-      const wasActive = activeRef.current;
-      const prevHost = hostRef.current;
-      if (prevHost && prevHost !== host && wasActive) {
-        pauseFollow();
-        const from = prevHost.getBoundingClientRect();
-        const to = host.getBoundingClientRect();
-        posRef.current.x = from.left + posRef.current.x - to.left;
-        posRef.current.y = from.top + posRef.current.y - to.top;
+      const nextLabel = options?.label ?? "explore";
+      if (labelRef.current !== nextLabel) {
+        labelRef.current = nextLabel;
+        setLabel(nextLabel);
       }
 
-      hostRef.current = host;
-      setLabel(options?.label ?? "explore");
+      if (options?.pointer) {
+        followTo(options.pointer.x, options.pointer.y);
+      } else if (!hasPointerRef.current && options?.at) {
+        seedAt(options.at.x, options.at.y);
+      }
 
-      if (!wasActive) {
-        snapToPointer(clientX, clientY);
-        activeRef.current = true;
-        setActive(true);
+      if (activeRef.current) {
         return;
       }
 
-      followTo(host, clientX, clientY);
+      activeRef.current = true;
+      setActive(true);
     },
-    [followTo, pauseFollow, snapToPointer],
+    [followTo, seedAt],
   );
 
-  const press = useCallback(() => {
+  const hideNow = useCallback(() => {
+    hideGenRef.current += 1;
+
+    if (exitTimerRef.current) {
+      window.clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = 0;
+    }
+
+    hostRef.current = null;
+
     if (!activeRef.current) {
       return;
     }
 
-    setPressed(true);
+    activeRef.current = false;
+    setActive(false);
   }, []);
 
-  const release = useCallback(() => {
-    setPressed(false);
-  }, []);
+  const hide = useCallback((host?: HTMLElement) => {
+    if (host && hostRef.current !== host) {
+      return;
+    }
 
-  const move = useCallback(
-    (clientX: number, clientY: number) => {
-      const host = hostRef.current;
-      if (!host || !activeRef.current) {
+    if (exitTimerRef.current) {
+      return;
+    }
+
+    const gen = hideGenRef.current + 1;
+    hideGenRef.current = gen;
+    exitTimerRef.current = window.setTimeout(() => {
+      if (hideGenRef.current !== gen) {
         return;
       }
 
-      followTo(host, clientX, clientY);
-    },
-    [followTo],
-  );
-
-  const hide = useCallback(
-    (host?: HTMLElement, point?: { x: number; y: number }) => {
-      if (host && hostRef.current !== host) {
-        return;
-      }
-
-      if (point) {
-        rememberPointer(point.x, point.y);
-      }
-
-      if (exitTimerRef.current) {
-        return;
-      }
-
-      const gen = hideGenRef.current + 1;
-      hideGenRef.current = gen;
+      activeRef.current = false;
+      setActive(false);
       exitTimerRef.current = window.setTimeout(() => {
         if (hideGenRef.current !== gen) {
           return;
         }
 
-        snapToPointer(pointerRef.current.x, pointerRef.current.y);
-        activeRef.current = false;
-        setPressed(false);
-        setActive(false);
-        exitTimerRef.current = window.setTimeout(() => {
-          if (hideGenRef.current !== gen) {
-            return;
-          }
+        if (!activeRef.current) {
+          hostRef.current = null;
+        }
 
-          if (!activeRef.current) {
-            hostRef.current = null;
-          }
-
-          exitTimerRef.current = 0;
-        }, EXIT_MS);
-      }, HANDOFF_MS);
-    },
-    [rememberPointer, snapToPointer],
-  );
+        exitTimerRef.current = 0;
+      }, EXIT_MS);
+    }, HANDOFF_MS);
+  }, []);
 
   const api = useMemo<ExploreCueApi>(
     () => ({
       show,
-      move,
-      press,
-      release,
       hide,
     }),
-    [hide, move, press, release, show],
+    [hide, show],
   );
 
   useLayoutEffect(() => {
@@ -322,28 +249,14 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   }, [layout]);
 
   useLayoutEffect(() => {
-    if (!pressed) {
-      return;
-    }
-
-    const end = () => {
-      setPressed(false);
-    };
-
-    window.addEventListener("pointerup", end);
-    window.addEventListener("pointercancel", end);
-
-    return () => {
-      window.removeEventListener("pointerup", end);
-      window.removeEventListener("pointercancel", end);
-    };
-  }, [pressed]);
+    hideNow();
+  }, [hideNow, pathname]);
 
   useLayoutEffect(() => {
     const html = document.documentElement;
     const observer = new MutationObserver(() => {
       if (overlayBlocksCue() && activeRef.current) {
-        hide();
+        hideNow();
       }
     });
 
@@ -352,55 +265,30 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
     return () => {
       observer.disconnect();
     };
-  }, [hide]);
+  }, [hideNow]);
 
   useLayoutEffect(() => {
-    const onScroll = () => {
-      layout();
-    };
-
     const onPointerMove = (event: PointerEvent) => {
-      if (!hostRef.current || !activeRef.current || !isFinePointer(event.pointerType)) {
+      if (!isFinePointer(event.pointerType)) {
         return;
       }
 
       if (overlayBlocksCue()) {
-        hide();
+        if (activeRef.current) {
+          hideNow();
+        }
         return;
       }
 
-      const nextHost = cueTargetFromPoint(event.clientX, event.clientY);
-      if (nextHost && nextHost !== hostRef.current) {
-        return;
-      }
-
-      const rect = hostRef.current.getBoundingClientRect();
-      const inside =
-        event.clientX >= rect.left &&
-        event.clientX <= rect.right &&
-        event.clientY >= rect.top &&
-        event.clientY <= rect.bottom;
-
-      if (inside) {
-        return;
-      }
-
-      followTo(hostRef.current, event.clientX, event.clientY);
-      hide(hostRef.current, { x: event.clientX, y: event.clientY });
+      followTo(event.clientX, event.clientY);
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    const unsubscribeLenis = getLenis()?.on("scroll", onScroll);
+    window.addEventListener("pointermove", onPointerMove, { passive: true, capture: true });
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      window.removeEventListener("pointermove", onPointerMove);
-      unsubscribeLenis?.();
+      window.removeEventListener("pointermove", onPointerMove, { capture: true });
     };
-  }, [followTo, hide, layout]);
+  }, [followTo, hideNow]);
 
   useLayoutEffect(() => {
     return () => {
@@ -412,16 +300,21 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   }, []);
 
   const overlay = (
-    <div
-      ref={overlayRef}
-      className={styles.root}
-      data-explore-cue="true"
-      data-active={active ? "true" : "false"}
-      data-pressed={pressed ? "true" : "false"}
-      aria-hidden="true"
-    >
-      <span className={styles.frost} />
-      <span className={styles.blend}>
+    <>
+      <span
+        ref={frostRef}
+        className={styles.frost}
+        data-explore-cue="true"
+        data-active={active ? "true" : "false"}
+        aria-hidden="true"
+      />
+      <span
+        ref={blendRef}
+        className={styles.blend}
+        data-explore-cue-label="true"
+        data-active={active ? "true" : "false"}
+        aria-hidden="true"
+      >
         <span className={styles.label}>
           <span className={styles.labelClip}>
             <span key={label} className={styles.labelText}>
@@ -430,7 +323,7 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
           </span>
         </span>
       </span>
-    </div>
+    </>
   );
 
   return (

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FocusEvent,
-  type PointerEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react";
 import { useExploreCue } from "./ExploreCueProvider";
 import { isPointerOverLoadedMedia, loadedMediaPaintBox } from "./loadedMediaHit";
 
@@ -46,7 +39,6 @@ export function useExploreCueTarget<T extends HTMLElement>({
   const [hostNode, setHostNode] = useState<T | null>(null);
   const enabledRef = useRef(enabled);
   const labelRef = useRef(label);
-  const pointerSessionRef = useRef(false);
   const overMediaRef = useRef(false);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   enabledRef.current = enabled;
@@ -76,11 +68,30 @@ export function useExploreCueTarget<T extends HTMLElement>({
     }
   }, []);
 
-  const showAt = useCallback(
-    (host: HTMLElement, clientX: number, clientY: number) => {
-      cue.show(host, clientX, clientY, { label: labelRef.current });
+  const notifyShow = useCallback(
+    (host: HTMLElement) => {
+      cue.show(host, {
+        label: labelRef.current,
+        pointer: lastPointerRef.current ?? undefined,
+      });
     },
     [cue],
+  );
+
+  const syncPointer = useCallback(
+    (host: HTMLElement, clientX: number, clientY: number) => {
+      lastPointerRef.current = { x: clientX, y: clientY };
+      const over = isPointerOverLoadedMedia(host, clientX, clientY);
+      markOverMedia(host, over);
+
+      if (over) {
+        notifyShow(host);
+        return;
+      }
+
+      cue.hide(host);
+    },
+    [cue, markOverMedia, notifyShow],
   );
 
   const onPointerEnter = useCallback(
@@ -89,18 +100,10 @@ export function useExploreCueTarget<T extends HTMLElement>({
         return;
       }
 
-      pointerSessionRef.current = true;
       markFinePointer();
-      lastPointerRef.current = { x: event.clientX, y: event.clientY };
-      const host = event.currentTarget;
-      const over = isPointerOverLoadedMedia(host, event.clientX, event.clientY);
-      markOverMedia(host, over);
-
-      if (over) {
-        showAt(host, event.clientX, event.clientY);
-      }
+      syncPointer(event.currentTarget, event.clientX, event.clientY);
     },
-    [markOverMedia, showAt],
+    [syncPointer],
   );
 
   const onPointerMove = useCallback(
@@ -109,67 +112,14 @@ export function useExploreCueTarget<T extends HTMLElement>({
         return;
       }
 
-      pointerSessionRef.current = true;
       markFinePointer();
-      lastPointerRef.current = { x: event.clientX, y: event.clientY };
-      const host = event.currentTarget;
-      const over = isPointerOverLoadedMedia(host, event.clientX, event.clientY);
-
-      if (!over) {
-        if (overMediaRef.current) {
-          markOverMedia(host, false);
-          cue.release();
-          cue.hide(host, { x: event.clientX, y: event.clientY });
-        }
-
-        return;
-      }
-
-      if (!overMediaRef.current) {
-        markOverMedia(host, true);
-        showAt(host, event.clientX, event.clientY);
-        return;
-      }
-
-      cue.move(event.clientX, event.clientY);
+      syncPointer(event.currentTarget, event.clientX, event.clientY);
     },
-    [cue, markOverMedia, showAt],
+    [syncPointer],
   );
-
-  const onPointerDown = useCallback(
-    (event: PointerEvent<T>) => {
-      if (!enabledRef.current || !isFinePointer(event.pointerType)) {
-        return;
-      }
-
-      pointerSessionRef.current = true;
-      markFinePointer();
-      lastPointerRef.current = { x: event.clientX, y: event.clientY };
-      const host = event.currentTarget;
-      const over = isPointerOverLoadedMedia(host, event.clientX, event.clientY);
-      markOverMedia(host, over);
-
-      if (!over) {
-        return;
-      }
-
-      showAt(host, event.clientX, event.clientY);
-      cue.press();
-    },
-    [cue, markOverMedia, showAt],
-  );
-
-  const onPointerUp = useCallback(() => {
-    cue.release();
-  }, [cue]);
-
-  const onPointerCancel = useCallback(() => {
-    cue.release();
-  }, [cue]);
 
   const onPointerLeave = useCallback(
     (event: PointerEvent<T>) => {
-      pointerSessionRef.current = false;
       markFinePointer();
       lastPointerRef.current = null;
       markOverMedia(event.currentTarget, false);
@@ -179,13 +129,11 @@ export function useExploreCueTarget<T extends HTMLElement>({
           ? event.relatedTarget.closest("[data-explore-cue-target]")
           : null;
 
-      cue.release();
-
       if (next && next !== event.currentTarget) {
         return;
       }
 
-      cue.hide(event.currentTarget, { x: event.clientX, y: event.clientY });
+      cue.hide(event.currentTarget);
     },
     [cue, markOverMedia],
   );
@@ -196,7 +144,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
         return;
       }
 
-      if (pointerSessionRef.current || wasRecentFinePointer()) {
+      if (wasRecentFinePointer()) {
         return;
       }
 
@@ -210,14 +158,20 @@ export function useExploreCueTarget<T extends HTMLElement>({
       }
 
       markOverMedia(event.currentTarget, true);
-      showAt(event.currentTarget, (box.left + box.right) / 2, (box.top + box.bottom) / 2);
+      cue.show(event.currentTarget, {
+        label: labelRef.current,
+        at: {
+          x: (box.left + box.right) / 2,
+          y: (box.top + box.bottom) / 2,
+        },
+      });
     },
-    [markOverMedia, showAt],
+    [cue, markOverMedia],
   );
 
   const onBlur = useCallback(
     (event: FocusEvent<T>) => {
-      if (pointerSessionRef.current) {
+      if (wasRecentFinePointer()) {
         return;
       }
 
@@ -249,42 +203,29 @@ export function useExploreCueTarget<T extends HTMLElement>({
 
       const last = lastPointerRef.current;
       if (last) {
-        const over = isPointerOverLoadedMedia(hostNode, last.x, last.y);
-        if (over) {
-          if (!overMediaRef.current) {
-            markOverMedia(hostNode, true);
-            showAt(hostNode, last.x, last.y);
-          }
-          return;
-        }
-
-        if (overMediaRef.current) {
-          markOverMedia(hostNode, false);
-          cue.release();
-          cue.hide(hostNode, last ?? undefined);
-        }
+        syncPointer(hostNode, last.x, last.y);
         return;
       }
 
-      if (
-        pointerSessionRef.current ||
-        wasRecentFinePointer() ||
-        !hostNode.matches(":focus-visible")
-      ) {
+      if (wasRecentFinePointer() || !hostNode.matches(":focus-visible")) {
         return;
       }
 
       const box = loadedMediaPaintBox(hostNode);
       if (!box) {
-        if (overMediaRef.current) {
-          markOverMedia(hostNode, false);
-          cue.hide(hostNode);
-        }
+        markOverMedia(hostNode, false);
+        cue.hide(hostNode);
         return;
       }
 
       markOverMedia(hostNode, true);
-      showAt(hostNode, (box.left + box.right) / 2, (box.top + box.bottom) / 2);
+      cue.show(hostNode, {
+        label: labelRef.current,
+        at: {
+          x: (box.left + box.right) / 2,
+          y: (box.top + box.bottom) / 2,
+        },
+      });
     };
 
     const observer = new MutationObserver(syncFromLoadedMedia);
@@ -297,7 +238,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
     return () => {
       observer.disconnect();
     };
-  }, [cue, enabled, hostNode, markOverMedia, showAt]);
+  }, [cue, enabled, hostNode, markOverMedia, syncPointer]);
 
   useEffect(() => {
     return () => {
@@ -313,9 +254,6 @@ export function useExploreCueTarget<T extends HTMLElement>({
     setRef,
     onPointerEnter,
     onPointerMove,
-    onPointerDown,
-    onPointerUp,
-    onPointerCancel,
     onPointerLeave,
     onFocus,
     onBlur,

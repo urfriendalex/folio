@@ -23,10 +23,7 @@ export function ExploreMediaLink({ href, ariaLabel, children }: ExploreMediaLink
       nativeNavigation
       onPointerEnter={cue.onPointerEnter}
       onPointerMove={cue.onPointerMove}
-      onPointerDown={cue.onPointerDown}
-      onPointerUp={cue.onPointerUp}
       onPointerLeave={cue.onPointerLeave}
-      onPointerCancel={cue.onPointerCancel}
       onFocus={cue.onFocus}
       onBlur={cue.onBlur}
     >
