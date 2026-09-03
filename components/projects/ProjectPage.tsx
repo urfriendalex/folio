@@ -671,6 +671,14 @@ export function ProjectPage({
       return;
     }
 
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    // Prevent the browser's native image drag from cancelling the custom
+    // pointer stream used to pan zoomed media on desktop.
+    event.preventDefault();
+
     const map = portraitPointersRef.current;
     map.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
@@ -693,11 +701,6 @@ export function ProjectPage({
       }
       portraitDragRef.current.pointerId = -1;
       event.currentTarget.removeAttribute("data-dragging");
-      return;
-    }
-
-    if (event.pointerType === "mouse" && event.button !== 0) {
-      map.delete(event.pointerId);
       return;
     }
 
@@ -1069,6 +1072,7 @@ export function ProjectPage({
             onPointerMove={handlePortraitPointerMove}
             onPointerUp={handlePortraitPointerEnd}
             onPointerCancel={handlePortraitPointerCancel}
+            onDragStart={(event) => event.preventDefault()}
           >
             <div className={styles.mobileMediaStage}>
               {outgoingOverlayMedia && mediaTransition ? (
