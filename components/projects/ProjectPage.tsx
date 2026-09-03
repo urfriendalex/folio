@@ -457,7 +457,7 @@ export function ProjectPage({
         const reveal = mobileMediaRevealRef.current;
         if (reveal) {
           gsap.to(reveal, {
-            x: 0,
+            y: 0,
             duration: reducedMotion ? 0 : 0.22,
             ease: MEDIA_CHANGE_EASE,
             overwrite: true,
@@ -478,7 +478,7 @@ export function ProjectPage({
 
         if (!shouldAnimate) {
           if (reveal) {
-            gsap.set(reveal, { clearProps: "x,xPercent,opacity" });
+            gsap.set(reveal, { clearProps: "y,yPercent,opacity" });
           }
           mediaTransitioningRef.current = false;
           return;
@@ -493,16 +493,16 @@ export function ProjectPage({
           }
           gsap.fromTo(
             nextReveal,
-            { x: 0, xPercent: direction * 4, opacity: 0 },
+            { y: 0, yPercent: direction * 4, opacity: 0 },
             {
-              xPercent: 0,
+              yPercent: 0,
               opacity: 1,
               duration: MEDIA_CHANGE_ENTER_DURATION,
               ease: MEDIA_CHANGE_EASE,
               overwrite: true,
               force3D: true,
               onComplete: () => {
-                gsap.set(nextReveal, { clearProps: "x,xPercent,opacity" });
+                gsap.set(nextReveal, { clearProps: "y,yPercent,opacity" });
                 mediaTransitioningRef.current = false;
               },
             },
@@ -517,8 +517,8 @@ export function ProjectPage({
 
       gsap.killTweensOf(reveal);
       gsap.to(reveal, {
-        x: 0,
-        xPercent: direction * -4,
+        y: 0,
+        yPercent: direction * -4,
         opacity: 0,
         duration: MEDIA_CHANGE_EXIT_DURATION,
         ease: MEDIA_CHANGE_EASE,
@@ -544,7 +544,7 @@ export function ProjectPage({
       if (mobileMediaRevealRef.current) {
         gsap.killTweensOf(mobileMediaRevealRef.current);
         gsap.set(mobileMediaRevealRef.current, {
-          clearProps: "x,xPercent,opacity",
+          clearProps: "y,yPercent,opacity",
         });
       }
       portraitViewRef.current = { x: 0, y: 0, scale: PORTRAIT_ZOOM_MIN };
@@ -690,7 +690,7 @@ export function ProjectPage({
       const reveal = mobileMediaRevealRef.current;
       if (reveal) {
         gsap.killTweensOf(reveal);
-        gsap.set(reveal, { x: 0 });
+        gsap.set(reveal, { y: 0 });
       }
       const points = [...map.values()];
       const dist = Math.hypot(
@@ -776,8 +776,8 @@ export function ProjectPage({
       }
       const deltaX = event.clientX - drag.startX;
       const deltaY = event.clientY - drag.startY;
-      const horizontalIntent = Math.abs(deltaX) > Math.abs(deltaY);
-      gsap.set(reveal, { x: horizontalIntent ? deltaX * 0.72 : 0 });
+      const verticalIntent = Math.abs(deltaY) > Math.abs(deltaX);
+      gsap.set(reveal, { y: verticalIntent ? deltaY * 0.72 : 0 });
       return;
     }
 
@@ -823,20 +823,20 @@ export function ProjectPage({
         const deltaX = event.clientX - completedDrag.startX;
         const deltaY = event.clientY - completedDrag.startY;
         const elapsed = Math.max(1, performance.now() - completedDrag.startTime);
-        const velocity = Math.abs(deltaX) / elapsed;
-        const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+        const velocity = Math.abs(deltaY) / elapsed;
+        const isVertical = Math.abs(deltaY) > Math.abs(deltaX) * 1.15;
         const shouldNavigate =
-          isHorizontal &&
-          (Math.abs(deltaX) >= MEDIA_SWIPE_DISTANCE_PX ||
+          isVertical &&
+          (Math.abs(deltaY) >= MEDIA_SWIPE_DISTANCE_PX ||
             velocity >= MEDIA_SWIPE_VELOCITY_PX_PER_MS);
 
         if (shouldNavigate) {
-          navigateMedia(deltaX < 0 ? 1 : -1, "gesture");
+          navigateMedia(deltaY < 0 ? 1 : -1, "gesture");
         } else {
           const reveal = mobileMediaRevealRef.current;
           if (reveal) {
             gsap.to(reveal, {
-              x: 0,
+              y: 0,
               duration: reducedMotion ? 0 : 0.22,
               ease: MEDIA_CHANGE_EASE,
               overwrite: true,
@@ -952,10 +952,10 @@ export function ProjectPage({
       ) {
         return;
       }
-      if (event.key === "ArrowLeft") {
+      if (event.key === "ArrowUp") {
         event.preventDefault();
         navigateMedia(-1, "keyboard");
-      } else if (event.key === "ArrowRight") {
+      } else if (event.key === "ArrowDown") {
         event.preventDefault();
         navigateMedia(1, "keyboard");
       }
@@ -1049,53 +1049,62 @@ export function ProjectPage({
                 </div>
               </div>
             </div>
-            <div
-              className={styles.mediaViewerControls}
-              aria-label="Media zoom controls"
-            >
-              <button
-                type="button"
-                className={styles.mediaViewerControlButton}
-                onClick={() => handleMediaZoom(-1)}
-                disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
+            <div className={styles.mediaViewerControls}>
+              <div
+                className={styles.mediaViewerControlRow}
+                aria-label="Media navigation controls"
+                role="group"
               >
-                -
-              </button>
-              <button
-                type="button"
-                className={styles.mediaViewerControlButton}
-                onClick={resetMediaView}
-                disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
+                <button
+                  type="button"
+                  className={styles.mediaViewerControlButton}
+                  onClick={() => navigateMedia(-1, "control")}
+                  disabled={!hasPreviousMedia}
+                  aria-label="View previous media"
+                >
+                  <span aria-hidden="true">↑</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.mediaViewerControlButton}
+                  onClick={() => navigateMedia(1, "control")}
+                  disabled={!hasNextMedia}
+                  aria-label="View next media"
+                >
+                  <span aria-hidden="true">↓</span>
+                </button>
+              </div>
+              <div
+                className={styles.mediaViewerControlRow}
+                aria-label="Media zoom controls"
+                role="group"
               >
-                reset
-              </button>
-              <button
-                type="button"
-                className={styles.mediaViewerControlButton}
-                onClick={() => handleMediaZoom(1)}
-                disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
-              >
-                +
-              </button>
+                <button
+                  type="button"
+                  className={styles.mediaViewerControlButton}
+                  onClick={() => handleMediaZoom(-1)}
+                  disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  className={styles.mediaViewerControlButton}
+                  onClick={resetMediaView}
+                  disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
+                >
+                  reset
+                </button>
+                <button
+                  type="button"
+                  className={styles.mediaViewerControlButton}
+                  onClick={() => handleMediaZoom(1)}
+                  disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className={`${styles.mediaViewerControlButton} ${styles.mediaViewerPrevious}`}
-              onClick={() => navigateMedia(-1, "control")}
-              disabled={!hasPreviousMedia}
-              aria-label="View previous media"
-            >
-              prev
-            </button>
-            <button
-              type="button"
-              className={`${styles.mediaViewerControlButton} ${styles.mediaViewerNext}`}
-              onClick={() => navigateMedia(1, "control")}
-              disabled={!hasNextMedia}
-              aria-label="View next media"
-            >
-              next
-            </button>
             <p className={styles.mediaViewerPosition} aria-hidden="true">
               {String((mobileMediaIndex ?? 0) + 1).padStart(2, "0")} /{" "}
               {String(project.media.length).padStart(2, "0")}

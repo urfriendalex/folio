@@ -113,17 +113,25 @@
 
 .mediaViewerControls {
   position: absolute;
-  left: max(env(safe-area-inset-left), clamp(0.7rem, 1.8vw, 1rem));
+  right: max(env(safe-area-inset-right), clamp(0.7rem, 1.8vw, 1rem));
   bottom: max(env(safe-area-inset-bottom), clamp(0.7rem, 1.8vw, 1rem));
   z-index: 2;
-  display: inline-flex;
-  gap: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
   opacity: 0;
   transform: translateY(0.3rem);
   pointer-events: none;
   transition:
     opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mediaViewerControlRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .mobileMediaViewer[data-visible="true"] .mediaViewerControls {
@@ -135,9 +143,9 @@
 
 .mediaViewerControlButton {
   appearance: none;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0 0.62rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.55rem;
   border: 1px solid
     color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
   corner-shape: squircle;
@@ -184,33 +192,21 @@
 
 .mediaViewerControlButton:disabled {
   cursor: default;
-  opacity: 0.35;
-}
-
-.mediaViewerPrevious,
-.mediaViewerNext {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(calc(-50% + 0.3rem));
-}
-
-.mediaViewerPrevious {
-  left: max(env(safe-area-inset-left), clamp(0.7rem, 1.8vw, 1rem));
-}
-
-.mediaViewerNext {
-  right: max(env(safe-area-inset-right), clamp(0.7rem, 1.8vw, 1rem));
-}
-
-.mobileMediaViewer[data-visible="true"] .mediaViewerPrevious,
-.mobileMediaViewer[data-visible="true"] .mediaViewerNext {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(-50%);
-  transition-delay: 140ms;
+  border-color: color-mix(
+    in srgb,
+    var(--overlay-immersive-fg) 10%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--overlay-immersive-fg) 4%,
+    transparent
+  );
+  color: color-mix(
+    in srgb,
+    var(--overlay-immersive-fg) 34%,
+    transparent
+  );
 }
 
 .mediaViewerPosition {
@@ -398,8 +394,6 @@
 @media (prefers-reduced-motion: reduce) {
   .mobileMediaReveal,
   .mediaViewerControls,
-  .mediaViewerPrevious,
-  .mediaViewerNext,
   .mediaViewerPosition {
     transition-duration: 85ms;
   }
@@ -412,13 +406,6 @@
   .mediaViewerControls,
   .mobileMediaViewer[data-visible="true"] .mediaViewerControls {
     transform: none;
-  }
-
-  .mediaViewerPrevious,
-  .mediaViewerNext,
-  .mobileMediaViewer[data-visible="true"] .mediaViewerPrevious,
-  .mobileMediaViewer[data-visible="true"] .mediaViewerNext {
-    transform: translateY(-50%);
   }
 
   .mediaViewerPosition,
