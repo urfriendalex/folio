@@ -158,35 +158,53 @@
   min-width: 2.5rem;
   min-height: 2.5rem;
   padding: 0 0.55rem;
-  border: 1px solid
-    color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
+  border: 0;
   corner-shape: squircle;
   border-radius: var(--radius-panel-sm);
-  background: color-mix(in srgb, var(--overlay-immersive-fg) 9%, transparent);
-  -webkit-backdrop-filter: var(--overlay-immersive-backdrop-filter);
-  backdrop-filter: var(--overlay-immersive-backdrop-filter);
-  color: var(--overlay-immersive-fg);
+  background: transparent;
+  color: white;
   font-family: var(--font-pixel-square-stack);
   font-size: 0.62rem;
   letter-spacing: var(--tracking-label-sm);
   text-transform: lowercase;
   cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Glass and adaptive foreground stay on separate compositing layers. */
+.mediaViewerControlButton::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid
+    color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--overlay-immersive-fg) 9%, transparent);
+  -webkit-backdrop-filter: var(--overlay-immersive-backdrop-filter);
+  backdrop-filter: var(--overlay-immersive-backdrop-filter);
+  pointer-events: none;
   transition:
     background 140ms cubic-bezier(0.23, 1, 0.32, 1),
-    border-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Keep the visible control compact while preserving a 44px touch target. */
-.mediaViewerControlButton::before {
+.mediaViewerControlButton::after {
   content: "";
   position: absolute;
   inset: -0.125rem;
 }
 
+.mediaViewerControlGlyph {
+  position: relative;
+  display: block;
+  color: white;
+  mix-blend-mode: difference;
+  transition: color 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .mediaViewerControlButton:hover {
+  .mediaViewerControlButton:hover::before {
     background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
     border-color: color-mix(
       in srgb,
@@ -196,7 +214,7 @@
   }
 }
 
-.mediaViewerControlButton:focus-visible {
+.mediaViewerControlButton:focus-visible::before {
   background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
   border-color: color-mix(
     in srgb,
@@ -211,6 +229,9 @@
 
 .mediaViewerControlButton:disabled {
   cursor: default;
+}
+
+.mediaViewerControlButton:disabled::before {
   border-color: color-mix(
     in srgb,
     var(--overlay-immersive-fg) 10%,
@@ -221,11 +242,10 @@
     var(--overlay-immersive-fg) 4%,
     transparent
   );
-  color: color-mix(
-    in srgb,
-    var(--overlay-immersive-fg) 34%,
-    transparent
-  );
+}
+
+.mediaViewerControlButton:disabled .mediaViewerControlGlyph {
+  color: rgb(255 255 255 / 0.34);
 }
 
 .mediaViewerPosition {

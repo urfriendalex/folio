@@ -66,7 +66,8 @@ const MEDIA_VIEWER_CONTENT_EXIT_MS = 160;
 const MEDIA_VIEWER_OVERLAY_EXIT_MS = MEDIA_VIEWER_CONTENT_EXIT_MS + 520;
 const MEDIA_SWIPE_DISTANCE_PX = 56;
 const MEDIA_SWIPE_VELOCITY_PX_PER_MS = 0.45;
-const MEDIA_CHANGE_ENTER_DURATION = 0.28;
+const MEDIA_CHANGE_EXIT_DURATION = 0.075;
+const MEDIA_CHANGE_ENTER_DURATION = 0.12;
 const MEDIA_CHANGE_EASE = "power3.out";
 const MEDIA_GESTURE_SETTLE_DURATION = 0.14;
 
@@ -907,35 +908,32 @@ export function ProjectPage({
     const timeline = gsap.timeline({
       defaults: { overwrite: true, force3D: true },
       onComplete: () => {
-        gsap.set(incoming, { clearProps: "y,scale,opacity" });
+        gsap.set(incoming, { clearProps: "y,visibility" });
         mediaTransitioningRef.current = false;
         setMediaTransition(null);
       },
     });
 
     timeline
-      .set(incoming, { y: direction * 22, scale: 0.995, opacity: 0 })
+      .set(incoming, { y: direction * 12, visibility: "hidden" })
       .to(
         outgoing,
         {
-          y: outgoingY - direction * 24,
-          scale: 0.995,
-          opacity: 0,
-          duration: 0.2,
+          y: outgoingY - direction * 14,
+          duration: MEDIA_CHANGE_EXIT_DURATION,
           ease: "power2.out",
         },
         0,
       )
+      .set(outgoing, { visibility: "hidden" })
+      .set(incoming, { visibility: "visible" })
       .to(
         incoming,
         {
           y: 0,
-          scale: 1,
-          opacity: 1,
-          duration: 0.26,
+          duration: MEDIA_CHANGE_ENTER_DURATION,
           ease: MEDIA_CHANGE_EASE,
         },
-        0.02,
       );
 
     return () => {
@@ -1122,7 +1120,7 @@ export function ProjectPage({
                 onClick={() => handleMediaZoom(-1)}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
               >
-                -
+                <span className={styles.mediaViewerControlGlyph}>-</span>
               </button>
               <button
                 type="button"
@@ -1130,7 +1128,7 @@ export function ProjectPage({
                 onClick={resetMediaView}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
               >
-                reset
+                <span className={styles.mediaViewerControlGlyph}>reset</span>
               </button>
               <button
                 type="button"
@@ -1138,7 +1136,7 @@ export function ProjectPage({
                 onClick={() => handleMediaZoom(1)}
                 disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
               >
-                +
+                <span className={styles.mediaViewerControlGlyph}>+</span>
               </button>
             </div>
             <div
@@ -1153,7 +1151,12 @@ export function ProjectPage({
                 disabled={!hasPreviousMedia}
                 aria-label="View previous media"
               >
-                <span aria-hidden="true">↑</span>
+                <span
+                  className={styles.mediaViewerControlGlyph}
+                  aria-hidden="true"
+                >
+                  ↑
+                </span>
               </button>
               <button
                 type="button"
@@ -1162,7 +1165,12 @@ export function ProjectPage({
                 disabled={!hasNextMedia}
                 aria-label="View next media"
               >
-                <span aria-hidden="true">↓</span>
+                <span
+                  className={styles.mediaViewerControlGlyph}
+                  aria-hidden="true"
+                >
+                  ↓
+                </span>
               </button>
             </div>
             <p className={styles.mediaViewerPosition} aria-hidden="true">
