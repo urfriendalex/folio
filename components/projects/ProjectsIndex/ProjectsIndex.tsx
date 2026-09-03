@@ -822,7 +822,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     }
 
     const items = gsap.utils.toArray<HTMLElement>(
-      tableRef.current?.querySelectorAll(`.${styles.row}`),
+      tableRef.current?.querySelectorAll(`.${styles.row}`) ?? [],
     );
     const preview = previewDismissedRef.current ? null : dockedPreviewRef.current;
     const header = headerRef.current;
@@ -1284,7 +1284,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     }
 
     const options = gsap.utils.toArray<HTMLElement>(
-      filterPanelRef.current?.querySelectorAll(`.${styles.filterOption}`),
+      filterPanelRef.current?.querySelectorAll(`.${styles.filterOption}`) ?? [],
     );
     if (!options.length) {
       return;
