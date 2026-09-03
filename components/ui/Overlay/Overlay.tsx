@@ -91,6 +91,8 @@ type OverlayProps = {
   closeLabel?: string;
   /** Immersive only: disable inner `.content` scrolling (e.g. full-screen media; avoids scrollbar flash). */
   contentNonScrollable?: boolean;
+  /** Immersive only: no page-shell side padding so children can span the viewport. */
+  contentFlush?: boolean;
   contentVisible?: boolean;
   onClose: () => void;
   title: string;
@@ -111,6 +113,7 @@ export function Overlay({
   children,
   closeLabel = "Close",
   contentNonScrollable = false,
+  contentFlush = false,
   contentVisible = true,
   onClose,
   title,
@@ -261,10 +264,11 @@ export function Overlay({
         </button>
         {/* Lenis: when stopped (overlay open), wheel/touch get preventDefault unless path includes data-lenis-prevent. */}
         <div
-          className={`${styles.content} ${variant === "immersive" ? "page-shell" : ""}`}
+          className={`${styles.content} ${variant === "immersive" && !contentFlush ? "page-shell" : ""}`}
           data-variant={variant}
           data-visible={visible}
           data-content-visible={contentVisible}
+          data-flush={contentFlush ? "true" : undefined}
           data-non-scrollable={contentNonScrollable ? "true" : undefined}
           data-lenis-prevent=""
         >

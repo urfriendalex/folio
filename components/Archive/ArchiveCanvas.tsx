@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ArchiveEntry } from "@/content/archive/archive-data";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
@@ -10,12 +10,35 @@ const PREPARING_EXIT_MS = 640;
 /** Visible time before the interaction hint begins to fade out */
 const HINT_VISIBLE_MS = 3200;
 const HINT_FADE_MS = 336;
+const ASSET_LOADING_LINE_MS = 2600;
+const ASSET_LOADING_EXIT_MS = 180;
+const ASSET_LOADING_LINES = [
+  "Loading media",
+  "Fetching fragments",
+  "Unpacking studies",
+  "Developing stills",
+  "Warming the canvas",
+  "Assembling the pile",
+] as const;
+const ASSET_LOADING_LINE_SIZER = ASSET_LOADING_LINES.reduce((longest, line) =>
+  line.length >= longest.length ? line : longest,
+);
 
 type SceneLoadState = {
   active: boolean;
   loaded: number;
   total: number;
 };
+
+function LoadingDots() {
+  return (
+    <span className={styles.loadingDots} aria-hidden="true">
+      <span className={styles.loadingDot} />
+      <span className={styles.loadingDot} />
+      <span className={styles.loadingDot} />
+    </span>
+  );
+}
 
 function ArchivePreparingOverlay({
   ariaHidden = false,
@@ -34,25 +57,88 @@ function ArchivePreparingOverlay({
     >
       <p className={styles.preparingText}>
         <span className={styles.assetsLoadingLabel}>Preparing archive</span>
-        <span className={styles.loadingDots} aria-hidden="true">
-          <span className={styles.loadingDot} />
-          <span className={styles.loadingDot} />
-          <span className={styles.loadingDot} />
-        </span>
+        <LoadingDots />
       </p>
     </div>
   );
 }
 
 function ArchiveAssetsLoadingIndicator() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [outgoingIndex, setOutgoingIndex] = useState<number | null>(null);
+  const [incomingSettled, setIncomingSettled] = useState(true);
+  const activeIndexRef = useRef(0);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      const previous = activeIndexRef.current;
+      const next = (previous + 1) % ASSET_LOADING_LINES.length;
+      activeIndexRef.current = next;
+      setOutgoingIndex(previous);
+      setIncomingSettled(false);
+      setActiveIndex(next);
+    }, ASSET_LOADING_LINE_MS);
+
+    return () => window.clearInterval(timerId);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (incomingSettled) {
+      return;
+    }
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setIncomingSettled(true);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [activeIndex, incomingSettled]);
+
+  useEffect(() => {
+    if (outgoingIndex === null) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setOutgoingIndex(null);
+    }, ASSET_LOADING_EXIT_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [outgoingIndex]);
+
   return (
     <div className={styles.assetsLoadingIndicator}>
-      <p className={styles.assetsLoadingText} role="status" aria-live="polite">
-        <span className={styles.assetsLoadingLabel}>Loading</span>
-        <span className={styles.loadingDots} aria-hidden="true">
-          <span className={styles.loadingDot} />
-          <span className={styles.loadingDot} />
-          <span className={styles.loadingDot} />
+      <p className={styles.assetsLoadingText} role="status">
+        <span className="sr-only">Loading archive media</span>
+        <span className={styles.assetsLoadingLineStack} aria-hidden="true">
+          <span className={styles.assetsLoadingLineSizer}>
+            {ASSET_LOADING_LINE_SIZER}
+            <LoadingDots />
+          </span>
+          {outgoingIndex !== null ? (
+            <span className={styles.assetsLoadingLine} data-state="out">
+              {ASSET_LOADING_LINES[outgoingIndex]}
+              <LoadingDots />
+            </span>
+          ) : null}
+          <span
+            className={styles.assetsLoadingLine}
+            data-state={incomingSettled ? "in" : "enter"}
+          >
+            {ASSET_LOADING_LINES[activeIndex]}
+            <LoadingDots />
+          </span>
         </span>
       </p>
     </div>
@@ -112,6 +198,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const hintPlayedRef = useRef(false);
   const lastHoverLabelRef = useRef<string>("");
   const lastFocusLabelRef = useRef<string>("");
+  const viewportRef = useRef<HTMLElement | null>(null);
 
   const onHoverLabelChange = useCallback((label: string | null) => {
     const nextLabel = label ?? "";
@@ -143,6 +230,26 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
 
     return () => {
       html.classList.remove("is-archive-route");
+    };
+  }, []);
+
+  useEffect(() => {
+    const navbar = document.querySelector<HTMLElement>("[data-app-navbar='true']");
+    const host = viewportRef.current;
+    if (!navbar || !host) {
+      return;
+    }
+
+    const home = navbar.parentElement;
+    const marker = document.createComment("folio-navbar-home");
+    home?.insertBefore(marker, navbar);
+    host.appendChild(navbar);
+
+    return () => {
+      if (marker.parentNode) {
+        marker.parentNode.insertBefore(navbar, marker);
+        marker.parentNode.removeChild(marker);
+      }
     };
   }, []);
 
@@ -200,6 +307,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
 
   return (
     <section
+      ref={viewportRef}
       className={styles.viewport}
       aria-busy={isPreparing}
       aria-label="Archive canvas"

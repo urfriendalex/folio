@@ -1,20 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import ASCIIAnimation from "./ascii";
 import { getFrameFolderForTheme, getInitialFrameFolder } from "./frameFolder";
 import styles from "./preloader.module.scss";
-import {
-  CRITICAL_PRELOAD_ASSETS,
-  usePreloaderAssets,
-} from "./usePreloaderAssets";
+import { usePreloaderAssets } from "./usePreloaderAssets";
 
 type PreloaderProps = {
   onDone: () => void;
 };
 
 const PROGRESS_SMOOTHING = 0.08;
-const COMPLETION_PROGRESS_SMOOTHING = 0.22;
+const COMPLETION_COUNTUP_MS = 420;
+const HOLD_AT_100_MS = 480;
+const REDUCED_MOTION_COUNTUP_MS = 160;
+const REDUCED_MOTION_HOLD_MS = 160;
 const EXIT_TIMEOUT_MS = 1200;
 const ENTER_DURATION_MS = 320;
 const ASCII_SCALE = 1;
@@ -26,10 +26,7 @@ export function Preloader({ onDone }: PreloaderProps) {
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const [isAsciiReady, setIsAsciiReady] = useState(false);
   const [hasStartedAssetLoading, setHasStartedAssetLoading] = useState(false);
-  const { actualProgressRef, isCompleteRef } = usePreloaderAssets(
-    CRITICAL_PRELOAD_ASSETS,
-    hasStartedAssetLoading,
-  );
+  const { actualProgressRef, isCompleteRef } = usePreloaderAssets(hasStartedAssetLoading);
   const handleAsciiReady = useCallback(() => {
     setIsAsciiReady(true);
   }, []);
@@ -70,7 +67,7 @@ export function Preloader({ onDone }: PreloaderProps) {
     };
   }, [isAsciiReady, hasStartedAssetLoading]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const overlayNode = overlayRef.current;
     const progressNode = progressRef.current;
 
@@ -91,15 +88,21 @@ export function Preloader({ onDone }: PreloaderProps) {
 
     let rafId: number | null = null;
     let exitFallbackTimer: number | null = null;
-    let completionFrameId: number | null = null;
     let isExiting = false;
     let didFinalize = false;
     let displayedProgress = 0;
+    let completionFrom = 0;
+    let completionStartedAt: number | null = null;
+    let heldAtCompleteSince: number | null = null;
 
-    const setProgressText = (value: number, isComplete = false) => {
-      const clamped = Math.max(0, Math.min(isComplete ? 1 : 0.99, value));
-      const percent = isComplete ? 100 : Math.min(99, Math.round(clamped * 100));
+    const setProgressText = (value: number, allowComplete = false) => {
+      const clamped = Math.max(0, Math.min(1, value));
+      const percent = allowComplete
+        ? Math.round(clamped * 100)
+        : Math.min(99, Math.round(clamped * 100));
       progressNode.textContent = `${percent}%`;
+      progressNode.dataset.progress = String(percent);
+      overlayNode.dataset.preloaderComplete = percent >= 100 ? "true" : "false";
     };
 
     if (!hasStartedAssetLoading) {
@@ -172,7 +175,7 @@ export function Preloader({ onDone }: PreloaderProps) {
     };
 
     const finishPreloader = () => {
-      if (isExiting || completionFrameId !== null) {
+      if (isExiting) {
         return;
       }
 
@@ -183,34 +186,59 @@ export function Preloader({ onDone }: PreloaderProps) {
 
       displayedProgress = 1;
       setProgressText(1, true);
-
-      completionFrameId = window.requestAnimationFrame(() => {
-        completionFrameId = window.requestAnimationFrame(() => {
-          completionFrameId = null;
-          beginPreloaderExit();
-        });
-      });
+      beginPreloaderExit();
     };
 
-    const animate = () => {
+    const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
+
+    const completionDurationMs = () => {
+      if (prefersReducedMotion) {
+        return REDUCED_MOTION_COUNTUP_MS;
+      }
+
+      const remaining = Math.max(0, 1 - completionFrom);
+      return Math.max(240, Math.round(COMPLETION_COUNTUP_MS * (0.35 + remaining * 0.65)));
+    };
+
+    const holdDurationMs = prefersReducedMotion ? REDUCED_MOTION_HOLD_MS : HOLD_AT_100_MS;
+
+    const animate = (now: number) => {
       if (isExiting) {
         return;
       }
 
-      const smoothing = isCompleteRef.current
-        ? COMPLETION_PROGRESS_SMOOTHING
-        : PROGRESS_SMOOTHING;
-      displayedProgress += (actualProgressRef.current - displayedProgress) * smoothing;
-
-      if (isCompleteRef.current && displayedProgress > 0.995) {
-        displayedProgress = 1;
+      if (!isCompleteRef.current) {
+        completionStartedAt = null;
+        heldAtCompleteSince = null;
+        displayedProgress += (actualProgressRef.current - displayedProgress) * PROGRESS_SMOOTHING;
+        setProgressText(displayedProgress, false);
+        rafId = window.requestAnimationFrame(animate);
+        return;
       }
 
-      setProgressText(displayedProgress, isCompleteRef.current && displayedProgress >= 1);
+      if (completionStartedAt === null) {
+        completionStartedAt = now;
+        completionFrom = displayedProgress;
+      }
 
-      if (isCompleteRef.current && displayedProgress >= 1) {
-        finishPreloader();
-        return;
+      const countupMs = completionDurationMs();
+      const t = countupMs === 0 ? 1 : Math.min(1, (now - completionStartedAt) / countupMs);
+      displayedProgress = completionFrom + (1 - completionFrom) * easeOutCubic(t);
+
+      if (t >= 1) {
+        displayedProgress = 1;
+        setProgressText(1, true);
+
+        if (heldAtCompleteSince === null) {
+          heldAtCompleteSince = now;
+        }
+
+        if (now - heldAtCompleteSince >= holdDurationMs) {
+          finishPreloader();
+          return;
+        }
+      } else {
+        setProgressText(displayedProgress, true);
       }
 
       rafId = window.requestAnimationFrame(animate);
@@ -229,10 +257,6 @@ export function Preloader({ onDone }: PreloaderProps) {
 
       if (exitFallbackTimer !== null) {
         window.clearTimeout(exitFallbackTimer);
-      }
-
-      if (completionFrameId !== null) {
-        window.cancelAnimationFrame(completionFrameId);
       }
 
       html.classList.remove("is-preloader-exiting");
@@ -264,7 +288,9 @@ export function Preloader({ onDone }: PreloaderProps) {
         aria-live="polite"
         aria-label="Loading progress"
       >
-        <span ref={progressRef} className={styles.progressValue} />
+        <span ref={progressRef} className={styles.progressValue} data-progress="0">
+          0%
+        </span>
       </div>
     </div>
   );

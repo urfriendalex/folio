@@ -55,6 +55,8 @@ export type ProjectMediaSlot = {
   orderIndex?: number;
 };
 
+export type ProjectCategory = "ecommerce" | "portfolio" | "product" | "event";
+
 export type ProjectEntry = {
   slug: string;
   /** Lower sorts first; change only this to reorder listings and prev/next navigation. */
@@ -62,6 +64,8 @@ export type ProjectEntry = {
   title: string;
   /** Concise category shown beside the title in project cards. */
   cardDescriptor: string;
+  /** What a hiring visitor is looking for — drives the Work index filter. */
+  category: ProjectCategory;
   /** Fuller project summary shown on the project page. */
   descriptor: string;
   year: string;

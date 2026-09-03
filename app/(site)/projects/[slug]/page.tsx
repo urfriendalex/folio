@@ -96,6 +96,12 @@ export default async function ProjectRoute({ params }: RouteProps) {
       {
         "@type": "ListItem",
         position: 2,
+        name: "Work",
+        item: `${SITE_URL}/projects`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
         name: project.title,
         item: pageUrl,
       },

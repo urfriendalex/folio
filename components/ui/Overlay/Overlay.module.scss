@@ -239,6 +239,11 @@
 }
 
 /* Full-viewport media: no inner scroll container (prevents gutter / scrollbar flash on open). */
+.content[data-variant="immersive"][data-flush="true"] {
+  padding-inline: 0;
+  padding-right: 0;
+}
+
 .content[data-variant="immersive"][data-non-scrollable="true"] {
   overflow: hidden;
   overscroll-behavior: none;

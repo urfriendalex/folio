@@ -56,22 +56,10 @@
 
 .header {
   position: relative;
-  isolation: isolate;
-  --navbar-ink: var(--navbar-contrast-dark-ink);
 }
 
-.header::before {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: calc(-1 * var(--navbar-gradient-blur-overscan));
-  height: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-:global(html[data-theme="dark"]) .header {
-  --navbar-ink: var(--navbar-contrast-light-ink);
+:global(html.is-work-toolbar-stuck) .gradientBlur {
+  height: calc(100% + var(--work-toolbar-blur-extra, 0px) + var(--navbar-gradient-blur-overscan));
 }
 
 .gradientBlur {
@@ -81,6 +69,18 @@
   top: calc(-1 * var(--navbar-gradient-blur-overscan));
   height: calc(150% + var(--navbar-gradient-blur-overscan));
   pointer-events: none;
+  /* Own group: backdrop-filter samples the page and is not inverted with the ink. */
+  isolation: isolate;
+}
+
+.gradientBlur::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @supports (overflow: clip) {
@@ -108,23 +108,10 @@
   transition: transform var(--navbar-gradient-blur-transition);
 }
 
-:global(html.is-archive-route) .gradientBlurStrip {
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg-color) 68%, transparent) 0%,
-    color-mix(in srgb, var(--bg-color) 28%, transparent) 44%,
-    transparent 100%
-  );
-}
-
 .gradientBlurLayer,
 .gradientBlurAtmosphere {
   position: absolute;
   inset: 0;
-}
-
-:global(html.is-archive-route) .gradientBlurLayer {
-  display: none;
 }
 
 .gradientBlurLayer[data-layer="0"] {
@@ -204,6 +191,15 @@
   transition:
     opacity var(--navbar-gradient-blur-transition),
     visibility 0ms linear 0ms;
+}
+
+.workToolbarSlot {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .inner {
@@ -349,7 +345,7 @@
 }
 
 @media (max-width: 48rem) {
-  .header::before {
+  .gradientBlur::before {
     height: calc(var(--navbar-gradient-blur-overscan) + 0.75rem);
     background:
       linear-gradient(
@@ -397,10 +393,13 @@
 
   :global(html.is-nav-open) .header {
     --navbar-ink: var(--overlay-immersive-fg);
+    /* Isolate so `.inner` can sit above `.mobileOverlay` without blending into it. */
+    isolation: isolate;
   }
 
-  /* Keep logo + toggle visible above the nav overlay; override the overlay-open hide */
+  /* Keep logo + toggle above the sheet. */
   :global(html.is-nav-open) .inner {
+    z-index: 430;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;

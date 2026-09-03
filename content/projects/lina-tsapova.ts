@@ -6,6 +6,7 @@ export const linaTsapovaProject: ProjectEntry = {
   orderIndex: 8,
   title: "LINA TSAPOVA",
   cardDescriptor: "PHOTO PORTFOLIO",
+  category: "portfolio",
   descriptor: "Image-led Svelte portfolio with browser-native view transitions",
   year: "2026",
   role: "Solo Designer & Developer",

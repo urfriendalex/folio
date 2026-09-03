@@ -86,3 +86,13 @@
 .root[data-video-ready="true"] .posterLayer {
   opacity: 0;
 }
+
+.root[data-reveal="instant"] .layer,
+.root[data-reveal="instant"] .posterLayer,
+.root[data-reveal="instant"] .videoLayer {
+  transition: none;
+}
+
+.root[data-reveal="instant"] .placeholder {
+  transition: none;
+}

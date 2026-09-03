@@ -21,7 +21,7 @@ import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 
-function GradientBlur() {
+export function NavbarGradientBlur() {
   return (
     <div className={styles.gradientBlur} aria-hidden="true">
       <div className={styles.gradientBlurStrip}>
@@ -58,7 +58,12 @@ export function Navbar() {
       return;
     }
 
-    if (pathname !== "/archive" && !pathname.startsWith("/projects/")) {
+    if (pathname === "/") {
+      router.prefetch("/projects");
+      return;
+    }
+
+    if (pathname !== "/archive" && pathname !== "/projects" && !pathname.startsWith("/projects/")) {
       return;
     }
 
@@ -199,7 +204,6 @@ export function Navbar() {
 
   return (
     <header className={styles.header}>
-      <GradientBlur />
       <div className={`page-shell ${styles.inner}`}>
         <NextLink
           href="/"
@@ -228,12 +232,12 @@ export function Navbar() {
           <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
             About
           </button>
-          <a
-            href={getAnchor(pathname, "work")}
+          <IntentPrefetchLink
+            href="/projects"
             className={`link-underline ${styles.navLink}`}
           >
             Work
-          </a>
+          </IntentPrefetchLink>
           <IntentPrefetchLink
             href="/archive"
             className={`link-underline ${styles.navLink} ${styles.archiveNavLink}`}
@@ -260,6 +264,7 @@ export function Navbar() {
           <span className={styles.menuButtonLine} />
         </button>
       </div>
+      <div className={styles.workToolbarSlot} data-work-toolbar-slot="true" />
 
       <div
         id="mobile-navigation"
@@ -278,14 +283,14 @@ export function Navbar() {
             >
               About
             </button>
-            <a
-              href={getAnchor(pathname, "work")}
+            <IntentPrefetchLink
+              href="/projects"
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 1 } as CSSProperties}
               onClick={handleMobileNavLinkClick}
             >
               Work
-            </a>
+            </IntentPrefetchLink>
             <IntentPrefetchLink
               href="/archive"
               className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}

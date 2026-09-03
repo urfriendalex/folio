@@ -6,6 +6,7 @@ export const studioIskraProject: ProjectEntry = {
   orderIndex: 2,
   title: "STUDIO ISKRA",
   cardDescriptor: "PHOTO STUDIO",
+  category: "portfolio",
   descriptor: "Warsaw photo studio website",
   year: "2025",
   role: "Solo Designer & Developer",

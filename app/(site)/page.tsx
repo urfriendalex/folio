@@ -1,6 +1,6 @@
 import { contactContent } from "@/content/contact";
 import { heroContent } from "@/content/hero";
-import { projects } from "@/content/projects";
+import { HOME_RECENT_PROJECT_COUNT, projects } from "@/content/projects";
 import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectionGooey";
 import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
@@ -106,7 +106,7 @@ export default function Home() {
       />
       <HeroRevealTimelineProvider>
         <HeroSection content={heroContent} />
-        <WorkSection projects={projects} />
+        <WorkSection projects={projects.slice(0, HOME_RECENT_PROJECT_COUNT)} />
       </HeroRevealTimelineProvider>
       <ContactSectionGooey
         content={contactContent}

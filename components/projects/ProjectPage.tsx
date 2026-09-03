@@ -14,12 +14,12 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type TransitionEvent as ReactTransitionEvent,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { ImageReveal, RevealLines } from "@/components/motion";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
+import { ExploreCueHost } from "@/components/ui/ExploreCue";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";
@@ -31,9 +31,15 @@ import styles from "./ProjectPage.module.scss";
 /** Keep in sync with `--reveal-step` in `ProjectPage.module.scss`. */
 const TOOLBAR_LINE_STEP_MS = 34;
 /** Keep in sync with `--toolbar-desc-transform-ms` in `ProjectPage.module.scss`. */
-const TOOLBAR_DESC_TRANSFORM_MS = 480;
+const TOOLBAR_DESC_TRANSFORM_MS = 320;
 /** Keep in sync with action stagger buffer used by `toolbarActionUnderlineReadyMs`. */
-const TOOLBAR_UNDERLINE_BUFFER_MS = 220;
+const TOOLBAR_UNDERLINE_BUFFER_MS = 120;
+/** Start copy while the shell is still opening so it lands as the box settles. */
+const TOOLBAR_COPY_REVEAL_DELAY_MS = 80;
+/** Wait before pending chrome so instant prefetched navigations do not flash. */
+const NAV_PENDING_FEEDBACK_MS = 90;
+
+type ProjectNavDirection = "previous" | "next";
 
 function toolbarActionUnderlineReadyMs(tokenIndex: number, stepMs: number): number {
   const revealActionsDelay = TOOLBAR_DESC_TRANSFORM_MS * 0.2 + stepMs * 2;
@@ -154,6 +160,9 @@ export function ProjectPage({
   const [toolbarPinnedOpen, setToolbarPinnedOpen] = useState(false);
   const [toolbarHovered, setToolbarHovered] = useState(false);
   const [toolbarLinesVisible, setToolbarLinesVisible] = useState(false);
+  const [pendingDirection, setPendingDirection] =
+    useState<ProjectNavDirection | null>(null);
+  const [showNavPending, setShowNavPending] = useState(false);
   const [visitUnderlineReady, setVisitUnderlineReady] = useState(false);
   const [overviewUnderlineReady, setOverviewUnderlineReady] = useState(false);
   const toolbarUnderlineTimersRef = useRef<number[]>([]);
@@ -230,22 +239,38 @@ export function ProjectPage({
 
     if (reducedMotion) {
       setToolbarLinesVisible(true);
-    }
-  }, [reducedMotion, toolbarExpanded]);
-
-  const handleToolbarTransitionEnd = (
-    event: ReactTransitionEvent<HTMLDivElement>,
-  ) => {
-    if (
-      event.target !== event.currentTarget ||
-      event.propertyName !== "height" ||
-      !toolbarExpanded ||
-      reducedMotion
-    ) {
       return;
     }
 
-    setToolbarLinesVisible(true);
+    const timerId = window.setTimeout(() => {
+      setToolbarLinesVisible(true);
+    }, TOOLBAR_COPY_REVEAL_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [reducedMotion, toolbarExpanded]);
+
+  useEffect(() => {
+    if (!isPendingNav || pendingDirection === null) {
+      setShowNavPending(false);
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setShowNavPending(true);
+    }, NAV_PENDING_FEEDBACK_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [isPendingNav, pendingDirection]);
+
+  const goToSibling = (direction: ProjectNavDirection) => {
+    const target = direction === "next" ? nextProject : previousProject;
+    const started = guardedPush(`/projects/${target.slug}`);
+
+    if (!started) {
+      return;
+    }
+
+    setPendingDirection(direction);
   };
 
   const { total, descriptorOffset, visitOffset, overviewOffset } =
@@ -733,8 +758,24 @@ export function ProjectPage({
     };
   }, [clearMobileMediaTimers]);
 
+  const pendingProjectTitle =
+    pendingDirection === "next"
+      ? nextProject.title
+      : pendingDirection === "previous"
+        ? previousProject.title
+        : null;
+
   return (
-    <article className={`page-shell ${styles.page}`}>
+    <article
+      className={`page-shell ${styles.page}`}
+      aria-busy={isPendingNav || undefined}
+      data-nav-pending={showNavPending ? "true" : undefined}
+    >
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {showNavPending && pendingProjectTitle
+          ? `Loading ${pendingProjectTitle}`
+          : ""}
+      </p>
       {mobileOverlayMedia ? (
         <Overlay
           closeLabel="back"
@@ -827,7 +868,7 @@ export function ProjectPage({
               data-portrait-card={isPortrait ? "true" : undefined}
               aria-hidden={slotHiddenForViewer ? true : undefined}
             >
-              <div
+              <ExploreCueHost
                 className={[
                   isPortrait ? styles.portraitFrame : "",
                   styles.mobileMediaTrigger,
@@ -839,6 +880,8 @@ export function ProjectPage({
                 role="button"
                 tabIndex={slotHiddenForViewer ? -1 : 0}
                 aria-label={`Open ${label} full screen`}
+                enabled={!slotHiddenForViewer}
+                label="zoom"
                 onClickCapture={handleMobileMediaOpenCapture}
                 onKeyDown={handleMobileMediaKeyDown}
               >
@@ -873,7 +916,7 @@ export function ProjectPage({
                     view full screen
                   </button>
                 ) : null}
-              </div>
+              </ExploreCueHost>
             </ImageReveal>
           );
         })}
@@ -887,10 +930,14 @@ export function ProjectPage({
         <div className={styles.toolbarTrack}>
           <button
             type="button"
-            aria-busy={isPendingNav || undefined}
+            data-pending={
+              showNavPending && pendingDirection === "previous"
+                ? "true"
+                : undefined
+            }
             className={`${styles.navButton} ${styles.previousButton}`}
             onClick={() => {
-              guardedPush(`/projects/${previousProject.slug}`);
+              goToSibling("previous");
             }}
           >
             Previous
@@ -899,7 +946,6 @@ export function ProjectPage({
           <div
             className={styles.toolbarCore}
             data-expanded={toolbarExpanded}
-            onTransitionEnd={handleToolbarTransitionEnd}
             onPointerEnter={handleToolbarPointerEnter}
             onPointerLeave={handleToolbarPointerLeave}
             onFocusCapture={handleToolbarFocus}
@@ -1001,10 +1047,12 @@ export function ProjectPage({
 
           <button
             type="button"
-            aria-busy={isPendingNav || undefined}
+            data-pending={
+              showNavPending && pendingDirection === "next" ? "true" : undefined
+            }
             className={`${styles.navButton} ${styles.nextButton}`}
             onClick={() => {
-              guardedPush(`/projects/${nextProject.slug}`);
+              goToSibling("next");
             }}
           >
             Next

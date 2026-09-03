@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PRELOADER_REPLAY_EVENT } from "@/lib/preloaderReplay";
 import { Preloader } from "./Preloader";
 
@@ -26,9 +26,9 @@ export function PreloaderGate({ children }: PreloaderGateProps) {
     };
   }, []);
 
-  const handleDone = () => {
+  const handleDone = useCallback(() => {
     setShowPreloader(false);
-  };
+  }, []);
 
   return (
     <>

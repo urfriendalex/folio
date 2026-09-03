@@ -37,6 +37,69 @@
   gap: 0.35rem;
 }
 
+.allProjectsWrap {
+  justify-self: start;
+  margin-top: clamp(0.45rem, 1.5vw, 0.9rem);
+}
+
+.allProjects {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.38em;
+  padding-bottom: 0.18em;
+  /* Always under `.title` (min 1.02rem) so the section label stays on top. */
+  font-size: clamp(0.84rem, 1vw, 0.94rem);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--muted-color);
+  transition:
+    color 200ms ease,
+    transform 160ms ease-out;
+}
+
+.allProjects:focus-visible,
+.allProjects:active {
+  color: var(--fg-color);
+}
+
+.allProjects:active {
+  transform: scale(0.97);
+}
+
+.allProjectsArrow {
+  display: inline-block;
+  font-weight: 400;
+  letter-spacing: 0;
+  transition: transform 220ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .allProjects:hover {
+    color: var(--fg-color);
+  }
+
+  .allProjects:hover .allProjectsArrow,
+  .allProjects:focus-visible .allProjectsArrow {
+    transform: translateX(0.16em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .allProjects,
+  .allProjectsArrow {
+    transition: none;
+  }
+
+  .allProjects:active {
+    transform: none;
+  }
+
+  .allProjects:hover .allProjectsArrow,
+  .allProjects:focus-visible .allProjectsArrow {
+    transform: none;
+  }
+}
+
 .viewButton {
   border: 0;
   padding: 0;
@@ -99,11 +162,15 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: clamp(1rem, 2.4vw, 1.5rem);
   row-gap: clamp(1.35rem, 3vw, 1.85rem);
   align-items: start;
   transition: grid-template-columns 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.grid[data-view="stack"] {
+  grid-template-columns: 1fr;
 }
 
 .grid[data-view="wide"] {
@@ -112,10 +179,6 @@
 
 .grid[data-view="regular"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.grid[data-view="compact"] {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .grid > * {
@@ -133,16 +196,26 @@
     row-gap: clamp(1.25rem, 4.5vw, 1.65rem);
   }
 
+  .grid[data-view="stack"],
   .grid[data-view="wide"] {
     grid-template-columns: 1fr;
   }
 
-  .grid[data-view="regular"],
-  .grid[data-view="compact"] {
+  .grid[data-view="regular"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .viewSwitch {
     gap: 0.28rem;
+  }
+}
+
+@media (min-width: 100rem) {
+  .grid[data-view="stack"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewButton[data-layout="stack"] {
+    display: none;
   }
 }

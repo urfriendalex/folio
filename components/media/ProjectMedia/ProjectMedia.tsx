@@ -32,6 +32,8 @@ type ProjectMediaProps = {
   placeholderGrid?: ProjectMediaPlaceholderGridShape;
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
+  /** `instant` skips the load fade — used for hover/scroll previews that must cut. */
+  reveal?: "fade" | "instant";
 };
 
 type UseIntersectionOptions = {
@@ -171,6 +173,7 @@ function ProjectMediaInner({
   fit = "contain",
   loading = "lazy",
   imagePreload = false,
+  reveal = "fade",
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -234,10 +237,14 @@ function ProjectMediaInner({
     <div
       ref={rootRef}
       className={[styles.root, className].filter(Boolean).join(" ")}
+      data-project-media="true"
       data-fill={fill ? "true" : "false"}
       data-fit={fit}
       data-kind={media.kind}
       data-ready={ready ? "true" : "false"}
+      data-media-width={activeAsset.width}
+      data-media-height={activeAsset.height}
+      data-reveal={reveal}
       data-video-ready={videoReady ? "true" : "false"}
     >
       <ProjectMediaPlaceholderGrid
@@ -245,7 +252,7 @@ function ProjectMediaInner({
         className={styles.placeholder}
         visible={!ready}
       />
-      <div className={styles.frame} style={sharedStyle}>
+      <div className={styles.frame} data-project-media-surface="true" style={sharedStyle}>
         {media.kind === "video" ? (
           <>
             <div className={styles.posterLayer} data-loaded={posterReady ? "true" : "false"}>

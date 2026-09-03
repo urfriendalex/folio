@@ -2,6 +2,17 @@
   min-height: 100svh;
 }
 
+.navbarFrost {
+  position: sticky;
+  top: 0;
+  z-index: 399;
+  height: var(--header-height);
+  /* Stay out of flow so the bar is not two headers tall; blur still has a real box. */
+  margin-bottom: calc(-1 * var(--header-height));
+  overflow: visible;
+  pointer-events: none;
+}
+
 .navbar {
   position: sticky;
   top: 0;

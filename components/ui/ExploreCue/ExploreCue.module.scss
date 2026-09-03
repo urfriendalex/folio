@@ -1,0 +1,119 @@
+/*
+ * Single body-level overlay. Fixed size — do not scale to the host card.
+ * No `scale` / `clip-path` on these nodes (they isolate backdrop-filter).
+ */
+.root {
+  --cue-x: 0px;
+  --cue-y: 0px;
+  --cue-size: 4.25rem;
+  --explore-cue-frost: blur(5px) saturate(120%);
+
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.frost,
+.blend {
+  --cue-grow: 0;
+
+  position: fixed;
+  pointer-events: none;
+  transition-property: --cue-grow;
+  transition-duration: 420ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.frost {
+  left: calc(var(--cue-x) - (var(--cue-size) * var(--cue-grow) / 2));
+  top: calc(var(--cue-y) - (var(--cue-size) * var(--cue-grow) / 2));
+  z-index: 25;
+  width: calc(var(--cue-size) * var(--cue-grow));
+  height: calc(var(--cue-size) * var(--cue-grow));
+  border-radius: 22%;
+  corner-shape: squircle;
+  background: rgb(255 255 255 / 0.08);
+  -webkit-backdrop-filter: var(--explore-cue-frost);
+  backdrop-filter: var(--explore-cue-frost);
+}
+
+.blend {
+  z-index: 26;
+  left: var(--cue-x);
+  top: var(--cue-y);
+  display: grid;
+  place-items: center;
+  mix-blend-mode: difference;
+  translate: -50% -50%;
+}
+
+.label {
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  text-transform: lowercase;
+  color: #fff;
+}
+
+.labelClip {
+  display: block;
+  overflow: hidden;
+  line-height: inherit;
+}
+
+.labelText {
+  display: block;
+  opacity: 0;
+  transform: translate3d(0, 0.75em, 0);
+  transition-property: opacity, transform;
+  transition-duration: 280ms, 620ms;
+  transition-timing-function: ease, cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :global([data-explore-cue-target="true"][data-cue-over-media="true"]) {
+    cursor: none;
+  }
+
+  .root[data-active="true"] .frost {
+    --cue-grow: 1;
+  }
+
+  .root[data-active="true"][data-pressed="true"] .frost {
+    --cue-grow: 0.82;
+    transition-duration: 140ms;
+  }
+
+  .root[data-active="true"] .labelText {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 140ms, 140ms;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .root {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frost,
+  .labelText {
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .root[data-active="true"] .frost {
+      --cue-grow: 1;
+    }
+
+    .root[data-active="true"] .labelText {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0ms;
+    }
+  }
+}

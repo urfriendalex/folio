@@ -6,6 +6,7 @@ export const ohgotmiProject: ProjectEntry = {
   orderIndex: 1,
   title: "OHGOTMI",
   cardDescriptor: "FILM PORTFOLIO",
+  category: "portfolio",
   descriptor: "Film producer / creative portfolio",
   year: "2026",
   role: "Solo Designer & Developer",
