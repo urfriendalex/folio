@@ -229,10 +229,13 @@
 }
 
 .mediaViewerPosition {
-  position: absolute;
-  left: 50%;
-  bottom: max(env(safe-area-inset-bottom), clamp(0.7rem, 1.8vw, 1rem));
-  z-index: 2;
+  position: fixed;
+  top: calc(0.1rem + (var(--header-height) - 2.2rem) / 2);
+  left: max(var(--content-padding-inline), 0.8rem);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
   margin: 0;
   color: color-mix(in srgb, var(--signal-color) 76%, var(--fg-color));
   font-family: var(--font-pixel-square-stack);
@@ -240,7 +243,7 @@
   line-height: 1;
   letter-spacing: var(--tracking-label-sm);
   opacity: 0;
-  transform: translate(-50%, 0.3rem);
+  transform: translateY(0.3rem);
   pointer-events: none;
   transition:
     opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -249,7 +252,7 @@
 
 .mobileMediaViewer[data-visible="true"] .mediaViewerPosition {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
   transition-delay: 140ms;
 }
 
@@ -429,7 +432,7 @@
 
   .mediaViewerPosition,
   .mobileMediaViewer[data-visible="true"] .mediaViewerPosition {
-    transform: translate(-50%, 0);
+    transform: none;
   }
 
   .mediaViewerControlButton:active {
