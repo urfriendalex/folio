@@ -9,8 +9,8 @@ export const curatedProjectMedia = {
       "desktop": {
         "poster": "/projects/lumano/thumbnail.png",
         "video": "/projects/lumano/thumbnail.mp4",
-        "width": 1920,
-        "height": 1080
+        "width": 1956,
+        "height": 1048
       }
     },
     "media": [
@@ -88,8 +88,8 @@ export const curatedProjectMedia = {
       "desktop": {
         "poster": "/projects/mon-nom-bakery/thumbnail-video-poster.png",
         "video": "/projects/mon-nom-bakery/thumbnail.mp4",
-        "width": 2400,
-        "height": 1190
+        "width": 1956,
+        "height": 1048
       }
     },
     "media": [
@@ -140,8 +140,8 @@ export const curatedProjectMedia = {
       "desktop": {
         "poster": "/projects/lina-tsapova/thumbnail.png",
         "video": "/projects/lina-tsapova/thumbnail.mp4",
-        "width": 2404,
-        "height": 1192
+        "width": 1956,
+        "height": 1048
       }
     },
     "media": [
