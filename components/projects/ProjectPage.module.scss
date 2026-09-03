@@ -90,6 +90,7 @@
   transition:
     opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform, opacity;
 }
 
 .mobileMediaViewer[data-visible="true"] .mobileMediaReveal {
@@ -132,10 +133,10 @@
   transition-delay: 140ms;
 }
 
-.mediaViewerControls button {
+.mediaViewerControlButton {
   appearance: none;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding: 0 0.62rem;
   border: 1px solid
     color-mix(in srgb, var(--overlay-immersive-fg) 20%, transparent);
@@ -157,8 +158,18 @@
     transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.mediaViewerControls button:hover,
-.mediaViewerControls button:focus-visible {
+@media (hover: hover) and (pointer: fine) {
+  .mediaViewerControlButton:hover {
+    background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--overlay-immersive-fg) 28%,
+      transparent
+    );
+  }
+}
+
+.mediaViewerControlButton:focus-visible {
   background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
   border-color: color-mix(
     in srgb,
@@ -167,13 +178,64 @@
   );
 }
 
-.mediaViewerControls button:active {
+.mediaViewerControlButton:active {
   transform: scale(0.96);
 }
 
-.mediaViewerControls button:disabled {
+.mediaViewerControlButton:disabled {
   cursor: default;
   opacity: 0.35;
+}
+
+.mediaViewerPrevious,
+.mediaViewerNext {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(-50% + 0.3rem));
+}
+
+.mediaViewerPrevious {
+  left: max(env(safe-area-inset-left), clamp(0.7rem, 1.8vw, 1rem));
+}
+
+.mediaViewerNext {
+  right: max(env(safe-area-inset-right), clamp(0.7rem, 1.8vw, 1rem));
+}
+
+.mobileMediaViewer[data-visible="true"] .mediaViewerPrevious,
+.mobileMediaViewer[data-visible="true"] .mediaViewerNext {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%);
+  transition-delay: 140ms;
+}
+
+.mediaViewerPosition {
+  position: absolute;
+  left: 50%;
+  bottom: max(env(safe-area-inset-bottom), clamp(0.7rem, 1.8vw, 1rem));
+  z-index: 2;
+  margin: 0;
+  color: color-mix(in srgb, var(--signal-color) 76%, var(--fg-color));
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.54rem;
+  line-height: 1;
+  letter-spacing: var(--tracking-label-sm);
+  opacity: 0;
+  transform: translate(-50%, 0.3rem);
+  pointer-events: none;
+  transition:
+    opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mobileMediaViewer[data-visible="true"] .mediaViewerPosition {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 140ms;
 }
 
 .mobileMediaTrigger {
@@ -334,6 +396,40 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mobileMediaReveal,
+  .mediaViewerControls,
+  .mediaViewerPrevious,
+  .mediaViewerNext,
+  .mediaViewerPosition {
+    transition-duration: 85ms;
+  }
+
+  .mobileMediaReveal,
+  .mobileMediaViewer[data-visible="true"] .mobileMediaReveal {
+    transform: none;
+  }
+
+  .mediaViewerControls,
+  .mobileMediaViewer[data-visible="true"] .mediaViewerControls {
+    transform: none;
+  }
+
+  .mediaViewerPrevious,
+  .mediaViewerNext,
+  .mobileMediaViewer[data-visible="true"] .mediaViewerPrevious,
+  .mobileMediaViewer[data-visible="true"] .mediaViewerNext {
+    transform: translateY(-50%);
+  }
+
+  .mediaViewerPosition,
+  .mobileMediaViewer[data-visible="true"] .mediaViewerPosition {
+    transform: translate(-50%, 0);
+  }
+
+  .mediaViewerControlButton:active {
+    transform: none;
+  }
+
   .toolbarShell {
     --toolbar-motion-expand: 85ms;
     --toolbar-motion-collapse: 85ms;
