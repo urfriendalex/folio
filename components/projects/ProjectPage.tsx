@@ -66,12 +66,12 @@ const MEDIA_VIEWER_CONTENT_EXIT_MS = 160;
 const MEDIA_VIEWER_OVERLAY_EXIT_MS = MEDIA_VIEWER_CONTENT_EXIT_MS + 520;
 const MEDIA_SWIPE_DISTANCE_PX = 56;
 const MEDIA_SWIPE_VELOCITY_PX_PER_MS = 0.45;
-const MEDIA_CHANGE_DURATION = 0.2;
-const MEDIA_CHANGE_EASE = "power3.inOut";
+const MEDIA_CHANGE_FADE_OUT_DURATION = 0.085;
+const MEDIA_CHANGE_FADE_IN_DURATION = 0.115;
+const MEDIA_CHANGE_EASE = "power2.out";
 const MEDIA_GESTURE_SETTLE_DURATION = 0.14;
 
 type MediaTransition = {
-  direction: -1 | 1;
   outgoingIndex: number;
 };
 
@@ -495,7 +495,12 @@ export function ProjectPage({
         return;
       }
 
-      setMediaTransition({ direction, outgoingIndex: mobileMediaIndex });
+      // A successful swipe may leave the current frame translated. Neutralize
+      // it before mounting the transition pair so gestures and controls use
+      // the exact same fade and never create a displaced visual twin.
+      gsap.killTweensOf(reveal);
+      gsap.set(reveal, { y: 0 });
+      setMediaTransition({ outgoingIndex: mobileMediaIndex });
       setMobileMediaIndex(nextIndex);
     },
     [
@@ -902,12 +907,10 @@ export function ProjectPage({
       return undefined;
     }
 
-    const { direction } = mediaTransition;
-    const outgoingY = Number(gsap.getProperty(outgoing, "y")) || 0;
     const timeline = gsap.timeline({
-      defaults: { overwrite: true, force3D: true },
+      defaults: { overwrite: true },
       onComplete: () => {
-        gsap.set(incoming, { clearProps: "clipPath,y,visibility" });
+        gsap.set(incoming, { clearProps: "opacity,visibility" });
         mediaTransitioningRef.current = false;
         setMediaTransition(null);
       },
@@ -915,29 +918,27 @@ export function ProjectPage({
 
     timeline
       .set(incoming, {
-        clipPath:
-          direction > 0 ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)",
-        y: direction * 18,
-        visibility: "visible",
+        opacity: 0,
+        visibility: "hidden",
       })
       .to(
         outgoing,
         {
-          y: outgoingY - direction * 10,
-          duration: MEDIA_CHANGE_DURATION,
+          opacity: 0,
+          duration: MEDIA_CHANGE_FADE_OUT_DURATION,
           ease: MEDIA_CHANGE_EASE,
         },
         0,
       )
+      .set(outgoing, { visibility: "hidden" })
+      .set(incoming, { visibility: "visible" })
       .to(
         incoming,
         {
-          clipPath: "inset(0% 0 0% 0)",
-          y: 0,
-          duration: MEDIA_CHANGE_DURATION,
+          opacity: 1,
+          duration: MEDIA_CHANGE_FADE_IN_DURATION,
           ease: MEDIA_CHANGE_EASE,
         },
-        0,
       );
 
     return () => {
