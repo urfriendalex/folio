@@ -16,15 +16,15 @@
   overflow: hidden;
   border-radius: 0;
   background: transparent;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1956 / 1048;
 }
 
 .mediaAsset {
   /*
    * Loading: non-transparent surface so `ProjectMedia` cell fills (`color-mix` from
    * `--project-media-surface`) stay visible — same idea as `ProjectPage` `.still`.
-   * Loaded (`data-ready` on `ProjectMedia` root): transparent so `contain` letterboxing
-   * does not show a matte slab around shorter assets.
+   * Loaded (`data-ready` on `ProjectMedia` root): transparent so the asset can fill
+   * the shared preview frame without retaining its loading surface.
    */
   --project-media-surface: color-mix(in srgb, var(--surface-color) 58%, transparent);
 
