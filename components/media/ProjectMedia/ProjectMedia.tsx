@@ -30,6 +30,7 @@ type ProjectMediaProps = {
   fit?: "cover" | "contain";
   loading?: "eager" | "lazy";
   placeholderGrid?: ProjectMediaPlaceholderGridShape;
+  placeholderClassName?: string;
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
   /** `instant` skips the load fade — used for hover/scroll previews that must cut. */
@@ -201,6 +202,7 @@ function ProjectMediaInner({
   loading = "lazy",
   imagePreload = false,
   reveal = "fade",
+  placeholderClassName,
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -315,7 +317,9 @@ function ProjectMediaInner({
     >
       <ProjectMediaPlaceholderGrid
         grid={placeholderGrid}
-        className={styles.placeholder}
+        className={[styles.placeholder, placeholderClassName]
+          .filter(Boolean)
+          .join(" ")}
         visible={!ready}
       />
       <div className={styles.frame} data-project-media-surface="true" style={sharedStyle}>

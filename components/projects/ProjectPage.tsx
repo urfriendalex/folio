@@ -66,9 +66,8 @@ const MEDIA_VIEWER_CONTENT_EXIT_MS = 160;
 const MEDIA_VIEWER_OVERLAY_EXIT_MS = MEDIA_VIEWER_CONTENT_EXIT_MS + 520;
 const MEDIA_SWIPE_DISTANCE_PX = 56;
 const MEDIA_SWIPE_VELOCITY_PX_PER_MS = 0.45;
-const MEDIA_CHANGE_EXIT_DURATION = 0.075;
-const MEDIA_CHANGE_ENTER_DURATION = 0.12;
-const MEDIA_CHANGE_EASE = "power3.out";
+const MEDIA_CHANGE_DURATION = 0.2;
+const MEDIA_CHANGE_EASE = "power3.inOut";
 const MEDIA_GESTURE_SETTLE_DURATION = 0.14;
 
 type MediaTransition = {
@@ -908,32 +907,37 @@ export function ProjectPage({
     const timeline = gsap.timeline({
       defaults: { overwrite: true, force3D: true },
       onComplete: () => {
-        gsap.set(incoming, { clearProps: "y,visibility" });
+        gsap.set(incoming, { clearProps: "clipPath,y,visibility" });
         mediaTransitioningRef.current = false;
         setMediaTransition(null);
       },
     });
 
     timeline
-      .set(incoming, { y: direction * 12, visibility: "hidden" })
+      .set(incoming, {
+        clipPath:
+          direction > 0 ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)",
+        y: direction * 18,
+        visibility: "visible",
+      })
       .to(
         outgoing,
         {
-          y: outgoingY - direction * 14,
-          duration: MEDIA_CHANGE_EXIT_DURATION,
-          ease: "power2.out",
+          y: outgoingY - direction * 10,
+          duration: MEDIA_CHANGE_DURATION,
+          ease: MEDIA_CHANGE_EASE,
         },
         0,
       )
-      .set(outgoing, { visibility: "hidden" })
-      .set(incoming, { visibility: "visible" })
       .to(
         incoming,
         {
+          clipPath: "inset(0% 0 0% 0)",
           y: 0,
-          duration: MEDIA_CHANGE_ENTER_DURATION,
+          duration: MEDIA_CHANGE_DURATION,
           ease: MEDIA_CHANGE_EASE,
         },
+        0,
       );
 
     return () => {
@@ -1079,6 +1083,7 @@ export function ProjectPage({
                       media={outgoingOverlayMedia}
                       alt=""
                       className={styles.stillMedia}
+                      placeholderClassName={styles.mobileMediaPlaceholder}
                       fill
                       fit="contain"
                     />
@@ -1102,6 +1107,7 @@ export function ProjectPage({
                       `${project.title} media ${(mobileMediaIndex ?? 0) + 1}`
                     }
                     className={styles.stillMedia}
+                    placeholderClassName={styles.mobileMediaPlaceholder}
                     fill
                     fit="contain"
                     sizes="100vw"

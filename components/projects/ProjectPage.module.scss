@@ -123,6 +123,13 @@
   backface-visibility: hidden;
 }
 
+/* Reuse the shared media grid loader with enough contrast for the immersive surface. */
+.mobileMediaPlaceholder {
+  --project-media-surface: rgb(8 8 8 / 0.94);
+  --project-media-grid: rgb(255 255 255 / 0.16);
+  --project-media-placeholder-cell: rgb(14 14 14 / 0.96);
+}
+
 .mediaViewerControls {
   position: absolute;
   bottom: max(env(safe-area-inset-bottom), clamp(0.7rem, 1.8vw, 1rem));
