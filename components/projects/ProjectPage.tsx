@@ -56,19 +56,24 @@ const PORTRAIT_MEDIA_RATIO = 1.25;
 const PORTRAIT_ZOOM_MIN = 1;
 const PORTRAIT_ZOOM_MAX = 3;
 const PORTRAIT_ZOOM_STEP = 0.35;
-const PORTRAIT_ZOOM_BUTTON_DURATION = 0.4;
-const PORTRAIT_ZOOM_WHEEL_DURATION = 0.34;
+const PORTRAIT_ZOOM_BUTTON_DURATION = 0.24;
+const PORTRAIT_ZOOM_WHEEL_DURATION = 0.18;
 const PORTRAIT_ZOOM_EASE = "power3.out";
-const PORTRAIT_VIEW_RESET_DURATION = 0.52;
+const PORTRAIT_VIEW_RESET_DURATION = 0.26;
 const PORTRAIT_VIEW_RESET_EASE = "power3.out";
 const MEDIA_VIEWER_CONTENT_EXIT_MS = 160;
 /** Immersive shell fades ~480ms after `visible` is set false (see Overlay.module.scss). */
 const MEDIA_VIEWER_OVERLAY_EXIT_MS = MEDIA_VIEWER_CONTENT_EXIT_MS + 520;
 const MEDIA_SWIPE_DISTANCE_PX = 56;
 const MEDIA_SWIPE_VELOCITY_PX_PER_MS = 0.45;
-const MEDIA_CHANGE_EXIT_DURATION = 0.16;
 const MEDIA_CHANGE_ENTER_DURATION = 0.28;
 const MEDIA_CHANGE_EASE = "power3.out";
+const MEDIA_GESTURE_SETTLE_DURATION = 0.14;
+
+type MediaTransition = {
+  direction: -1 | 1;
+  outgoingIndex: number;
+};
 
 type PortraitView = {
   x: number;
@@ -185,10 +190,12 @@ export function ProjectPage({
     useState(false);
   const [mediaZoom, setMediaZoom] = useState(PORTRAIT_ZOOM_MIN);
   const [mediaHasPan, setMediaHasPan] = useState(false);
+  const [mediaTransition, setMediaTransition] =
+    useState<MediaTransition | null>(null);
   const mobileMediaRevealRef = useRef<HTMLDivElement | null>(null);
+  const outgoingMediaRevealRef = useRef<HTMLDivElement | null>(null);
   const portraitInteractiveSurfaceRef = useRef<HTMLDivElement | null>(null);
   const mediaTransitioningRef = useRef(false);
-  const mediaTransitionFrameRef = useRef<number | null>(null);
   const portraitViewRef = useRef<PortraitView>({
     x: 0,
     y: 0,
@@ -233,6 +240,9 @@ export function ProjectPage({
   const primaryProjectUrl = project.links?.[0]?.url;
   const mobileOverlayMedia =
     mobileMediaIndex !== null ? project.media[mobileMediaIndex] : null;
+  const outgoingOverlayMedia = mediaTransition
+    ? project.media[mediaTransition.outgoingIndex]
+    : null;
   const mediaViewerOpen = mobileMediaIndex !== null;
   const hasPreviousMedia = mobileMediaIndex !== null && mobileMediaIndex > 0;
   const hasNextMedia =
@@ -400,6 +410,11 @@ export function ProjectPage({
   }, []);
 
   const resetMediaView = useCallback(() => {
+    const reveal = mobileMediaRevealRef.current;
+    if (reveal) {
+      gsap.killTweensOf(reveal);
+      gsap.set(reveal, { y: 0 });
+    }
     portraitViewRef.current = { x: 0, y: 0, scale: PORTRAIT_ZOOM_MIN };
     setMediaZoom(PORTRAIT_ZOOM_MIN);
     setMediaHasPan(false);
@@ -440,10 +455,6 @@ export function ProjectPage({
       window.cancelAnimationFrame(mobileMediaContentFrameRef.current);
       mobileMediaContentFrameRef.current = null;
     }
-    if (mediaTransitionFrameRef.current) {
-      window.cancelAnimationFrame(mediaTransitionFrameRef.current);
-      mediaTransitionFrameRef.current = null;
-    }
   }, []);
 
   const navigateMedia = useCallback(
@@ -458,8 +469,8 @@ export function ProjectPage({
         if (reveal) {
           gsap.to(reveal, {
             y: 0,
-            duration: reducedMotion ? 0 : 0.22,
-            ease: MEDIA_CHANGE_EASE,
+            duration: reducedMotion ? 0 : MEDIA_GESTURE_SETTLE_DURATION,
+            ease: "power4.out",
             overwrite: true,
           });
         }
@@ -471,61 +482,21 @@ export function ProjectPage({
         source !== "keyboard" && !reducedMotion && Boolean(reveal);
       mediaTransitioningRef.current = true;
       clearPortraitTouchState();
+      setMediaViewAtRest();
 
-      const commitChange = () => {
-        setMediaViewAtRest();
-        setMobileMediaIndex(nextIndex);
-
-        if (!shouldAnimate) {
-          if (reveal) {
-            gsap.set(reveal, { clearProps: "y,yPercent,opacity" });
-          }
-          mediaTransitioningRef.current = false;
-          return;
+      if (!shouldAnimate) {
+        if (reveal) {
+          gsap.killTweensOf(reveal);
+          gsap.set(reveal, { clearProps: "y,yPercent,opacity" });
         }
-
-        mediaTransitionFrameRef.current = window.requestAnimationFrame(() => {
-          const nextReveal = mobileMediaRevealRef.current;
-          mediaTransitionFrameRef.current = null;
-          if (!nextReveal) {
-            mediaTransitioningRef.current = false;
-            return;
-          }
-          gsap.fromTo(
-            nextReveal,
-            { y: 0, yPercent: direction * 4, opacity: 0 },
-            {
-              yPercent: 0,
-              opacity: 1,
-              duration: MEDIA_CHANGE_ENTER_DURATION,
-              ease: MEDIA_CHANGE_EASE,
-              overwrite: true,
-              force3D: true,
-              onComplete: () => {
-                gsap.set(nextReveal, { clearProps: "y,yPercent,opacity" });
-                mediaTransitioningRef.current = false;
-              },
-            },
-          );
-        });
-      };
-
-      if (!shouldAnimate || !reveal) {
-        commitChange();
+        setMediaTransition(null);
+        setMobileMediaIndex(nextIndex);
+        mediaTransitioningRef.current = false;
         return;
       }
 
-      gsap.killTweensOf(reveal);
-      gsap.to(reveal, {
-        y: 0,
-        yPercent: direction * -4,
-        opacity: 0,
-        duration: MEDIA_CHANGE_EXIT_DURATION,
-        ease: MEDIA_CHANGE_EASE,
-        overwrite: true,
-        force3D: true,
-        onComplete: commitChange,
-      });
+      setMediaTransition({ direction, outgoingIndex: mobileMediaIndex });
+      setMobileMediaIndex(nextIndex);
     },
     [
       clearPortraitTouchState,
@@ -541,6 +512,7 @@ export function ProjectPage({
       clearMobileMediaTimers();
       clearPortraitTouchState();
       mediaTransitioningRef.current = false;
+      setMediaTransition(null);
       if (mobileMediaRevealRef.current) {
         gsap.killTweensOf(mobileMediaRevealRef.current);
         gsap.set(mobileMediaRevealRef.current, {
@@ -572,6 +544,7 @@ export function ProjectPage({
     clearMobileMediaTimers();
     clearPortraitTouchState();
     mediaTransitioningRef.current = false;
+    setMediaTransition(null);
     const reveal = mobileMediaRevealRef.current;
     if (reveal) {
       gsap.killTweensOf(reveal);
@@ -650,6 +623,11 @@ export function ProjectPage({
 
   const handleMediaZoom = useCallback(
     (direction: 1 | -1) => {
+      const reveal = mobileMediaRevealRef.current;
+      if (reveal) {
+        gsap.killTweensOf(reveal);
+        gsap.set(reveal, { y: 0 });
+      }
       const surf = portraitInteractiveSurfaceRef.current;
       const next = clampZoom(
         portraitViewRef.current.scale + direction * PORTRAIT_ZOOM_STEP,
@@ -683,6 +661,11 @@ export function ProjectPage({
       return;
     }
 
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a[href], input, textarea, select")) {
+      return;
+    }
+
     const map = portraitPointersRef.current;
     map.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
@@ -711,6 +694,12 @@ export function ProjectPage({
     if (event.pointerType === "mouse" && event.button !== 0) {
       map.delete(event.pointerId);
       return;
+    }
+
+    const reveal = mobileMediaRevealRef.current;
+    if (reveal) {
+      gsap.killTweensOf(reveal);
+      gsap.set(reveal, { y: 0 });
     }
 
     portraitDragRef.current = {
@@ -837,8 +826,8 @@ export function ProjectPage({
           if (reveal) {
             gsap.to(reveal, {
               y: 0,
-              duration: reducedMotion ? 0 : 0.22,
-              ease: MEDIA_CHANGE_EASE,
+              duration: reducedMotion ? 0 : MEDIA_GESTURE_SETTLE_DURATION,
+              ease: "power4.out",
               overwrite: true,
             });
           }
@@ -900,6 +889,59 @@ export function ProjectPage({
       }
     };
   }, [clearPortraitTouchState, mobileMediaIndex]);
+
+  useLayoutEffect(() => {
+    if (!mediaTransition || reducedMotion) {
+      return undefined;
+    }
+
+    const incoming = mobileMediaRevealRef.current;
+    const outgoing = outgoingMediaRevealRef.current;
+    if (!incoming || !outgoing) {
+      mediaTransitioningRef.current = false;
+      return undefined;
+    }
+
+    const { direction } = mediaTransition;
+    const outgoingY = Number(gsap.getProperty(outgoing, "y")) || 0;
+    const timeline = gsap.timeline({
+      defaults: { overwrite: true, force3D: true },
+      onComplete: () => {
+        gsap.set(incoming, { clearProps: "y,scale,opacity" });
+        mediaTransitioningRef.current = false;
+        setMediaTransition(null);
+      },
+    });
+
+    timeline
+      .set(incoming, { y: direction * 22, scale: 0.995, opacity: 0 })
+      .to(
+        outgoing,
+        {
+          y: outgoingY - direction * 24,
+          scale: 0.995,
+          opacity: 0,
+          duration: 0.2,
+          ease: "power2.out",
+        },
+        0,
+      )
+      .to(
+        incoming,
+        {
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          duration: 0.26,
+          ease: MEDIA_CHANGE_EASE,
+        },
+        0.02,
+      );
+
+    return () => {
+      timeline.kill();
+    };
+  }, [mediaTransition, reducedMotion]);
 
   useLayoutEffect(() => {
     if (mobileMediaIndex === null) {
@@ -1020,9 +1062,33 @@ export function ProjectPage({
           <div
             className={styles.mobileMediaViewer}
             data-visible={mobileMediaContentVisible ? "true" : "false"}
+            onPointerDown={handlePortraitPointerDown}
+            onPointerMove={handlePortraitPointerMove}
+            onPointerUp={handlePortraitPointerEnd}
+            onPointerCancel={handlePortraitPointerCancel}
           >
             <div className={styles.mobileMediaStage}>
+              {outgoingOverlayMedia && mediaTransition ? (
+                <div
+                  key={`media-${mediaTransition.outgoingIndex}`}
+                  ref={outgoingMediaRevealRef}
+                  className={`${styles.mobileMediaReveal} ${styles.mobileMediaOutgoing}`}
+                  style={portraitIntrinsicCssVars(outgoingOverlayMedia, true)}
+                  aria-hidden="true"
+                >
+                  <div className={styles.mobileMediaSurface}>
+                    <ProjectMedia
+                      media={outgoingOverlayMedia}
+                      alt=""
+                      className={styles.stillMedia}
+                      fill
+                      fit="contain"
+                    />
+                  </div>
+                </div>
+              ) : null}
               <div
+                key={`media-${mobileMediaIndex}`}
                 ref={mobileMediaRevealRef}
                 className={styles.mobileMediaReveal}
                 style={portraitIntrinsicCssVars(mobileOverlayMedia, true)}
@@ -1030,10 +1096,6 @@ export function ProjectPage({
                 <div
                   ref={portraitInteractiveSurfaceRef}
                   className={styles.mobileMediaSurface}
-                  onPointerDown={handlePortraitPointerDown}
-                  onPointerMove={handlePortraitPointerMove}
-                  onPointerUp={handlePortraitPointerEnd}
-                  onPointerCancel={handlePortraitPointerCancel}
                 >
                   <ProjectMedia
                     media={mobileOverlayMedia}
@@ -1049,61 +1111,59 @@ export function ProjectPage({
                 </div>
               </div>
             </div>
-            <div className={styles.mediaViewerControls}>
-              <div
-                className={styles.mediaViewerControlRow}
-                aria-label="Media navigation controls"
-                role="group"
+            <div
+              className={`${styles.mediaViewerControls} ${styles.mediaViewerZoomControls}`}
+              aria-label="Media zoom controls"
+              role="group"
+            >
+              <button
+                type="button"
+                className={styles.mediaViewerControlButton}
+                onClick={() => handleMediaZoom(-1)}
+                disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
               >
-                <button
-                  type="button"
-                  className={styles.mediaViewerControlButton}
-                  onClick={() => navigateMedia(-1, "control")}
-                  disabled={!hasPreviousMedia}
-                  aria-label="View previous media"
-                >
-                  <span aria-hidden="true">↑</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.mediaViewerControlButton}
-                  onClick={() => navigateMedia(1, "control")}
-                  disabled={!hasNextMedia}
-                  aria-label="View next media"
-                >
-                  <span aria-hidden="true">↓</span>
-                </button>
-              </div>
-              <div
-                className={styles.mediaViewerControlRow}
-                aria-label="Media zoom controls"
-                role="group"
+                -
+              </button>
+              <button
+                type="button"
+                className={styles.mediaViewerControlButton}
+                onClick={resetMediaView}
+                disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
               >
-                <button
-                  type="button"
-                  className={styles.mediaViewerControlButton}
-                  onClick={() => handleMediaZoom(-1)}
-                  disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
-                >
-                  -
-                </button>
-                <button
-                  type="button"
-                  className={styles.mediaViewerControlButton}
-                  onClick={resetMediaView}
-                  disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
-                >
-                  reset
-                </button>
-                <button
-                  type="button"
-                  className={styles.mediaViewerControlButton}
-                  onClick={() => handleMediaZoom(1)}
-                  disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
-                >
-                  +
-                </button>
-              </div>
+                reset
+              </button>
+              <button
+                type="button"
+                className={styles.mediaViewerControlButton}
+                onClick={() => handleMediaZoom(1)}
+                disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
+              >
+                +
+              </button>
+            </div>
+            <div
+              className={`${styles.mediaViewerControls} ${styles.mediaViewerNavigationControls}`}
+              aria-label="Media navigation controls"
+              role="group"
+            >
+              <button
+                type="button"
+                className={styles.mediaViewerControlButton}
+                onClick={() => navigateMedia(-1, "control")}
+                disabled={!hasPreviousMedia}
+                aria-label="View previous media"
+              >
+                <span aria-hidden="true">↑</span>
+              </button>
+              <button
+                type="button"
+                className={styles.mediaViewerControlButton}
+                onClick={() => navigateMedia(1, "control")}
+                disabled={!hasNextMedia}
+                aria-label="View next media"
+              >
+                <span aria-hidden="true">↓</span>
+              </button>
             </div>
             <p className={styles.mediaViewerPosition} aria-hidden="true">
               {String((mobileMediaIndex ?? 0) + 1).padStart(2, "0")} /{" "}
