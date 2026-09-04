@@ -1,12 +1,10 @@
 .page {
   --page-pad-bottom: clamp(1.5rem, 4vh, 2.25rem);
-  --index-stagger: 92ms;
+  --index-stagger: 120ms;
   --index-enter-ms: 820ms;
   --index-leave-ms: 100ms;
   --index-rule-ms: 1100ms;
   --index-rule-delay: calc(var(--index-stagger) * 1.5);
-  --index-grid-stagger: 36ms;
-  --index-grid-enter-ms: 200ms;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-enter: cubic-bezier(0.33, 0, 0.2, 1);
   --ease-rule: cubic-bezier(0.45, 0, 0.2, 1);
@@ -381,9 +379,9 @@
 }
 
 .staggerItem {
-  animation: indexEnter var(--index-grid-enter-ms) var(--ease-out) both;
+  animation: indexEnterFade var(--index-enter-ms) var(--ease-enter) both;
   animation-iteration-count: 1;
-  animation-delay: calc(var(--item-index, 0) * var(--index-grid-stagger));
+  animation-delay: calc(var(--item-index, 0) * var(--index-stagger));
 }
 
 .row .identity,
@@ -427,15 +425,6 @@
 .preview[data-outgoing="true"] {
   opacity: 0;
   transition: opacity var(--index-leave-ms) var(--ease-out);
-}
-
-.page[data-crossfade="true"] .staggerItem {
-  animation-name: indexEnterFade;
-  animation-duration: 180ms;
-}
-
-.page[data-stack-enter="true"] .staggerItem {
-  animation-delay: 0ms;
 }
 
 .page[data-crossfade="true"] .table[data-outgoing="true"] .row .identity,

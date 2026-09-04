@@ -107,7 +107,7 @@ const LIST_PIN_END_PAD = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 100;
 const VIEW_ENTER_STAGGER_CAP = 8;
-const VIEW_INDEX_STAGGER_MS = 92;
+const VIEW_INDEX_STAGGER_MS = 120;
 const VIEW_INDEX_RULE_MS = 1100;
 const VIEW_INDEX_RULE_DELAY_MS = Math.round(VIEW_INDEX_STAGGER_MS * 1.5);
 const VIEW_ENTER_DONE_MS =
@@ -264,7 +264,35 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     };
   }, []);
 
-  const viewOptions: ViewOption[] = [LIST_OPTION, ...desktopGridOptions];
+  useEffect(() => {
+    if (!hasMounted || reducedMotion) {
+      return;
+    }
+
+    const videos = visibleProjects
+      .slice(0, 2)
+      .map((project) => project.thumbnail.desktop.video)
+      .filter((src): src is string => Boolean(src))
+      .map((src) => {
+        const video = document.createElement("video");
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        video.preload = "auto";
+        video.src = src;
+        video.load();
+        return video;
+      });
+
+    return () => {
+      videos.forEach((video) => {
+        video.removeAttribute("src");
+        video.load();
+      });
+    };
+  }, [hasMounted, reducedMotion, visibleSlugs]);
+
+  const viewOptions: ViewOption[] = [...desktopGridOptions, LIST_OPTION];
   const isList = view === "list";
   pinListRef.current = isMobile && isList;
   const pinList = pinListRef.current;
@@ -1379,7 +1407,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-crossfade={layoutEpoch > 0 ? "true" : undefined}
       data-entered={entered ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
-      data-stack-enter={view === "stack" && layoutEpoch > 0 && !entered ? "true" : undefined}
     >
       <div
         ref={pinRef}
@@ -1485,11 +1512,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                 <div
                   key={project.slug}
                   className={styles.staggerItem}
-                  style={
-                    {
-                      "--item-index": liveGridView === "stack" ? 0 : Math.min(index, VIEW_ENTER_STAGGER_CAP),
-                    } as CSSProperties
-                  }
+                  style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
                 >
                   <ProjectCard
                     project={project}
