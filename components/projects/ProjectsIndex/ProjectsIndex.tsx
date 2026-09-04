@@ -210,6 +210,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const [toolbarFaded, setToolbarFaded] = useState(false);
   const [previewDismissed, setPreviewDismissed] = useState(false);
   const [previewIntroDone, setPreviewIntroDone] = useState(false);
+  const [activeHighlightPending, setActiveHighlightPending] = useState(true);
   const [listPinActive, setListPinActive] = useState(true);
   const [filterPanelBox, setFilterPanelBox] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLElement | null>(null);
@@ -456,6 +457,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       previewDismissingRef.current = false;
       previewIntroPlayedRef.current = false;
       setPreviewIntroDone(false);
+      setActiveHighlightPending(true);
       setPreviewDismissed(false);
     }
   }, [view]);
@@ -1026,6 +1028,17 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     visibleProjects.length,
   ]);
 
+  useEffect(() => {
+    if (!previewIntroDone || previewDismissed || !isList || !isMobile) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setActiveHighlightPending(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isList, isMobile, previewDismissed, previewIntroDone]);
+
   const applyPreviewTransform = useCallback(() => {
     const node = followPreviewRef.current;
     if (!node) {
@@ -1520,7 +1533,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-entered={entered ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
       data-list-layout={isList && !exitingView ? "true" : undefined}
-      data-preview-intro={!previewIntroDone && !previewDismissed && isList ? "true" : undefined}
+      data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}
       style={{ "--preview-intro-delay": `${previewIntroDelayMs / 1000}s` } as CSSProperties}
     >
       <div
