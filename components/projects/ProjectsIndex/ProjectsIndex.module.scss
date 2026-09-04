@@ -577,6 +577,10 @@
     margin-inline: var(--bleed);
   }
 
+  .page:has(.table:not([data-outgoing="true"])) .pinStage:not([data-list-pin="true"]) {
+    padding-bottom: var(--preview-reserve, 0px);
+  }
+
   .page:has(.table:not([data-outgoing="true"])) .header {
     width: 100%;
     margin-inline: 0;
@@ -970,3 +974,25 @@
   }
 }
 
+
+.previewHint {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.4rem;
+  background: var(--bg-color);
+  color: var(--fg-color);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  pointer-events: none;
+  animation: previewHintFade 3.5s linear forwards;
+}
+
+@keyframes previewHintFade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}

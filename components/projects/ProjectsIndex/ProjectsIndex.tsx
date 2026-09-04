@@ -234,6 +234,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const dockedPreviewRef = useRef<HTMLAnchorElement | null>(null);
   const previewDismissedRef = useRef(false);
   const previewIntroPlayedRef = useRef(false);
+  const previewDismissingRef = useRef(false);
+  const releaseRowTopRef = useRef<number | null>(null);
   const filterMenuOpenRef = useRef(false);
   const previewSwipeRef = useRef<{
     id: number;
@@ -451,6 +453,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     previewSwipeRef.current = null;
     if (view === "list") {
+      previewDismissingRef.current = false;
       previewIntroPlayedRef.current = false;
       setPreviewIntroDone(false);
       setPreviewDismissed(false);
@@ -475,6 +478,36 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     setDesktopHovering(false);
     hasPointerPosRef.current = false;
   }, [activeSlug, visibleProjects]);
+
+  const dismissPreview = useCallback(() => {
+    const node = dockedPreviewRef.current;
+    if (!node || previewDismissedRef.current || previewDismissingRef.current) {
+      return;
+    }
+
+    previewDismissingRef.current = true;
+    const stage = pinRef.current;
+    const track = tableRef.current?.querySelector<HTMLElement>('[role="list"]');
+    const toolbarHeight = headerRef.current?.getBoundingClientRect().height ?? 48;
+    const reserve = Math.max(
+      node.getBoundingClientRect().height + 24,
+      (stage?.getBoundingClientRect().height ?? 0) - toolbarHeight - (track?.scrollHeight ?? 0),
+    );
+    stage?.style.setProperty("--preview-reserve", `${reserve}px`);
+    gsap.to(node, {
+      x: node.getBoundingClientRect().width + 48,
+      autoAlpha: 0,
+      duration: reducedMotion ? 0.01 : 0.28,
+      ease: "power2.in",
+      overwrite: "auto",
+      onComplete: () => {
+        releaseRowTopRef.current =
+          rowRefs.current.get(activeSlugRef.current)?.getBoundingClientRect().top ?? null;
+        setPreviewDismissed(true);
+        gsap.set(node, { x: 0 });
+      },
+    });
+  }, [reducedMotion]);
 
   useEffect(() => {
     if (!isList || !isMobile || !hasMounted || previewDismissed) {
@@ -553,6 +586,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       const next = clampIndex(currentIndex + delta);
       if (next === currentIndex) {
+        if (delta > 0 && currentIndex === lastIndex) {
+          paging.locked = true;
+          dismissPreview();
+        }
         return;
       }
 
@@ -681,7 +718,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       const shouldRelease = previewDismissedRef.current;
       const slug = activeSlugRef.current;
       const row = rowRefs.current.get(slug);
-      const rowTop = row?.getBoundingClientRect().top ?? 0;
+      const rowTop = releaseRowTopRef.current ?? row?.getBoundingClientRect().top ?? 0;
+      releaseRowTopRef.current = null;
       window.cancelAnimationFrame(frame);
       syncListFromPinRef.current = () => {};
       stage.removeEventListener("wheel", onWheel);
@@ -701,12 +739,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       window.requestAnimationFrame(() => {
         const node = rowRefs.current.get(slug);
-        const toolbarH = Math.round(headerRef.current?.getBoundingClientRect().height ?? 48);
         const top =
           window.scrollY +
           (node?.getBoundingClientRect().top ?? rowTop) -
-          headerHeightPx() -
-          toolbarH;
+          rowTop;
         const lenis = getLenis();
         lenis?.resize();
         if (lenis) {
@@ -717,7 +753,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         ScrollTrigger.refresh();
       });
     };
-  }, [hasMounted, isList, isMobile, previewDismissed, reducedMotion, visibleSlugs]);
+  }, [dismissPreview, hasMounted, isList, isMobile, previewDismissed, reducedMotion, visibleSlugs]);
 
   useEffect(() => {
     if (!isList || !isMobile || !hasMounted) {
@@ -864,17 +900,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       swipe.dragging = false;
 
       if (shouldDismiss) {
-        gsap.to(node, {
-          x: width + 48,
-          autoAlpha: 0,
-          duration: reducedMotion ? 0.01 : 0.28,
-          ease: "power2.in",
-          overwrite: "auto",
-          onComplete: () => {
-            setPreviewDismissed(true);
-            gsap.set(node, { x: 0 });
-          },
-        });
+        dismissPreview();
         return;
       }
 
@@ -887,7 +913,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || previewDismissedRef.current) {
+      if (event.button !== 0 || previewDismissedRef.current || previewDismissingRef.current) {
         return;
       }
 
@@ -962,7 +988,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       node.removeEventListener("pointerdown", onPointerDown);
       node.removeEventListener("click", onClickCapture, true);
     };
-  }, [hasMounted, previewDismissed, reducedMotion, showDockedPreview]);
+  }, [dismissPreview, hasMounted, previewDismissed, reducedMotion, showDockedPreview]);
 
   useEffect(() => {
     if (!hasMounted || !showDockedPreview || previewDismissed || previewIntroDone) {
@@ -1648,6 +1674,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                 } as CSSProperties
               }
             >
+              {previewIntroDone && !previewDismissed ? (
+                <span className={styles.previewHint} aria-hidden="true">
+                  Swipe right to dismiss <span>→</span>
+                </span>
+              ) : null}
               <span className={styles.previewFrame}>
                 {previewPrevious && previousMedia ? (
                   <span className={styles.previewLayer} data-layer="out">
