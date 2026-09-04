@@ -33,6 +33,7 @@
   overflow: hidden;
   background: var(--bg-color);
   overscroll-behavior: none;
+  touch-action: none;
 }
 
 .pinStage[data-list-pin="true"] .header {
@@ -509,6 +510,14 @@
   pointer-events: none;
 }
 
+.preview[data-docked="true"][data-intro="true"] {
+  animation-name: previewSlideIn;
+  animation-duration: 0.62s;
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+  animation-delay: var(--preview-intro-delay, 0.9s);
+}
+
 .preview[data-docked="true"][data-dragging="true"] .previewFrame {
   transform: none;
   transition: none;
@@ -557,33 +566,10 @@
 }
 
 @media (max-width: 48rem) {
-  .page:has(.table:not([data-outgoing="true"])) {
+  .page:has(.pinStage[data-list-pin="true"]) {
     overflow-x: clip;
     padding-block-start: 0;
     padding-block-end: 0;
-  }
-
-  .page:has(.table:not([data-outgoing="true"])) .pinStage {
-    box-sizing: border-box;
-    width: calc(100% + 2 * var(--content-padding-inline));
-    height: calc(100dvh - var(--header-height));
-    margin-inline: var(--bleed);
-    overflow: hidden;
-    background: var(--bg-color);
-    overscroll-behavior: none;
-  }
-
-  .page:has(.table:not([data-outgoing="true"])) .header {
-    position: relative;
-    top: auto;
-    width: 100%;
-    margin-inline: 0;
-    padding-inline: var(--content-padding-inline);
-  }
-
-  .page:has(.table:not([data-outgoing="true"])) .table {
-    min-height: 0;
-    overflow: hidden;
   }
 
   .header {
@@ -871,6 +857,16 @@
   }
 }
 
+@keyframes previewSlideIn {
+  from {
+    transform: translate3d(118%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @keyframes previewIn {
   from {
     opacity: 0;
@@ -904,6 +900,11 @@
   .filterTrigger:active,
   .filterOption:active,
   .preview[data-docked="true"]:active .previewFrame {
+    transform: none;
+  }
+
+  .preview[data-docked="true"][data-intro="true"] {
+    animation: none;
     transform: none;
   }
 

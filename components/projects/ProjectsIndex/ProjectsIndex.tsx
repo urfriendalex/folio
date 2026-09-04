@@ -102,8 +102,6 @@ function isGridView(view: IndexView): view is GridView {
 const PREVIEW_CURSOR_OFFSET = 36;
 const PREVIEW_VIEWPORT_PAD = 12;
 const PREVIEW_LERP = 0.2;
-const LIST_PIN_VIEWPORT_STEP = 0.32;
-const LIST_PIN_END_PAD = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 100;
 const VIEW_ENTER_STAGGER_CAP = 8;
@@ -112,6 +110,8 @@ const VIEW_INDEX_RULE_MS = 1100;
 const VIEW_INDEX_RULE_DELAY_MS = Math.round(VIEW_INDEX_STAGGER_MS * 1.5);
 const VIEW_ENTER_DONE_MS =
   VIEW_ENTER_STAGGER_CAP * VIEW_INDEX_STAGGER_MS + VIEW_INDEX_RULE_DELAY_MS + VIEW_INDEX_RULE_MS + 40;
+const LIST_PAGE_LOCK_S = 0.42;
+const PREVIEW_INTRO_TAIL_MS = 220;
 const PREVIEW_SWIPE_RATIO = 0.28;
 const PREVIEW_SWIPE_VELOCITY = 0.55;
 const PREVIEW_SWIPE_LOCK = 10;
@@ -209,6 +209,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const [filterMotion, setFilterMotion] = useState(false);
   const [toolbarFaded, setToolbarFaded] = useState(false);
   const [previewDismissed, setPreviewDismissed] = useState(false);
+  const [previewIntroDone, setPreviewIntroDone] = useState(false);
   const [listPinActive, setListPinActive] = useState(true);
   const [filterPanelBox, setFilterPanelBox] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLElement | null>(null);
@@ -232,6 +233,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const followPreviewRef = useRef<HTMLDivElement | null>(null);
   const dockedPreviewRef = useRef<HTMLAnchorElement | null>(null);
   const previewDismissedRef = useRef(false);
+  const previewIntroPlayedRef = useRef(false);
+  const filterMenuOpenRef = useRef(false);
   const previewSwipeRef = useRef<{
     id: number;
     x: number;
@@ -294,9 +297,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
   const viewOptions: ViewOption[] = [...desktopGridOptions, LIST_OPTION];
   const isList = view === "list";
-  pinListRef.current = isMobile && isList;
+  pinListRef.current = isMobile && isList && !previewDismissed;
   const pinList = pinListRef.current;
   previewDismissedRef.current = previewDismissed;
+  filterMenuOpenRef.current = filterMenuOpen;
   const showFollowPreview = isList && !isMobile && desktopHovering;
   const showDockedPreview = isList && isMobile;
   const activeProject =
@@ -445,8 +449,12 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       gsap.killTweensOf(node);
     }
 
-    setPreviewDismissed(false);
     previewSwipeRef.current = null;
+    if (view === "list") {
+      previewIntroPlayedRef.current = false;
+      setPreviewIntroDone(false);
+      setPreviewDismissed(false);
+    }
   }, [view]);
 
   useEffect(() => {
@@ -469,7 +477,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   }, [activeSlug, visibleProjects]);
 
   useEffect(() => {
-    if (!isList || !isMobile || !hasMounted) {
+    if (!isList || !isMobile || !hasMounted || previewDismissed) {
       setListPinActive(false);
       return;
     }
@@ -488,18 +496,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     const slugs = visibleProjects.map((project) => project.slug);
     const lastIndex = Math.max(0, slugs.length - 1);
-    const mapIndex = gsap.utils.mapRange(0, 1, 0, lastIndex);
     const clampIndex = gsap.utils.clamp(0, lastIndex);
-    const snapProgress = lastIndex === 0 ? () => 0 : gsap.utils.snap(1 / lastIndex);
     const listTrack = () => list?.querySelector<HTMLElement>('[role="list"]') ?? null;
-
-    const pinMetrics = () => {
-      const rowH = rows[0]?.offsetHeight ?? 72;
-      const step = Math.max(rowH * 1.25, window.innerHeight * LIST_PIN_VIEWPORT_STEP);
-      const travel = Math.max(step, lastIndex * step);
-      const pad = window.innerHeight * LIST_PIN_END_PAD;
-      return { travel, pad, ratio: travel / (travel + pad) };
-    };
+    const paging = { locked: false };
+    let currentIndex = clampIndex(Math.max(0, slugs.indexOf(activeSlugRef.current)));
 
     const applyStageSize = () => {
       if (stage?.style.height) {
@@ -507,15 +507,13 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       }
     };
 
-    const applyActive = (progress: number) => {
+    const applyIndex = (index: number, animate = true) => {
       if (pinFrozenRef.current || isBodyScrollLocked()) {
         return;
       }
 
-      const { ratio } = pinMetrics();
-      const contentProgress = gsap.utils.clamp(0, 1, progress / Math.max(ratio, 0.001));
-      const index = Math.round(clampIndex(mapIndex(contentProgress)));
-      const slug = slugs[index];
+      currentIndex = clampIndex(index);
+      const slug = slugs[currentIndex];
       if (slug && activeSlugRef.current !== slug) {
         setActiveSlug(slug);
       }
@@ -527,9 +525,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       const toolbarH = Math.round(headerRef.current?.getBoundingClientRect().height ?? 48);
       const previewNode = dockedPreviewRef.current;
-      const previewReserve = previewDismissedRef.current
-        ? 16
-        : Math.round((previewNode?.getBoundingClientRect().height ?? 148) + 24);
+      const previewReserve = Math.round((previewNode?.getBoundingClientRect().height ?? 148) + 24);
       const available = Math.max(
         96,
         window.innerHeight - headerHeightPx() - toolbarH - previewReserve,
@@ -540,76 +536,50 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         return;
       }
 
-      const row = rows[index] ?? rows[0];
+      const row = rows[currentIndex] ?? rows[0];
       const y = gsap.utils.clamp(0, overflow, row.offsetTop);
-      gsap.to(track, { y: -y, duration: 0.28, ease: "power2.inOut", overwrite: "auto" });
+      if (!animate || reducedMotion) {
+        gsap.set(track, { y: -y });
+        return;
+      }
+
+      gsap.to(track, { y: -y, duration: LIST_PAGE_LOCK_S, ease: "power2.inOut", overwrite: "auto" });
     };
 
-    syncListFromPinRef.current = (progress?: number) => {
-      const current = ScrollTrigger.getById("work-list-pin");
-      applyActive(progress ?? current?.progress ?? 0);
+    const goBy = (delta: number) => {
+      if (paging.locked || pinFrozenRef.current || isBodyScrollLocked() || filterMenuOpenRef.current) {
+        return;
+      }
+
+      const next = clampIndex(currentIndex + delta);
+      if (next === currentIndex) {
+        return;
+      }
+
+      paging.locked = true;
+      applyIndex(next, true);
+      gsap.delayedCall(reducedMotion ? 0.05 : LIST_PAGE_LOCK_S, () => {
+        paging.locked = false;
+      });
+    };
+
+    syncListFromPinRef.current = () => {
+      applyIndex(currentIndex, false);
     };
 
     applyStageSize();
-
-    const slidePreview = (show: boolean, immediate = false) => {
-      const preview = dockedPreviewRef.current;
-      if (!preview || previewDismissedRef.current) {
-        return;
-      }
-
-      gsap.killTweensOf(preview);
-      gsap.set(preview, { x: 0, autoAlpha: 1 });
-
-      if (immediate || reducedMotion) {
-        gsap.set(preview, { xPercent: show ? 0 : 118 });
-        return;
-      }
-
-      gsap.to(preview, {
-        xPercent: show ? 0 : 118,
-        duration: show ? 0.48 : 0.36,
-        ease: show ? "power3.out" : "power2.in",
-        overwrite: "auto",
-      });
-    };
+    applyIndex(currentIndex, false);
+    setListPinActive(true);
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         id: "work-list-pin",
         trigger: stage,
         start: () => `top ${headerHeightPx()}px`,
-        end: () => {
-          const { travel, pad } = pinMetrics();
-          return `+=${travel + pad}`;
-        },
+        end: "max",
         pin: true,
-        pinSpacing: true,
+        pinSpacing: false,
         invalidateOnRefresh: true,
-        snap:
-          lastIndex === 0 || reducedMotion
-            ? undefined
-            : {
-                snapTo: (value) => {
-                  const { ratio } = pinMetrics();
-                  if (value > ratio) {
-                    return value;
-                  }
-
-                  return snapProgress(ratio <= 0 ? 0 : value / ratio) * ratio;
-                },
-                duration: { min: 0.14, max: 0.3 },
-                delay: 0,
-                inertia: true,
-                ease: "power2.inOut",
-              },
-        onUpdate: (self) => {
-          if (!self.isActive || pinFrozenRef.current || isBodyScrollLocked()) {
-            return;
-          }
-
-          applyActive(self.progress);
-        },
         onRefresh: (self) => {
           if (pinFrozenRef.current || isBodyScrollLocked()) {
             return;
@@ -617,44 +587,90 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
           applyStageSize();
           setListPinActive(self.isActive);
-          if (self.isActive || self.progress <= 0) {
-            applyActive(self.progress);
-            slidePreview(true, true);
-            return;
+          if (self.isActive) {
+            applyIndex(currentIndex, false);
           }
-
-          const track = listTrack();
-          if (track) {
-            gsap.set(track, { y: 0 });
-          }
-          slidePreview(false, true);
         },
         onToggle: (self) => {
           if (pinFrozenRef.current || isBodyScrollLocked()) {
             return;
           }
 
-          applyStageSize();
           setListPinActive(self.isActive);
-          const track = listTrack();
-          if (!self.isActive && track) {
-            gsap.set(track, { y: 0 });
-          } else if (self.isActive) {
-            applyActive(self.progress);
+          if (self.isActive) {
+            applyIndex(currentIndex, false);
           }
-          slidePreview(self.isActive || self.progress <= 0);
-        },
-        onEnter: () => {
-          slidePreview(true);
-        },
-        onLeave: () => {
-          slidePreview(false);
-        },
-        onEnterBack: () => {
-          slidePreview(true);
         },
       });
     }, pinRef);
+
+    const gesture = { x: 0, y: 0, active: false };
+    const isPagingIgnoreTarget = (eventTarget: EventTarget | null) => {
+      if (!(eventTarget instanceof Element)) {
+        return false;
+      }
+
+      return Boolean(
+        eventTarget.closest('[data-docked="true"]') ||
+          eventTarget.closest("button") ||
+          eventTarget.closest('[role="listbox"]') ||
+          eventTarget.closest("[data-app-navbar='true']"),
+      );
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (isPagingIgnoreTarget(event.target) || pinFrozenRef.current || isBodyScrollLocked()) {
+        return;
+      }
+
+      event.preventDefault();
+      goBy(event.deltaY > 0 ? 1 : -1);
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || isPagingIgnoreTarget(event.target)) {
+        gesture.active = false;
+        return;
+      }
+
+      gesture.active = true;
+      gesture.x = event.touches[0].clientX;
+      gesture.y = event.touches[0].clientY;
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (!gesture.active || event.touches.length !== 1) {
+        return;
+      }
+
+      const dy = event.touches[0].clientY - gesture.y;
+      const dx = event.touches[0].clientX - gesture.x;
+      if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) {
+        event.preventDefault();
+      }
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      if (!gesture.active || event.changedTouches.length === 0) {
+        gesture.active = false;
+        return;
+      }
+
+      const dy = event.changedTouches[0].clientY - gesture.y;
+      const dx = event.changedTouches[0].clientX - gesture.x;
+      gesture.active = false;
+
+      if (Math.abs(dy) < 36 || Math.abs(dy) < Math.abs(dx)) {
+        return;
+      }
+
+      goBy(dy < 0 ? 1 : -1);
+    };
+
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    stage.addEventListener("touchstart", onTouchStart, { passive: true });
+    stage.addEventListener("touchmove", onTouchMove, { passive: false });
+    stage.addEventListener("touchend", onTouchEnd, { passive: true });
 
     const frame = window.requestAnimationFrame(() => {
       ScrollTrigger.refresh();
@@ -662,16 +678,46 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     });
 
     return () => {
+      const shouldRelease = previewDismissedRef.current;
+      const slug = activeSlugRef.current;
+      const row = rowRefs.current.get(slug);
+      const rowTop = row?.getBoundingClientRect().top ?? 0;
       window.cancelAnimationFrame(frame);
       syncListFromPinRef.current = () => {};
+      stage.removeEventListener("wheel", onWheel);
+      stage.removeEventListener("touchstart", onTouchStart);
+      stage.removeEventListener("touchmove", onTouchMove);
+      stage.removeEventListener("touchend", onTouchEnd);
       const track = listTrack();
       if (track) {
         gsap.set(track, { clearProps: "transform" });
       }
       applyStageSize();
       ctx.revert();
+
+      if (!shouldRelease) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        const node = rowRefs.current.get(slug);
+        const toolbarH = Math.round(headerRef.current?.getBoundingClientRect().height ?? 48);
+        const top =
+          window.scrollY +
+          (node?.getBoundingClientRect().top ?? rowTop) -
+          headerHeightPx() -
+          toolbarH;
+        const lenis = getLenis();
+        lenis?.resize();
+        if (lenis) {
+          lenis.scrollTo(Math.max(0, top), { immediate: true, force: true });
+        } else {
+          window.scrollTo({ top: Math.max(0, top), left: 0, behavior: "auto" });
+        }
+        ScrollTrigger.refresh();
+      });
     };
-  }, [hasMounted, isList, isMobile, reducedMotion, visibleSlugs]);
+  }, [hasMounted, isList, isMobile, previewDismissed, reducedMotion, visibleSlugs]);
 
   useEffect(() => {
     if (!isList || !isMobile || !hasMounted) {
@@ -695,10 +741,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         paused.splice(0).forEach((trigger) => trigger.enable());
         window.requestAnimationFrame(() => {
           pinFrozenRef.current = false;
-          const current = ScrollTrigger.getById("work-list-pin");
-          const progress =
-            current && current.progress > 0.001 ? current.progress : pinProgressRef.current;
-          syncListFromPinRef.current(progress);
+          syncListFromPinRef.current();
         });
       },
     });
@@ -778,7 +821,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       return;
     }
 
-    gsap.set(node, { x: 0, xPercent: 0, autoAlpha: 1 });
+    if (previewIntroPlayedRef.current) {
+      gsap.set(node, { x: 0, xPercent: 0, autoAlpha: 1 });
+    }
 
     const release = (event: PointerEvent) => {
       const swipe = previewSwipeRef.current;
@@ -918,6 +963,42 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       node.removeEventListener("click", onClickCapture, true);
     };
   }, [hasMounted, previewDismissed, reducedMotion, showDockedPreview]);
+
+  useEffect(() => {
+    if (!hasMounted || !showDockedPreview || previewDismissed || previewIntroDone) {
+      return;
+    }
+
+    const finish = () => {
+      previewIntroPlayedRef.current = true;
+      setPreviewIntroDone(true);
+      const node = dockedPreviewRef.current;
+      if (node) {
+        gsap.set(node, { x: 0, xPercent: 0, autoAlpha: 1 });
+      }
+    };
+
+    if (reducedMotion) {
+      finish();
+      return;
+    }
+
+    const delayMs =
+      Math.min(Math.max(visibleProjects.length - 1, 0), VIEW_ENTER_STAGGER_CAP) * VIEW_INDEX_STAGGER_MS +
+      PREVIEW_INTRO_TAIL_MS +
+      620;
+    const timeout = window.setTimeout(finish, delayMs);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    hasMounted,
+    previewDismissed,
+    previewIntroDone,
+    reducedMotion,
+    showDockedPreview,
+    visibleProjects.length,
+  ]);
 
   const applyPreviewTransform = useCallback(() => {
     const node = followPreviewRef.current;
@@ -1412,6 +1493,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         ref={pinRef}
         className={styles.pinStage}
         data-list-pin={pinList && listPinActive ? "true" : undefined}
+        data-lenis-prevent={pinList && listPinActive ? "" : undefined}
       >
       {toolbar}
       {filterMenuOpen && hasMounted
@@ -1472,7 +1554,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                     className={styles.row}
                     role="listitem"
                     style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
-                    data-active={isActive ? "true" : undefined}
+                    data-active={
+                      isActive && (!isMobile || (pinList && listPinActive)) ? "true" : undefined
+                    }
                     aria-label={`${project.title}, ${project.descriptor}`}
                     nativeNavigation
                     tabIndex={!isList ? -1 : undefined}
@@ -1529,58 +1613,74 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
           ) : null}
         </div>
       )}
-      {(isList || exitingView === "list") && activeProject && activeMedia ? (
-        <IntentPrefetchLink
-          ref={dockedPreviewRef}
-          href={`/projects/${activeProject.slug}`}
-          className={styles.preview}
-          data-docked="true"
-          data-outgoing={!isList ? "true" : undefined}
-          data-hidden={previewDismissed ? "true" : undefined}
-          aria-hidden={previewDismissed ? true : undefined}
-          tabIndex={previewDismissed ? -1 : undefined}
-          aria-label={`${activeProject.title}, explore project`}
-          nativeNavigation
-          onClick={handleDockedPreviewClick}
-          style={
-            {
-              "--preview-w": String(activeProject.thumbnail.desktop.width),
-              "--preview-h": String(activeProject.thumbnail.desktop.height),
-            } as CSSProperties
-          }
-        >
-          <span className={styles.previewFrame}>
-            {previewPrevious && previousMedia ? (
-              <span className={styles.previewLayer} data-layer="out">
-                <ProjectMedia
-                  media={previousMedia}
-                  alt=""
-                  className={styles.previewMedia}
-                  fill
-                  fit="contain"
-                  sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
-                  loading="eager"
-                  reveal="instant"
-                />
-              </span>
-            ) : null}
-            <span className={styles.previewLayer} data-layer={previewPrevious ? "in" : "static"}>
-              <ProjectMedia
-                media={activeMedia}
-                alt=""
-                className={styles.previewMedia}
-                fill
-                fit="contain"
-                sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
-                imagePreload
-                loading="eager"
-                reveal="instant"
-              />
-            </span>
-          </span>
-        </IntentPrefetchLink>
-      ) : null}
       </div>
+
+      {hasMounted &&
+      isMobile &&
+      (isList || exitingView === "list") &&
+      activeProject &&
+      activeMedia
+        ? createPortal(
+            <IntentPrefetchLink
+              key={isList ? "docked-list" : "docked-exit"}
+              ref={dockedPreviewRef}
+              href={`/projects/${activeProject.slug}`}
+              className={styles.preview}
+              data-docked="true"
+              data-intro={!previewIntroDone && !previewDismissed ? "true" : undefined}
+              data-outgoing={!isList ? "true" : undefined}
+              data-hidden={previewDismissed ? "true" : undefined}
+              aria-hidden={previewDismissed ? true : undefined}
+              tabIndex={previewDismissed ? -1 : undefined}
+              aria-label={`${activeProject.title}, explore project`}
+              nativeNavigation
+              onClick={handleDockedPreviewClick}
+              style={
+                {
+                  "--preview-w": String(activeProject.thumbnail.desktop.width),
+                  "--preview-h": String(activeProject.thumbnail.desktop.height),
+                  "--preview-intro-delay": `${
+                    (Math.min(Math.max(visibleProjects.length - 1, 0), VIEW_ENTER_STAGGER_CAP) *
+                      VIEW_INDEX_STAGGER_MS +
+                      PREVIEW_INTRO_TAIL_MS) /
+                    1000
+                  }s`,
+                } as CSSProperties
+              }
+            >
+              <span className={styles.previewFrame}>
+                {previewPrevious && previousMedia ? (
+                  <span className={styles.previewLayer} data-layer="out">
+                    <ProjectMedia
+                      media={previousMedia}
+                      alt=""
+                      className={styles.previewMedia}
+                      fill
+                      fit="contain"
+                      sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
+                      loading="eager"
+                      reveal="instant"
+                    />
+                  </span>
+                ) : null}
+                <span className={styles.previewLayer} data-layer={previewPrevious ? "in" : "static"}>
+                  <ProjectMedia
+                    media={activeMedia}
+                    alt=""
+                    className={styles.previewMedia}
+                    fill
+                    fit="contain"
+                    sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
+                    imagePreload
+                    loading="eager"
+                    reveal="instant"
+                  />
+                </span>
+              </span>
+            </IntentPrefetchLink>,
+            document.body,
+          )
+        : null}
 
       {hasMounted && showFollowPreview && activeProject && activeMedia
         ? createPortal(
