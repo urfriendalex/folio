@@ -493,9 +493,9 @@
   left: auto;
   top: auto;
   z-index: 360;
-  right: max(env(safe-area-inset-right, 0px), 0.85rem);
-  bottom: max(env(safe-area-inset-bottom, 0px), 1.15rem);
-  width: min(72vw, 16.5rem);
+  right: max(env(safe-area-inset-right, 0px), 0.38rem);
+  bottom: max(env(safe-area-inset-bottom, 0px), 0.48rem);
+  width: min(64.8vw, 14.85rem);
   pointer-events: auto;
   transform: none;
   will-change: transform;
@@ -566,10 +566,21 @@
 }
 
 @media (max-width: 48rem) {
-  .page:has(.pinStage[data-list-pin="true"]) {
+  .page:has(.table:not([data-outgoing="true"])) {
     overflow-x: clip;
-    padding-block-start: 0;
-    padding-block-end: 0;
+    padding-block: 0;
+  }
+
+  .page:has(.table:not([data-outgoing="true"])) .pinStage {
+    box-sizing: border-box;
+    width: calc(100% + 2 * var(--content-padding-inline));
+    margin-inline: var(--bleed);
+  }
+
+  .page:has(.table:not([data-outgoing="true"])) .header {
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: var(--content-padding-inline);
   }
 
   .header {
