@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { useExploreCueTarget } from "@/components/ui/ExploreCue";
+import { useExploreCueTarget } from "@/components/ui/ExploreCue/useExploreCueTarget";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import styles from "./ProjectCard.module.scss";
 

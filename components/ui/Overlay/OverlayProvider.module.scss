@@ -317,13 +317,13 @@
 
 @media (max-width: 48rem) {
   .aboutScroll {
-    padding-block: 0.15rem 0.35rem;
+    padding-block: 0;
   }
 
   .aboutTop {
     width: 100%;
-    gap: 1.15rem;
-    padding-bottom: 1.35rem;
+    gap: 0.72rem;
+    padding-bottom: 0.78rem;
   }
 
   .aboutLead,
@@ -333,18 +333,32 @@
   }
 
   .aboutLeadText {
-    font-size: clamp(1.28rem, 6.4vw, 1.62rem);
-    line-height: 1.08;
-    letter-spacing: -0.045em;
+    font-size: clamp(1.12rem, 5.45vw, 1.36rem);
+    line-height: 1.05;
+    letter-spacing: -0.042em;
   }
 
   .aboutParagraph {
-    font-size: clamp(0.93rem, 3.35vw, 1.02rem);
-    line-height: 1.47;
+    font-size: clamp(0.84rem, 3.05vw, 0.92rem);
+    line-height: 1.38;
   }
 
   .aboutSheet {
     min-height: 0;
+  }
+
+  .metaBlock {
+    gap: 0.4rem;
+    padding: 0.68rem 0 0.78rem;
+  }
+
+  .metaBlock ul {
+    gap: 0.06em;
+  }
+
+  .metaBlock li {
+    font-size: 0.84rem;
+    line-height: 1.34;
   }
 
   .metaGrid {
@@ -410,8 +424,8 @@
     justify-content: space-between;
     gap: 0.35rem;
     column-gap: 0.45rem;
-    padding-top: 0.9rem;
-    padding-bottom: max(0.3rem, env(safe-area-inset-bottom, 0px));
+    padding-top: 0.5rem;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
   }
 
   .aboutFooterLinks {

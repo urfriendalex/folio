@@ -3,7 +3,7 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import type { UseRevealOnViewOptions } from "@/components/motion/shared/useRevealOnView";
 import type { ProjectEntry } from "@/content/projects/types";
-import { thumbnailToMediaSlot } from "@/lib/projectMedia";
+import { PROJECT_CARD_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
 import { ExploreMediaLink } from "./ExploreMediaLink";
 import styles from "./ProjectCard.module.scss";
 
@@ -22,6 +22,10 @@ type ProjectCardProps = {
   /** Overrides default card observer tuning (e.g. Work rootMargin/threshold). */
   revealOptions?: UseRevealOnViewOptions;
   cardRef?: (node: HTMLElement | null) => void;
+  /** `preload` is opt-in — home Work shares the first viewport with the hero. */
+  imagePreload?: boolean;
+  loading?: "eager" | "lazy";
+  sizes?: string;
 };
 
 function VisitArrowIcon() {
@@ -47,6 +51,9 @@ export function ProjectCard({
   staggerIndexOffset = 0,
   revealOptions,
   cardRef,
+  imagePreload = false,
+  loading = index < 2 ? "eager" : "lazy",
+  sizes = PROJECT_CARD_IMAGE_SIZES,
 }: ProjectCardProps) {
   const projectHref = `/projects/${project.slug}`;
   const externalUrl = project.links?.[0]?.url;
@@ -69,8 +76,9 @@ export function ProjectCard({
             className={styles.mediaAsset}
             fill
             fit="contain"
-            imagePreload={index === 0}
-            loading={index < 2 ? "eager" : "lazy"}
+            sizes={sizes}
+            imagePreload={imagePreload}
+            loading={loading}
           />
         </ExploreMediaLink>
         <footer className={styles.meta}>

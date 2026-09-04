@@ -1,22 +1,30 @@
 .page {
   --page-pad-bottom: clamp(1.5rem, 4vh, 2.25rem);
-  --index-stagger: 40ms;
-  --index-enter-ms: 220ms;
+  --index-stagger: 92ms;
+  --index-enter-ms: 820ms;
+  --index-leave-ms: 100ms;
+  --index-rule-ms: 1100ms;
+  --index-rule-delay: calc(var(--index-stagger) * 1.5);
+  --index-grid-stagger: 36ms;
+  --index-grid-enter-ms: 200ms;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-enter: cubic-bezier(0.33, 0, 0.2, 1);
+  --ease-rule: cubic-bezier(0.45, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --bleed: calc(-1 * var(--content-padding-inline));
   min-height: calc(100svh - var(--header-height));
-  padding-block: var(--header-height) var(--page-pad-bottom);
-}
-
-.stickSentinel {
-  height: 0;
-  pointer-events: none;
+  padding-block: 0 var(--page-pad-bottom);
 }
 
 .pinStage {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.indexBody {
+  position: relative;
+  min-width: 0;
 }
 
 .pinStage[data-list-pin="true"] {
@@ -30,7 +38,17 @@
 }
 
 .pinStage[data-list-pin="true"] .header {
+  position: relative;
+  top: auto;
+  width: 100%;
+  margin-inline: 0;
   padding-inline: var(--content-padding-inline);
+}
+
+.pinStage[data-list-pin="true"] .indexBody {
+  min-height: 0;
+  overflow: hidden;
+  flex: 1;
 }
 
 .pinStage[data-list-pin="true"] .table {
@@ -46,32 +64,31 @@
   overflow-x: clip;
 }
 
-.headerMount {
-  min-height: 0;
-}
-
 .header {
+  position: sticky;
+  top: var(--header-height);
+  /* Above `.navbarFrost` (399) and `.navbar` (400). The bar sits under the nav
+     band, so this does not cover AY. — it keeps FILTER + / icons off the blur. */
+  z-index: 401;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1rem;
-  padding: 0.5rem 0 0.55rem;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--content-padding-inline));
+  margin-inline: var(--bleed);
+  padding: 0.18rem var(--content-padding-inline) 0.4rem;
+  overflow: visible;
+  background: var(--bg-color);
   transition: opacity 220ms ease;
 }
 
-.headerStuck {
-  box-sizing: border-box;
-  width: 100%;
-  padding-inline: var(--content-padding-inline);
-  pointer-events: auto;
-  background: transparent;
-}
-
-.headerStuck .filters,
-.headerStuck .filterTrigger,
-.headerStuck .viewSwitch {
-  mix-blend-mode: difference;
+:global(html.is-overlay-blur) .header,
+:global(html.is-overlay-blur-pending) .header,
+:global(html.is-overlay-blur-closing) .header,
+:global(html.is-nav-open) .header {
+  z-index: 5;
 }
 
 .header[data-faded="true"] {
@@ -87,17 +104,42 @@
 }
 
 .filterPanel {
+  --filter-panel-pad: 0.35rem;
+  --filter-panel-radius: 1.25rem;
+  --filter-option-radius: 0.9rem;
+
   position: fixed;
   z-index: 410;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 11.25rem;
-  padding: 0.25rem 1.2rem 0.5rem 0.75rem;
-  overflow: visible;
-  background: color-mix(in srgb, var(--bg-color) 94%, transparent);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
-  backdrop-filter: blur(28px) saturate(140%);
+  align-items: stretch;
+  min-width: 11.75rem;
+  padding: var(--filter-panel-pad);
+  overflow: hidden;
+  border-radius: var(--filter-panel-radius);
+  corner-shape: squircle;
+  background: var(--bg-color);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fg-color) 22%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 0.75rem 1.75rem rgb(0 0 0 / 0.16);
+  transform-origin: 1.15rem 0.2rem;
+  transition:
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+:global([data-theme="dark"]) .filterPanel {
+  background: color-mix(in srgb, var(--bg-color) 86%, var(--fg-color));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fg-color) 20%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 0.85rem 2rem rgb(0 0 0 / 0.45);
 }
 
 .filters {
@@ -250,14 +292,28 @@
   box-sizing: border-box;
   margin-inline: var(--bleed);
   padding: 0.92rem var(--content-padding-inline);
-  border-top: 1px solid var(--line-color);
   color: inherit;
   text-decoration: none;
   cursor: pointer;
   transition:
     background 160ms ease,
-    color 160ms ease,
-    border-color 160ms ease;
+    color 160ms ease;
+}
+
+.row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: var(--line-color);
+  clip-path: inset(0 0 0 0);
+  animation: indexRule var(--index-rule-ms) var(--ease-rule) both;
+  animation-iteration-count: 1;
+  animation-delay: calc(var(--index-rule-delay) + var(--item-index, 0) * var(--index-stagger));
+  transition: background 160ms var(--ease-out);
 }
 
 .row:focus-visible {
@@ -265,25 +321,27 @@
   outline-offset: 2px;
 }
 
-.row[data-active="true"] {
-  background: var(--fg-color);
-  color: var(--bg-color);
-  border-color: var(--fg-color);
+@media (hover: hover) and (min-width: 48.01rem) {
+  .table[data-hovering="true"] .row[data-active="true"] {
+    background: var(--fg-color);
+    color: var(--bg-color);
+  }
+
+  .table[data-hovering="true"] .row[data-active="true"]::before {
+    background: var(--fg-color);
+  }
+
+  .table[data-hovering="true"] .row[data-active="true"] .descriptor,
+  .table[data-hovering="true"] .row[data-active="true"] .descriptorMobile,
+  .table[data-hovering="true"] .row[data-active="true"] .year {
+    color: color-mix(in srgb, var(--bg-color) 86%, transparent);
+  }
 }
 
-.table [role="list"] .row:first-child {
-  border-top: 0;
+.table [role="list"] .row:first-child::before {
+  content: none;
 }
 
-.table [role="list"] .row:last-child {
-  border-bottom: 0;
-}
-
-.row[data-active="true"] .descriptor,
-.row[data-active="true"] .descriptorMobile,
-.row[data-active="true"] .year {
-  color: color-mix(in srgb, var(--bg-color) 86%, transparent);
-}
 
 .identity {
   display: flex;
@@ -322,19 +380,86 @@
   white-space: nowrap;
 }
 
-.staggerItem,
-.row {
-  animation: indexEnter var(--index-enter-ms) var(--ease-out) both;
+.staggerItem {
+  animation: indexEnter var(--index-grid-enter-ms) var(--ease-out) both;
+  animation-iteration-count: 1;
+  animation-delay: calc(var(--item-index, 0) * var(--index-grid-stagger));
+}
+
+.row .identity,
+.row .descriptor,
+.row .year {
+  animation: indexEnter var(--index-enter-ms) var(--ease-enter) both;
+  animation-iteration-count: 1;
   animation-delay: calc(var(--item-index, 0) * var(--index-stagger));
 }
 
-.page[data-vt="true"] .staggerItem,
-.page[data-vt="true"] .row,
+.table[data-outgoing="true"],
+.grid[data-outgoing="true"] {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: indexLeave var(--index-leave-ms) var(--ease-out) forwards;
+}
+
+.table[data-outgoing="true"] .staggerItem,
+.table[data-outgoing="true"] .row .identity,
+.table[data-outgoing="true"] .row .descriptor,
+.table[data-outgoing="true"] .row .year,
+.table[data-outgoing="true"] .row::before,
+.grid[data-outgoing="true"] .staggerItem,
+.grid[data-outgoing="true"] .row::before,
 .page[data-filter-motion="true"] .staggerItem,
-.page[data-filter-motion="true"] .row,
-.page[data-page-enter="true"] .staggerItem,
-.page[data-page-enter="true"] .row {
+.page[data-filter-motion="true"] .row .identity,
+.page[data-filter-motion="true"] .row .descriptor,
+.page[data-filter-motion="true"] .row .year,
+.page[data-filter-motion="true"] .row::before {
   animation: none;
+}
+
+.table[data-outgoing="true"] .row::before,
+.page[data-filter-motion="true"] .row::before {
+  clip-path: inset(0 0 0 0);
+}
+
+.preview[data-outgoing="true"] {
+  opacity: 0;
+  transition: opacity var(--index-leave-ms) var(--ease-out);
+}
+
+.page[data-crossfade="true"] .staggerItem {
+  animation-name: indexEnterFade;
+  animation-duration: 180ms;
+}
+
+.page[data-stack-enter="true"] .staggerItem {
+  animation-delay: 0ms;
+}
+
+.page[data-crossfade="true"] .table[data-outgoing="true"] .row .identity,
+.page[data-crossfade="true"] .table[data-outgoing="true"] .row .descriptor,
+.page[data-crossfade="true"] .table[data-outgoing="true"] .row .year,
+.page[data-crossfade="true"] .table[data-outgoing="true"] .row::before,
+.page[data-crossfade="true"] .grid[data-outgoing="true"] .staggerItem {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.page[data-entered="true"] .staggerItem,
+.page[data-entered="true"] .row .identity,
+.page[data-entered="true"] .row .descriptor,
+.page[data-entered="true"] .row .year {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.page[data-entered="true"] .row::before {
+  animation: none;
+  clip-path: inset(0 0 0 0);
 }
 
 .grid {
@@ -409,6 +534,19 @@
   transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.previewLayer {
+  position: absolute;
+  inset: 0;
+}
+
+.previewLayer[data-layer="in"] {
+  animation: previewIn 280ms ease;
+}
+
+.previewLayer[data-layer="out"] {
+  animation: previewOut 280ms ease forwards;
+}
+
 .preview[data-docked="true"]:active .previewFrame {
   transform: scale(0.97);
 }
@@ -423,9 +561,40 @@
   --project-media-surface: transparent;
 }
 
+@media (min-width: 48.01rem) {
+  .preview[data-docked="true"] {
+    display: none;
+  }
+}
+
 @media (max-width: 48rem) {
-  .page {
+  .page:has(.table:not([data-outgoing="true"])) {
+    overflow-x: clip;
     padding-block-start: 0;
+    padding-block-end: 0;
+  }
+
+  .page:has(.table:not([data-outgoing="true"])) .pinStage {
+    box-sizing: border-box;
+    width: calc(100% + 2 * var(--content-padding-inline));
+    height: calc(100dvh - var(--header-height));
+    margin-inline: var(--bleed);
+    overflow: hidden;
+    background: var(--bg-color);
+    overscroll-behavior: none;
+  }
+
+  .page:has(.table:not([data-outgoing="true"])) .header {
+    position: relative;
+    top: auto;
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: var(--content-padding-inline);
+  }
+
+  .page:has(.table:not([data-outgoing="true"])) .table {
+    min-height: 0;
+    overflow: hidden;
   }
 
   .header {
@@ -434,16 +603,7 @@
     align-items: center;
     column-gap: 0.45rem;
     row-gap: 0;
-    padding-block: 0.35rem 0.45rem;
-  }
-
-  .headerStuck {
-    padding-inline: var(--content-padding-inline);
-  }
-
-  .header[data-filter-open="true"] {
-    position: relative;
-    z-index: 4;
+    padding-block: 0.28rem 0.4rem;
   }
 
   .filters {
@@ -525,20 +685,47 @@
   .filterOption {
     display: flex;
     align-items: center;
+    width: 100%;
     min-height: 2.5rem;
     margin: 0;
-    padding: 0;
+    padding: 0 0.75rem;
     border: 0;
+    border-radius: var(--filter-option-radius);
+    corner-shape: squircle;
     background: transparent;
     cursor: pointer;
     font-family: var(--font-pixel-stack);
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     font-weight: 400;
     letter-spacing: var(--tracking-label-sm);
     line-height: 1.2;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--fg-color) 38%, transparent);
-    transition: color 160ms ease;
+    color: var(--fg-color);
+    transition:
+      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      background 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    animation: filterOptionIn 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .filterOption:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .filterOption:nth-child(2) {
+    animation-delay: 40ms;
+  }
+
+  .filterOption:nth-child(3) {
+    animation-delay: 80ms;
+  }
+
+  .filterOption:nth-child(4) {
+    animation-delay: 120ms;
+  }
+
+  .filterOption:nth-child(5) {
+    animation-delay: 160ms;
   }
 
   .filterOption:active {
@@ -546,12 +733,20 @@
   }
 
   .filterOption[data-active="true"] {
-    color: var(--fg-color);
+    background: var(--fg-color);
+    color: var(--bg-color);
   }
 
   .filterOption:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
-    outline-offset: 3px;
+    outline: 2px solid color-mix(in srgb, var(--fg-color) 40%, transparent);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .filterOption:not([data-active="true"]):hover {
+      color: var(--fg-color);
+      background: color-mix(in srgb, var(--fg-color) 7%, transparent);
+    }
   }
 
   .viewSwitch {
@@ -566,15 +761,26 @@
     height: 1.85rem;
   }
 
-  .table[data-mobile-list="true"] .row[data-active="true"] {
+  .row {
+    grid-template-columns: minmax(0, 1fr) 5rem;
+    column-gap: 0.55rem;
+    margin-inline: 0;
+    padding: 1rem var(--content-padding-inline);
+  }
+
+  .row[data-active="true"] {
     background: var(--fg-color);
     color: var(--bg-color);
   }
 
-  .row {
-    grid-template-columns: minmax(0, 1fr) 5rem;
-    column-gap: 0.55rem;
-    padding-block: 0.7rem;
+  .row[data-active="true"]::before {
+    background: var(--fg-color);
+  }
+
+  .row[data-active="true"] .descriptor,
+  .row[data-active="true"] .descriptorMobile,
+  .row[data-active="true"] .year {
+    color: color-mix(in srgb, var(--bg-color) 86%, transparent);
   }
 
   .identity {
@@ -601,18 +807,18 @@
     row-gap: 1.2rem;
   }
 
-  .grid[data-view="stack"],
-  .grid[data-view="wide"] {
+  .grid[data-view="stack"] {
     grid-template-columns: 1fr;
     row-gap: 1.35rem;
   }
 
+  .grid[data-view="wide"],
   .grid[data-view="regular"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     row-gap: 1.05rem;
   }
 
-  .viewButton[data-layout="stack"] {
+  .viewButton[data-layout="regular"] {
     display: none;
   }
 }
@@ -630,12 +836,22 @@
 @keyframes indexEnter {
   from {
     opacity: 0;
-    transform: translate3d(0, 8px, 0);
+    transform: translate3d(0, 4px, 0);
   }
 
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes indexRule {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -646,6 +862,43 @@
 
   to {
     opacity: 1;
+  }
+}
+
+@keyframes indexLeave {
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+@keyframes filterOptionIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes previewIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes previewOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
   }
 }
 
@@ -669,14 +922,46 @@
     transition: none;
   }
 
-  .filterPlus {
+  .filterPlus,
+  .filterOption {
+    transition: none;
+    animation: none;
+  }
+
+  .filterPanel {
+    transition: none;
+    transform: none;
+
+    @starting-style {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .table[data-outgoing="true"],
+  .grid[data-outgoing="true"],
+  .preview[data-outgoing="true"] {
+    animation: none;
+    opacity: 1;
+    filter: none;
     transition: none;
   }
 
   .staggerItem,
-  .row {
+  .row .identity,
+  .row .descriptor,
+  .row .year {
     animation: indexEnterFade 160ms ease both;
     animation-delay: 0ms;
+  }
+
+  .row::before {
+    animation: none;
+    clip-path: inset(0 0 0 0);
+  }
+
+  .previewLayer {
+    animation: none;
   }
 
   .preview {
@@ -684,19 +969,3 @@
   }
 }
 
-:global(html.work-index-vt) {
-  view-transition-name: none;
-}
-
-:global(html.work-index-vt)::view-transition-group(*) {
-  animation-duration: 240ms;
-  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-:global(html.work-index-vt)::view-transition-old(*),
-:global(html.work-index-vt)::view-transition-new(*) {
-  object-fit: cover;
-  overflow: clip;
-  animation-duration: 200ms;
-  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
-}

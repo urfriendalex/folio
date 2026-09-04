@@ -45,6 +45,7 @@ export function Navbar() {
   const { openAbout, activeOverlay } = useOverlay();
   const [menuOpen, setMenuOpen] = useState(false);
   const firstMenuActionRef = useRef<HTMLButtonElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevOverlayRef = useRef<typeof activeOverlay>(null);
   const closeMenuOnRouteChange = useEffectEvent(() => {
     setMenuOpen(false);
@@ -118,8 +119,8 @@ export function Navbar() {
     const html = document.documentElement;
 
     if (menuOpen) {
-      lockBodyScroll();
       html.classList.add("is-nav-open");
+      lockBodyScroll();
     } else {
       html.classList.remove("is-nav-open");
     }
@@ -152,6 +153,11 @@ export function Navbar() {
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleKeyDown);
+
+      const overlay = document.getElementById("mobile-navigation");
+      if (overlay?.contains(document.activeElement)) {
+        menuButtonRef.current?.focus();
+      }
     };
   }, [menuOpen]);
 
@@ -253,6 +259,7 @@ export function Navbar() {
         </nav>
 
         <button
+          ref={menuButtonRef}
           type="button"
           className={styles.menuButton}
           aria-expanded={menuOpen}

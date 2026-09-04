@@ -45,10 +45,6 @@ export function useExploreCue(): ExploreCueApi {
   return useContext(ExploreCueContext) ?? noopApi;
 }
 
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 function isFinePointer(pointerType: string) {
   return pointerType === "mouse" || pointerType === "pen";
 }
@@ -79,6 +75,7 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   const exitTimerRef = useRef(0);
   const hideGenRef = useRef(0);
   const activeRef = useRef(false);
+  const reduceMotionRef = useRef(false);
   const [active, setActive] = useState(false);
   const [label, setLabel] = useState("explore");
   const labelRef = useRef("explore");
@@ -98,7 +95,7 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
     (clientX: number, clientY: number) => {
       hasPointerRef.current = true;
 
-      if (prefersReducedMotion() || !followRef.current) {
+      if (reduceMotionRef.current || !followRef.current) {
         posRef.current.x = clientX;
         posRef.current.y = clientY;
         layout();
@@ -141,7 +138,10 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
       }
 
       if (options?.pointer) {
-        followTo(options.pointer.x, options.pointer.y);
+        // Window capture already follows while active; only seed on first show.
+        if (!activeRef.current) {
+          followTo(options.pointer.x, options.pointer.y);
+        }
       } else if (!hasPointerRef.current && options?.at) {
         seedAt(options.at.x, options.at.y);
       }
@@ -219,6 +219,7 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const createFollow = () => {
+      reduceMotionRef.current = reduce.matches;
       gsap.killTweensOf(pos);
       const duration = reduce.matches ? 0 : FOLLOW_DURATION;
       const ease = reduce.matches ? "none" : FOLLOW_EASE;
@@ -268,6 +269,8 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   }, [hideNow]);
 
   useLayoutEffect(() => {
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+
     const onPointerMove = (event: PointerEvent) => {
       if (!isFinePointer(event.pointerType)) {
         return;
@@ -280,13 +283,37 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
         return;
       }
 
+      if (!activeRef.current) {
+        return;
+      }
+
       followTo(event.clientX, event.clientY);
     };
 
-    window.addEventListener("pointermove", onPointerMove, { passive: true, capture: true });
+    const attach = () => {
+      window.addEventListener("pointermove", onPointerMove, { passive: true, capture: true });
+    };
+
+    const detach = () => {
+      window.removeEventListener("pointermove", onPointerMove, { capture: true });
+    };
+
+    if (finePointer.matches) {
+      attach();
+    }
+
+    const onFinePointerChange = () => {
+      detach();
+      if (finePointer.matches) {
+        attach();
+      }
+    };
+
+    finePointer.addEventListener("change", onFinePointerChange);
 
     return () => {
-      window.removeEventListener("pointermove", onPointerMove, { capture: true });
+      finePointer.removeEventListener("change", onFinePointerChange);
+      detach();
     };
   }, [followTo, hideNow]);
 

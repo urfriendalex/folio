@@ -17,13 +17,15 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
-import { ImageReveal, RevealLines } from "@/components/motion";
+import { ImageReveal } from "@/components/motion/ImageReveal/ImageReveal";
+import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
-import { ExploreCueHost } from "@/components/ui/ExploreCue";
+import { ExploreCueHost } from "@/components/ui/ExploreCue/ExploreCueHost";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import type { ProjectEntry } from "@/content/projects/types";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
+import { PROJECT_STILL_IMAGE_SIZES } from "@/lib/projectMedia";
 import { useClientMounted } from "@/lib/useClientMounted";
 import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import styles from "./ProjectPage.module.scss";
@@ -813,6 +815,7 @@ export function ProjectPage({
                     className={styles.stillMedia}
                     fill
                     fit="contain"
+                    sizes="100vw"
                   />
                 </div>
               </div>
@@ -900,6 +903,7 @@ export function ProjectPage({
                     alt={label}
                     className={styles.stillMedia}
                     fit="contain"
+                    sizes={PROJECT_STILL_IMAGE_SIZES}
                     imagePreload={index === 0}
                     loading={index < 2 ? "eager" : "lazy"}
                   />

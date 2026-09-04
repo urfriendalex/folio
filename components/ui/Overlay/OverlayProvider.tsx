@@ -13,16 +13,27 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { CalBookingOverlayContent } from "@/components/booking/CalBookingOverlayContent";
+import dynamic from "next/dynamic";
 import { SCHEDULE_CALL_HASH } from "@/components/booking/calBooking";
-import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import { AboutOverlayContent } from "@/content/about";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import type { ProjectEntry } from "@/content/projects/types";
-import { RevealLines } from "@/components/motion";
+import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { PixelText } from "@/components/type/PixelText/PixelText";
 import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
+
+const ProjectFullInfoOverlay = dynamic(() =>
+  import("@/components/projects/ProjectFullInfoOverlay").then((mod) => ({
+    default: mod.ProjectFullInfoOverlay,
+  })),
+);
+
+const CalBookingOverlayContent = dynamic(() =>
+  import("@/components/booking/CalBookingOverlayContent").then((mod) => ({
+    default: mod.CalBookingOverlayContent,
+  })),
+);
 
 type OverlayType = "about" | "contact" | "project" | "booking" | null;
 type OpenOverlayType = Exclude<OverlayType, "project" | null>;

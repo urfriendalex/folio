@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, type CSSProperties } from "react";
-import { RevealLines } from "@/components/motion";
+import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import type { ProjectEntry } from "@/content/projects/types";
 import {
   buildProjectOverlayOffsets,

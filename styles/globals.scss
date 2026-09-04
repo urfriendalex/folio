@@ -458,6 +458,13 @@ body:has([data-archive-experience="true"]) [data-app-main="true"] {
   background: transparent;
 }
 
+/* Work strip must stack against `[data-app-navbar-frost]` (399). A z-index on
+   main would trap it at 20, so the progressive blur paints over FILTER + / icons. */
+html.is-work-index-route [data-app-main="true"],
+html:has([data-work-index]) [data-app-main="true"] {
+  z-index: auto;
+}
+
 html.is-archive-route [data-footer-wordmark-underlay="true"],
 body:has([data-archive-experience="true"]) [data-footer-wordmark-underlay="true"],
 html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
@@ -477,9 +484,39 @@ html.is-overlay-blur-pending [data-app-navbar="true"] {
   mix-blend-mode: normal;
 }
 
+/* Pages that own their own top treatment suppress the progressive frost.
+   Overlay / mobile nav reuse the same subtree as the shared page blur — bring it back. */
 html.is-archive-route [data-app-navbar-frost="true"],
 html:has([data-archive-experience="true"]) [data-app-navbar-frost="true"] {
   display: none;
+}
+
+html.is-work-index-route [data-app-navbar-frost="true"],
+html:has([data-work-index]) [data-app-navbar-frost="true"] {
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+html.is-work-index-route [data-app-navbar-frost="true"] > *,
+html:has([data-work-index]) [data-app-navbar-frost="true"] > * {
+  display: none;
+}
+
+html.is-overlay-open [data-app-navbar-frost="true"],
+html.is-overlay-blur [data-app-navbar-frost="true"],
+html.is-overlay-blur-pending [data-app-navbar-frost="true"],
+html.is-overlay-blur-closing [data-app-navbar-frost="true"],
+html.is-nav-open [data-app-navbar-frost="true"] {
+  display: block;
+  overflow: visible;
+}
+
+html.is-overlay-open [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur-pending [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur-closing [data-app-navbar-frost="true"] > *,
+html.is-nav-open [data-app-navbar-frost="true"] > * {
+  display: block;
 }
 
 /* Full-viewport WebGL under `main` can composite above sticky chrome; pin navbar to the viewport. */

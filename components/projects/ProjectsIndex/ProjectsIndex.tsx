@@ -13,7 +13,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { createPortal, flushSync } from "react-dom";
+import { createPortal } from "react-dom";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
@@ -26,8 +26,9 @@ import {
 } from "@/content/projects";
 import type { ProjectEntry, ProjectMediaSlot } from "@/content/projects/types";
 import { gsap, registerGsapScrollTrigger, ScrollTrigger } from "@/lib/gsapScroll";
+import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { useClientMounted } from "@/lib/useClientMounted";
-import { thumbnailToMediaSlot } from "@/lib/projectMedia";
+import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
 import { getLenis } from "@/lib/smoothScroll";
 import styles from "./ProjectsIndex.module.scss";
 
@@ -89,29 +90,6 @@ const desktopGridOptions: ViewOption[] = [
   },
 ];
 
-const mobileGridOptions: ViewOption[] = [
-  {
-    view: "wide",
-    label: "One column grid",
-    columns: 1,
-    rows: 2,
-    variant: "grid",
-    widthRatio: 0.5,
-    heightRatio: 0.48,
-    gapRatio: 0.09,
-  },
-  {
-    view: "regular",
-    label: "Two column grid",
-    columns: 2,
-    rows: 2,
-    variant: "grid",
-    widthRatio: 0.5,
-    heightRatio: 0.48,
-    gapRatio: 0.092,
-  },
-];
-
 const MOBILE_MQ = "(max-width: 48rem)";
 /* Above 13–14" laptop CSS widths (~1440–1512). 16" / external / XL only. */
 const SUPER_WIDE_QUERY = "(min-width: 100rem)";
@@ -123,8 +101,16 @@ function isGridView(view: IndexView): view is GridView {
 const PREVIEW_CURSOR_OFFSET = 36;
 const PREVIEW_VIEWPORT_PAD = 12;
 const PREVIEW_LERP = 0.2;
-const LIST_PIN_VIEWPORT_STEP = 0.42;
-const LIST_PIN_END_PAD = 0.24;
+const LIST_PIN_VIEWPORT_STEP = 0.32;
+const LIST_PIN_END_PAD = 0.2;
+const PREVIEW_CROSSFADE_MS = 280;
+const VIEW_LEAVE_MS = 100;
+const VIEW_ENTER_STAGGER_CAP = 8;
+const VIEW_INDEX_STAGGER_MS = 92;
+const VIEW_INDEX_RULE_MS = 1100;
+const VIEW_INDEX_RULE_DELAY_MS = Math.round(VIEW_INDEX_STAGGER_MS * 1.5);
+const VIEW_ENTER_DONE_MS =
+  VIEW_ENTER_STAGGER_CAP * VIEW_INDEX_STAGGER_MS + VIEW_INDEX_RULE_DELAY_MS + VIEW_INDEX_RULE_MS + 40;
 const PREVIEW_SWIPE_RATIO = 0.28;
 const PREVIEW_SWIPE_VELOCITY = 0.55;
 const PREVIEW_SWIPE_LOCK = 10;
@@ -191,26 +177,6 @@ function headerHeightPx() {
   return parsed;
 }
 
-function projectViewTransitionName(slug: string) {
-  return `work-${slug}`;
-}
-
-const WORK_TOOLBAR_SLOT = "[data-work-toolbar-slot]";
-const WORK_TOOLBAR_STICK_SLACK_PX = 8;
-
-function syncWorkToolbarBlur(stuck: boolean, toolbarHeight: number) {
-  const html = document.documentElement;
-
-  if (!stuck) {
-    html.classList.remove("is-work-toolbar-stuck");
-    html.style.removeProperty("--work-toolbar-blur-extra");
-    return;
-  }
-
-  html.style.setProperty("--work-toolbar-blur-extra", `${Math.round(Math.max(toolbarHeight, 0))}px`);
-  html.classList.add("is-work-toolbar-stuck");
-}
-
 function writeFilterToUrl(filter: ProjectFilterId) {
   const url = new URL(window.location.href);
 
@@ -224,36 +190,6 @@ function writeFilterToUrl(filter: ProjectFilterId) {
   window.history.replaceState(window.history.state, "", next);
 }
 
-function switchIndexView(apply: (didTransition: boolean) => void, reducedMotion: boolean) {
-  const canTransition =
-    !reducedMotion && typeof document.startViewTransition === "function";
-
-  if (!canTransition) {
-    apply(false);
-    return;
-  }
-
-  const root = document.documentElement;
-  if (root.classList.contains("work-index-vt")) {
-    apply(true);
-    return;
-  }
-
-  root.classList.add("work-index-vt");
-
-  try {
-    const transition = document.startViewTransition(() => {
-      flushSync(() => apply(true));
-    });
-    void transition.finished.finally(() => {
-      root.classList.remove("work-index-vt");
-    });
-  } catch {
-    root.classList.remove("work-index-vt");
-    apply(false);
-  }
-}
-
 type ProjectsIndexProps = {
   projects: ProjectEntry[];
   initialFilter?: ProjectFilterId;
@@ -263,11 +199,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const [view, setView] = useState<IndexView>("list");
   const [filter, setFilter] = useState<ProjectFilterId>(initialFilter);
   const [isSuperWide, setIsSuperWide] = useState(false);
-  const [pageEnter, setPageEnter] = useState(false);
-  const [usedViewTransition, setUsedViewTransition] = useState(false);
-  const [toolbarStuck, setToolbarStuck] = useState(false);
-  const [toolbarSlot, setToolbarSlot] = useState<Element | null>(null);
-  const [toolbarHeight, setToolbarHeight] = useState(0);
+  const [exitingView, setExitingView] = useState<IndexView | null>(null);
+  const [pendingView, setPendingView] = useState<IndexView | null>(null);
+  const [entered, setEntered] = useState(false);
+  const [layoutEpoch, setLayoutEpoch] = useState(0);
+  const pendingViewRef = useRef<IndexView | null>(null);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMotion, setFilterMotion] = useState(false);
   const [toolbarFaded, setToolbarFaded] = useState(false);
@@ -277,10 +213,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const headerRef = useRef<HTMLElement | null>(null);
   const filterFieldRef = useRef<HTMLDivElement | null>(null);
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
-  const stickSentinelRef = useRef<HTMLDivElement | null>(null);
   const pinRef = useRef<HTMLDivElement | null>(null);
   const pinListRef = useRef(false);
-  const toolbarStuckRef = useRef(false);
+  const pinFrozenRef = useRef(false);
+  const pinProgressRef = useRef(0);
   const visibleProjects = filterProjectsByType(projects, filter);
   const visibleSlugs = visibleProjects.map((project) => project.slug).join(" ");
   const filterCounts = projectFilterCounts(projects);
@@ -303,7 +239,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     dragging: boolean;
     suppressClick: boolean;
   } | null>(null);
-  const syncListFromPinRef = useRef<() => void>(() => {});
+  const syncListFromPinRef = useRef<(progress?: number) => void>(() => {});
   const posRef = useRef({ x: 0, y: 0 });
   const targetRef = useRef({ x: 0, y: 0 });
   const hasPointerPosRef = useRef(false);
@@ -317,12 +253,17 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   );
   const isMobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, reducedMotionServerSnapshot);
   const hasMounted = useClientMounted();
-  const gridOptions = isMobile
-    ? mobileGridOptions
-    : isSuperWide
-      ? desktopGridOptions.filter((option) => option.view !== "stack")
-      : desktopGridOptions;
-  const viewOptions: ViewOption[] = [LIST_OPTION, ...gridOptions];
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add("is-work-index-route");
+
+    return () => {
+      html.classList.remove("is-work-index-route");
+    };
+  }, []);
+
+  const viewOptions: ViewOption[] = [LIST_OPTION, ...desktopGridOptions];
   const isList = view === "list";
   pinListRef.current = isMobile && isList;
   const pinList = pinListRef.current;
@@ -332,6 +273,28 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const activeProject =
     visibleProjects.find((project) => project.slug === activeSlug) ?? visibleProjects[0];
   const activeMedia = activeProject ? previewSlot(activeProject, reducedMotion) : null;
+  const [previewPrevious, setPreviewPrevious] = useState<ProjectEntry | null>(null);
+  const previewSlugRef = useRef(activeProject?.slug ?? "");
+  const previousMedia = previewPrevious ? previewSlot(previewPrevious, reducedMotion) : null;
+
+  useLayoutEffect(() => {
+    const slug = activeProject?.slug ?? "";
+    if (!slug || slug === previewSlugRef.current) {
+      return;
+    }
+
+    const previous =
+      visibleProjects.find((project) => project.slug === previewSlugRef.current) ?? null;
+    previewSlugRef.current = slug;
+    setPreviewPrevious(previous);
+    const timeout = window.setTimeout(() => {
+      setPreviewPrevious(null);
+    }, PREVIEW_CROSSFADE_MS);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [activeProject?.slug, visibleProjects]);
 
   const setRowNode = (slug: string, node: HTMLElement | null) => {
     if (node) {
@@ -412,93 +375,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   }, [view, visibleSlugs]);
 
   useEffect(() => {
-    setToolbarSlot(document.querySelector(WORK_TOOLBAR_SLOT));
-  }, []);
-
-  useLayoutEffect(() => {
-    const node = headerRef.current;
-
-    if (!node) {
-      return;
-    }
-
-    const applyHeight = () => {
-      const next = Math.round(node.getBoundingClientRect().height);
-      setToolbarHeight((current) => (current === next ? current : next));
-    };
-
-    applyHeight();
-
-    const observer = new ResizeObserver(applyHeight);
-    observer.observe(node);
-
-    return () => observer.disconnect();
-  }, [isMobile, toolbarStuck]);
-
-  useEffect(() => {
-    const sentinel = stickSentinelRef.current;
-
-    if (!sentinel) {
-      return;
-    }
-
-    const updateStuck = () => {
-      if (pinListRef.current) {
-        if (toolbarStuckRef.current) {
-          toolbarStuckRef.current = false;
-          setToolbarStuck(false);
-        }
-        return;
-      }
-
-      const line = headerHeightPx();
-      const top = sentinel.getBoundingClientRect().top;
-      const next = toolbarStuckRef.current
-        ? top < line + WORK_TOOLBAR_STICK_SLACK_PX
-        : top < line;
-
-      if (next === toolbarStuckRef.current) {
-        return;
-      }
-
-      toolbarStuckRef.current = next;
-      setToolbarStuck(next);
-    };
-
-    updateStuck();
-
-    const lenis = getLenis();
-    const unsubscribeLenis = lenis?.on("scroll", updateStuck);
-    window.addEventListener("scroll", updateStuck, { passive: true });
-    window.addEventListener("resize", updateStuck);
-
-    return () => {
-      unsubscribeLenis?.();
-      window.removeEventListener("scroll", updateStuck);
-      window.removeEventListener("resize", updateStuck);
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    const pinned = toolbarStuck && !toolbarFaded;
-    syncWorkToolbarBlur(pinned, toolbarHeight);
-
-    return () => {
-      if (!pinned) {
-        return;
-      }
-
-      syncWorkToolbarBlur(false, 0);
-    };
-  }, [toolbarFaded, toolbarHeight, toolbarStuck]);
-
-  useEffect(() => {
-    return () => {
-      syncWorkToolbarBlur(false, 0);
-    };
-  }, []);
-
-  useEffect(() => {
     const mobileQuery = window.matchMedia(MOBILE_MQ);
     const superWideQuery = window.matchMedia(SUPER_WIDE_QUERY);
 
@@ -511,7 +387,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         setFilterMenuOpen(false);
       }
       setView((currentView) => {
-        if (currentView === "stack" && (mobile || superWide)) {
+        if (mobile && currentView === "regular") {
+          return "wide";
+        }
+
+        if (!mobile && superWide && currentView === "stack") {
           return "wide";
         }
 
@@ -586,24 +466,23 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     const pinMetrics = () => {
       const rowH = rows[0]?.offsetHeight ?? 72;
-      const step = Math.max(rowH * 1.85, window.innerHeight * LIST_PIN_VIEWPORT_STEP);
+      const step = Math.max(rowH * 1.25, window.innerHeight * LIST_PIN_VIEWPORT_STEP);
       const travel = Math.max(step, lastIndex * step);
       const pad = window.innerHeight * LIST_PIN_END_PAD;
       return { travel, pad, ratio: travel / (travel + pad) };
     };
 
-    const applyStageSize = (active: boolean) => {
-      if (!stage) {
-        return;
-      }
-
-      const next = active ? `${Math.max(0, window.innerHeight - headerHeightPx())}px` : "";
-      if (stage.style.height !== next) {
-        stage.style.height = next;
+    const applyStageSize = () => {
+      if (stage?.style.height) {
+        stage.style.height = "";
       }
     };
 
     const applyActive = (progress: number) => {
+      if (pinFrozenRef.current || isBodyScrollLocked()) {
+        return;
+      }
+
       const { ratio } = pinMetrics();
       const contentProgress = gsap.utils.clamp(0, 1, progress / Math.max(ratio, 0.001));
       const index = Math.round(clampIndex(mapIndex(contentProgress)));
@@ -634,15 +513,15 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       const row = rows[index] ?? rows[0];
       const y = gsap.utils.clamp(0, overflow, row.offsetTop);
-      gsap.to(track, { y: -y, duration: 0.32, ease: "power2.out", overwrite: "auto" });
+      gsap.to(track, { y: -y, duration: 0.28, ease: "power2.inOut", overwrite: "auto" });
     };
 
-    syncListFromPinRef.current = () => {
+    syncListFromPinRef.current = (progress?: number) => {
       const current = ScrollTrigger.getById("work-list-pin");
-      applyActive(current?.progress ?? 0);
+      applyActive(progress ?? current?.progress ?? 0);
     };
 
-    applyStageSize(true);
+    applyStageSize();
 
     const slidePreview = (show: boolean, immediate = false) => {
       const preview = dockedPreviewRef.current;
@@ -690,22 +569,28 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
                   return snapProgress(ratio <= 0 ? 0 : value / ratio) * ratio;
                 },
-                duration: { min: 0.16, max: 0.4 },
-                delay: 0.05,
-                ease: "power2.out",
+                duration: { min: 0.14, max: 0.3 },
+                delay: 0,
+                inertia: true,
+                ease: "power2.inOut",
               },
         onUpdate: (self) => {
-          if (!self.isActive) {
+          if (!self.isActive || pinFrozenRef.current || isBodyScrollLocked()) {
             return;
           }
 
           applyActive(self.progress);
         },
         onRefresh: (self) => {
-          applyStageSize(self.isActive);
+          if (pinFrozenRef.current || isBodyScrollLocked()) {
+            return;
+          }
+
+          applyStageSize();
           setListPinActive(self.isActive);
-          if (self.isActive) {
+          if (self.isActive || self.progress <= 0) {
             applyActive(self.progress);
+            slidePreview(true, true);
             return;
           }
 
@@ -716,7 +601,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
           slidePreview(false, true);
         },
         onToggle: (self) => {
-          applyStageSize(self.isActive);
+          if (pinFrozenRef.current || isBodyScrollLocked()) {
+            return;
+          }
+
+          applyStageSize();
           setListPinActive(self.isActive);
           const track = listTrack();
           if (!self.isActive && track) {
@@ -724,6 +613,10 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
           } else if (self.isActive) {
             applyActive(self.progress);
           }
+          slidePreview(self.isActive || self.progress <= 0);
+        },
+        onEnter: () => {
+          slidePreview(true);
         },
         onLeave: () => {
           slidePreview(false);
@@ -746,10 +639,43 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       if (track) {
         gsap.set(track, { clearProps: "transform" });
       }
-      applyStageSize(false);
+      applyStageSize();
       ctx.revert();
     };
   }, [hasMounted, isList, isMobile, reducedMotion, visibleSlugs]);
+
+  useEffect(() => {
+    if (!isList || !isMobile || !hasMounted) {
+      return;
+    }
+
+    const paused: ReturnType<typeof ScrollTrigger.getAll> = [];
+
+    return onBodyScrollLock({
+      beforeLock() {
+        registerGsapScrollTrigger();
+        pinProgressRef.current = ScrollTrigger.getById("work-list-pin")?.progress ?? 0;
+        pinFrozenRef.current = true;
+        paused.length = 0;
+        ScrollTrigger.getAll().forEach((trigger) => {
+          if (trigger.enabled) {
+            trigger.disable(false);
+            paused.push(trigger);
+          }
+        });
+      },
+      afterUnlock() {
+        paused.splice(0).forEach((trigger) => trigger.enable());
+        window.requestAnimationFrame(() => {
+          pinFrozenRef.current = false;
+          const current = ScrollTrigger.getById("work-list-pin");
+          const progress =
+            current && current.progress > 0.001 ? current.progress : pinProgressRef.current;
+          syncListFromPinRef.current(progress);
+        });
+      },
+    });
+  }, [hasMounted, isList, isMobile]);
 
   useEffect(() => {
     if (!pinList) {
@@ -804,7 +730,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       window.cancelAnimationFrame(frame);
       ctx.revert();
     };
-  }, [hasMounted, isList, isMobile, visibleSlugs, visibleProjects.length]);
+  }, [hasMounted, isList, isMobile, view, visibleSlugs, visibleProjects.length]);
 
   useEffect(() => {
     if (!isList || !isMobile) {
@@ -813,63 +739,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     registerGsapScrollTrigger();
     ScrollTrigger.refresh();
-  }, [isList, isMobile, toolbarHeight, toolbarStuck]);
-
-  useLayoutEffect(() => {
-    if (!hasMounted || !isMobile || !isList) {
-      setPageEnter(false);
-      return;
-    }
-
-    const items = gsap.utils.toArray<HTMLElement>(
-      tableRef.current?.querySelectorAll(`.${styles.row}`) ?? [],
-    );
-    const preview = previewDismissedRef.current ? null : dockedPreviewRef.current;
-    const header = headerRef.current;
-    const targets = [header, preview, ...items].filter((node): node is HTMLElement => Boolean(node));
-
-    if (reducedMotion) {
-      gsap.set(targets, { autoAlpha: 1, x: 0, xPercent: 0, y: 0, clearProps: "transform" });
-      setPageEnter(false);
-      return;
-    }
-
-    setPageEnter(true);
-
-    const ctx = gsap.context(() => {
-      const timeline = gsap.timeline({
-        defaults: { ease: "power2.out" },
-        onComplete: () => {
-          setPageEnter(false);
-          gsap.set(items, { clearProps: "transform" });
-        },
-      });
-
-      if (header) {
-        gsap.set(header, { autoAlpha: 0, y: 8 });
-        timeline.to(header, { autoAlpha: 1, y: 0, duration: 0.28 }, 0);
-      }
-
-      if (items.length) {
-        gsap.set(items, { autoAlpha: 0, y: 12 });
-        timeline.to(items, { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.042 }, 0.06);
-      }
-
-      if (preview) {
-        gsap.set(preview, { autoAlpha: 0, xPercent: 118 });
-        timeline.to(
-          preview,
-          { autoAlpha: 1, xPercent: 0, duration: 0.52, ease: "power3.out" },
-          items.length ? ">-0.02" : 0.12,
-        );
-      }
-    });
-
-    return () => {
-      ctx.revert();
-      setPageEnter(false);
-    };
-  }, [hasMounted, isList, isMobile, reducedMotion]);
+  }, [isList, isMobile]);
 
   useLayoutEffect(() => {
     if (!hasMounted || !showDockedPreview || previewDismissed) {
@@ -880,6 +750,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     if (!node) {
       return;
     }
+
+    gsap.set(node, { x: 0, xPercent: 0, autoAlpha: 1 });
 
     const release = (event: PointerEvent) => {
       const swipe = previewSwipeRef.current;
@@ -1143,11 +1015,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   };
 
   const handleRowFocus = (slug: string) => {
-    activateRow(slug);
-
     if (isMobile) {
       return;
     }
+
+    activateRow(slug);
 
     const node = rowRefs.current.get(slug);
     if (!node) {
@@ -1157,6 +1029,121 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     const rect = node.getBoundingClientRect();
     movePreviewToward(rect.right - 48, rect.top + rect.height / 2);
   };
+
+  const selectedView = pendingView ?? view;
+  const showList = isList || exitingView === "list";
+  const showGrid = isGridView(view) || (exitingView !== null && isGridView(exitingView));
+  const liveGridView = isGridView(view) ? view : exitingView !== null && isGridView(exitingView) ? exitingView : "wide";
+
+  const requestIndexView = (next: IndexView) => {
+    if (next === selectedView) {
+      return;
+    }
+
+    if (isGridView(view) && isGridView(next) && exitingView === "list") {
+      setExitingView(null);
+      previousGridRectsRef.current = captureGridRects();
+      startTransition(() => {
+        setView(next);
+      });
+      return;
+    }
+
+    if (isGridView(view) && isGridView(next) && !exitingView) {
+      previousGridRectsRef.current = captureGridRects();
+      startTransition(() => {
+        setView(next);
+      });
+      return;
+    }
+
+    if (reducedMotion) {
+      pendingViewRef.current = null;
+      setPendingView(null);
+      setExitingView(null);
+      setFilterMotion(false);
+      setEntered(true);
+      setView(next);
+      return;
+    }
+
+    if (exitingView) {
+      pendingViewRef.current = next;
+      setPendingView(next);
+      return;
+    }
+
+    pendingViewRef.current = null;
+    setPendingView(null);
+    setFilterMotion(false);
+    setEntered(false);
+    setLayoutEpoch((epoch) => epoch + 1);
+
+    if (isList && isMobile) {
+      registerGsapScrollTrigger();
+      ScrollTrigger.getById("work-list-pin")?.kill();
+      setListPinActive(false);
+    }
+
+    setExitingView(view);
+    setView(next);
+  };
+
+  useLayoutEffect(() => {
+    if (!exitingView) {
+      return;
+    }
+
+    const lenis = getLenis();
+    lenis?.resize();
+
+    const toolbar = headerRef.current;
+    if (!toolbar) {
+      return;
+    }
+
+    const delta = toolbar.getBoundingClientRect().top - headerHeightPx();
+    if (Math.abs(delta) < 1) {
+      return;
+    }
+
+    const nextY = Math.max(0, window.scrollY + delta);
+    window.scrollTo({ top: nextY, left: 0, behavior: "auto" });
+    lenis?.scrollTo(nextY, { immediate: true, force: true });
+  }, [exitingView, view]);
+
+  useEffect(() => {
+    if (!exitingView) {
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      const next = pendingViewRef.current;
+      setExitingView(null);
+      setPendingView(null);
+      pendingViewRef.current = null;
+
+      if (next && next !== view) {
+        setEntered(false);
+        setLayoutEpoch((epoch) => epoch + 1);
+        setView(next);
+      }
+    }, VIEW_LEAVE_MS);
+
+    return () => window.clearTimeout(id);
+  }, [exitingView, view]);
+
+  useEffect(() => {
+    if (exitingView || reducedMotion) {
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      setEntered(true);
+    }, VIEW_ENTER_DONE_MS);
+
+    return () => window.clearTimeout(id);
+  }, [view, layoutEpoch, exitingView, reducedMotion]);
 
   const applyFilter = (next: ProjectFilterId) => {
     if (next !== filter) {
@@ -1178,11 +1165,15 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       : gridRef.current?.querySelectorAll(`.${styles.staggerItem}`);
 
     if (!items?.length) {
+      setFilterMotion(false);
+      setEntered(true);
       return;
     }
 
     if (reducedMotion) {
       gsap.set(items, { autoAlpha: 1, clearProps: "transform" });
+      setFilterMotion(false);
+      setEntered(true);
       return;
     }
 
@@ -1198,6 +1189,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         overwrite: true,
         onComplete: () => {
           gsap.set(items, { clearProps: "transform" });
+          setFilterMotion(false);
+          setEntered(true);
         },
       },
     );
@@ -1251,8 +1244,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     const rect = trigger.getBoundingClientRect();
     setFilterPanelBox({
-      top: Math.round(rect.bottom - 2),
-      left: Math.round(Math.max(12, rect.left - 11)),
+      top: Math.round(rect.bottom + 6),
+      left: Math.round(Math.max(12, rect.left - 18)),
     });
   };
 
@@ -1278,49 +1271,12 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     };
   }, [filterMenuOpen]);
 
-  useLayoutEffect(() => {
-    if (!filterMenuOpen) {
-      return;
-    }
-
-    const options = gsap.utils.toArray<HTMLElement>(
-      filterPanelRef.current?.querySelectorAll(`.${styles.filterOption}`) ?? [],
-    );
-    if (!options.length) {
-      return;
-    }
-
-    if (reducedMotion) {
-      gsap.set(options, { autoAlpha: 1, clearProps: "transform" });
-      return;
-    }
-
-    const tween = gsap.fromTo(
-      options,
-      { autoAlpha: 0, y: 8 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.24,
-        ease: "power2.out",
-        stagger: { each: 0.045 },
-        overwrite: true,
-        immediateRender: true,
-      },
-    );
-
-    return () => {
-      tween.kill();
-    };
-  }, [filterMenuOpen, reducedMotion]);
-
   const filterTriggerLabel = filter === "all" ? "Filter" : projectFilterLabel(filter);
 
   const toolbar = (
       <header
         ref={headerRef}
-        className={`${styles.header}${toolbarStuck ? ` ${styles.headerStuck}` : ""}`}
-        data-stuck={toolbarStuck ? "true" : undefined}
+        className={styles.header}
         data-filter-open={filterMenuOpen ? "true" : undefined}
         data-faded={toolbarFaded ? "true" : undefined}
       >
@@ -1376,7 +1332,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         </div>
         <div className={styles.viewSwitch} role="group" aria-label="Project layout">
           {viewOptions.map((option) => {
-            const isActive = option.view === view;
+            const isActive = option.view === selectedView;
 
             return (
               <button
@@ -1387,28 +1343,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                 data-active={isActive}
                 aria-pressed={isActive}
                 aria-label={option.label}
-                onClick={() => {
-                  if (isActive) {
-                    return;
-                  }
-
-                  if (isGridView(view) && isGridView(option.view)) {
-                    previousGridRectsRef.current = captureGridRects();
-                    startTransition(() => {
-                      setView(option.view);
-                    });
-                    return;
-                  }
-
-                  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-                  switchIndexView((didTransition) => {
-                    if (didTransition) {
-                      setUsedViewTransition(true);
-                    }
-
-                    setView(option.view);
-                  }, reduced);
-                }}
+                onClick={() => requestIndexView(option.view)}
               >
                 <span className={styles.viewButtonFrame} aria-hidden="true">
                   <span
@@ -1439,19 +1374,18 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   return (
     <section
       className={`page-shell ${styles.page}`}
-      data-vt={usedViewTransition ? "true" : undefined}
+      data-work-index="true"
+      data-crossfade={layoutEpoch > 0 ? "true" : undefined}
+      data-entered={entered ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
-      data-page-enter={pageEnter ? "true" : undefined}
+      data-stack-enter={view === "stack" && layoutEpoch > 0 && !entered ? "true" : undefined}
     >
-      <div ref={stickSentinelRef} className={styles.stickSentinel} aria-hidden="true" />
       <div
         ref={pinRef}
         className={styles.pinStage}
         data-list-pin={pinList && listPinActive ? "true" : undefined}
       >
-      <div className={styles.headerMount} style={toolbarHeight ? { minHeight: toolbarHeight } : undefined}>
-        {toolbarStuck && toolbarSlot && hasMounted && !pinList ? createPortal(toolbar, toolbarSlot) : toolbar}
-      </div>
+      {toolbar}
       {filterMenuOpen && hasMounted
         ? createPortal(
             <div
@@ -1485,125 +1419,144 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       {visibleProjects.length === 0 ? (
         <p className={styles.empty}>No projects in this type.</p>
-      ) : isList ? (
-        <div
-          key="list"
-          ref={tableRef}
-          className={styles.table}
-          data-mobile-list={isMobile ? "true" : undefined}
-          onPointerMove={handleTablePointerMove}
-          onPointerLeave={handleTablePointerLeave}
-          onBlurCapture={handleTableBlur}
-        >
-          <div role="list" aria-label={`${projectFilterLabel(filter)} projects`}>
-          {visibleProjects.map((project, index) => {
-            const isActive = project.slug === activeSlug && (isMobile ? listPinActive : desktopHovering);
-
-            return (
-              <IntentPrefetchLink
-                key={project.slug}
-                href={`/projects/${project.slug}`}
-                className={styles.row}
-                role="listitem"
-                style={
-                  {
-                    "--item-index": index,
-                    viewTransitionName: projectViewTransitionName(project.slug),
-                  } as CSSProperties
-                }
-                data-active={isActive ? "true" : undefined}
-                aria-label={`${project.title}, ${project.descriptor}`}
-                nativeNavigation
-                onPointerEnter={(event) => {
-                  if (event.pointerType !== "mouse" || isMobile) {
-                    return;
-                  }
-
-                  activateRow(project.slug);
-                  movePreviewToward(event.clientX, event.clientY);
-                }}
-                onFocus={() => handleRowFocus(project.slug)}
-                ref={(node) => setRowNode(project.slug, node)}
-              >
-                <span className={styles.identity}>
-                  <span className={styles.name}>{project.title}</span>
-                  <span className={styles.descriptorMobile}>{project.descriptor}</span>
-                </span>
-                <span className={styles.descriptor}>{project.descriptor}</span>
-                <span className={styles.year}>{project.year}</span>
-              </IntentPrefetchLink>
-            );
-          })}
-          </div>
-        </div>
       ) : (
-        <div
-          key="grid"
-          ref={gridRef}
-          className={styles.grid}
-          data-view={view}
-          aria-label={`${projectFilterLabel(filter)} projects`}
-        >
-          {visibleProjects.map((project, index) => (
+        <div className={styles.indexBody}>
+          {showList ? (
             <div
-              key={project.slug}
-              className={styles.staggerItem}
-              style={
-                {
-                  "--item-index": index,
-                  viewTransitionName: projectViewTransitionName(project.slug),
-                } as CSSProperties
-              }
+              key="list"
+              ref={isList ? tableRef : undefined}
+              className={styles.table}
+              data-outgoing={!isList ? "true" : undefined}
+              data-mobile-list={isMobile ? "true" : undefined}
+              data-hovering={isList && desktopHovering ? "true" : undefined}
+              onPointerMove={isList ? handleTablePointerMove : undefined}
+              onPointerLeave={isList ? handleTablePointerLeave : undefined}
+              onBlurCapture={isList ? handleTableBlur : undefined}
             >
-              <ProjectCard
-                project={project}
-                index={index}
-                immediate
-                visible
-                cardRef={(node) => setGridItemNode(project.slug, node)}
-              />
+              <div role="list" aria-label={`${projectFilterLabel(filter)} projects`}>
+              {visibleProjects.map((project, index) => {
+                const isActive = project.slug === activeSlug;
+
+                return (
+                  <IntentPrefetchLink
+                    key={project.slug}
+                    href={`/projects/${project.slug}`}
+                    className={styles.row}
+                    role="listitem"
+                    style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
+                    data-active={isActive ? "true" : undefined}
+                    aria-label={`${project.title}, ${project.descriptor}`}
+                    nativeNavigation
+                    tabIndex={!isList ? -1 : undefined}
+                    onPointerEnter={(event) => {
+                      if (!isList || event.pointerType !== "mouse" || isMobile) {
+                        return;
+                      }
+
+                      activateRow(project.slug);
+                      movePreviewToward(event.clientX, event.clientY);
+                    }}
+                    onFocus={() => handleRowFocus(project.slug)}
+                    ref={isList ? (node) => setRowNode(project.slug, node) : undefined}
+                  >
+                    <span className={styles.identity}>
+                      <span className={styles.name}>{project.title}</span>
+                      <span className={styles.descriptorMobile}>{project.descriptor}</span>
+                    </span>
+                    <span className={styles.descriptor}>{project.descriptor}</span>
+                    <span className={styles.year}>{project.year}</span>
+                  </IntentPrefetchLink>
+                );
+              })}
+              </div>
             </div>
-          ))}
+          ) : null}
+          {showGrid ? (
+            <div
+              key="grid"
+              ref={!isList ? gridRef : undefined}
+              className={styles.grid}
+              data-view={liveGridView}
+              data-outgoing={isList ? "true" : undefined}
+              aria-label={`${projectFilterLabel(filter)} projects`}
+            >
+              {visibleProjects.map((project, index) => (
+                <div
+                  key={project.slug}
+                  className={styles.staggerItem}
+                  style={
+                    {
+                      "--item-index": liveGridView === "stack" ? 0 : Math.min(index, VIEW_ENTER_STAGGER_CAP),
+                    } as CSSProperties
+                  }
+                >
+                  <ProjectCard
+                    project={project}
+                    index={index}
+                    immediate
+                    visible
+                    imagePreload={index === 0}
+                    loading={index < 2 ? "eager" : "lazy"}
+                    cardRef={!isList ? (node) => setGridItemNode(project.slug, node) : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
-      </div>
-
-      {hasMounted && showDockedPreview && activeProject && activeMedia
-        ? createPortal(
-            <IntentPrefetchLink
-              ref={dockedPreviewRef}
-              href={`/projects/${activeProject.slug}`}
-              className={styles.preview}
-              data-docked="true"
-              data-hidden={previewDismissed ? "true" : undefined}
-              aria-hidden={previewDismissed || !listPinActive ? true : undefined}
-              tabIndex={previewDismissed || !listPinActive ? -1 : undefined}
-              aria-label={`${activeProject.title}, explore project`}
-              nativeNavigation
-              onClick={handleDockedPreviewClick}
-              style={
-                {
-                  "--preview-w": String(activeProject.thumbnail.desktop.width),
-                  "--preview-h": String(activeProject.thumbnail.desktop.height),
-                } as CSSProperties
-              }
-            >
-              <span className={styles.previewFrame}>
+      {(isList || exitingView === "list") && activeProject && activeMedia ? (
+        <IntentPrefetchLink
+          ref={dockedPreviewRef}
+          href={`/projects/${activeProject.slug}`}
+          className={styles.preview}
+          data-docked="true"
+          data-outgoing={!isList ? "true" : undefined}
+          data-hidden={previewDismissed ? "true" : undefined}
+          aria-hidden={previewDismissed ? true : undefined}
+          tabIndex={previewDismissed ? -1 : undefined}
+          aria-label={`${activeProject.title}, explore project`}
+          nativeNavigation
+          onClick={handleDockedPreviewClick}
+          style={
+            {
+              "--preview-w": String(activeProject.thumbnail.desktop.width),
+              "--preview-h": String(activeProject.thumbnail.desktop.height),
+            } as CSSProperties
+          }
+        >
+          <span className={styles.previewFrame}>
+            {previewPrevious && previousMedia ? (
+              <span className={styles.previewLayer} data-layer="out">
                 <ProjectMedia
-                  media={activeMedia}
+                  media={previousMedia}
                   alt=""
                   className={styles.previewMedia}
                   fill
                   fit="contain"
-                  imagePreload
+                  sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
                   loading="eager"
                   reveal="instant"
                 />
               </span>
-            </IntentPrefetchLink>,
-            document.body,
-          )
-        : null}
+            ) : null}
+            <span className={styles.previewLayer} data-layer={previewPrevious ? "in" : "static"}>
+              <ProjectMedia
+                media={activeMedia}
+                alt=""
+                className={styles.previewMedia}
+                fill
+                fit="contain"
+                sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
+                imagePreload
+                loading="eager"
+                reveal="instant"
+              />
+            </span>
+          </span>
+        </IntentPrefetchLink>
+      ) : null}
+      </div>
 
       {hasMounted && showFollowPreview && activeProject && activeMedia
         ? createPortal(
@@ -1625,6 +1578,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                 className={styles.previewMedia}
                 fill
                 fit="contain"
+                sizes={PROJECT_INDEX_PREVIEW_IMAGE_SIZES}
                 imagePreload
                 loading="eager"
                 reveal="instant"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, type FocusEvent, type PointerEvent } from "react";
 import { useExploreCue } from "./ExploreCueProvider";
 import { isPointerOverLoadedMedia, loadedMediaPaintBox } from "./loadedMediaHit";
 
@@ -36,11 +36,13 @@ export function useExploreCueTarget<T extends HTMLElement>({
 }: UseExploreCueTargetOptions = {}) {
   const cue = useExploreCue();
   const hostRef = useRef<T | null>(null);
-  const [hostNode, setHostNode] = useState<T | null>(null);
   const enabledRef = useRef(enabled);
   const labelRef = useRef(label);
   const overMediaRef = useRef(false);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
+  const moveRafRef = useRef(0);
+  const pendingMoveRef = useRef<{ host: HTMLElement; x: number; y: number } | null>(null);
   enabledRef.current = enabled;
   labelRef.current = label;
 
@@ -52,20 +54,6 @@ export function useExploreCueTarget<T extends HTMLElement>({
     }
 
     host.removeAttribute("data-cue-over-media");
-  }, []);
-
-  const setRef = useCallback((node: T | null) => {
-    if (hostRef.current && hostRef.current !== node) {
-      hostRef.current.removeAttribute("data-explore-cue-target");
-      hostRef.current.removeAttribute("data-cue-over-media");
-    }
-
-    hostRef.current = node;
-    setHostNode(node);
-
-    if (node) {
-      node.setAttribute("data-explore-cue-target", "true");
-    }
   }, []);
 
   const notifyShow = useCallback(
@@ -94,16 +82,96 @@ export function useExploreCueTarget<T extends HTMLElement>({
     [cue, markOverMedia, notifyShow],
   );
 
+  const cancelPendingMove = useCallback(() => {
+    if (moveRafRef.current) {
+      window.cancelAnimationFrame(moveRafRef.current);
+      moveRafRef.current = 0;
+    }
+
+    pendingMoveRef.current = null;
+  }, []);
+
+  const attachObserver = useCallback(
+    (node: T | null) => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+
+      if (!node || !enabledRef.current) {
+        return;
+      }
+
+      const syncFromLoadedMedia = () => {
+        if (!enabledRef.current) {
+          return;
+        }
+
+        const last = lastPointerRef.current;
+        if (last) {
+          syncPointer(node, last.x, last.y);
+          return;
+        }
+
+        if (wasRecentFinePointer() || !node.matches(":focus-visible")) {
+          return;
+        }
+
+        const box = loadedMediaPaintBox(node);
+        if (!box) {
+          markOverMedia(node, false);
+          cue.hide(node);
+          return;
+        }
+
+        markOverMedia(node, true);
+        cue.show(node, {
+          label: labelRef.current,
+          at: {
+            x: (box.left + box.right) / 2,
+            y: (box.top + box.bottom) / 2,
+          },
+        });
+      };
+
+      const observer = new MutationObserver(syncFromLoadedMedia);
+      observer.observe(node, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: [...LOADED_MEDIA_ATTRS],
+      });
+      observerRef.current = observer;
+    },
+    [cue, markOverMedia, syncPointer],
+  );
+
+  const setRef = useCallback(
+    (node: T | null) => {
+      if (hostRef.current && hostRef.current !== node) {
+        hostRef.current.removeAttribute("data-explore-cue-target");
+        hostRef.current.removeAttribute("data-cue-over-media");
+      }
+
+      hostRef.current = node;
+
+      if (node) {
+        node.setAttribute("data-explore-cue-target", "true");
+      }
+
+      attachObserver(node);
+    },
+    [attachObserver],
+  );
+
   const onPointerEnter = useCallback(
     (event: PointerEvent<T>) => {
       if (!enabledRef.current || !isFinePointer(event.pointerType)) {
         return;
       }
 
+      cancelPendingMove();
       markFinePointer();
       syncPointer(event.currentTarget, event.clientX, event.clientY);
     },
-    [syncPointer],
+    [cancelPendingMove, syncPointer],
   );
 
   const onPointerMove = useCallback(
@@ -113,7 +181,27 @@ export function useExploreCueTarget<T extends HTMLElement>({
       }
 
       markFinePointer();
-      syncPointer(event.currentTarget, event.clientX, event.clientY);
+      pendingMoveRef.current = {
+        host: event.currentTarget,
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      if (moveRafRef.current) {
+        return;
+      }
+
+      moveRafRef.current = window.requestAnimationFrame(() => {
+        moveRafRef.current = 0;
+        const pending = pendingMoveRef.current;
+        pendingMoveRef.current = null;
+
+        if (!pending || !enabledRef.current) {
+          return;
+        }
+
+        syncPointer(pending.host, pending.x, pending.y);
+      });
     },
     [syncPointer],
   );
@@ -121,6 +209,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
   const onPointerLeave = useCallback(
     (event: PointerEvent<T>) => {
       markFinePointer();
+      cancelPendingMove();
       lastPointerRef.current = null;
       markOverMedia(event.currentTarget, false);
 
@@ -135,7 +224,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
 
       cue.hide(event.currentTarget);
     },
-    [cue, markOverMedia],
+    [cancelPendingMove, cue, markOverMedia],
   );
 
   const onFocus = useCallback(
@@ -182,6 +271,8 @@ export function useExploreCueTarget<T extends HTMLElement>({
   );
 
   useEffect(() => {
+    attachObserver(enabled ? hostRef.current : null);
+
     if (!enabled) {
       const host = hostRef.current;
       if (host) {
@@ -189,66 +280,20 @@ export function useExploreCueTarget<T extends HTMLElement>({
         cue.hide(host);
       }
     }
-  }, [cue, enabled, markOverMedia]);
-
-  useEffect(() => {
-    if (!hostNode || !enabled) {
-      return;
-    }
-
-    const syncFromLoadedMedia = () => {
-      if (!enabledRef.current) {
-        return;
-      }
-
-      const last = lastPointerRef.current;
-      if (last) {
-        syncPointer(hostNode, last.x, last.y);
-        return;
-      }
-
-      if (wasRecentFinePointer() || !hostNode.matches(":focus-visible")) {
-        return;
-      }
-
-      const box = loadedMediaPaintBox(hostNode);
-      if (!box) {
-        markOverMedia(hostNode, false);
-        cue.hide(hostNode);
-        return;
-      }
-
-      markOverMedia(hostNode, true);
-      cue.show(hostNode, {
-        label: labelRef.current,
-        at: {
-          x: (box.left + box.right) / 2,
-          y: (box.top + box.bottom) / 2,
-        },
-      });
-    };
-
-    const observer = new MutationObserver(syncFromLoadedMedia);
-    observer.observe(hostNode, {
-      attributes: true,
-      subtree: true,
-      attributeFilter: [...LOADED_MEDIA_ATTRS],
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [cue, enabled, hostNode, markOverMedia, syncPointer]);
+  }, [attachObserver, cue, enabled, markOverMedia]);
 
   useEffect(() => {
     return () => {
+      cancelPendingMove();
+      observerRef.current?.disconnect();
+      observerRef.current = null;
       const host = hostRef.current;
       if (host) {
         markOverMedia(host, false);
         cue.hide(host);
       }
     };
-  }, [cue, markOverMedia]);
+  }, [cancelPendingMove, cue, markOverMedia]);
 
   return {
     setRef,

@@ -269,9 +269,9 @@
     border-radius: 1rem;
   }
 
-  /* Reserve space under fixed close so scroll content doesn’t sit underneath it. */
+  /* Reserve space under fixed close so content doesn’t sit underneath it. */
   .surface[data-variant="immersive"] {
-    padding-top: calc(var(--header-height) + 1rem);
+    padding-top: calc(var(--header-height) + 0.45rem);
     border-radius: 0;
   }
 }
