@@ -75,7 +75,7 @@ export function ProjectCard({
             alt={`${project.title} project preview`}
             className={styles.mediaAsset}
             fill
-            fit="contain"
+            fit="cover"
             sizes={sizes}
             imagePreload={imagePreload}
             loading={loading}

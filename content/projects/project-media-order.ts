@@ -61,19 +61,18 @@ export const projectMediaOrderIndexBySlug: Partial<
     "media-03.mp4": 1,
     "media-04.mp4": 2,
   },
-  /**
-   * Pastel Muse: open with desktop tabs (08), then interleave portrait captures (01–03) with
-   * desktop screenshots/videos so the grid isn’t “all mobile then all desktop”.
-   */
+  /** Keep the original Pastel Muse mix and interleave the two newer Photo Day variants. */
   "pastel-muse": {
     "media-08.mp4": 1,
     "media-01.mp4": 2,
-    "media-04.mp4": 3,
-    "media-02.mp4": 4,
-    "media-05.png": 5,
-    "media-03.mp4": 6,
-    "media-06.png": 7,
-    "media-07.png": 8,
-    "media-09.mp4": 9,
+    "media-10.png": 3,
+    "media-04.mp4": 4,
+    "media-02.mp4": 5,
+    "media-11.png": 6,
+    "media-05.png": 7,
+    "media-03.mp4": 8,
+    "media-06.png": 9,
+    "media-07.png": 10,
+    "media-09.mp4": 11,
   },
 };
