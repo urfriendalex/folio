@@ -27,6 +27,7 @@ import {
 import type { ProjectEntry, ProjectMediaSlot } from "@/content/projects/types";
 import { gsap, registerGsapScrollTrigger, ScrollTrigger } from "@/lib/gsapScroll";
 import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
+import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
 import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
 import { getLenis } from "@/lib/smoothScroll";
@@ -377,25 +378,25 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   useEffect(() => {
     const mobileQuery = window.matchMedia(MOBILE_MQ);
     const superWideQuery = window.matchMedia(SUPER_WIDE_QUERY);
+    let restored = false;
 
     const syncViewport = () => {
       const mobile = mobileQuery.matches;
       const superWide = superWideQuery.matches;
+      const viewport = { mobile, superWide };
 
       setIsSuperWide(superWide);
       if (!mobile) {
         setFilterMenuOpen(false);
       }
       setView((currentView) => {
-        if (mobile && currentView === "regular") {
-          return "wide";
+        const source = restored ? currentView : readProjectLayout().view;
+        restored = true;
+        const next = coerceProjectIndexView(source, viewport);
+        if (next !== source) {
+          writeProjectLayout(next === "list" ? { view: next } : { view: next, grid: next });
         }
-
-        if (!mobile && superWide && currentView === "stack") {
-          return "wide";
-        }
-
-        return currentView;
+        return next;
       });
     };
 
@@ -1037,6 +1038,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     if (next === selectedView) {
       return;
     }
+
+    writeProjectLayout(isGridView(next) ? { view: next, grid: next } : { view: next });
 
     if (isGridView(view) && isGridView(next) && exitingView === "list") {
       setExitingView(null);

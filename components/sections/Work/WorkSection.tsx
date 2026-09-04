@@ -13,6 +13,11 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import type { ProjectEntry } from "@/content/projects/types";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
+import {
+  coerceProjectGridView,
+  readProjectLayout,
+  writeProjectLayout,
+} from "@/lib/projectLayout";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { useWorkRevealOnView } from "@/lib/useWorkRevealOnView";
 import styles from "./WorkSection.module.scss";
@@ -209,19 +214,23 @@ export function WorkSection({ projects }: WorkSectionProps) {
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 48rem)");
     const superWideQuery = window.matchMedia(SUPER_WIDE_QUERY);
+    let restored = false;
 
     const syncViewport = () => {
       const mobile = mobileQuery.matches;
       const superWide = superWideQuery.matches;
+      const viewport = { mobile, superWide };
 
       setIsMobile(mobile);
       setIsSuperWide(superWide);
       setView((currentView) => {
-        if (currentView === "stack" && (mobile || superWide)) {
-          return "wide";
+        const source = restored ? currentView : readProjectLayout().grid;
+        restored = true;
+        const next = coerceProjectGridView(source, viewport);
+        if (next !== source) {
+          writeProjectLayout({ grid: next });
         }
-
-        return currentView;
+        return next;
       });
     };
 
@@ -273,6 +282,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
                       }
 
                       previousRectsRef.current = captureRects();
+                      writeProjectLayout({ view: option.view, grid: option.view });
                       startTransition(() => {
                         setView(option.view);
                       });
