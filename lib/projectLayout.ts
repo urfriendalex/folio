@@ -33,12 +33,14 @@ export function readProjectLayout(): StoredProjectLayout {
     }
 
     const parsed = JSON.parse(raw) as Partial<StoredProjectLayout>;
-    const grid = isProjectGridView(parsed.grid ?? "")
-      ? parsed.grid
-      : isProjectGridView(parsed.view ?? "")
-        ? parsed.view
+    const parsedView = parsed.view ?? "";
+    const parsedGrid = parsed.grid ?? "";
+    const grid = isProjectGridView(parsedGrid)
+      ? parsedGrid
+      : isProjectGridView(parsedView)
+        ? parsedView
         : DEFAULT_LAYOUT.grid;
-    const view = isProjectIndexView(parsed.view ?? "") ? parsed.view : DEFAULT_LAYOUT.view;
+    const view = isProjectIndexView(parsedView) ? parsedView : DEFAULT_LAYOUT.view;
 
     return { view, grid };
   } catch {
