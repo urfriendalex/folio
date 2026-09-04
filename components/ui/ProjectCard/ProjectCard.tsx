@@ -57,7 +57,7 @@ export function ProjectCard({
             alt={`${project.title} project preview`}
             className={styles.mediaAsset}
             fill
-            fit="contain"
+            fit="cover"
             imagePreload={index === 0}
             loading={index < 2 ? "eager" : "lazy"}
           />
