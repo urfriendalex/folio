@@ -1409,6 +1409,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
   const filterTriggerLabel = filter === "all" ? "Filter" : projectFilterLabel(filter);
 
+  const previewIntroDelayMs =
+    Math.min(Math.max(visibleProjects.length - 1, 0), VIEW_ENTER_STAGGER_CAP) *
+      VIEW_INDEX_STAGGER_MS +
+    PREVIEW_INTRO_TAIL_MS;
+
   const toolbar = (
       <header
         ref={headerRef}
@@ -1514,6 +1519,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-crossfade={layoutEpoch > 0 ? "true" : undefined}
       data-entered={entered ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
+      data-list-layout={isList && !exitingView ? "true" : undefined}
+      data-preview-intro={!previewIntroDone && !previewDismissed && isList ? "true" : undefined}
+      style={{ "--preview-intro-delay": `${previewIntroDelayMs / 1000}s` } as CSSProperties}
     >
       <div
         ref={pinRef}
@@ -1665,18 +1673,14 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                 {
                   "--preview-w": String(activeProject.thumbnail.desktop.width),
                   "--preview-h": String(activeProject.thumbnail.desktop.height),
-                  "--preview-intro-delay": `${
-                    (Math.min(Math.max(visibleProjects.length - 1, 0), VIEW_ENTER_STAGGER_CAP) *
-                      VIEW_INDEX_STAGGER_MS +
-                      PREVIEW_INTRO_TAIL_MS) /
-                    1000
-                  }s`,
+                  "--preview-intro-delay": `${previewIntroDelayMs / 1000}s`,
                 } as CSSProperties
               }
             >
               {previewIntroDone && !previewDismissed ? (
                 <span className={styles.previewHint} aria-hidden="true">
-                  Swipe right to dismiss <span>→</span>
+                  <span className={styles.previewHintFrost} />
+                  <span className={styles.previewHintBlend}>Swipe right&nbsp; →</span>
                 </span>
               ) : null}
               <span className={styles.previewFrame}>
