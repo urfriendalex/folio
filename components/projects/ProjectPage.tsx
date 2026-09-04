@@ -1131,6 +1131,7 @@ export function ProjectPage({
                 onClick={() => handleMediaZoom(-1)}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
               >
+                <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>-</span>
               </button>
               <button
@@ -1139,6 +1140,7 @@ export function ProjectPage({
                 onClick={resetMediaView}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
               >
+                <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>reset</span>
               </button>
               <button
@@ -1147,6 +1149,7 @@ export function ProjectPage({
                 onClick={() => handleMediaZoom(1)}
                 disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
               >
+                <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>+</span>
               </button>
             </div>
@@ -1162,6 +1165,7 @@ export function ProjectPage({
                 disabled={!hasPreviousMedia}
                 aria-label="View previous media"
               >
+                <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span
                   className={styles.mediaViewerControlGlyph}
                   aria-hidden="true"
@@ -1176,6 +1180,7 @@ export function ProjectPage({
                 disabled={!hasNextMedia}
                 aria-label="View next media"
               >
+                <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span
                   className={styles.mediaViewerControlGlyph}
                   aria-hidden="true"
