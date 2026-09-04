@@ -658,10 +658,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         pinFrozenRef.current = true;
         paused.length = 0;
         ScrollTrigger.getAll().forEach((trigger) => {
-          if (trigger.enabled) {
-            trigger.disable(false);
-            paused.push(trigger);
-          }
+          trigger.disable(false);
+          paused.push(trigger);
         });
       },
       afterUnlock() {
