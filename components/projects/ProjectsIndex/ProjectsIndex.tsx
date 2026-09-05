@@ -1693,7 +1693,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
               {previewIntroDone && !previewDismissed ? (
                 <span className={styles.previewHint} aria-hidden="true">
                   <span className={styles.previewHintFrost} />
-                  <span className={styles.previewHintBlend}>Swipe right&nbsp; →</span>
+                  <span className={styles.previewHintBlend}>You can swipe right to hide the preview&nbsp; →</span>
                 </span>
               ) : null}
               <span className={styles.previewFrame}>

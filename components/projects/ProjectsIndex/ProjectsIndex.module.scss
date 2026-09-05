@@ -701,7 +701,7 @@
     letter-spacing: var(--tracking-label-sm);
     line-height: 1.2;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--fg-color) 48%, transparent);
+    color: color-mix(in srgb, var(--fg-color) 70%, transparent);
     transition:
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -733,7 +733,7 @@
   }
 
   .filterOption[data-active="true"] {
-    color: var(--fg-color);
+    color: var(--taskbar-flag-red);
   }
 
   .filterOption:focus-visible {
@@ -743,7 +743,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .filterOption:not([data-active="true"]):hover {
-      color: color-mix(in srgb, var(--fg-color) 78%, transparent);
+      color: color-mix(in srgb, var(--fg-color) 90%, transparent);
     }
   }
 
@@ -1011,7 +1011,7 @@
 .previewHintFrost,
 .previewHintBlend {
   grid-area: 1 / 1;
-  width: 6.25rem;
+  width: min(11.5rem, calc(100% - 1.5rem));
   height: 4.25rem;
   border-radius: 22%;
   corner-shape: squircle;
@@ -1031,6 +1031,8 @@
   font-size: 0.62rem;
   letter-spacing: 0.04em;
   line-height: 1.15;
+  padding-inline: 1rem;
+  text-align: center;
   text-transform: lowercase;
   mix-blend-mode: difference;
 }
