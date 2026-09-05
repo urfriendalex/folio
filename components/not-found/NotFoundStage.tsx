@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
+import { usePathname } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -300,7 +301,7 @@ export function NotFoundStage() {
   const effectiveToolbarInset = isNarrowViewport ? toolbarInset : 0;
 
   const pathname = usePathname();
-  const router = useRouter();
+  const { guardedPush } = useNavigationFlightLock(pathname);
 
   const handleHomeClick = useCallback(
     (event: ReactMouseEvent<HTMLAnchorElement>) => {
@@ -316,9 +317,9 @@ export function NotFoundStage() {
       }
 
       event.preventDefault();
-      router.push("/");
+      guardedPush("/");
     },
-    [pathname, router],
+    [pathname, guardedPush],
   );
 
   const handleAsciiReady = useCallback(() => {

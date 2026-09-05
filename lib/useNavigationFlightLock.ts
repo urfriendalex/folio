@@ -2,7 +2,8 @@
 
 import type { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { useRouter } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback } from "react";
+import { useNavigationProgress } from "@/components/navigation/NavigationProgress";
 
 function pathnameFromHref(href: string) {
   const pathname = href.split(/[?#]/, 1)[0] ?? href;
@@ -18,9 +19,12 @@ function pathnameFromHref(href: string) {
  * Route transition helper. It exposes pending state for chrome, but it does not
  * lock navigation: background route/media loading must not prevent the next user action.
  */
-export function useNavigationFlightLock(pathname: string | null) {
+export function useNavigationFlightLock(
+  pathname: string | null,
+  config?: { globalFeedback?: boolean },
+) {
   const router = useRouter();
-  const [isPendingNav, startTransition] = useTransition();
+  const { isPendingNav, startNavigation } = useNavigationProgress();
 
   const guardedPush = useCallback(
     (href: string, options?: NavigateOptions): boolean => {
@@ -28,13 +32,13 @@ export function useNavigationFlightLock(pathname: string | null) {
         return false;
       }
 
-      startTransition(() => {
+      startNavigation(() => {
         router.push(href, options);
-      });
+      }, config?.globalFeedback);
 
       return true;
     },
-    [pathname, router],
+    [config?.globalFeedback, pathname, router, startNavigation],
   );
 
   return { guardedPush, isPendingNav };

@@ -85,7 +85,7 @@ export function ProjectCard({
           <div className={styles.titleRow}>
             <div className={styles.titleCluster}>
               <h3 className={styles.title} aria-label={displayTitle}>
-                <IntentPrefetchLink href={projectHref} className={styles.titleLink} nativeNavigation>
+                <IntentPrefetchLink href={projectHref} className={styles.titleLink}>
                   <span className={styles.titlePrimary}>{project.title}</span>
                   <span className={styles.titleSeparator} aria-hidden="true">
                     |
