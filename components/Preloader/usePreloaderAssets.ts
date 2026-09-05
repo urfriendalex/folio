@@ -70,8 +70,13 @@ function shouldTrackImage(image: HTMLImageElement) {
     return false;
   }
 
-  if (image.loading === "lazy" && !image.complete && !image.currentSrc) {
-    return false;
+  if (image.loading === "lazy" && !image.complete) {
+    const bounds = image.getBoundingClientRect();
+    const intersectsInitialViewport = bounds.bottom > 0 && bounds.top < window.innerHeight;
+
+    if (!intersectsInitialViewport) {
+      return false;
+    }
   }
 
   return true;
