@@ -148,7 +148,9 @@ export function ProjectPage({
   const { openProjectFullInfo } = useOverlay();
   const pathname = usePathname();
   const router = useRouter();
-  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
+  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname, {
+    globalFeedback: false,
+  });
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {

@@ -1604,7 +1604,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
                       isActive && (!isMobile || (pinList && listPinActive)) ? "true" : undefined
                     }
                     aria-label={`${project.title}, ${project.descriptor}`}
-                    nativeNavigation
                     tabIndex={!isList ? -1 : undefined}
                     onPointerEnter={(event) => {
                       if (!isList || event.pointerType !== "mouse" || isMobile) {
@@ -1679,7 +1678,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
               aria-hidden={previewDismissed ? true : undefined}
               tabIndex={previewDismissed ? -1 : undefined}
               aria-label={`${activeProject.title}, explore project`}
-              nativeNavigation
               onClick={handleDockedPreviewClick}
               style={
                 {

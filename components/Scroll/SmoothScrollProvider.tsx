@@ -2,7 +2,8 @@
 
 import Lenis from "lenis";
 import { useEffect, useRef, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import { setActiveLenis } from "@/lib/lenisScrollTriggerBridge";
@@ -92,7 +93,7 @@ function shouldPauseSmoothScroll(root: HTMLElement) {
 
 export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const { guardedPush } = useNavigationFlightLock(pathname);
   const hasHandledInitialNavigation = useRef(false);
   const pendingHomeSectionIdRef = useRef<string | null>(null);
   const arrivalRevealTimerRef = useRef<number | null>(null);
@@ -232,7 +233,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
 
       const link = event.target.closest("a[href]");
 
-      if (!link || !(link instanceof HTMLAnchorElement)) {
+      if (!link || !(link instanceof HTMLAnchorElement) || link.hasAttribute("download") || (link.target && link.target !== "_self")) {
         return;
       }
 
@@ -263,7 +264,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       if (url.pathname !== here.pathname) {
         pendingHomeSectionIdRef.current = hash;
         document.documentElement.classList.add(HOME_SECTION_ARRIVAL_PENDING_CLASS);
-        router.push("/", { scroll: false });
+        guardedPush("/", { scroll: false });
         return;
       }
 
@@ -284,7 +285,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     return () => {
       document.removeEventListener("click", onHomeSectionHashClick);
     };
-  }, [router]);
+  }, [guardedPush]);
 
   useEffect(() => {
     const isInitialNavigation = !hasHandledInitialNavigation.current;
