@@ -224,7 +224,9 @@ function ProjectMediaInner({
   const [videoReady, setVideoReady] = useState(false);
   const [posterFallback, setPosterFallback] = useState(false);
   const showVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasMountedVideo);
-  const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
+  const holdPosterForMotion = media.kind === "video" && reveal !== "instant" && !reducedMotion;
+  const posterVisible = posterReady && (!holdPosterForMotion || posterFallback);
+  const ready = media.kind === "video" ? posterVisible || videoReady : assetReady;
 
   useEffect(() => {
     if (!showVideo) {
@@ -295,8 +297,6 @@ function ProjectMediaInner({
 
   const imageAlt = media.kind === "image" ? alt ?? media.alt ?? "" : "";
   const videoLabel = media.kind === "video" ? alt ?? media.alt : undefined;
-  const holdPosterForMotion = media.kind === "video" && reveal !== "instant" && !reducedMotion;
-
   return (
     <div
       ref={rootRef}
