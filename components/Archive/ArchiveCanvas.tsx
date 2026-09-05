@@ -235,20 +235,29 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
 
   useEffect(() => {
     const navbar = document.querySelector<HTMLElement>("[data-app-navbar='true']");
+    const navbarFrost = document.querySelector<HTMLElement>("[data-app-navbar-frost='true']");
     const host = viewportRef.current;
-    if (!navbar || !host) {
+    if (!navbar || !navbarFrost || !host) {
       return;
     }
 
-    const home = navbar.parentElement;
-    const marker = document.createComment("folio-navbar-home");
-    home?.insertBefore(marker, navbar);
+    const navbarHome = navbar.parentElement;
+    const navbarMarker = document.createComment("folio-navbar-home");
+    const frostHome = navbarFrost.parentElement;
+    const frostMarker = document.createComment("folio-navbar-frost-home");
+    navbarHome?.insertBefore(navbarMarker, navbar);
+    frostHome?.insertBefore(frostMarker, navbarFrost);
+    host.appendChild(navbarFrost);
     host.appendChild(navbar);
 
     return () => {
-      if (marker.parentNode) {
-        marker.parentNode.insertBefore(navbar, marker);
-        marker.parentNode.removeChild(marker);
+      if (frostMarker.parentNode) {
+        frostMarker.parentNode.insertBefore(navbarFrost, frostMarker);
+        frostMarker.parentNode.removeChild(frostMarker);
+      }
+      if (navbarMarker.parentNode) {
+        navbarMarker.parentNode.insertBefore(navbar, navbarMarker);
+        navbarMarker.parentNode.removeChild(navbarMarker);
       }
     };
   }, []);
