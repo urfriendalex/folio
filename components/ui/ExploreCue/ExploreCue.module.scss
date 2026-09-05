@@ -1,0 +1,109 @@
+/*
+ * Body-level cursor layers. No wrapping sheet — that becomes the backdrop
+ * source and kills `backdrop-filter`. Never put transform / scale / clip-path
+ * on `.frost`.
+ */
+.frost,
+.blend {
+  --cue-x: 0px;
+  --cue-y: 0px;
+  --cue-size: 4.25rem;
+  --cue-grow: 0;
+
+  position: fixed;
+  pointer-events: none;
+  transition-property: --cue-grow;
+  transition-duration: 420ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.frost {
+  --explore-cue-frost: blur(var(--blur-glass-md)) saturate(120%);
+
+  left: calc(var(--cue-x) - (var(--cue-size) * var(--cue-grow) / 2));
+  top: calc(var(--cue-y) - (var(--cue-size) * var(--cue-grow) / 2));
+  z-index: 25;
+  width: calc(var(--cue-size) * var(--cue-grow));
+  height: calc(var(--cue-size) * var(--cue-grow));
+  border-radius: 22%;
+  corner-shape: squircle;
+  background: rgb(255 255 255 / 0.08);
+  -webkit-backdrop-filter: var(--explore-cue-frost);
+  backdrop-filter: var(--explore-cue-frost);
+}
+
+.blend {
+  z-index: 26;
+  left: var(--cue-x);
+  top: var(--cue-y);
+  display: grid;
+  place-items: center;
+  mix-blend-mode: difference;
+  translate: -50% -50%;
+}
+
+.label {
+  font-family: var(--font-pixel-square-stack);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  text-transform: lowercase;
+  color: #fff;
+}
+
+.labelClip {
+  display: block;
+  overflow: hidden;
+  line-height: inherit;
+}
+
+.labelText {
+  display: block;
+  opacity: 0;
+  transform: translate3d(0, 0.75em, 0);
+  transition-property: opacity, transform;
+  transition-duration: 280ms, 620ms;
+  transition-timing-function: ease, cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :global([data-explore-cue-target="true"][data-cue-over-media="true"]) {
+    cursor: none;
+  }
+
+  .frost[data-active="true"] {
+    --cue-grow: 1;
+  }
+
+  .blend[data-active="true"] .labelText {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 140ms, 140ms;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .frost,
+  .blend {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frost,
+  .labelText {
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .frost[data-active="true"] {
+      --cue-grow: 1;
+    }
+
+    .blend[data-active="true"] .labelText {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0ms;
+    }
+  }
+}

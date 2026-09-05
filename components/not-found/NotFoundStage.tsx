@@ -137,9 +137,9 @@ function NotFoundQuickLinks({ pathname, onHomeClick, buttonClassName }: QuickLin
 
         if (link.kind === "work") {
           return (
-            <a key="work" href={getAnchor(pathname, "work")} className={buttonClassName}>
+            <Link key="work" href="/projects" className={buttonClassName}>
               {link.label}
-            </a>
+            </Link>
           );
         }
 

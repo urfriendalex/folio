@@ -13,16 +13,27 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { CalBookingOverlayContent } from "@/components/booking/CalBookingOverlayContent";
+import dynamic from "next/dynamic";
 import { SCHEDULE_CALL_HASH } from "@/components/booking/calBooking";
-import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import { AboutOverlayContent } from "@/content/about";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import type { ProjectEntry } from "@/content/projects/types";
-import { RevealLines } from "@/components/motion";
+import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { PixelText } from "@/components/type/PixelText/PixelText";
 import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
+
+const ProjectFullInfoOverlay = dynamic(() =>
+  import("@/components/projects/ProjectFullInfoOverlay").then((mod) => ({
+    default: mod.ProjectFullInfoOverlay,
+  })),
+);
+
+const CalBookingOverlayContent = dynamic(() =>
+  import("@/components/booking/CalBookingOverlayContent").then((mod) => ({
+    default: mod.CalBookingOverlayContent,
+  })),
+);
 
 type OverlayType = "about" | "contact" | "project" | "booking" | null;
 type OpenOverlayType = Exclude<OverlayType, "project" | null>;
@@ -588,6 +599,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           showTitle={false}
           visible={overlayVisible}
           contentVisible={overlayContentVisible}
+          contentFlush
         >
           <div
             className={styles.about}
@@ -595,31 +607,44 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
             style={ABOUT_MOTION_STYLE}
           >
             <div className={styles.aboutScroll} data-lenis-prevent="">
-              <div className={styles.aboutLead}>
-                <RevealLines
-                  as="p"
-                  className={styles.aboutLeadText}
-                  text={AboutOverlayContent.intro}
-                  offset={0}
-                  stepMs={ABOUT_REVEAL_STEP_MS}
-                  total={ABOUT_SEQUENCE_TOTAL}
-                  visible={overlayContentVisible}
-                />
+              <div className={styles.aboutTop}>
+                <div className={styles.aboutLead}>
+                  <RevealLines
+                    as="p"
+                    className={styles.aboutLeadText}
+                    text={AboutOverlayContent.intro}
+                    offset={0}
+                    stepMs={ABOUT_REVEAL_STEP_MS}
+                    total={ABOUT_SEQUENCE_TOTAL}
+                    visible={overlayContentVisible}
+                  />
+                </div>
+
+                <div className={styles.aboutDescription}>
+                  <RevealLines
+                    as="p"
+                    className={styles.aboutParagraph}
+                    text={AboutOverlayContent.description}
+                    offset={ABOUT_DESCRIPTION_OFFSET}
+                    stepMs={ABOUT_REVEAL_STEP_MS}
+                    total={ABOUT_SEQUENCE_TOTAL}
+                    visible={overlayContentVisible}
+                  />
+                </div>
               </div>
 
-              <div className={styles.aboutDescription}>
-                <RevealLines
-                  as="p"
-                  className={styles.aboutParagraph}
-                  text={AboutOverlayContent.description}
-                  offset={ABOUT_DESCRIPTION_OFFSET}
-                  stepMs={ABOUT_REVEAL_STEP_MS}
-                  total={ABOUT_SEQUENCE_TOTAL}
-                  visible={overlayContentVisible}
+              <div className={styles.aboutSheet}>
+                <div
+                  className={styles.aboutRule}
+                  aria-hidden="true"
+                  style={
+                    {
+                      "--meta-line-enter-delay": `${ABOUT_DETAIL_SEQUENCES[0]?.lineEnterDelayMs ?? 0}ms`,
+                      "--meta-line-exit-delay": `${ABOUT_DETAIL_SEQUENCES[0]?.lineExitDelayMs ?? 0}ms`,
+                    } as CSSProperties
+                  }
                 />
-              </div>
-
-              <div className={styles.metaGrid}>
+                <div className={styles.metaGrid}>
                   {ABOUT_DETAIL_SEQUENCES.map(
                     ({
                       detail,
@@ -630,48 +655,67 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
                       lineEnterDelayMs,
                       lineExitDelayMs,
                     }) => (
-                    <section
-                      key={detail.label}
-                      className={styles.metaBlock}
-                      style={
-                        {
-                          "--meta-line-enter-delay": `${lineEnterDelayMs}ms`,
-                          "--meta-line-exit-delay": `${lineExitDelayMs}ms`,
-                        } as CSSProperties
-                      }
-                    >
-                      <RevealLines
-                        as="span"
-                        className={`section-label ${styles.metaTitle}`}
-                        text={detail.label}
-                        offset={titleOffset}
-                        revealDelayMs={titleRevealDelayMs}
-                        stepMs={ABOUT_REVEAL_STEP_MS}
-                        total={ABOUT_SEQUENCE_TOTAL}
-                        visible={overlayContentVisible}
-                      />
-                      <ul>
-                        {detail.items.map((item, itemIndex) => (
-                          <RevealLines
-                            key={item}
-                            as="li"
-                            className={styles.metaItem}
-                            text={item}
-                            offset={itemOffsets[itemIndex]}
-                            revealDelayMs={itemRevealDelaysMs[itemIndex]}
-                            stepMs={ABOUT_REVEAL_STEP_MS}
-                            total={ABOUT_SEQUENCE_TOTAL}
-                            visible={overlayContentVisible}
-                          />
-                        ))}
-                      </ul>
-                    </section>
-                  ),
+                      <section
+                        key={detail.label}
+                        className={styles.metaBlock}
+                        style={
+                          {
+                            "--meta-line-enter-delay": `${lineEnterDelayMs}ms`,
+                            "--meta-line-exit-delay": `${lineExitDelayMs}ms`,
+                          } as CSSProperties
+                        }
+                      >
+                        <RevealLines
+                          as="span"
+                          className={`section-label ${styles.metaTitle}`}
+                          text={detail.label}
+                          offset={titleOffset}
+                          revealDelayMs={titleRevealDelayMs}
+                          stepMs={ABOUT_REVEAL_STEP_MS}
+                          total={ABOUT_SEQUENCE_TOTAL}
+                          visible={overlayContentVisible}
+                        />
+                        <ul>
+                          {detail.items.map((item, itemIndex) => (
+                            <RevealLines
+                              key={item}
+                              as="li"
+                              className={styles.metaItem}
+                              text={item}
+                              offset={itemOffsets[itemIndex]}
+                              revealDelayMs={itemRevealDelaysMs[itemIndex]}
+                              stepMs={ABOUT_REVEAL_STEP_MS}
+                              total={ABOUT_SEQUENCE_TOTAL}
+                              visible={overlayContentVisible}
+                            />
+                          ))}
+                        </ul>
+                      </section>
+                    ),
                   )}
+                  <div
+                    className={styles.aboutRuleMid}
+                    aria-hidden="true"
+                    style={
+                      {
+                        "--meta-line-enter-delay": `${ABOUT_DETAIL_SEQUENCES[1]?.lineEnterDelayMs ?? 0}ms`,
+                        "--meta-line-exit-delay": `${ABOUT_DETAIL_SEQUENCES[1]?.lineExitDelayMs ?? 0}ms`,
+                      } as CSSProperties
+                    }
+                  />
                 </div>
-              </div>
+                <div
+                  className={styles.aboutRule}
+                  aria-hidden="true"
+                  style={
+                    {
+                      "--meta-line-enter-delay": `${ABOUT_DETAIL_SEQUENCES[2]?.lineEnterDelayMs ?? ABOUT_DETAIL_SEQUENCES[0]?.lineEnterDelayMs ?? 0}ms`,
+                      "--meta-line-exit-delay": `${ABOUT_DETAIL_SEQUENCES[2]?.lineExitDelayMs ?? ABOUT_DETAIL_SEQUENCES[0]?.lineExitDelayMs ?? 0}ms`,
+                    } as CSSProperties
+                  }
+                />
 
-            <div className={styles.aboutFooter}>
+                <div className={styles.aboutFooter}>
               <div className={styles.aboutFooterLinks}>
                 <a
                   href={contactContent.instagram}
@@ -713,6 +757,8 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
                   visible={overlayContentVisible}
                 />
               </span>
+                </div>
+              </div>
             </div>
           </div>
         </Overlay>

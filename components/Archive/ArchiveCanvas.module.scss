@@ -65,9 +65,6 @@
   width: 100%;
   height: 100%;
   touch-action: none;
-  /* Promote the canvas to its own compositor layer so the browser tends to GPU-composite it. */
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
 .hud {
@@ -75,6 +72,10 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
+}
+
+.viewport > :global([data-app-navbar="true"]) {
+  z-index: 5;
 }
 
 .preparingOverlay {
@@ -148,16 +149,64 @@
   text-transform: uppercase;
   color: var(--signal-color);
   text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
+  white-space: nowrap;
 }
 
 .assetsLoadingLabel {
-  margin-right: 0.06em;
+  margin-right: 0;
+}
+
+.assetsLoadingLineStack {
+  position: relative;
+  display: grid;
+  grid-template-areas: "line";
+  justify-items: center;
+  align-items: baseline;
+}
+
+.assetsLoadingLineSizer,
+.assetsLoadingLine {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.assetsLoadingLineSizer {
+  grid-area: line;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.assetsLoadingLine {
+  grid-area: line;
+  opacity: 0;
+  filter: blur(2px);
+  transform: translate3d(0, 0.28em, 0);
+  transition:
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    filter 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.assetsLoadingLine[data-state="in"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+  transition-duration: 220ms;
+}
+
+.assetsLoadingLine[data-state="out"] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: translate3d(0, -0.22em, 0);
 }
 
 .loadingDots {
   display: inline-flex;
+  flex: none;
   gap: 0.09em;
-  margin-left: 0.02em;
+  /* Parent tracking leaves a full 0.16em after the last letter. */
+  letter-spacing: 0;
+  margin-left: -0.12em;
 }
 
 .loadingDot {
@@ -192,6 +241,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .assetsLoadingLine {
+    transition: none;
+    filter: none;
+    transform: none;
+  }
+
   .loadingDot {
     animation: none;
     opacity: 0.85;

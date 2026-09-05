@@ -4,6 +4,36 @@ let lockCount = 0;
 let savedScrollY = 0;
 let shouldRestoreScroll = true;
 
+type ScrollLockHook = () => void;
+
+const beforeLockHooks = new Set<ScrollLockHook>();
+const afterUnlockHooks = new Set<ScrollLockHook>();
+
+/** Pin / ScrollTrigger listeners. Run before body is taken out of flow, and after scroll is restored. */
+export function onBodyScrollLock(hooks: { beforeLock?: ScrollLockHook; afterUnlock?: ScrollLockHook }) {
+  if (hooks.beforeLock) {
+    beforeLockHooks.add(hooks.beforeLock);
+  }
+
+  if (hooks.afterUnlock) {
+    afterUnlockHooks.add(hooks.afterUnlock);
+  }
+
+  return () => {
+    if (hooks.beforeLock) {
+      beforeLockHooks.delete(hooks.beforeLock);
+    }
+
+    if (hooks.afterUnlock) {
+      afterUnlockHooks.delete(hooks.afterUnlock);
+    }
+  };
+}
+
+export function isBodyScrollLocked() {
+  return lockCount > 0;
+}
+
 export function skipNextScrollRestore() {
   shouldRestoreScroll = false;
 }
@@ -30,6 +60,8 @@ export function lockBodyScroll() {
   if (lockCount === 0) {
     shouldRestoreScroll = true;
     savedScrollY = readDocumentScrollY();
+    beforeLockHooks.forEach((hook) => hook());
+    getLenis()?.stop();
     document.body.style.position = "fixed";
     document.body.style.top = `-${savedScrollY}px`;
     document.body.style.left = "0";
@@ -58,35 +90,28 @@ export function unlockBodyScroll() {
     const restoreScroll = shouldRestoreScroll;
     shouldRestoreScroll = true;
 
-    if (!restoreScroll) {
-      return;
+    if (restoreScroll) {
+      const y = scrollY;
+      const reducedMotion = prefersReducedMotion();
+      const lenis = getLenis();
+
+      /*
+       * 1. Restore native scroll first (deterministic) after `overflow` + body styles are normal.
+       * 2. `lenis.resize()` refreshes `limit` — without this, a stale limit of 0 makes `scrollTo(y)` clamp to top.
+       * 3. Sync Lenis only if native and Lenis still disagree (immediate `scrollTo` runs `reset()` — avoid
+       *    relying on it as the only restore).
+       */
+      window.scrollTo({ top: y, left: 0, behavior: "auto" });
+
+      if (lenis) {
+        lenis.resize();
+
+        if (!reducedMotion && Math.abs(lenis.actualScroll - y) > 0.5) {
+          lenis.scrollTo(y, { immediate: true, force: true });
+        }
+      }
     }
 
-    const y = scrollY;
-    const reducedMotion = prefersReducedMotion();
-    const lenis = getLenis();
-
-    /*
-     * 1. Restore native scroll first (deterministic) after `overflow` + body styles are normal.
-     * 2. `lenis.resize()` refreshes `limit` — without this, a stale limit of 0 makes `scrollTo(y)` clamp to top.
-     * 3. Sync Lenis only if native and Lenis still disagree (immediate `scrollTo` runs `reset()` — avoid
-     *    relying on it as the only restore).
-     */
-    window.scrollTo({ top: y, left: 0, behavior: "auto" });
-
-    if (!lenis) {
-      return;
-    }
-
-    if (reducedMotion) {
-      lenis.resize();
-      return;
-    }
-
-    lenis.resize();
-
-    if (Math.abs(lenis.actualScroll - y) > 0.5) {
-      lenis.scrollTo(y, { immediate: true, force: true });
-    }
+    afterUnlockHooks.forEach((hook) => hook());
   }
 }

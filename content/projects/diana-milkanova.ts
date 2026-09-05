@@ -6,6 +6,7 @@ export const dianaMilkanovaProject: ProjectEntry = {
   orderIndex: 6,
   title: "DIANA MILKANOVA",
   cardDescriptor: "E-COMMERCE STORE",
+  category: "ecommerce",
   descriptor: "Independent fashion e-commerce",
   year: "2021",
   role: "Frontend Developer",

@@ -32,6 +32,8 @@ type ProjectMediaProps = {
   placeholderGrid?: ProjectMediaPlaceholderGridShape;
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
+  /** `instant` skips the load fade — used for hover/scroll previews that must cut. */
+  reveal?: "fade" | "instant";
 };
 
 type UseIntersectionOptions = {
@@ -123,6 +125,33 @@ function projectMediaMobileServerSnapshot() {
   return false;
 }
 
+function subscribeReducedMotion(onChange: () => void) {
+  const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mediaQuery.addEventListener("change", onChange);
+  return () => mediaQuery.removeEventListener("change", onChange);
+}
+
+function reducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function reducedMotionServerSnapshot() {
+  return false;
+}
+
+const POSTER_FALLBACK_MS = 900;
+
+function whenVideoFramePainted(video: HTMLVideoElement, onFrame: () => void) {
+  if (typeof video.requestVideoFrameCallback === "function") {
+    video.requestVideoFrameCallback(() => {
+      onFrame();
+    });
+    return;
+  }
+
+  onFrame();
+}
+
 async function ensureVideoPlayback(video: HTMLVideoElement) {
   video.muted = true;
   video.defaultMuted = true;
@@ -171,24 +200,36 @@ function ProjectMediaInner({
   fit = "contain",
   loading = "lazy",
   imagePreload = false,
+  reveal = "fade",
 }: ProjectMediaInnerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoReadyOnceRef = useRef(false);
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    reducedMotionSnapshot,
+    reducedMotionServerSnapshot,
+  );
+  const mountVideoEager = media.kind === "video" && (loading === "eager" || imagePreload);
   const {
     hasIntersected: hasMountedVideo,
     intersecting: isInViewport,
   } = useIntersectionState(rootRef, {
-    enabled: media.kind === "video",
+    enabled: media.kind === "video" && !reducedMotion && !mountVideoEager,
   });
   const [assetReady, setAssetReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const [posterReady, setPosterReady] = useState(() => (
     hasLoadedProjectMediaSource(activeAsset.poster)
   ));
   const [videoReady, setVideoReady] = useState(false);
-  const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
+  const [posterFallback, setPosterFallback] = useState(false);
+  const showVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasMountedVideo);
+  const holdPosterForMotion = media.kind === "video" && reveal !== "instant" && !reducedMotion;
+  const posterVisible = posterReady && (!holdPosterForMotion || posterFallback);
+  const ready = media.kind === "video" ? posterVisible || videoReady : assetReady;
 
   useEffect(() => {
-    if (media.kind !== "video" || !hasMountedVideo) {
+    if (!showVideo) {
       return undefined;
     }
 
@@ -198,14 +239,42 @@ function ProjectMediaInner({
       return undefined;
     }
 
-    if (isInViewport) {
+    if (mountVideoEager || isInViewport) {
       void ensureVideoPlayback(video);
     } else {
       video.pause();
     }
 
     return undefined;
-  }, [hasMountedVideo, isInViewport, media.kind]);
+  }, [isInViewport, mountVideoEager, showVideo]);
+
+  useEffect(() => {
+    if (media.kind !== "video" || reducedMotion || reveal === "instant" || videoReady) {
+      return undefined;
+    }
+
+    const id = window.setTimeout(() => {
+      setPosterFallback(true);
+    }, POSTER_FALLBACK_MS);
+
+    return () => window.clearTimeout(id);
+  }, [media.kind, reducedMotion, reveal, videoReady]);
+
+  const markVideoReady = useCallback((video: HTMLVideoElement) => {
+    if (videoReadyOnceRef.current) {
+      return;
+    }
+
+    whenVideoFramePainted(video, () => {
+      if (videoReadyOnceRef.current) {
+        return;
+      }
+
+      videoReadyOnceRef.current = true;
+      markProjectMediaSourceLoaded(activeAsset.src, video.currentSrc);
+      setVideoReady(true);
+    });
+  }, [activeAsset.src]);
 
   const handleImageLoad = useCallback((image: HTMLImageElement, onReady: () => void) => {
     if (typeof image.decode !== "function") {
@@ -228,24 +297,28 @@ function ProjectMediaInner({
 
   const imageAlt = media.kind === "image" ? alt ?? media.alt ?? "" : "";
   const videoLabel = media.kind === "video" ? alt ?? media.alt : undefined;
-  const showVideo = media.kind === "video" && hasMountedVideo;
-
   return (
     <div
       ref={rootRef}
       className={[styles.root, className].filter(Boolean).join(" ")}
+      data-project-media="true"
       data-fill={fill ? "true" : "false"}
       data-fit={fit}
       data-kind={media.kind}
       data-ready={ready ? "true" : "false"}
+      data-media-width={activeAsset.width}
+      data-media-height={activeAsset.height}
+      data-reveal={reveal}
       data-video-ready={videoReady ? "true" : "false"}
+      data-hold-poster={holdPosterForMotion ? "true" : undefined}
+      data-poster-fallback={posterFallback ? "true" : undefined}
     >
       <ProjectMediaPlaceholderGrid
         grid={placeholderGrid}
         className={styles.placeholder}
         visible={!ready}
       />
-      <div className={styles.frame} style={sharedStyle}>
+      <div className={styles.frame} data-project-media-surface="true" style={sharedStyle}>
         {media.kind === "video" ? (
           <>
             <div className={styles.posterLayer} data-loaded={posterReady ? "true" : "false"}>
@@ -273,7 +346,7 @@ function ProjectMediaInner({
                   ref={videoRef}
                   className={styles.video}
                   src={activeAsset.src}
-                  poster={activeAsset.poster}
+                  poster={holdPosterForMotion ? undefined : activeAsset.poster}
                   muted
                   playsInline
                   autoPlay
@@ -281,9 +354,11 @@ function ProjectMediaInner({
                   loop={media.loop !== false}
                   disablePictureInPicture
                   aria-label={videoLabel}
+                  onPlaying={(event) => {
+                    markVideoReady(event.currentTarget);
+                  }}
                   onLoadedData={(event) => {
-                    markProjectMediaSourceLoaded(activeAsset.src, event.currentTarget.currentSrc);
-                    setVideoReady(true);
+                    markVideoReady(event.currentTarget);
                   }}
                 />
               </div>

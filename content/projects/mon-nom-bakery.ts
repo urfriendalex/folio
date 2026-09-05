@@ -6,6 +6,7 @@ export const monNomBakeryProject: ProjectEntry = {
   orderIndex: 4,
   title: "MON NOM BAKERY",
   cardDescriptor: "WEBSITE + MENU",
+  category: "product",
   descriptor: "Custom bilingual restaurant website and interactive menu experience",
   year: "2026",
   role: "Solo Designer & Developer",

@@ -6,6 +6,7 @@ export const portfolioV1YansonsProject: ProjectEntry = {
   orderIndex: 5,
   title: "AY FOLIO V1",
   cardDescriptor: "WEB DEV PORTFOLIO",
+  category: "portfolio",
   descriptor: "First portfolio site",
   year: "2020",
   role: "Solo Designer & Developer",

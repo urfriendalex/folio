@@ -12,6 +12,9 @@
   margin: 0 auto;
   gap: 1.5rem;
   padding-bottom: 1.5rem;
+  transition:
+    opacity 220ms ease,
+    filter 280ms ease;
 }
 
 .still {
@@ -310,7 +313,6 @@
   --toolbar-sticky-inset: clamp(1.3rem, 3vw, 1.85rem);
   --toolbar-block-height: clamp(3.35rem, 5.8vw, 3.95rem);
   --toolbar-preview-height: clamp(10.75rem, 15.25vw, 12.75rem);
-  /* Keep hover changes measured enough that the content phases read clearly. */
   --toolbar-motion-expand: 520ms;
   --toolbar-motion-collapse: 280ms;
   /* No wait for per-char reverse — shell + grid collapse immediately with body fade */
@@ -338,6 +340,10 @@
     --toolbar-collapse-delay: 0ms;
   }
 
+  .stills {
+    transition: none;
+  }
+
   .still > * {
     transition:
       opacity 85ms ease,
@@ -347,6 +353,15 @@
   .expandToggle:active,
   .navButton:active {
     transform: none;
+  }
+
+  .navButton[data-pending="true"]::before,
+  .navButton[data-pending="true"]::after {
+    animation: none;
+  }
+
+  .navButton[data-pending="true"]::before {
+    --nav-pending-angle: 210deg;
   }
 }
 
@@ -575,7 +590,7 @@
   flex-direction: column;
   padding-top: 0;
   --reveal-step: 34ms;
-  --toolbar-desc-transform-ms: 480ms;
+  --toolbar-desc-transform-ms: 320ms;
   /* Actions trail descriptor — start after ~20% of line transform + 2-step stagger. */
   --toolbar-reveal-actions-delay: calc(
     var(--toolbar-desc-transform-ms) * 0.2 + var(--reveal-step) * 2
@@ -627,8 +642,8 @@
   flex: 0 1 auto;
   /* RevealLines grid gap stacks on top of line-height — keep row rhythm from line-height only. */
   --reveal-line-gap: 0;
-  --reveal-line-opacity-ms: 360ms;
-  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 480ms);
+  --reveal-line-opacity-ms: 240ms;
+  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 320ms);
   margin: 0;
   max-width: none;
   width: 100%;
@@ -654,8 +669,8 @@
 
 .toolbarActionReveal {
   --reveal-line-gap: 0;
-  --reveal-line-opacity-ms: 360ms;
-  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 480ms);
+  --reveal-line-opacity-ms: 240ms;
+  --reveal-line-transform-ms: var(--toolbar-desc-transform-ms, 320ms);
   /* `html.reveals-enabled` reads `--reveal-delay`, not `--toolbar-reveal-actions-delay`. */
   --reveal-delay: var(--toolbar-reveal-actions-delay);
   width: auto;
@@ -776,9 +791,23 @@ button.toolbarAction {
   font-weight: 400;
 }
 
+@property --nav-pending-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes nav-pending-spin {
+  to {
+    --nav-pending-angle: 360deg;
+  }
+}
+
 .navButton {
   appearance: none;
   cursor: pointer;
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-width: 0;
   height: var(--toolbar-block-height);
@@ -820,9 +849,83 @@ button.toolbarAction {
   box-shadow: var(--project-toolbar-panel-shadow-strong);
 }
 
-.navButton:disabled {
+.navButton:disabled,
+.navButton[data-pending="true"] {
   cursor: progress;
+}
+
+.navButton:disabled {
   opacity: 0.55;
+}
+
+.navButton[data-pending="true"] {
+  overflow: visible;
+  background: var(--project-toolbar-block-bg-hover);
+  border-color: transparent;
+  box-shadow: var(--project-toolbar-panel-shadow-strong);
+}
+
+.navButton[data-pending="true"]::before,
+.navButton[data-pending="true"]::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  corner-shape: inherit;
+  animation: nav-pending-spin 1.05s linear infinite;
+}
+
+.navButton[data-pending="true"]::after {
+  z-index: -1;
+  inset: -0.45rem;
+  background: conic-gradient(
+    from var(--nav-pending-angle),
+    transparent 0deg,
+    transparent 250deg,
+    color-mix(in srgb, var(--signal-color) 0%, transparent) 290deg,
+    color-mix(in srgb, var(--signal-color) 72%, transparent) 338deg,
+    transparent 360deg
+  );
+  filter: blur(11px);
+  opacity: 0.8;
+}
+
+.navButton[data-pending="true"]::before {
+  z-index: 1;
+  box-sizing: border-box;
+  inset: 0;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--nav-pending-angle),
+    color-mix(in srgb, var(--signal-color) 18%, transparent) 0deg,
+    transparent 70deg,
+    transparent 230deg,
+    color-mix(in srgb, var(--signal-color) 0%, transparent) 270deg,
+    var(--signal-color) 328deg,
+    #ff9a9a 348deg,
+    var(--signal-color) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.page[data-nav-pending="true"] {
+  cursor: progress;
+}
+
+.page[data-nav-pending="true"] .stills {
+  opacity: 0.64;
+  filter: blur(5px);
+}
+
+.page[data-nav-pending="true"] .toolbarShell {
+  cursor: progress;
 }
 
 .previousButton {

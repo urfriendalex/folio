@@ -3,7 +3,8 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import type { UseRevealOnViewOptions } from "@/components/motion/shared/useRevealOnView";
 import type { ProjectEntry } from "@/content/projects/types";
-import { thumbnailToMediaSlot } from "@/lib/projectMedia";
+import { PROJECT_CARD_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
+import { ExploreMediaLink } from "./ExploreMediaLink";
 import styles from "./ProjectCard.module.scss";
 
 /** Looser than `useRevealOnView` defaults: no bottom inset, any intersection ratio fires. */
@@ -21,7 +22,26 @@ type ProjectCardProps = {
   /** Overrides default card observer tuning (e.g. Work rootMargin/threshold). */
   revealOptions?: UseRevealOnViewOptions;
   cardRef?: (node: HTMLElement | null) => void;
+  /** `preload` is opt-in — home Work shares the first viewport with the hero. */
+  imagePreload?: boolean;
+  loading?: "eager" | "lazy";
+  sizes?: string;
 };
+
+function VisitArrowIcon() {
+  return (
+    <svg className={styles.visitIcon} viewBox="0 0 12 12" aria-hidden="true">
+      <path
+        d="M3.15 8.85 8.85 3.15M4.1 3.15h4.75V7.9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}
 
 export function ProjectCard({
   project,
@@ -31,6 +51,9 @@ export function ProjectCard({
   staggerIndexOffset = 0,
   revealOptions,
   cardRef,
+  imagePreload = false,
+  loading = index < 2 ? "eager" : "lazy",
+  sizes = PROJECT_CARD_IMAGE_SIZES,
 }: ProjectCardProps) {
   const projectHref = `/projects/${project.slug}`;
   const externalUrl = project.links?.[0]?.url;
@@ -46,51 +69,46 @@ export function ProjectCard({
       staggerStepMs={72}
     >
       <article className={styles.card} ref={cardRef}>
-        <IntentPrefetchLink
-          href={projectHref}
-          className={styles.media}
-          aria-label={`${project.title}, explore project`}
-          nativeNavigation
-        >
+        <ExploreMediaLink href={projectHref} ariaLabel={`${project.title}, explore project`}>
           <ProjectMedia
             media={thumbnailMedia}
             alt={`${project.title} project preview`}
             className={styles.mediaAsset}
             fill
             fit="cover"
-            imagePreload={index === 0}
-            loading={index < 2 ? "eager" : "lazy"}
+            sizes={sizes}
+            imagePreload={imagePreload}
+            loading={loading}
           />
-        </IntentPrefetchLink>
+        </ExploreMediaLink>
         <footer className={styles.meta}>
-          <div className={styles.identity}>
-            <div className={styles.titleRow}>
+          <div className={styles.titleRow}>
+            <div className={styles.titleCluster}>
               <h3 className={styles.title} aria-label={displayTitle}>
-                <span className={styles.titlePrimary}>{project.title}</span>
-                <span className={styles.titleSeparator} aria-hidden="true">
-                  |
-                </span>
-                <span className={styles.titleSecondary}>{project.cardDescriptor}</span>
+                <IntentPrefetchLink href={projectHref} className={styles.titleLink} nativeNavigation>
+                  <span className={styles.titlePrimary}>{project.title}</span>
+                  <span className={styles.titleSeparator} aria-hidden="true">
+                    |
+                  </span>
+                  <span className={styles.titleSecondary}>{project.cardDescriptor}</span>
+                </IntentPrefetchLink>
               </h3>
-              <span className={styles.year}>{project.year}</span>
-            </div>
-          </div>
-          <div className={styles.actions} aria-label="Project links">
-            <span className={styles.linksLeft}>
               {externalUrl ? (
                 <a
                   href={externalUrl}
-                  className={`link-underline ${styles.actionLink}`}
+                  className={styles.visit}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`Visit ${project.title} (opens in a new tab)`}
                 >
-                  visit
+                  <VisitArrowIcon />
+                  <span className={styles.visitWordClip}>
+                    <span className={styles.visitWord}>visit</span>
+                  </span>
                 </a>
               ) : null}
-            </span>
-            <IntentPrefetchLink href={projectHref} className={`link-underline ${styles.actionLink}`} nativeNavigation>
-              explore project
-            </IntentPrefetchLink>
+            </div>
+            <span className={styles.year}>{project.year}</span>
           </div>
         </footer>
       </article>

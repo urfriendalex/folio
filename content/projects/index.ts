@@ -1,5 +1,14 @@
 import { normalizeProjectMediaSlots } from "@/lib/projectMedia";
 
+export type { ProjectCategory, ProjectFilterId } from "./categories";
+export {
+  filterProjectsByType,
+  parseProjectFilter,
+  PROJECT_FILTERS,
+  projectFilterCounts,
+  projectFilterLabel,
+} from "./categories";
+
 import { axirosAxfAxessProject } from "./axiros-axf-axess";
 import { dianaMilkanovaProject } from "./diana-milkanova";
 import { kinoprobyProject } from "./kinoproby";
@@ -32,6 +41,9 @@ export const projects = [...projectEntries]
     ...project,
     media: normalizeProjectMediaSlots(project.media, projectMediaOrderIndexBySlug[project.slug]),
   }));
+
+/** Home Work section teaser; full list lives on `/projects`. */
+export const HOME_RECENT_PROJECT_COUNT = 6;
 
 export function getProjectBySlug(slug: string) {
   return projects.find((project) => project.slug === slug);

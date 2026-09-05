@@ -6,6 +6,7 @@ export const pastelMuseProject: ProjectEntry = {
   orderIndex: 3,
   title: "PHOTO DAY EXPERIENCE",
   cardDescriptor: "WEBSITES SERIES",
+  category: "event",
   descriptor: "Photo-day experience website series",
   year: "2026",
   role: "Design + Frontend",

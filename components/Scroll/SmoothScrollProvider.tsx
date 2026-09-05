@@ -5,6 +5,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
+import { setActiveLenis } from "@/lib/lenisScrollTriggerBridge";
 import {
   clearLocationHash,
   getLenis,
@@ -173,6 +174,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     });
 
     window.__lenis = lenis;
+    setActiveLenis(lenis);
 
     let frameId = 0;
     const rootObserver = new MutationObserver(() => {
@@ -197,6 +199,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     rootObserver.observe(root, { attributes: true, attributeFilter: ["class"] });
 
     return () => {
+      setActiveLenis(null);
       rootObserver.disconnect();
       window.cancelAnimationFrame(frameId);
       lenis.destroy();

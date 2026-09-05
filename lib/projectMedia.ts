@@ -2,6 +2,16 @@ import type { ProjectEntry, ProjectMediaSlot, ProjectThumbnail } from "@/content
 
 export const PROJECT_MEDIA_MOBILE_QUERY = "(max-width: 48rem)";
 
+/** Home / work-index card frames: 1-col mobile, 2-col laptop, 3-col XL. */
+export const PROJECT_CARD_IMAGE_SIZES =
+  "(max-width: 48rem) 100vw, (max-width: 100rem) 50vw, 33vw";
+
+/** Project stills sit in `min(70rem, 100%)`. */
+export const PROJECT_STILL_IMAGE_SIZES = "(max-width: 48rem) 100vw, min(70rem, 100vw)";
+
+/** List-view follow / docked preview — not a full-bleed tile. */
+export const PROJECT_INDEX_PREVIEW_IMAGE_SIZES = "(max-width: 48rem) 86vw, 36rem";
+
 export type ProjectMediaPlaceholderGrid = {
   cols: number;
   rows: number;

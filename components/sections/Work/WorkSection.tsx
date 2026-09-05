@@ -10,8 +10,14 @@ import {
 } from "react";
 import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { ScrollReveal } from "@/components/motion/ScrollReveal/ScrollReveal";
+import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import type { ProjectEntry } from "@/content/projects/types";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
+import {
+  coerceProjectGridView,
+  readProjectLayout,
+  writeProjectLayout,
+} from "@/lib/projectLayout";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { useWorkRevealOnView } from "@/lib/useWorkRevealOnView";
 import styles from "./WorkSection.module.scss";
@@ -20,7 +26,10 @@ type WorkSectionProps = {
   projects: ProjectEntry[];
 };
 
-type GridView = "wide" | "regular" | "compact";
+type GridView = "stack" | "wide" | "regular";
+
+/* Above 13–14" laptop CSS widths (~1440–1512). 16" / external / XL only. */
+const SUPER_WIDE_QUERY = "(min-width: 100rem)";
 
 const desktopViewOptions: Array<{
   view: GridView;
@@ -33,18 +42,18 @@ const desktopViewOptions: Array<{
   gapRatio: number;
 }> = [
   {
-    view: "wide",
-    label: "Two column grid",
-    columns: 2,
-    rows: 1,
-    variant: "bars",
+    view: "stack",
+    label: "One column grid",
+    columns: 1,
+    rows: 2,
+    variant: "grid",
     widthRatio: 0.5,
     heightRatio: 0.48,
     gapRatio: 0.09,
   },
   {
-    view: "regular",
-    label: "Three column grid",
+    view: "wide",
+    label: "Two column grid",
     columns: 2,
     rows: 2,
     variant: "grid",
@@ -53,8 +62,8 @@ const desktopViewOptions: Array<{
     gapRatio: 0.092,
   },
   {
-    view: "compact",
-    label: "Four column grid",
+    view: "regular",
+    label: "Three column grid",
     columns: 3,
     rows: 2,
     variant: "grid",
@@ -103,18 +112,23 @@ const WORK_SECTION_REVEAL_OPTIONS = {
 
 const WORK_CHROME_STAGGER_STEP_MS = 56;
 const WORK_CARD_STAGGER_OFFSET = 2;
-const WORK_TITLE = "Recent projects";
+const WORK_TITLE = "Selected projects";
 
 export function WorkSection({ projects }: WorkSectionProps) {
   const [view, setView] = useState<GridView>("wide");
   // Must match SSR: never read viewport in useState initializer or server/desktop
   // and client/mobile first paints diverge and React hydration fails.
   const [isMobile, setIsMobile] = useState(false);
+  const [isSuperWide, setIsSuperWide] = useState(false);
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousRectsRef = useRef(new Map<string, DOMRect>());
   const hasMountedRef = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const viewOptions = isMobile ? mobileViewOptions : desktopViewOptions;
+  const viewOptions = isMobile
+    ? mobileViewOptions
+    : isSuperWide
+      ? desktopViewOptions.filter((option) => option.view !== "stack")
+      : desktopViewOptions;
   const skipEntranceReveal = useRestoredScrollBypass();
   const workSectionRevealVisible = useWorkRevealOnView(sectionRef, {
     ...WORK_SECTION_REVEAL_OPTIONS,
@@ -198,29 +212,36 @@ export function WorkSection({ projects }: WorkSectionProps) {
   }, [projects, view]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 48rem)");
+    const mobileQuery = window.matchMedia("(max-width: 48rem)");
+    const superWideQuery = window.matchMedia(SUPER_WIDE_QUERY);
+    let restored = false;
 
-    const syncViewport = (matches: boolean) => {
-      setIsMobile(matches);
+    const syncViewport = () => {
+      const mobile = mobileQuery.matches;
+      const superWide = superWideQuery.matches;
+      const viewport = { mobile, superWide };
+
+      setIsMobile(mobile);
+      setIsSuperWide(superWide);
       setView((currentView) => {
-        if (!matches || currentView !== "compact") {
-          return currentView;
+        const source = restored ? currentView : readProjectLayout().grid;
+        restored = true;
+        const next = coerceProjectGridView(source, viewport);
+        if (next !== source) {
+          writeProjectLayout({ grid: next });
         }
-
-        return "regular";
+        return next;
       });
     };
 
-    syncViewport(mediaQuery.matches);
+    syncViewport();
 
-    const handleChange = (event: MediaQueryListEvent) => {
-      syncViewport(event.matches);
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
+    mobileQuery.addEventListener("change", syncViewport);
+    superWideQuery.addEventListener("change", syncViewport);
 
     return () => {
-      mediaQuery.removeEventListener("change", handleChange);
+      mobileQuery.removeEventListener("change", syncViewport);
+      superWideQuery.removeEventListener("change", syncViewport);
     };
   }, []);
 
@@ -251,6 +272,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
                     key={option.view}
                     type="button"
                     className={styles.viewButton}
+                    data-layout={option.view}
                     data-active={isActive}
                     aria-pressed={isActive}
                     aria-label={option.label}
@@ -260,6 +282,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
                       }
 
                       previousRectsRef.current = captureRects();
+                      writeProjectLayout({ view: option.view, grid: option.view });
                       startTransition(() => {
                         setView(option.view);
                       });
@@ -290,7 +313,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
             </div>
           </ScrollReveal>
         </header>
-        <div className={styles.grid} data-view={view} aria-label="Recent projects">
+        <div className={styles.grid} data-view={view} aria-label="Selected projects">
           {projects.map((project, index) => (
             <ProjectCard
               key={project.slug}
@@ -303,6 +326,20 @@ export function WorkSection({ projects }: WorkSectionProps) {
             />
           ))}
         </div>
+        <ScrollReveal
+          className={styles.allProjectsWrap}
+          immediate={skipEntranceReveal}
+          visible={workRevealVisible}
+          staggerIndex={WORK_CARD_STAGGER_OFFSET + projects.length}
+          staggerStepMs={WORK_CHROME_STAGGER_STEP_MS}
+        >
+          <IntentPrefetchLink href="/projects" className={`link-underline ${styles.allProjects}`}>
+            View all projects
+            <span className={styles.allProjectsArrow} aria-hidden="true">
+              →
+            </span>
+          </IntentPrefetchLink>
+        </ScrollReveal>
       </div>
     </section>
   );

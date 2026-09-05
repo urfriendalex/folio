@@ -11,6 +11,7 @@
   width: 100%;
   flex: 1;
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -20,7 +21,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.7rem, 1.5vw, 1.2rem);
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -31,6 +32,14 @@
   font-size: clamp(2.8rem, 7vw, 5.8rem);
   line-height: 0.9;
   letter-spacing: -0.08em;
+}
+
+.aboutTop {
+  display: grid;
+  gap: clamp(1.2rem, 2.5vw, 1.8rem);
+  width: 100%;
+  padding-bottom: clamp(1.8rem, 5.5vh, 3.4rem);
+  padding-inline: var(--content-padding-inline);
 }
 
 .aboutLead {
@@ -45,6 +54,7 @@
 
 .aboutLeadText {
   --reveal-line-gap: 0.12em;
+  max-width: none;
   font-size: clamp(1.62rem, 2.85vw, 2.55rem);
   line-height: 1.06;
   letter-spacing: -0.055em;
@@ -52,7 +62,8 @@
 
 .aboutDescription {
   display: block;
-  padding-bottom: clamp(4.2rem, 9vw, 7.2rem);
+  max-width: none;
+  padding-bottom: 0;
 }
 
 .aboutParagraph,
@@ -76,6 +87,54 @@
   text-wrap: pretty;
 }
 
+.aboutSheet {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: min(48vh, 22rem);
+}
+
+.aboutRule,
+.aboutRuleMid {
+  position: relative;
+  flex-shrink: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.aboutRuleMid {
+  display: none;
+}
+
+.aboutRule::before,
+.aboutRuleMid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  height: 1px;
+  margin-left: -50vw;
+  background: var(--overlay-line);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--meta-line-duration-out, 560ms) cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.about[data-content-visible="true"] .aboutRule::before,
+.about[data-content-visible="true"] .aboutRuleMid::before {
+  transform: scaleX(1);
+  transition-duration: var(--meta-line-duration-in, 560ms);
+  transition-delay: var(--meta-line-enter-delay, 0ms);
+}
+
+.about[data-content-visible="false"] .aboutRule::before,
+.about[data-content-visible="false"] .aboutRuleMid::before {
+  transition-duration: var(--meta-line-duration-out, 560ms);
+  transition-delay: var(--meta-line-exit-delay, 0ms);
+}
+
 .metaTitle {
   width: 100%;
 }
@@ -86,61 +145,37 @@
 
 .metaGrid {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: clamp(1.35rem, 4vw, 2.5rem);
-  column-gap: clamp(1.35rem, 4vw, 2.5rem);
-  align-content: start;
-}
-
-@media (min-width: 64rem) {
-  .metaGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    /* Wider gutters between the three columns */
-    column-gap: clamp(2.5rem, 8vw, 6.5rem);
-    row-gap: clamp(1.5rem, 4vw, 2.5rem);
-  }
-
-  /*
-    Shared row tracks so CONTEXTS / DELIVERABLES / WHAT I OPTIMIZE FOR stay on one baseline
-    even when one column’s list wraps to more lines than the others.
-  */
-  @supports (grid-template-rows: subgrid) {
-    .metaGrid {
-      grid-template-rows: auto minmax(0, 1fr);
-      row-gap: 0.7rem;
-    }
-
-    .metaBlock {
-      grid-template-rows: subgrid;
-      grid-row: span 2;
-      gap: 0;
-    }
-  }
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
+  align-items: stretch;
+  padding-inline: var(--content-padding-inline);
 }
 
 .metaBlock {
   position: relative;
   display: grid;
+  align-content: start;
   gap: 0.7rem;
-  padding-top: 0.9rem;
-  border-top: none;
+  padding: 1.05rem 0 1.35rem;
+}
+
+.metaBlock:first-child::before {
+  display: none;
 }
 
 .metaBlock::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
   background: var(--overlay-line);
   transform: scaleX(0);
   transform-origin: 0 50%;
-  transition: transform var(--meta-line-duration-out, 560ms) cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition: transform var(--meta-line-duration-out, 560ms) cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .about[data-content-visible="true"] .metaBlock::before {
-  transform: scaleX(1);
+  transform: scaleX(1) scaleY(1);
   transition-duration: var(--meta-line-duration-in, 560ms);
   transition-delay: var(--meta-line-enter-delay, 0ms);
 }
@@ -186,12 +221,15 @@
 }
 
 .aboutFooter {
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 1rem;
+  margin-top: auto;
   padding-top: 1rem;
+  padding-inline: var(--content-padding-inline);
   padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
   background: transparent;
 }
@@ -252,42 +290,131 @@
   }
 }
 
+@media (min-width: 48.0625rem) {
+  .metaGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metaBlock:not(:first-child) {
+    padding-left: clamp(1.1rem, 2.6vw, 1.9rem);
+  }
+
+  .metaBlock:not(:last-child) {
+    padding-right: clamp(1.1rem, 2.6vw, 1.9rem);
+  }
+
+  .metaBlock:not(:first-child)::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    height: auto;
+    right: auto;
+    transform: scaleY(0);
+    transform-origin: 50% 0;
+  }
+}
+
 @media (max-width: 48rem) {
   .aboutScroll {
-    padding-block: 0.75rem;
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 0.75rem,
-      #000 calc(100% - 0.75rem),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 0.75rem,
-      #000 calc(100% - 0.75rem),
-      transparent 100%
-    );
+    padding-block: 0;
+  }
+
+  .aboutTop {
+    width: 100%;
+    gap: 0.72rem;
+    padding-bottom: 0.78rem;
+  }
+
+  .aboutLead,
+  .aboutLeadText,
+  .aboutDescription {
+    max-width: none;
   }
 
   .aboutLeadText {
-    font-size: clamp(1.16rem, 3.55vw, 1.4rem);
-    line-height: 1.1;
-    letter-spacing: -0.04em;
+    font-size: clamp(1.12rem, 5.45vw, 1.36rem);
+    line-height: 1.05;
+    letter-spacing: -0.042em;
   }
 
   .aboutParagraph {
-    font-size: clamp(0.93rem, 3.35vw, 1.02rem);
-    line-height: 1.47;
+    font-size: clamp(0.84rem, 3.05vw, 0.92rem);
+    line-height: 1.38;
   }
 
-  .aboutDescription {
-    padding-bottom: clamp(1.25rem, 3vw, 2rem);
+  .aboutSheet {
+    min-height: 0;
+  }
+
+  .metaBlock {
+    gap: 0.4rem;
+    padding: 0.68rem 0 0.78rem;
+  }
+
+  .metaBlock ul {
+    gap: 0.06em;
+  }
+
+  .metaBlock li {
+    font-size: 0.84rem;
+    line-height: 1.34;
   }
 
   .metaGrid {
+    grid-template-columns: minmax(0, 1.14fr) minmax(0, 0.86fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .metaBlock:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .aboutRuleMid {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .metaBlock:nth-child(2),
+  .metaBlock:nth-child(3) {
+    grid-row: 3;
+  }
+
+  .metaBlock::before {
     display: none;
+  }
+
+  .metaBlock:nth-child(3)::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    background: var(--overlay-line);
+    transform: scaleY(0);
+    transform-origin: 50% 0;
+    transition: transform var(--meta-line-duration-out, 560ms) cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .about[data-content-visible="true"] .metaBlock:nth-child(3)::after {
+    transform: scaleY(1);
+    transition-duration: var(--meta-line-duration-in, 560ms);
+    transition-delay: var(--meta-line-enter-delay, 0ms);
+  }
+
+  .about[data-content-visible="false"] .metaBlock:nth-child(3)::after {
+    transition-duration: var(--meta-line-duration-out, 560ms);
+    transition-delay: var(--meta-line-exit-delay, 0ms);
+  }
+
+  .metaBlock:nth-child(2) {
+    padding-right: 0.85rem;
+  }
+
+  .metaBlock:nth-child(3) {
+    padding-left: 0.85rem;
   }
 
   .aboutFooter {
@@ -297,8 +424,8 @@
     justify-content: space-between;
     gap: 0.35rem;
     column-gap: 0.45rem;
-    padding-top: 0.9rem;
-    padding-bottom: max(0.3rem, env(safe-area-inset-bottom, 0px));
+    padding-top: 0.5rem;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
   }
 
   .aboutFooterLinks {
@@ -321,5 +448,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aboutRule::before,
+  .aboutRuleMid::before,
+  .metaBlock::before,
+  .metaBlock::after {
+    transform: none;
+    transition: none;
   }
 }

@@ -1,3 +1,9 @@
+@property --cue-grow {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 :root {
   --font-body-stack: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
   --font-mono-stack: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
@@ -180,8 +186,8 @@
   /* 404 floating window — compact on narrow viewports so bounce + trails read clearly */
   --win98-window-width-mobile: min(86vw, 19.5rem);
   --win98-window-height-mobile: min(36svh, 17.5rem);
-  --navbar-contrast-dark-ink: var(--fg-color);
-  --navbar-contrast-light-ink: rgb(250 248 243 / 0.98);
+  /* White source for `mix-blend-mode: difference` — do not theme-swap this. */
+  --navbar-ink: #fff;
   --navbar-gradient-blur-mask-transparent: rgb(0 0 0 / 0);
   --navbar-gradient-blur-mask: rgb(0 0 0 / 1);
   --navbar-gradient-blur-undertone: rgb(255 255 255 / 0.07);
@@ -204,14 +210,12 @@
 }
 
 [data-theme="dark"] {
-  --navbar-contrast-dark-ink: rgb(18 18 20 / 0.94);
   --navbar-safe-area-fill: #050505;
 
   --bg-color: #0d0d0d;
   --bg-elevated: transparent;
   --bg-deep: #f3f1ea;
   --fg-color: #f3f1ea;
-  --navbar-contrast-light-ink: var(--fg-color);
   --muted-color: rgb(243 241 234 / 0.58);
   --line-color: rgb(243 241 234 / 0.12);
   --accent-color: #f3f1ea;
@@ -325,8 +329,6 @@
   --win98-window-icon-green: var(--taskbar-flag-green);
   --win98-window-icon-yellow: var(--taskbar-flag-yellow);
   --win98-window-close-ink: var(--win98-window-ink);
-  --navbar-gradient-blur-mask-transparent: rgb(0 0 0 / 0);
-  --navbar-gradient-blur-mask: rgb(0 0 0 / 1);
   --navbar-gradient-blur-undertone: rgb(0 0 0 / 0.1);
   --navbar-gradient-blur-undertone-mid: rgb(0 0 0 / 0.03);
 }
@@ -393,7 +395,9 @@ html.is-nav-open body {
 }
 
 html.is-nav-open [data-app-navbar="true"],
-html.is-overlay-open [data-app-navbar="true"] {
+html.is-overlay-open [data-app-navbar="true"],
+html.is-nav-open [data-app-navbar-frost="true"],
+html.is-overlay-open [data-app-navbar-frost="true"] {
   position: fixed;
   top: 0;
   right: 0;
@@ -454,13 +458,68 @@ body:has([data-archive-experience="true"]) [data-app-main="true"] {
   background: transparent;
 }
 
+/* Work strip must stack against `[data-app-navbar-frost]` (399). A z-index on
+   main would trap it at 20, so the progressive blur paints over FILTER + / icons. */
+html.is-work-index-route [data-app-main="true"],
+html:has([data-work-index]) [data-app-main="true"] {
+  z-index: auto;
+}
+
 html.is-archive-route [data-footer-wordmark-underlay="true"],
 body:has([data-archive-experience="true"]) [data-footer-wordmark-underlay="true"],
 html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
   display: none;
 }
 
-/* Full-viewport fixed WebGL under `main` can composite above sticky chrome; pin navbar to the viewport. */
+/* Frost is a sibling of the navbar so `mix-blend-mode: difference` on the chrome
+   does not invert the progressive blur. */
+html [data-app-navbar="true"] {
+  mix-blend-mode: difference;
+}
+
+html.is-nav-open [data-app-navbar="true"],
+html.is-overlay-open [data-app-navbar="true"],
+html.is-overlay-blur [data-app-navbar="true"],
+html.is-overlay-blur-pending [data-app-navbar="true"] {
+  mix-blend-mode: normal;
+}
+
+/* Pages that own their own top treatment suppress the progressive frost.
+   Overlay / mobile nav reuse the same subtree as the shared page blur — bring it back. */
+html.is-archive-route [data-app-navbar-frost="true"],
+html:has([data-archive-experience="true"]) [data-app-navbar-frost="true"] {
+  display: none;
+}
+
+html.is-work-index-route [data-app-navbar-frost="true"],
+html:has([data-work-index]) [data-app-navbar-frost="true"] {
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+html.is-work-index-route [data-app-navbar-frost="true"] > *,
+html:has([data-work-index]) [data-app-navbar-frost="true"] > * {
+  display: none;
+}
+
+html.is-overlay-open [data-app-navbar-frost="true"],
+html.is-overlay-blur [data-app-navbar-frost="true"],
+html.is-overlay-blur-pending [data-app-navbar-frost="true"],
+html.is-overlay-blur-closing [data-app-navbar-frost="true"],
+html.is-nav-open [data-app-navbar-frost="true"] {
+  display: block;
+  overflow: visible;
+}
+
+html.is-overlay-open [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur-pending [data-app-navbar-frost="true"] > *,
+html.is-overlay-blur-closing [data-app-navbar-frost="true"] > *,
+html.is-nav-open [data-app-navbar-frost="true"] > * {
+  display: block;
+}
+
+/* Full-viewport WebGL under `main` can composite above sticky chrome; pin navbar to the viewport. */
 html.is-archive-route [data-app-navbar="true"],
 body:has([data-archive-experience="true"]) [data-app-navbar="true"] {
   position: fixed;
