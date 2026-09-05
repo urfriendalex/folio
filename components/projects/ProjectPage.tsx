@@ -69,7 +69,6 @@ const MEDIA_SWIPE_VELOCITY_PX_PER_MS = 0.45;
 const MEDIA_CHANGE_FADE_OUT_DURATION = 0.085;
 const MEDIA_CHANGE_FADE_IN_DURATION = 0.115;
 const MEDIA_CHANGE_EASE = "power2.out";
-const MEDIA_GESTURE_SETTLE_DURATION = 0.14;
 
 type MediaTransition = {
   outgoingIndex: number;
@@ -465,15 +464,6 @@ export function ProjectPage({
 
       const nextIndex = mobileMediaIndex + direction;
       if (nextIndex < 0 || nextIndex >= project.media.length) {
-        const reveal = mobileMediaRevealRef.current;
-        if (reveal) {
-          gsap.to(reveal, {
-            y: 0,
-            duration: reducedMotion ? 0 : MEDIA_GESTURE_SETTLE_DURATION,
-            ease: "power4.out",
-            overwrite: true,
-          });
-        }
         return;
       }
 
@@ -767,14 +757,9 @@ export function ProjectPage({
     }
 
     if (drag.navigatesGallery) {
-      const reveal = mobileMediaRevealRef.current;
-      if (!reveal) {
-        return;
-      }
-      const deltaX = event.clientX - drag.startX;
-      const deltaY = event.clientY - drag.startY;
-      const verticalIntent = Math.abs(deltaY) > Math.abs(deltaX);
-      gsap.set(reveal, { y: verticalIntent ? deltaY * 0.72 : 0 });
+      // At the base zoom, the gesture only measures intent. Keeping the media
+      // stationary makes the successful gesture use the exact same fade as
+      // the arrow controls and avoids a snap-back before the transition.
       return;
     }
 
@@ -829,16 +814,6 @@ export function ProjectPage({
 
         if (shouldNavigate) {
           navigateMedia(deltaY < 0 ? 1 : -1, "gesture");
-        } else {
-          const reveal = mobileMediaRevealRef.current;
-          if (reveal) {
-            gsap.to(reveal, {
-              y: 0,
-              duration: reducedMotion ? 0 : MEDIA_GESTURE_SETTLE_DURATION,
-              ease: "power4.out",
-              overwrite: true,
-            });
-          }
         }
         return;
       }
@@ -1130,6 +1105,7 @@ export function ProjectPage({
                 className={styles.mediaViewerControlButton}
                 onClick={() => handleMediaZoom(-1)}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN}
+                aria-label="Zoom out media"
               >
                 <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>-</span>
@@ -1139,6 +1115,7 @@ export function ProjectPage({
                 className={styles.mediaViewerControlButton}
                 onClick={resetMediaView}
                 disabled={mediaZoom <= PORTRAIT_ZOOM_MIN && !mediaHasPan}
+                aria-label="Reset media zoom and position"
               >
                 <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>reset</span>
@@ -1148,6 +1125,7 @@ export function ProjectPage({
                 className={styles.mediaViewerControlButton}
                 onClick={() => handleMediaZoom(1)}
                 disabled={mediaZoom >= PORTRAIT_ZOOM_MAX}
+                aria-label="Zoom in media"
               >
                 <span className={styles.mediaViewerControlGlass} aria-hidden="true" />
                 <span className={styles.mediaViewerControlGlyph}>+</span>
