@@ -1392,8 +1392,8 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     const rect = trigger.getBoundingClientRect();
     setFilterPanelBox({
-      top: Math.round(rect.bottom + 6),
-      left: Math.round(Math.max(12, rect.left - 18)),
+      top: Math.round(rect.bottom + 4),
+      left: Math.round(Math.max(10, rect.left - 20)),
     });
   };
 
