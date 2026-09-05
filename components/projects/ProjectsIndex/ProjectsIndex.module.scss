@@ -1011,10 +1011,9 @@
 .previewHintFrost,
 .previewHintBlend {
   grid-area: 1 / 1;
-  width: min(11.5rem, calc(100% - 1.5rem));
-  height: 4.25rem;
-  border-radius: 22%;
-  corner-shape: squircle;
+  width: min(6.5rem, calc(100% - 1.5rem));
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
 }
 
 .previewHintFrost {
