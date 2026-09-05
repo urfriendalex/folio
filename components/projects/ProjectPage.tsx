@@ -234,32 +234,17 @@ export function ProjectPage({
   );
 
   useEffect(() => {
-    if (!toolbarExpanded) {
-      setToolbarLinesVisible(false);
-      return;
-    }
-
-    if (reducedMotion) {
-      setToolbarLinesVisible(true);
-      return;
-    }
-
     const timerId = window.setTimeout(() => {
-      setToolbarLinesVisible(true);
-    }, TOOLBAR_COPY_REVEAL_DELAY_MS);
+      setToolbarLinesVisible(toolbarExpanded);
+    }, toolbarExpanded && !reducedMotion ? TOOLBAR_COPY_REVEAL_DELAY_MS : 0);
 
     return () => window.clearTimeout(timerId);
   }, [reducedMotion, toolbarExpanded]);
 
   useEffect(() => {
-    if (!isPendingNav || pendingDirection === null) {
-      setShowNavPending(false);
-      return;
-    }
-
     const timerId = window.setTimeout(() => {
-      setShowNavPending(true);
-    }, NAV_PENDING_FEEDBACK_MS);
+      setShowNavPending(isPendingNav && pendingDirection !== null);
+    }, isPendingNav && pendingDirection !== null ? NAV_PENDING_FEEDBACK_MS : 0);
 
     return () => window.clearTimeout(timerId);
   }, [isPendingNav, pendingDirection]);
@@ -294,16 +279,22 @@ export function ProjectPage({
       window.clearTimeout(timerId);
     });
     toolbarUnderlineTimersRef.current = [];
-    setVisitUnderlineReady(false);
-    setOverviewUnderlineReady(false);
+    const resetTimer = window.setTimeout(() => {
+      setVisitUnderlineReady(false);
+      setOverviewUnderlineReady(false);
+    }, 0);
+    toolbarUnderlineTimersRef.current.push(resetTimer);
 
     if (!toolbarLinesVisible) {
       return;
     }
 
     if (reducedMotion) {
-      setVisitUnderlineReady(true);
-      setOverviewUnderlineReady(true);
+      const readyTimer = window.setTimeout(() => {
+        setVisitUnderlineReady(true);
+        setOverviewUnderlineReady(true);
+      }, 0);
+      toolbarUnderlineTimersRef.current.push(readyTimer);
       return;
     }
 

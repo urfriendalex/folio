@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/refs -- Hook returns stable event/ref callbacks; refs are read only when those callbacks run. */
+
 import { type ComponentProps } from "react";
 import { useExploreCueTarget } from "./useExploreCueTarget";
 

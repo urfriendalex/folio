@@ -1,5 +1,4 @@
 import { normalizeProjectMediaSlots } from "@/lib/projectMedia";
-import type { ProjectCategory, ProjectEntry } from "./types";
 
 export type { ProjectCategory, ProjectFilterId } from "./categories";
 export {

@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -199,7 +200,6 @@ type ProjectsIndexProps = {
 export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndexProps) {
   const [view, setView] = useState<IndexView>("list");
   const [filter, setFilter] = useState<ProjectFilterId>(initialFilter);
-  const [isSuperWide, setIsSuperWide] = useState(false);
   const [exitingView, setExitingView] = useState<IndexView | null>(null);
   const [pendingView, setPendingView] = useState<IndexView | null>(null);
   const [entered, setEntered] = useState(false);
@@ -219,8 +219,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const pinRef = useRef<HTMLDivElement | null>(null);
   const pinListRef = useRef(false);
   const pinFrozenRef = useRef(false);
-  const pinProgressRef = useRef(0);
-  const visibleProjects = filterProjectsByType(projects, filter);
+  const visibleProjects = useMemo(() => filterProjectsByType(projects, filter), [filter, projects]);
   const visibleSlugs = visibleProjects.map((project) => project.slug).join(" ");
   const filterCounts = projectFilterCounts(projects);
   const visibleFilters = PROJECT_FILTERS.filter((option) => option.id === "all" || filterCounts[option.id] > 0);
@@ -296,7 +295,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         video.load();
       });
     };
-  }, [hasMounted, reducedMotion, visibleSlugs]);
+  }, [hasMounted, reducedMotion, visibleProjects, visibleSlugs]);
 
   const viewOptions: ViewOption[] = [...desktopGridOptions, LIST_OPTION];
   const isList = view === "list";
@@ -408,7 +407,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     });
 
     previousRects.clear();
-  }, [view, visibleSlugs]);
+  }, [view, visibleProjects, visibleSlugs]);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia(MOBILE_MQ);
@@ -420,7 +419,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       const superWide = superWideQuery.matches;
       const viewport = { mobile, superWide };
 
-      setIsSuperWide(superWide);
       if (!mobile) {
         setFilterMenuOpen(false);
       }
@@ -521,8 +519,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     const stage = pinRef.current;
     const list = tableRef.current;
+    const rowsBySlug = rowRefs.current;
     const rows = visibleProjects
-      .map((project) => rowRefs.current.get(project.slug))
+      .map((project) => rowsBySlug.get(project.slug))
       .filter((node): node is HTMLElement => Boolean(node));
 
     if (!stage || rows.length === 0) {
@@ -719,7 +718,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     return () => {
       const shouldRelease = previewDismissedRef.current;
       const slug = activeSlugRef.current;
-      const row = rowRefs.current.get(slug);
+      const row = rowsBySlug.get(slug);
       const rowTop = releaseRowTopRef.current ?? row?.getBoundingClientRect().top ?? 0;
       releaseRowTopRef.current = null;
       window.cancelAnimationFrame(frame);
@@ -740,7 +739,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       }
 
       window.requestAnimationFrame(() => {
-        const node = rowRefs.current.get(slug);
+        const node = rowsBySlug.get(slug);
         const top =
           window.scrollY +
           (node?.getBoundingClientRect().top ?? rowTop) -
@@ -755,7 +754,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         ScrollTrigger.refresh();
       });
     };
-  }, [dismissPreview, hasMounted, isList, isMobile, previewDismissed, reducedMotion, visibleSlugs]);
+  }, [dismissPreview, hasMounted, isList, isMobile, previewDismissed, reducedMotion, visibleProjects, visibleSlugs]);
 
   useEffect(() => {
     if (!isList || !isMobile || !hasMounted) {
@@ -767,7 +766,6 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     return onBodyScrollLock({
       beforeLock() {
         registerGsapScrollTrigger();
-        pinProgressRef.current = ScrollTrigger.getById("work-list-pin")?.progress ?? 0;
         pinFrozenRef.current = true;
         paused.length = 0;
         ScrollTrigger.getAll().forEach((trigger) => {
@@ -838,7 +836,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       window.cancelAnimationFrame(frame);
       ctx.revert();
     };
-  }, [hasMounted, isList, isMobile, view, visibleSlugs, visibleProjects.length]);
+  }, [hasMounted, isList, isMobile, view, visibleProjects, visibleSlugs]);
 
   useEffect(() => {
     if (!isList || !isMobile) {
@@ -1063,6 +1061,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       return;
     }
 
+    // eslint-disable-next-line react-hooks/immutability -- Intentional self-scheduling animation loop.
     rafRef.current = window.requestAnimationFrame(tickPreview);
   }, [applyPreviewTransform, reducedMotion]);
 
@@ -1348,7 +1347,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       tween.kill();
       gsap.set(items, { autoAlpha: 1, clearProps: "transform" });
     };
-  }, [filterMotion, reducedMotion, visibleSlugs]);
+  }, [filterMotion, isList, reducedMotion, visibleSlugs]);
 
   useEffect(() => {
     if (!filterMenuOpen) {

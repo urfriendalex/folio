@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type FocusEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type FocusEvent, type PointerEvent } from "react";
 import { useExploreCue } from "./ExploreCueProvider";
 import { isPointerOverLoadedMedia, loadedMediaPaintBox } from "./loadedMediaHit";
 
@@ -43,8 +43,10 @@ export function useExploreCueTarget<T extends HTMLElement>({
   const observerRef = useRef<MutationObserver | null>(null);
   const moveRafRef = useRef(0);
   const pendingMoveRef = useRef<{ host: HTMLElement; x: number; y: number } | null>(null);
-  enabledRef.current = enabled;
-  labelRef.current = label;
+  useLayoutEffect(() => {
+    enabledRef.current = enabled;
+    labelRef.current = label;
+  }, [enabled, label]);
 
   const markOverMedia = useCallback((host: HTMLElement, over: boolean) => {
     overMediaRef.current = over;
@@ -295,12 +297,12 @@ export function useExploreCueTarget<T extends HTMLElement>({
     };
   }, [cancelPendingMove, cue, markOverMedia]);
 
-  return {
+  return useMemo(() => ({
     setRef,
     onPointerEnter,
     onPointerMove,
     onPointerLeave,
     onFocus,
     onBlur,
-  };
+  }), [onBlur, onFocus, onPointerEnter, onPointerLeave, onPointerMove, setRef]);
 }

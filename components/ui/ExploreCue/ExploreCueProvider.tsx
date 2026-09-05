@@ -250,7 +250,8 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   }, [layout]);
 
   useLayoutEffect(() => {
-    hideNow();
+    const frame = window.requestAnimationFrame(hideNow);
+    return () => window.cancelAnimationFrame(frame);
   }, [hideNow, pathname]);
 
   useLayoutEffect(() => {
@@ -318,8 +319,9 @@ export function ExploreCueProvider({ children }: ExploreCueProviderProps) {
   }, [followTo, hideNow]);
 
   useLayoutEffect(() => {
+    const pos = posRef.current;
     return () => {
-      gsap.killTweensOf(posRef.current);
+      gsap.killTweensOf(pos);
       if (exitTimerRef.current) {
         window.clearTimeout(exitTimerRef.current);
       }

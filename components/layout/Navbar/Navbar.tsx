@@ -144,6 +144,7 @@ export function Navbar() {
       }
     };
 
+    const menuButton = menuButtonRef.current;
     const frame = window.requestAnimationFrame(() => {
       firstMenuActionRef.current?.focus();
     });
@@ -156,7 +157,7 @@ export function Navbar() {
 
       const overlay = document.getElementById("mobile-navigation");
       if (overlay?.contains(document.activeElement)) {
-        menuButtonRef.current?.focus();
+        menuButton?.focus();
       }
     };
   }, [menuOpen]);
