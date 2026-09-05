@@ -1037,7 +1037,8 @@
 }
 
 @keyframes previewHintFade {
-  0%, 85% { opacity: 1; }
+  0% { opacity: 0; }
+  15%, 85% { opacity: 1; }
   100% { opacity: 0; visibility: hidden; }
 }
 
