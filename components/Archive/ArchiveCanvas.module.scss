@@ -74,6 +74,10 @@
   pointer-events: none;
 }
 
+.viewport > :global([data-app-navbar-frost="true"]) {
+  z-index: 4;
+}
+
 .viewport > :global([data-app-navbar="true"]) {
   z-index: 5;
 }
