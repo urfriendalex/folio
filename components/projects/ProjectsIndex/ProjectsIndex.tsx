@@ -31,7 +31,7 @@ import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
 import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
-import { getLenis } from "@/lib/smoothScroll";
+import { getLenis, scrollToTop } from "@/lib/smoothScroll";
 import styles from "./ProjectsIndex.module.scss";
 
 type GridView = "stack" | "wide" | "regular";
@@ -1295,9 +1295,12 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
   const applyFilter = (next: ProjectFilterId) => {
     if (next !== filter) {
+      const nextProjects = filterProjectsByType(projects, next);
       setFilterMotion(true);
       setFilter(next);
       writeFilterToUrl(next);
+      setActiveSlug(nextProjects[0]?.slug ?? "");
+      scrollToTop({ force: true });
     }
 
     setFilterMenuOpen(false);
