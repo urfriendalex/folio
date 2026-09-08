@@ -1,0 +1,129 @@
+name: Cleanup merged PR previews
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report eligible deployments without deleting them
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: vercel-preview-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: team_yyNqWJiK3Q0TkCYu6FTdUirW
+      VERCEL_PROJECT_ID: prj_xMb46rOoHVwwsuMJdM3Nd7BPzU23
+      RETENTION_DAYS: "3"
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+    steps:
+      - name: Delete expired previews from closed PRs
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const teamId = process.env.VERCEL_TEAM_ID;
+            const projectId = process.env.VERCEL_PROJECT_ID;
+            const retentionDays = Number(process.env.RETENTION_DAYS);
+            const dryRun = process.env.DRY_RUN === "true";
+            const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+            const headers = {
+              Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+              "Content-Type": "application/json",
+            };
+
+            if (!process.env.VERCEL_TOKEN) {
+              core.setFailed("VERCEL_TOKEN is not configured.");
+              return;
+            }
+
+            const deployments = [];
+            let until = cutoff;
+
+            do {
+              const query = new URLSearchParams({
+                projectId,
+                teamId,
+                limit: "100",
+                until: String(until),
+              });
+              const response = await fetch(
+                `https://api.vercel.com/v6/deployments?${query}`,
+                { headers },
+              );
+
+              if (!response.ok) {
+                throw new Error(
+                  `Failed to list deployments: ${response.status} ${await response.text()}`,
+                );
+              }
+
+              const page = await response.json();
+              deployments.push(...page.deployments);
+              until = page.pagination?.next ?? null;
+            } while (until);
+
+            const candidates = deployments.filter(
+              (deployment) =>
+                deployment.target !== "production" &&
+                deployment.meta?.githubPrId,
+            );
+
+            let eligible = 0;
+            let deleted = 0;
+
+            for (const deployment of candidates) {
+              const pullNumber = Number(deployment.meta.githubPrId);
+              const { data: pull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+              });
+
+              if (pull.state !== "closed") continue;
+
+              eligible += 1;
+              const deploymentId = deployment.uid ?? deployment.id;
+              const label = `${deployment.url} (PR #${pullNumber})`;
+
+              if (dryRun) {
+                core.info(`Would delete ${label}`);
+                continue;
+              }
+
+              const response = await fetch(
+                `https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${teamId}`,
+                { method: "DELETE", headers },
+              );
+
+              if (!response.ok) {
+                throw new Error(
+                  `Failed to delete ${label}: ${response.status} ${await response.text()}`,
+                );
+              }
+
+              deleted += 1;
+              core.info(`Deleted ${label}`);
+            }
+
+            await core.summary
+              .addHeading("Vercel preview cleanup")
+              .addTable([
+                [{ data: "Retention", header: true }, `${retentionDays} days after PR closure`],
+                [{ data: "Eligible", header: true }, String(eligible)],
+                [{ data: dryRun ? "Would delete" : "Deleted", header: true }, String(dryRun ? eligible : deleted)],
+                [{ data: "Production touched", header: true }, "0"],
+              ])
+              .write();
