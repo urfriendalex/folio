@@ -46,6 +46,7 @@
 .titleRow {
   display: flex;
   align-items: baseline;
+  align-items: last baseline;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -53,6 +54,7 @@
 .titleCluster {
   display: flex;
   align-items: baseline;
+  align-items: last baseline;
   gap: 0.55em;
   min-width: 0;
 }
@@ -105,9 +107,12 @@
   position: relative;
   flex-shrink: 0;
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
+  align-items: last baseline;
   gap: 0.28em;
   color: color-mix(in srgb, var(--fg-color) 54%, transparent);
+  font-size: 0.63rem;
+  line-height: 1.25;
   text-decoration: none;
   transition-property: color, transform;
   transition-duration: 200ms, 150ms;
@@ -122,9 +127,9 @@
 
 .visitIcon {
   display: block;
-  width: 0.68rem;
-  height: 0.68rem;
-  translate: 0 0.02em;
+  width: 1.08em;
+  height: 1.08em;
+  translate: 0 0.08em;
 }
 
 .visitWordClip {
@@ -140,9 +145,9 @@
   overflow: hidden;
   min-width: 0;
   font-family: var(--font-pixel-square-stack);
-  font-size: 0.63rem;
+  font-size: 1em;
   letter-spacing: 0.06em;
-  line-height: 1.35;
+  line-height: 1.25;
   text-transform: lowercase;
   white-space: nowrap;
   opacity: 0;
@@ -253,13 +258,11 @@
   }
 
   .titleRow {
-    align-items: flex-start;
     gap: 0.55rem;
   }
 
   .title {
     font-size: clamp(0.68rem, 2.75vw, 0.78rem);
-    line-height: 1.22;
   }
 
   .titleSeparator,
@@ -268,15 +271,6 @@
   }
 
   .year {
-    padding-top: 0.05rem;
     font-size: 0.58rem;
-  }
-}
-
-@media (max-width: 24rem) {
-  .titleRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.22rem;
   }
 }
