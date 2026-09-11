@@ -108,7 +108,7 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: last baseline;
-  gap: 0.28em;
+  gap: 0.2em;
   color: color-mix(in srgb, var(--fg-color) 54%, transparent);
   font-size: 0.63rem;
   line-height: 1;
@@ -139,11 +139,11 @@
   left: 50%;
   top: 50%;
   display: block;
-  width: 0.86em;
-  height: 0.86em;
+  width: 0.9em;
+  height: 0.9em;
   overflow: visible;
-  /* Pixel-square “visit” sits on the baseline; the ↗ is top-heavy, so drop it into the glyph body. */
-  translate: -50% calc(-50% + 0.16em);
+  /* Optical: seat the top-heavy ↗ in the x-height of the pixel-square word. */
+  translate: -50% calc(-50% + 0.14em);
 }
 
 .visitWordClip {

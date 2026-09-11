@@ -40,7 +40,7 @@ function VisitArrowIcon() {
         strokeLinejoin="miter"
       />
       <path
-        d="M3.15 8.85 7.52 4.48"
+        d="M3.15 8.85 7.86 4.14"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
