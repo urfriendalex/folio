@@ -32,12 +32,19 @@ function VisitArrowIcon() {
   return (
     <svg className={styles.visitIcon} viewBox="0 0 12 12" aria-hidden="true">
       <path
-        d="M3.15 8.85 8.85 3.15M4.1 3.15h4.75V7.9"
+        d="M5.05 2.7h4.25V6.95"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="square"
         strokeLinejoin="miter"
+      />
+      <path
+        d="M2.7 9.3 6.85 5.15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="square"
       />
     </svg>
   );
