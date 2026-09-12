@@ -245,6 +245,8 @@
 }
 
 .content[data-variant="immersive"][data-non-scrollable="true"] {
+  /* Let gallery glyphs blend with the immersive tint as well as the media. */
+  z-index: auto;
   overflow: hidden;
   overscroll-behavior: none;
 }

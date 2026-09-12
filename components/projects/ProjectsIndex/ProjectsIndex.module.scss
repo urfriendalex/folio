@@ -1001,16 +1001,17 @@
 .previewHint {
   position: absolute;
   inset: 0;
-  z-index: 2;
   display: grid;
   place-items: center;
   pointer-events: none;
-  animation: previewHintFade 3.5s linear forwards;
+  /* Parent opacity would cut off the frost's backdrop and isolate the ink. */
 }
 
 .previewHintFrost,
 .previewHintBlend {
   grid-area: 1 / 1;
+  position: relative;
+  z-index: 2;
   width: min(6.5rem, calc(100% - 1.5rem));
   aspect-ratio: 1;
   border-radius: 0.5rem;
@@ -1020,6 +1021,7 @@
   background: rgb(255 255 255 / 0.08);
   -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
   backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
+  animation: previewHintFrostFade 3.5s linear forwards;
 }
 
 .previewHintBlend {
@@ -1034,16 +1036,32 @@
   text-align: center;
   text-transform: lowercase;
   mix-blend-mode: difference;
+  animation: previewHintInkFade 3.5s linear forwards;
 }
 
-@keyframes previewHintFade {
-  0% { opacity: 0; }
-  15%, 85% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
+@keyframes previewHintFrostFade {
+  0%, 100% {
+    background: rgb(255 255 255 / 0);
+    -webkit-backdrop-filter: blur(0px) saturate(100%);
+    backdrop-filter: blur(0px) saturate(100%);
+  }
+  15%, 85% {
+    background: rgb(255 255 255 / 0.08);
+    -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
+    backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
+  }
+  100% { visibility: hidden; }
+}
+
+@keyframes previewHintInkFade {
+  0%, 100% { color: rgb(255 255 255 / 0); }
+  15%, 85% { color: #fff; }
+  100% { visibility: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .previewHint {
+  .previewHintFrost,
+  .previewHintBlend {
     animation: none;
   }
 }
