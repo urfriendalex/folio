@@ -32,12 +32,19 @@ function VisitArrowIcon() {
   return (
     <svg className={styles.visitIcon} viewBox="0 0 12 12" aria-hidden="true">
       <path
-        d="M3.15 8.85 8.85 3.15M4.1 3.15h4.75V7.9"
+        d="M4.1 3.15h4.75V7.9"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="square"
         strokeLinejoin="miter"
+      />
+      <path
+        d="M3.15 8.85 7.86 4.14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="square"
       />
     </svg>
   );
@@ -101,7 +108,9 @@ export function ProjectCard({
                   rel="noopener noreferrer"
                   aria-label={`Visit ${project.title} (opens in a new tab)`}
                 >
-                  <VisitArrowIcon />
+                  <span className={styles.visitIconSlot} aria-hidden="true">
+                    <VisitArrowIcon />
+                  </span>
                   <span className={styles.visitWordClip}>
                     <span className={styles.visitWord}>visit</span>
                   </span>

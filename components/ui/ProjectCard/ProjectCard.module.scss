@@ -46,6 +46,7 @@
 .titleRow {
   display: flex;
   align-items: baseline;
+  align-items: last baseline;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -53,6 +54,7 @@
 .titleCluster {
   display: flex;
   align-items: baseline;
+  align-items: last baseline;
   gap: 0.55em;
   min-width: 0;
 }
@@ -105,9 +107,11 @@
   position: relative;
   flex-shrink: 0;
   display: inline-flex;
-  align-items: center;
-  gap: 0.28em;
+  align-items: last baseline;
+  gap: 0.2em;
   color: color-mix(in srgb, var(--fg-color) 54%, transparent);
+  font-size: 0.63rem;
+  line-height: 1;
   text-decoration: none;
   transition-property: color, transform;
   transition-duration: 200ms, 150ms;
@@ -120,17 +124,33 @@
   inset: -0.7rem -0.45rem;
 }
 
+.visitIconSlot {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
 .visitIcon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: block;
-  width: 0.68rem;
-  height: 0.68rem;
-  translate: 0 0.02em;
+  width: 0.9em;
+  height: 0.9em;
+  overflow: visible;
+  /* Optical: seat the top-heavy ↗ in the x-height of the pixel-square word. */
+  translate: -50% calc(-50% + 0.14em);
 }
 
 .visitWordClip {
   display: grid;
   grid-template-columns: 0fr;
   min-width: 0;
+  line-height: 1;
   transition-property: grid-template-columns;
   transition-duration: 280ms;
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
@@ -140,9 +160,9 @@
   overflow: hidden;
   min-width: 0;
   font-family: var(--font-pixel-square-stack);
-  font-size: 0.63rem;
+  font-size: 1em;
   letter-spacing: 0.06em;
-  line-height: 1.35;
+  line-height: 1;
   text-transform: lowercase;
   white-space: nowrap;
   opacity: 0;
@@ -253,30 +273,20 @@
   }
 
   .titleRow {
-    align-items: flex-start;
     gap: 0.55rem;
   }
 
   .title {
     font-size: clamp(0.68rem, 2.75vw, 0.78rem);
-    line-height: 1.22;
   }
 
   .titleSeparator,
-  .titleSecondary {
+  .titleSecondary,
+  .visitWordClip {
     display: none;
   }
 
   .year {
-    padding-top: 0.05rem;
     font-size: 0.58rem;
-  }
-}
-
-@media (max-width: 24rem) {
-  .titleRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.22rem;
   }
 }
