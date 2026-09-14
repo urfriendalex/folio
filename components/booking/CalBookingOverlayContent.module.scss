@@ -269,8 +269,7 @@
 }
 
 /* Time step: only the slot grid scrolls; title row stays fixed */
-.stepContent:has(.timeGrid),
-.stepContent:has(.dateGrid) {
+.stepContent:has(.timeGrid) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -279,17 +278,8 @@
   min-height: 0;
 }
 
-.stepContent:has(.timeGrid) > .stepTop,
-.stepContent:has(.dateGrid) > .stepTop {
+.stepContent:has(.timeGrid) > .stepTop {
   flex-shrink: 0;
-}
-
-/* Date step: stretch the week grid so leftover days sit on the same row rhythm, not in a void. */
-.stepContent:has(.dateGrid) > .dateGrid {
-  flex: 1 1 auto;
-  min-height: 0;
-  align-content: stretch;
-  grid-auto-rows: 1fr;
 }
 
 .skeletonStepContent {
@@ -297,25 +287,6 @@
   width: 100%;
   align-content: start;
   gap: clamp(0.62rem, 1.1vw, 0.9rem);
-}
-
-.skeletonStepContent:has(.skeletonDateGrid) {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.skeletonStepContent:has(.skeletonDateGrid) > .stepTop {
-  flex-shrink: 0;
-}
-
-.skeletonStepContent:has(.skeletonDateGrid) > .skeletonDateGrid {
-  flex: 1 1 auto;
-  min-height: 0;
-  align-content: stretch;
-  grid-auto-rows: 1fr;
 }
 
 .metaTitle {
@@ -1308,12 +1279,47 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .stepContent:has(.dateGrid) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-content: stretch;
+  }
+
+  .stepContent:has(.dateGrid) > .stepTop {
+    flex-shrink: 0;
+  }
+
+  .stepContent:has(.dateGrid) > .dateGrid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: stretch;
+    grid-auto-rows: 1fr;
+  }
+
   .stepPane > .skeletonStepContent {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) > .stepTop {
+    flex-shrink: 0;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) > .skeletonDateGrid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: stretch;
+    grid-auto-rows: 1fr;
   }
 
   .contextPane {
@@ -1414,36 +1420,21 @@
   }
 
   /* `margin-top: auto` pushes the CTA to the pane bottom regardless of `:has()` flex quirks inside row 1.
-     Fade is painted on `::before` and bled into overlay padding so it isn’t a clipped “box-shadow” slab. */
+     Solid full-bleed bar (not a translucent fade) so page chrome behind the overlay cannot read as a
+     sheared box-shadow around the button. */
   .actionBar {
     position: relative;
     flex-shrink: 0;
-    width: 100%;
+    width: auto;
     justify-content: stretch;
     align-self: stretch;
-    padding-top: clamp(1.35rem, 5.5vw, 2.1rem);
+    margin-inline: calc(-1 * var(--content-padding-inline));
+    padding-inline: var(--content-padding-inline);
+    padding-top: 0.85rem;
     margin-top: auto;
     z-index: 2;
-    isolation: isolate;
     overflow: visible;
-    background: transparent;
-  }
-
-  .actionBar::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(-1 * var(--content-padding-inline));
-    right: calc(-1 * var(--content-padding-inline));
-    z-index: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in srgb, var(--overlay-immersive-backdrop) 38%, transparent) 45%,
-      var(--overlay-immersive-backdrop) 100%
-    );
+    background: var(--bg-color);
   }
 
   .primaryLink {
@@ -1452,8 +1443,8 @@
     width: 100%;
     min-height: 2.85rem;
     box-shadow:
-      0 -0.4rem 0.7rem color-mix(in srgb, var(--overlay-fg) 8%, transparent),
-      0 0.22rem 0.55rem color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+      0 0.22rem 0.55rem color-mix(in srgb, var(--overlay-fg) 7%, transparent),
+      0 0.06rem 0.18rem color-mix(in srgb, var(--overlay-fg) 4%, transparent);
   }
 
   .skeletonSubmit {

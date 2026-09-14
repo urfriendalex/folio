@@ -467,7 +467,8 @@ html:has([data-work-index]) [data-app-main="true"] {
 
 html.is-archive-route [data-footer-wordmark-underlay="true"],
 body:has([data-archive-experience="true"]) [data-footer-wordmark-underlay="true"],
-html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
+html.is-fullscreen-route [data-footer-wordmark-underlay="true"],
+html.is-overlay-open [data-footer-wordmark-underlay="true"] {
   display: none;
 }
 
