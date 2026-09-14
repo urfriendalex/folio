@@ -184,8 +184,7 @@
 .body {
   display: grid;
   min-width: 0;
-  overflow-x: visible;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .sheetLayout,
@@ -239,8 +238,7 @@
 .stepPane {
   min-height: 0;
   min-width: 0;
-  overflow-x: visible;
-  overflow-y: auto;
+  overflow: visible;
   align-content: start;
   align-self: stretch;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -516,6 +514,8 @@
   display: grid;
   align-content: space-between;
   gap: 0.5rem;
+  width: 100%;
+  height: 100%;
   min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
   text-align: left;
@@ -694,6 +694,7 @@
   display: flex;
   justify-content: flex-start;
   padding-top: 0.12rem;
+  overflow: visible;
 }
 
 .primaryLink {
@@ -706,7 +707,7 @@
   border: 1px solid color-mix(in srgb, var(--overlay-fg) 17%, transparent);
   corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
-  background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
+  background: transparent;
   box-shadow: none;
   color: var(--overlay-fg);
   font-family: var(--font-body-stack);
@@ -728,7 +729,7 @@
 @media (hover: hover) and (pointer: fine) {
   .primaryLink:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--overlay-fg) 28%, transparent);
-    background: color-mix(in srgb, var(--overlay-fg) 10%, transparent);
+    background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
   }
 }
 
@@ -956,6 +957,7 @@
   align-content: space-between;
   gap: 0.5rem;
   width: 100%;
+  height: 100%;
   min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
 }
@@ -1202,23 +1204,27 @@
     width: 100%;
   }
 
-  /* One scroll ancestry: nested `overflow:auto` + iOS Safari often strand the footer outside the scrolled region. */
+  /* Keep `.body` from becoming a second scroller, but do not clip the CTA shadow.
+     `overflow-x: hidden` + `overflow-y: visible` computes to `auto` and shears box-shadow. */
   .body {
-    overflow: hidden;
+    overflow: visible;
   }
 
   .header {
     padding-bottom: 0.6rem;
   }
 
+  .headerLine {
+    align-items: center;
+  }
+
   .title {
     font-size: clamp(1.35rem, 7vw, 1.85rem);
-    line-height: 0.96;
+    line-height: 1;
   }
 
   .headerControls {
     gap: 0.42rem;
-    padding-bottom: 0.08rem;
     margin-left: auto;
   }
 
@@ -1230,8 +1236,7 @@
     grid-template-rows: minmax(0, 1fr) auto;
     gap: 0.65rem;
     padding-bottom: 0;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   /* Fill `.widgetSection` height so spare space sits in row 1 above the footer button. */
@@ -1255,8 +1260,7 @@
     width: 100%;
     max-width: none;
     justify-self: stretch;
-    overflow-x: visible;
-    overflow-y: hidden;
+    overflow: visible;
     align-content: unset;
     grid-template-rows: unset;
   }
@@ -1269,12 +1273,47 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .stepContent:has(.dateGrid) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-content: stretch;
+  }
+
+  .stepContent:has(.dateGrid) > .stepTop {
+    flex-shrink: 0;
+  }
+
+  .stepContent:has(.dateGrid) > .dateGrid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: stretch;
+    grid-auto-rows: 1fr;
+  }
+
   .stepPane > .skeletonStepContent {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) > .stepTop {
+    flex-shrink: 0;
+  }
+
+  .stepPane > .skeletonStepContent:has(.skeletonDateGrid) > .skeletonDateGrid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: stretch;
+    grid-auto-rows: 1fr;
   }
 
   .contextPane {
@@ -1300,20 +1339,7 @@
   }
 
   .stepTop {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: 0.38rem;
-  }
-
-  .stepTop .navGroup {
-    width: 100%;
-  }
-
-  .stepTop .navButton,
-  .stepTop .skeletonNav {
-    flex: 1;
-    min-width: 0;
+    align-items: center;
   }
 
   .stepTitle {
@@ -1397,17 +1423,15 @@
     padding-top: clamp(0.85rem, 4vw, 1.15rem);
     margin-top: auto;
     z-index: 2;
-    background: linear-gradient(
-      180deg,
-      transparent,
-      color-mix(in srgb, var(--overlay-immersive-backdrop) 52%, transparent) 35%,
-      var(--overlay-immersive-backdrop) 92%
-    );
+    overflow: visible;
+    background: transparent;
   }
 
   .primaryLink {
     width: 100%;
     min-height: 2.85rem;
+    background: transparent;
+    box-shadow: none;
   }
 
   .skeletonSubmit {
