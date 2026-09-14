@@ -225,6 +225,25 @@
     visibility 0ms linear 220ms;
 }
 
+/* About keeps the wordmark as its identity label while the rest of the site chrome recedes. */
+.header[data-about-open="true"] {
+  --navbar-ink: var(--overlay-immersive-fg);
+}
+
+.header[data-about-open="true"] .inner {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    visibility 0ms linear 0ms;
+}
+
+.header[data-about-open="true"] .nav,
+.header[data-about-open="true"] .menuButton {
+  visibility: hidden;
+}
+
 .logo {
   --logo-size: 1rem;
   display: inline-flex;
@@ -286,7 +305,16 @@
   transform: translateY(0) skew(0deg, 0deg);
 }
 
+.header[data-about-open="true"] .hiddenPart {
+  max-width: 8.5ch;
+  transform: translateY(0) skew(0deg, 0deg);
+}
+
 .logo:is(:hover, :focus-visible) .initialY {
+  margin-left: 0.32em;
+}
+
+.header[data-about-open="true"] .initialY {
   margin-left: 0.32em;
 }
 
@@ -295,7 +323,18 @@
   transform: translateY(0) skew(0deg, 0deg);
 }
 
+.header[data-about-open="true"] .hiddenSurname {
+  max-width: 7ch;
+  transform: translateY(0) skew(0deg, 0deg);
+}
+
 .logo:is(:hover, :focus-visible) .dot {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+}
+
+.header[data-about-open="true"] .dot {
   max-width: 0;
   opacity: 0;
   margin-left: 0;

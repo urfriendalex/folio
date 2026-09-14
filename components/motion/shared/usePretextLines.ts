@@ -25,6 +25,11 @@ function letterSpacingPx(cs: CSSStyleDeclaration): number {
   return Number.isFinite(px) ? px : 0;
 }
 
+function textIndentPx(cs: CSSStyleDeclaration): number {
+  const px = parseFloat(cs.textIndent);
+  return Number.isFinite(px) ? px : 0;
+}
+
 /**
  * Canvas `measureText` ignores CSS `letter-spacing`. Negative tracking makes rendered lines
  * narrower than measured widths, so we narrow the layout budget slightly so breaks match the DOM.
@@ -74,7 +79,9 @@ export function usePretextLines(
         return;
       }
 
-      setLines(layoutLinesWordWrap(normalizedText, width, font, whiteSpace));
+      setLines(
+        layoutLinesWordWrap(normalizedText, width, font, whiteSpace, textIndentPx(cs)),
+      );
     };
 
     update();

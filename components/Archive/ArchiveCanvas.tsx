@@ -191,7 +191,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
   const [focusLabel, setFocusLabel] = useState<string>("");
   const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState | null>(null);
-  /** Lets the preparing overlay play its exit animation after the scene begins reporting load progress. */
+  /** Lets the preparing overlay play its exit animation after the first media becomes available. */
   const [preparingOverlayDismissed, setPreparingOverlayDismissed] = useState(false);
   const [hintVisible, setHintVisible] = useState(false);
   const [hintExiting, setHintExiting] = useState(false);
@@ -262,9 +262,10 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     };
   }, []);
 
-  const isPreparing = sceneLoadState === null;
+  const hasMedia = (sceneLoadState?.loaded ?? 0) > 0;
+  const isPreparing = sceneLoadState === null || (!hasMedia && sceneLoadState.active);
   const assetsStillLoading = sceneLoadState?.active === true;
-  const experienceReady = sceneLoadState !== null && !sceneLoadState.active;
+  const experienceReady = hasMedia && preparingOverlayDismissed;
 
   const hideSceneUntilReady = isPreparing;
 
@@ -286,7 +287,6 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
 
   useEffect(() => {
     if (!experienceReady || hintPlayedRef.current) return;
-    if (sceneLoadState && sceneLoadState.total === 0) return;
 
     hintPlayedRef.current = true;
 
@@ -312,7 +312,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
       window.clearTimeout(fadeId);
       window.clearTimeout(hideId);
     };
-  }, [experienceReady, sceneLoadState]);
+  }, [experienceReady]);
 
   return (
     <section
@@ -346,7 +346,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
             exiting={hintExiting}
           />
         ) : null}
-        {assetsStillLoading ? <ArchiveAssetsLoadingIndicator /> : null}
+        {assetsStillLoading && !isPreparing ? <ArchiveAssetsLoadingIndicator /> : null}
         {showPreparingOverlay ? (
           <ArchivePreparingOverlay
             ariaHidden={preparingOverlayExiting}

@@ -184,15 +184,18 @@
   cursor: pointer;
 }
 
-/* Same vertical band as Navbar `.inner`: padding-block 0.1rem + centered 2rem menu toggle */
+/* Use the exact Navbar `.inner` row so logo and overlay action share one visual center. */
 .closeButton[data-variant="immersive"] {
-  top: calc(0.1rem + (var(--header-height) - 2.2rem) / 2);
+  top: 0.1rem;
   right: max(var(--content-padding-inline), 0.8rem);
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  min-height: 2rem;
+  height: calc(var(--header-height) - 0.2rem);
+  min-height: 0;
+  padding-block: 0;
   color: var(--overlay-fg);
+  line-height: 1;
 }
 
 .closeButton:hover,

@@ -132,7 +132,9 @@
 
 .assetsLoadingIndicator {
   position: absolute;
-  inset: 0;
+  left: 0.65rem;
+  bottom: 0.55rem;
+  max-width: calc(50% - 1rem);
   z-index: 2;
   display: flex;
   align-items: center;
@@ -145,11 +147,11 @@
   align-items: baseline;
   justify-content: center;
   margin: 0;
-  padding: 0.35rem 0.65rem;
-  font-family: var(--font-pixel-square-stack);
-  font-size: clamp(0.62rem, 0.95vw, 0.85rem);
-  line-height: 1.35;
-  letter-spacing: 0.16em;
+  padding: 0;
+  font-family: var(--font-pixel-stack);
+  font-size: clamp(0.62rem, 0.8vw, 0.75rem);
+  line-height: 1.25;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--signal-color);
   text-shadow: 0 0 1px color-mix(in srgb, var(--signal-color) 70%, transparent);
@@ -164,7 +166,7 @@
   position: relative;
   display: grid;
   grid-template-areas: "line";
-  justify-items: center;
+  justify-items: start;
   align-items: baseline;
 }
 
@@ -300,7 +302,7 @@
   bottom: 0.55rem;
   z-index: 1;
   margin: 0;
-  max-width: min(70vw, 28rem);
+  max-width: min(calc(50vw - 1rem), 28rem);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -312,9 +314,17 @@
 }
 
 @media (max-width: 48rem) {
+  .assetsLoadingIndicator {
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    bottom: max(1.0625rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+  }
+
+  .interactionHintText {
+    white-space: normal;
+  }
   .assetsLoadingText {
-    font-size: clamp(0.72rem, 3vw, 0.88rem);
-    padding: 0.3rem 0.55rem;
+    font-size: clamp(0.62rem, 2.5vw, 0.8rem);
+    padding: 0;
   }
 
   .preparingText {
@@ -333,7 +343,7 @@
       1.0625rem,
       calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
     );
-    max-width: min(85vw, 20rem);
+    max-width: min(calc(50vw - 1.5rem), 20rem);
     font-size: clamp(0.8rem, 2.9vw, 0.95rem);
     line-height: 1.3;
   }

@@ -19,6 +19,11 @@
   z-index: 400;
 }
 
+/* Lift only About's retained wordmark above the immersive overlay (500). */
+.navbar:has(:global(header[data-about-open="true"])) {
+  z-index: 510;
+}
+
 /* Mobile nav overlay lives inside the navbar; child z-index cannot escape this stacking
    context, so the whole chrome must sit above `.footerChrome` (460) while nav is open.
    Stay below modal `Overlay` (500). */

@@ -36,8 +36,9 @@
 
 .aboutTop {
   display: grid;
-  gap: clamp(1.2rem, 2.5vw, 1.8rem);
   width: 100%;
+  /* Give the opening statement an editorial pause below the fixed chrome. */
+  padding-top: clamp(3.25rem, 10svh, 7.5rem);
   padding-bottom: clamp(1.8rem, 5.5vh, 3.4rem);
   padding-inline: var(--content-padding-inline);
 }
@@ -46,45 +47,40 @@
   max-width: none;
 }
 
-.aboutLeadText,
-.aboutParagraph {
+.aboutLeadText {
   margin: 0;
   color: var(--overlay-fg);
 }
 
 .aboutLeadText {
   --reveal-line-gap: 0.12em;
+  --about-opening-indent: clamp(4rem, 15vw, 12rem);
   max-width: none;
   font-size: clamp(1.62rem, 2.85vw, 2.55rem);
   line-height: 1.06;
   letter-spacing: -0.055em;
+  text-indent: var(--about-opening-indent);
 }
 
-.aboutDescription {
-  display: block;
-  max-width: none;
-  padding-bottom: 0;
+/* RevealLines renders measured lines as blocks; reset the inherited indent after line one. */
+.aboutLeadText > span:not(:first-child) {
+  text-indent: 0;
 }
 
-.aboutParagraph,
 .contactLead p,
 .field span {
   margin: 0;
   color: var(--overlay-muted);
 }
 
-.aboutParagraph,
 .contactLead p {
   max-width: none;
   font-size: clamp(1.02rem, 1.22vw, 1.12rem);
   line-height: 1.52;
 }
 
-.aboutParagraph {
-  --reveal-line-gap: 0.28em;
-  max-width: none;
-  text-indent: 0;
-  text-wrap: pretty;
+.aboutLeadMuted {
+  color: var(--overlay-muted);
 }
 
 .aboutSheet {
@@ -322,25 +318,20 @@
 
   .aboutTop {
     width: 100%;
-    gap: 0.72rem;
+    padding-top: clamp(1.75rem, 6svh, 3.5rem);
     padding-bottom: 0.78rem;
   }
 
   .aboutLead,
-  .aboutLeadText,
-  .aboutDescription {
+  .aboutLeadText {
     max-width: none;
   }
 
   .aboutLeadText {
+    --about-opening-indent: clamp(3.25rem, 20vw, 5.5rem);
     font-size: clamp(1.12rem, 5.45vw, 1.36rem);
     line-height: 1.05;
     letter-spacing: -0.042em;
-  }
-
-  .aboutParagraph {
-    font-size: clamp(0.84rem, 3.05vw, 0.92rem);
-    line-height: 1.38;
   }
 
   .aboutSheet {

@@ -19,7 +19,9 @@ import { AboutOverlayContent } from "@/content/about";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import type { ProjectEntry } from "@/content/projects/types";
 import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
+import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { PixelText } from "@/components/type/PixelText/PixelText";
+import { lockInternalHyphenWrapping } from "@/lib/lockInternalHyphenWrapping";
 import { Overlay } from "./Overlay";
 import styles from "./OverlayProvider.module.scss";
 
@@ -150,8 +152,12 @@ const ABOUT_TOKEN_EXIT_TRANSFORM_MS = ABOUT_TOKEN_TRANSFORM_MS / ABOUT_EXIT_SPEE
 const ABOUT_EXIT_BUFFER_MS = 80;
 const BASE_OVERLAY_EXIT_MS = 420;
 const ABOUT_FOOTER_COUNT = 3;
-const ABOUT_INTRO_COUNT = AboutOverlayContent.intro.split("\n").length;
+/* The lead is one flowing paragraph but occupies at least two reveal lines on desktop. */
+const ABOUT_INTRO_COUNT = 2;
 const META_LINE_DRAW_MS = 560;
+const ABOUT_LEAD_TEXT = `${AboutOverlayContent.intro} ${AboutOverlayContent.description}`;
+const ABOUT_LEAD_NORMALIZED = lockInternalHyphenWrapping(ABOUT_LEAD_TEXT);
+const ABOUT_LEAD_PRIMARY_LENGTH = lockInternalHyphenWrapping(AboutOverlayContent.intro).length;
 
 /** Rough token count for stagger (RevealLines line tokens); keeps meta/footer offsets in sync with the about body. */
 function estimateAboutLineTokens(text: string): number {
@@ -159,7 +165,6 @@ function estimateAboutLineTokens(text: string): number {
 }
 
 let aboutSequenceCursor = ABOUT_INTRO_COUNT;
-const ABOUT_DESCRIPTION_OFFSET = aboutSequenceCursor;
 aboutSequenceCursor += estimateAboutLineTokens(AboutOverlayContent.description);
 const ABOUT_DETAILS_OFFSET = aboutSequenceCursor;
 
@@ -243,6 +248,66 @@ const COPYRIGHT_LINE = formatCopyrightLine(
   new Date().getFullYear(),
   contactContent.footerLegalEntity,
 );
+
+function splitAboutLeadLines(lines: string[]) {
+  let searchFrom = 0;
+
+  return lines.map((line) => {
+    const foundAt = ABOUT_LEAD_NORMALIZED.indexOf(line, searchFrom);
+    const start = foundAt >= 0 ? foundAt : searchFrom;
+    const end = start + line.length;
+    searchFrom = end;
+
+    if (end <= ABOUT_LEAD_PRIMARY_LENGTH) {
+      return { primary: line, muted: "" };
+    }
+
+    if (start >= ABOUT_LEAD_PRIMARY_LENGTH) {
+      return { primary: "", muted: line };
+    }
+
+    const splitAt = ABOUT_LEAD_PRIMARY_LENGTH - start;
+    return {
+      primary: line.slice(0, splitAt),
+      muted: line.slice(splitAt),
+    };
+  });
+}
+
+function AboutLead({ visible }: { visible: boolean }) {
+  const leadRef = useRef<HTMLElement | null>(null);
+  const lines = usePretextLines(ABOUT_LEAD_TEXT, leadRef, "normal", true);
+  const fragments = splitAboutLeadLines(lines);
+
+  return (
+    <RevealLines
+      as="p"
+      className={styles.aboutLeadText}
+      elementRef={leadRef}
+      lines={lines}
+      text={ABOUT_LEAD_TEXT}
+      offset={0}
+      stepMs={ABOUT_REVEAL_STEP_MS}
+      total={ABOUT_SEQUENCE_TOTAL}
+      visible={visible}
+      renderToken={(_, index) => {
+        const fragment = fragments[index];
+        if (!fragment) {
+          return null;
+        }
+
+        return (
+          <>
+            {fragment.primary}
+            {fragment.muted ? (
+              <span className={styles.aboutLeadMuted}>{fragment.muted}</span>
+            ) : null}
+          </>
+        );
+      }}
+    />
+  );
+}
 
 function setPendingBlurHandoff() {
   document.documentElement.classList.add(OVERLAY_BLUR_PENDING_CLASS);
@@ -609,27 +674,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
             <div className={styles.aboutScroll} data-lenis-prevent="">
               <div className={styles.aboutTop}>
                 <div className={styles.aboutLead}>
-                  <RevealLines
-                    as="p"
-                    className={styles.aboutLeadText}
-                    text={AboutOverlayContent.intro}
-                    offset={0}
-                    stepMs={ABOUT_REVEAL_STEP_MS}
-                    total={ABOUT_SEQUENCE_TOTAL}
-                    visible={overlayContentVisible}
-                  />
-                </div>
-
-                <div className={styles.aboutDescription}>
-                  <RevealLines
-                    as="p"
-                    className={styles.aboutParagraph}
-                    text={AboutOverlayContent.description}
-                    offset={ABOUT_DESCRIPTION_OFFSET}
-                    stepMs={ABOUT_REVEAL_STEP_MS}
-                    total={ABOUT_SEQUENCE_TOTAL}
-                    visible={overlayContentVisible}
-                  />
+                  <AboutLead visible={overlayContentVisible} />
                 </div>
               </div>
 

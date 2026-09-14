@@ -12,6 +12,7 @@ import {
 } from "react";
 import * as THREE from "three";
 import type { ArchiveAssetKind, ArchiveEntry } from "@/content/archive/archive-data";
+import { projectMediaPlaceholderGridForAsset } from "@/lib/projectMedia";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
 
@@ -489,6 +490,34 @@ function readIntrinsicPixelSize(texture: THREE.Texture) {
   return null;
 }
 
+const placeholderGridTextures = new Map<string, THREE.DataTexture>();
+
+function getPlaceholderGridTexture(width: number, height: number) {
+  const { cols, rows } = projectMediaPlaceholderGridForAsset({ width, height });
+  const key = `${cols}:${rows}`;
+  const cached = placeholderGridTextures.get(key);
+  if (cached) return cached;
+
+  const cellSize = 16;
+  const textureWidth = cols * cellSize + 1;
+  const textureHeight = rows * cellSize + 1;
+  const pixels = new Uint8Array(textureWidth * textureHeight * 4);
+  for (let y = 0; y < textureHeight; y += 1) {
+    for (let x = 0; x < textureWidth; x += 1) {
+      const offset = (y * textureWidth + x) * 4;
+      const isGridLine = x % cellSize === 0 || y % cellSize === 0;
+      pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 255;
+      pixels[offset + 3] = isGridLine ? 128 : 24;
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, textureWidth, textureHeight);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  placeholderGridTextures.set(key, texture);
+  return texture;
+}
+
 function MediaPlane({
   plane,
   media,
@@ -512,6 +541,10 @@ function MediaPlane({
   const [trackedMediaUrl, setTrackedMediaUrl] = useState(media.url);
   const texture = useMemo(() => getTexture(media), [media]);
   const isReady = isTextureLoaded(texture);
+  const placeholderTexture = useMemo(
+    () => getPlaceholderGridTexture(media.width, media.height),
+    [media.width, media.height],
+  );
 
   if (trackedMediaUrl !== media.url) {
     setTrackedMediaUrl(media.url);
@@ -645,7 +678,7 @@ function MediaPlane({
     if (material) {
       material.opacity = 0;
       material.depthWrite = false;
-      material.map = null;
+      material.map = placeholderTexture;
       material.color.set(placeholderColor);
     }
 
@@ -667,7 +700,7 @@ function MediaPlane({
     return () => {
       isCancelled = true;
     };
-  }, [forceRender, isReady, media, placeholderColor]);
+  }, [forceRender, isReady, media, placeholderColor, placeholderTexture]);
 
   useEffect(() => {
     const material = materialRef.current;
@@ -681,7 +714,7 @@ function MediaPlane({
     mesh.scale.copy(displayScale);
 
     if (!texture || !isReady || !state.ready) {
-      material.map = null;
+      material.map = placeholderTexture;
       material.color.set(placeholderColor);
       material.needsUpdate = true;
       return;
@@ -692,7 +725,7 @@ function MediaPlane({
     material.opacity = state.opacity;
     material.depthWrite = state.opacity >= 1;
     material.needsUpdate = true;
-  }, [displayScale, isReady, placeholderColor, texture]);
+  }, [displayScale, isReady, placeholderColor, placeholderTexture, texture]);
 
   return (
     <mesh
@@ -1447,34 +1480,36 @@ export function ArchiveCanvasScene({
 
     let isCancelled = false;
     const settled = new Set<string>();
+    const loaded = new Set<string>();
     const total = initialPreloadMedia.length;
     const publishState = () => {
       if (!isCancelled) {
         onSceneLoadStateChange({
           active: settled.size < total,
-          loaded: settled.size,
+          loaded: loaded.size,
           total,
         });
       }
     };
-    const markSettled = (url: string) => {
+    const markSettled = (url: string, successful: boolean) => {
       if (settled.has(url)) {
         return;
       }
 
       settled.add(url);
+      if (successful) loaded.add(url);
       publishState();
     };
 
     publishState();
 
     initialPreloadMedia.forEach((item) => {
-      const texture = getTexture(item, () => {
-        markSettled(item.url);
+      const texture = getTexture(item, (result) => {
+        markSettled(item.url, result.status === "loaded");
       });
 
       if (isTextureLoaded(texture)) {
-        markSettled(item.url);
+        markSettled(item.url, true);
       }
     });
 

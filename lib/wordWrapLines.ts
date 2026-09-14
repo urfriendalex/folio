@@ -67,6 +67,7 @@ function wrapParagraph(
   paragraph: string,
   maxWidthPx: number,
   measure: (s: string) => number,
+  firstLineMaxWidthPx = maxWidthPx,
 ): string[] {
   if (!paragraph) {
     return [];
@@ -87,8 +88,9 @@ function wrapParagraph(
   for (const word of words) {
     const sep = currentLine.length > 0 ? " " : "";
     const candidate = currentLine + sep + word;
+    const lineWidth = lines.length === 0 ? firstLineMaxWidthPx : maxWidthPx;
 
-    if (measure(candidate) <= maxWidthPx) {
+    if (measure(candidate) <= lineWidth) {
       currentLine = candidate;
       continue;
     }
@@ -122,17 +124,19 @@ export function layoutLinesWordWrap(
   maxWidthPx: number,
   font: string,
   whiteSpace: "normal" | "pre-wrap",
+  firstLineIndentPx = 0,
 ): string[] {
   const ctx = getMeasureContext();
   ctx.font = font;
   const measure = (s: string) => ctx.measureText(s).width;
+  const firstLineMaxWidthPx = Math.max(1, maxWidthPx - Math.max(0, firstLineIndentPx));
 
   if (whiteSpace === "normal") {
     const collapsed = text.replace(/\s+/g, " ").trim();
     if (!collapsed) {
       return [""];
     }
-    return wrapParagraph(collapsed, maxWidthPx, measure);
+    return wrapParagraph(collapsed, maxWidthPx, measure, firstLineMaxWidthPx);
   }
 
   const parts = text.split("\n");
@@ -144,7 +148,12 @@ export function layoutLinesWordWrap(
       out.push("");
       continue;
     }
-    const wrapped = wrapParagraph(part, maxWidthPx, measure);
+    const wrapped = wrapParagraph(
+      part,
+      maxWidthPx,
+      measure,
+      out.length === 0 ? firstLineMaxWidthPx : maxWidthPx,
+    );
     if (wrapped.length === 0) {
       out.push("");
     } else {

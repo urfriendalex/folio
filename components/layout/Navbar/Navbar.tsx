@@ -210,7 +210,7 @@ export function Navbar() {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-about-open={activeOverlay === "about"}>
       <div className={`page-shell ${styles.inner}`}>
         <NextLink
           href="/"
@@ -218,6 +218,7 @@ export function Navbar() {
           scroll={false}
           className={styles.logo}
           aria-label="Alexander Yansons"
+          tabIndex={activeOverlay === "about" ? -1 : undefined}
           onClick={handleLogoClick}
         >
           <span aria-hidden="true">A</span>
