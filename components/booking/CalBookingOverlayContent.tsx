@@ -544,7 +544,7 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
   }
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-booking-flow="true">
       <div className={styles.flowShell}>
         <header className={styles.header}>
           <div className={styles.headerLine}>

@@ -184,8 +184,7 @@
 .body {
   display: grid;
   min-width: 0;
-  overflow-x: visible;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .sheetLayout,
@@ -239,8 +238,7 @@
 .stepPane {
   min-height: 0;
   min-width: 0;
-  overflow-x: visible;
-  overflow-y: auto;
+  overflow: visible;
   align-content: start;
   align-self: stretch;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -271,7 +269,8 @@
 }
 
 /* Time step: only the slot grid scrolls; title row stays fixed */
-.stepContent:has(.timeGrid) {
+.stepContent:has(.timeGrid),
+.stepContent:has(.dateGrid) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -280,8 +279,17 @@
   min-height: 0;
 }
 
-.stepContent:has(.timeGrid) > .stepTop {
+.stepContent:has(.timeGrid) > .stepTop,
+.stepContent:has(.dateGrid) > .stepTop {
   flex-shrink: 0;
+}
+
+/* Date step: stretch the week grid so leftover days sit on the same row rhythm, not in a void. */
+.stepContent:has(.dateGrid) > .dateGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
+  grid-auto-rows: 1fr;
 }
 
 .skeletonStepContent {
@@ -289,6 +297,25 @@
   width: 100%;
   align-content: start;
   gap: clamp(0.62rem, 1.1vw, 0.9rem);
+}
+
+.skeletonStepContent:has(.skeletonDateGrid) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.skeletonStepContent:has(.skeletonDateGrid) > .stepTop {
+  flex-shrink: 0;
+}
+
+.skeletonStepContent:has(.skeletonDateGrid) > .skeletonDateGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
+  grid-auto-rows: 1fr;
 }
 
 .metaTitle {
@@ -516,6 +543,8 @@
   display: grid;
   align-content: space-between;
   gap: 0.5rem;
+  width: 100%;
+  height: 100%;
   min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
   text-align: left;
@@ -694,6 +723,7 @@
   display: flex;
   justify-content: flex-start;
   padding-top: 0.12rem;
+  overflow: visible;
 }
 
 .primaryLink {
@@ -707,7 +737,9 @@
   corner-shape: squircle;
   border-radius: var(--project-toolbar-panel-radius);
   background: color-mix(in srgb, var(--overlay-fg) 6%, transparent);
-  box-shadow: none;
+  box-shadow:
+    0 0.45rem 1.15rem color-mix(in srgb, var(--overlay-fg) 8%, transparent),
+    0 0.12rem 0.35rem color-mix(in srgb, var(--overlay-fg) 4%, transparent);
   color: var(--overlay-fg);
   font-family: var(--font-body-stack);
   font-size: 0.88rem;
@@ -720,6 +752,7 @@
   transition:
     border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
     background 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 280ms cubic-bezier(0.2, 0.88, 0.24, 1),
     color 160ms ease,
     transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
     opacity 160ms ease;
@@ -729,6 +762,9 @@
   .primaryLink:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--overlay-fg) 28%, transparent);
     background: color-mix(in srgb, var(--overlay-fg) 10%, transparent);
+    box-shadow:
+      0 0.55rem 1.35rem color-mix(in srgb, var(--overlay-fg) 11%, transparent),
+      0 0.14rem 0.4rem color-mix(in srgb, var(--overlay-fg) 5%, transparent);
   }
 }
 
@@ -956,6 +992,7 @@
   align-content: space-between;
   gap: 0.5rem;
   width: 100%;
+  height: 100%;
   min-height: var(--booking-date-cell-min-height);
   padding: 0.62rem;
 }
@@ -1202,23 +1239,27 @@
     width: 100%;
   }
 
-  /* One scroll ancestry: nested `overflow:auto` + iOS Safari often strand the footer outside the scrolled region. */
+  /* Keep `.body` from becoming a second scroller, but do not clip the CTA shadow.
+     `overflow-x: hidden` + `overflow-y: visible` computes to `auto` and shears box-shadow. */
   .body {
-    overflow: hidden;
+    overflow: visible;
   }
 
   .header {
     padding-bottom: 0.6rem;
   }
 
+  .headerLine {
+    align-items: center;
+  }
+
   .title {
     font-size: clamp(1.35rem, 7vw, 1.85rem);
-    line-height: 0.96;
+    line-height: 1;
   }
 
   .headerControls {
     gap: 0.42rem;
-    padding-bottom: 0.08rem;
     margin-left: auto;
   }
 
@@ -1230,8 +1271,7 @@
     grid-template-rows: minmax(0, 1fr) auto;
     gap: 0.65rem;
     padding-bottom: 0;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   /* Fill `.widgetSection` height so spare space sits in row 1 above the footer button. */
@@ -1255,8 +1295,7 @@
     width: 100%;
     max-width: none;
     justify-self: stretch;
-    overflow-x: visible;
-    overflow-y: hidden;
+    overflow: visible;
     align-content: unset;
     grid-template-rows: unset;
   }
@@ -1300,20 +1339,7 @@
   }
 
   .stepTop {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: 0.38rem;
-  }
-
-  .stepTop .navGroup {
-    width: 100%;
-  }
-
-  .stepTop .navButton,
-  .stepTop .skeletonNav {
-    flex: 1;
-    min-width: 0;
+    align-items: center;
   }
 
   .stepTitle {
@@ -1387,27 +1413,47 @@
     min-height: 2.42rem;
   }
 
-  /* `margin-top: auto` pushes the CTA to the pane bottom regardless of `:has()` flex quirks inside row 1. */
+  /* `margin-top: auto` pushes the CTA to the pane bottom regardless of `:has()` flex quirks inside row 1.
+     Fade is painted on `::before` and bled into overlay padding so it isn’t a clipped “box-shadow” slab. */
   .actionBar {
     position: relative;
     flex-shrink: 0;
     width: 100%;
     justify-content: stretch;
     align-self: stretch;
-    padding-top: clamp(0.85rem, 4vw, 1.15rem);
+    padding-top: clamp(1.35rem, 5.5vw, 2.1rem);
     margin-top: auto;
     z-index: 2;
+    isolation: isolate;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .actionBar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--content-padding-inline));
+    right: calc(-1 * var(--content-padding-inline));
+    z-index: 0;
+    pointer-events: none;
     background: linear-gradient(
       180deg,
-      transparent,
-      color-mix(in srgb, var(--overlay-immersive-backdrop) 52%, transparent) 35%,
-      var(--overlay-immersive-backdrop) 92%
+      transparent 0%,
+      color-mix(in srgb, var(--overlay-immersive-backdrop) 38%, transparent) 45%,
+      var(--overlay-immersive-backdrop) 100%
     );
   }
 
   .primaryLink {
+    position: relative;
+    z-index: 1;
     width: 100%;
     min-height: 2.85rem;
+    box-shadow:
+      0 -0.4rem 0.7rem color-mix(in srgb, var(--overlay-fg) 8%, transparent),
+      0 0.22rem 0.55rem color-mix(in srgb, var(--overlay-fg) 6%, transparent);
   }
 
   .skeletonSubmit {
