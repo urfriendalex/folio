@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 import { usePathname, useRouter } from "next/navigation";
 import {
   useCallback,
@@ -21,7 +22,6 @@ type IntentPrefetchLinkProps = Omit<
   LinkComponentProps,
   "onFocus" | "onPointerEnter" | "onPointerLeave" | "onTouchStart" | "prefetch"
 > & {
-  nativeNavigation?: boolean;
   onFocus?: LinkComponentProps["onFocus"];
   onPointerEnter?: LinkComponentProps["onPointerEnter"];
   onPointerLeave?: LinkComponentProps["onPointerLeave"];
@@ -46,7 +46,6 @@ function prefetchHrefFromProp(href: LinkComponentProps["href"]) {
 
 export function IntentPrefetchLink({
   href,
-  nativeNavigation = false,
   onFocus,
   onPointerEnter,
   onPointerLeave,
@@ -74,18 +73,14 @@ export function IntentPrefetchLink({
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
         return;
       }
-      if (event.button !== 0) {
-        return;
-      }
-
-      if (nativeNavigation) {
+      if (event.button !== 0 || event.currentTarget.hasAttribute("download") || (event.currentTarget.target && event.currentTarget.target !== "_self")) {
         return;
       }
 
       event.preventDefault();
       guardedPush(prefetchHref, scroll === false ? { scroll: false } : undefined);
     },
-    [guardedPush, nativeNavigation, onClick, prefetchHref, scroll],
+    [guardedPush, onClick, prefetchHref, scroll],
   );
 
   const clearPendingPrefetch = useCallback(() => {
@@ -101,7 +96,10 @@ export function IntentPrefetchLink({
     }
 
     prefetchedHrefs.add(prefetchHref);
-    router.prefetch(prefetchHref);
+    router.prefetch(prefetchHref, {
+      kind: PrefetchKind.AUTO,
+      onInvalidate: () => { prefetchedHrefs.delete(prefetchHref); },
+    });
   }, [prefetchHref, router]);
 
   const schedulePrefetch = useCallback(() => {

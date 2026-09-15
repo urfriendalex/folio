@@ -22,7 +22,6 @@ export function ExploreMediaLink({ href, ariaLabel, children }: ExploreMediaLink
       href={href}
       className={styles.media}
       aria-label={ariaLabel}
-      nativeNavigation
       onPointerEnter={cue.onPointerEnter}
       onPointerMove={cue.onPointerMove}
       onPointerLeave={cue.onPointerLeave}
