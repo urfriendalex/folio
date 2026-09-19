@@ -325,18 +325,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: min(16.5rem, 72%);
-    height: 11.5rem;
-    min-height: 11.5rem;
+    width: min(14.5rem, 64%);
+    height: 10rem;
+    min-height: 10rem;
     margin-inline: auto;
-    padding-bottom: 0.25rem;
+    padding-bottom: 0.15rem;
   }
 
   .visualPanelInner,
   .walkerShell {
     width: 100%;
-    min-height: 11.5rem;
-    height: 11.5rem;
+    min-height: 10rem;
+    height: 10rem;
     padding: 0;
   }
 }
@@ -389,15 +389,15 @@
   }
 
   .visualPanel {
-    width: min(13.5rem, 68%);
-    height: 10rem;
-    min-height: 10rem;
+    width: min(12.25rem, 58%);
+    height: 8.75rem;
+    min-height: 8.75rem;
   }
 
   .visualPanelInner,
   .walkerShell {
-    min-height: 10rem;
-    height: 10rem;
+    min-height: 8.75rem;
+    height: 8.75rem;
   }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */
