@@ -12,9 +12,12 @@
 
 .stage {
   position: relative;
-  display: block;
-  /* Occupy viewport without endless void — svh tracks mobile browser UI */
-  min-height: clamp(26rem, 58svh, 44rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 22rem);
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 3rem);
+  /* Tight enough that the walker reads as a companion, not a void-filler */
+  min-height: clamp(20rem, 44svh, 32rem);
 }
 
 .content {
@@ -43,13 +46,6 @@
   color: var(--muted-color);
   /* Line breaks follow Pretext (RevealLines) like the heading */
   --reveal-line-gap: 0.02em;
-}
-
-.introPixelSquare {
-  font-family: var(--font-pixel-square-stack);
-  letter-spacing: 0.05em;
-  vertical-align: 0.04em;
-  color: inherit;
 }
 
 .introAccentTrigger {
@@ -134,23 +130,21 @@
 }
 
 .visualPanel {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  position: relative;
   z-index: 0;
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  width: min(19rem, 34%);
-  height: min(22rem, 72%);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: min(22rem, 52svh);
   pointer-events: none;
 }
 
 .visualPanelInner {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -162,8 +156,8 @@
 .walkerShell {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-width: 0;
   height: 100%;
@@ -193,13 +187,16 @@
 
 /* Wide desktop: keep the statement from stretching into a thin rail */
 @media (min-width: 90rem) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
+  }
+
   .content {
     max-width: min(50rem, 100%);
   }
 
   .visualPanel {
-    width: min(21rem, 30%);
-    height: min(24rem, 68%);
+    height: min(24rem, 48svh);
   }
 }
 
@@ -211,7 +208,8 @@
 
 @media (max-width: 64rem) {
   .stage {
-    min-height: clamp(22rem, 50svh, 38rem);
+    grid-template-columns: 1fr;
+    min-height: clamp(20rem, 42svh, 28rem);
   }
 
   .content {
@@ -223,15 +221,15 @@
   }
 
   .intro {
-    max-width: calc(100% - 8.5rem);
+    max-width: calc(100% - 7.5rem);
   }
 
   .visualPanel {
-    top: 1.25rem;
+    position: absolute;
+    top: 1.1rem;
     right: 0;
-    bottom: auto;
-    width: min(8.5rem, 28vw);
-    height: min(9.5rem, 26svh);
+    width: 7.25rem;
+    height: 8.25rem;
   }
 }
 
@@ -286,15 +284,10 @@
   }
 
   .visualPanel {
-    top: clamp(0.85rem, 3vw, 1.4rem);
+    top: clamp(0.7rem, 2.4vw, 1.15rem);
     right: 0;
-    bottom: auto;
-    width: 5.8rem;
-    height: 6.6rem;
-  }
-
-  .walker {
-    font-size: 0.72rem;
+    width: 6.6rem;
+    height: 7.5rem;
   }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */

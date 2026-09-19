@@ -327,7 +327,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               onPointerLeave={handleDefaultAccent}
               onClick={coarsePointer ? handleWebAccent : undefined}
             >
-              <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
+              {INDEPENDENT_DEVELOPER_PHRASE}
             </span>
             {token.slice(webIndex + INDEPENDENT_DEVELOPER_PHRASE.length)}
           </>
@@ -370,7 +370,7 @@ export function HeroSection({ content }: HeroSectionProps) {
             onPointerLeave={handleDefaultAccent}
             onClick={coarsePointer ? handleWebAccent : undefined}
           >
-            <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
+            {INDEPENDENT_DEVELOPER_PHRASE}
           </span>
           {beforeCreative}
           <span
