@@ -13,9 +13,10 @@
 .stage {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(15rem, 22rem);
+  grid-template-columns: minmax(0, min(44rem, 100%)) minmax(16rem, 20rem);
+  justify-content: start;
   align-items: center;
-  gap: clamp(1.25rem, 3vw, 3rem);
+  gap: clamp(0.85rem, 2.2vw, 2rem);
   /* Tight enough that the walker reads as a companion, not a void-filler */
   min-height: clamp(20rem, 44svh, 32rem);
 }
@@ -181,14 +182,24 @@
   letter-spacing: 0.02em;
   transform-origin: center;
   will-change: transform, opacity;
-  transition: text-shadow 220ms ease-out;
+  transition:
+    color 180ms ease-out,
+    text-shadow 220ms ease-out;
   text-shadow: 0 0 1rem var(--walker-glow);
+}
+
+.visualPanel[data-accent="web"] .walker {
+  color: var(--hero-walker-web-color);
+}
+
+.visualPanel[data-accent="creative"] .walker {
+  color: var(--hero-walker-creative-color);
 }
 
 /* Wide desktop: keep the statement from stretching into a thin rail */
 @media (min-width: 90rem) {
   .stage {
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
+    grid-template-columns: minmax(0, min(50rem, 100%)) minmax(18rem, 22rem);
   }
 
   .content {
