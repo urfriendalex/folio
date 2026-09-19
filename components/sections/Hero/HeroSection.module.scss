@@ -27,11 +27,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 0 1 auto;
-  width: fit-content;
+  flex: 0 0 auto;
+  width: min(34rem, 52vw);
   gap: clamp(0.75rem, 1.8vw, 1.1rem);
   padding: clamp(1.5rem, 3.2vw, 2.6rem) 0;
-  max-width: min(38rem, calc(100% - 12rem));
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -88,7 +87,7 @@
   line-height: 1.08;
   letter-spacing: -0.048em;
   font-weight: 400;
-  max-width: 16.5em;
+  max-width: none;
   /* Space between RevealLines rows (Pretext layout + optional \n in copy) */
   --reveal-line-gap: clamp(0.02em, 0.05vw + 0.01em, 0.05em);
 }
@@ -137,9 +136,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 15.5rem;
-  width: 15.5rem;
-  height: 17.5rem;
+  flex: 0 0 13.5rem;
+  width: 13.5rem;
+  height: 16rem;
   pointer-events: none;
 }
 
@@ -201,19 +200,13 @@
 /* Wide desktop: keep the statement from stretching into a thin rail */
 @media (min-width: 90rem) {
   .content {
-    max-width: min(42rem, calc(100% - 14rem));
+    width: min(38rem, 48vw);
   }
 
   .visualPanel {
-    flex-basis: 17rem;
-    width: 17rem;
-    height: 19rem;
-  }
-}
-
-@media (min-width: 120rem) {
-  .content {
-    max-width: min(46rem, calc(100% - 15rem));
+    flex-basis: 15rem;
+    width: 15rem;
+    height: 17.5rem;
   }
 }
 
@@ -226,11 +219,6 @@
 
   .content {
     width: 100%;
-    max-width: min(40rem, 100%);
-  }
-
-  .heading {
-    max-width: min(16.5em, 100%);
   }
 
   .intro {
