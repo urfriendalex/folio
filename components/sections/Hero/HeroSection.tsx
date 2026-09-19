@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,8 +9,6 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { createPortal } from "react-dom";
-import gsap from "gsap";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import {
   getFrameFolderForTheme,
@@ -30,7 +27,6 @@ import {
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
-import { getLenis } from "@/lib/smoothScroll";
 import styles from "./HeroSection.module.scss";
 
 /** Short stagger for the intro so the sequence stays snappy before the headline. */
@@ -38,7 +34,7 @@ const INTRO_REVEAL_STEP_MS = 44;
 const HEADING_REVEAL_STEP_MS = 62;
 const REVEAL_TRANSFORM_SETTLE_MS = 620;
 
-/** Same breakpoint as Footer / Work — narrow viewports get a forced two-line intro. */
+/** Same breakpoint as Footer / Work — narrow viewports get a forced two-line role. */
 const INTRO_STACK_QUERY = "(max-width: 48rem)";
 const COARSE_POINTER_QUERY = "(hover: none)";
 
@@ -82,47 +78,11 @@ function getServerCoarsePointerSnapshot(): boolean {
   return false;
 }
 
-/** Matches the phrase in `heroContent.position` (before "& Creative Technologist"). */
-const WEB_DEVELOPER_PHRASE = "Web Developer";
+/** Matches the phrases in `heroContent.position`. */
+const INDEPENDENT_DEVELOPER_PHRASE = "Independent Developer";
 const CREATIVE_TECHNOLOGIST_PHRASE = "Creative Technologist";
 const WALKER_FRAME_COUNT = 37;
 const WALKER_FPS = 20;
-
-/** Matched in `heroContent.statement` — interactive headline gag (see `renderHeadingToken`). */
-const STUFF_GAG_WORD = "stuff";
-
-/** Inline `getBoundingClientRect()` uses the full line box; this tracks glyph ink for portal centering. */
-function getTextRunBoundingRect(element: HTMLElement): DOMRect {
-  const first = element.firstChild;
-  if (first?.nodeType === Node.TEXT_NODE) {
-    const text = first.textContent ?? "";
-    if (text.length > 0) {
-      const range = document.createRange();
-      range.setStart(first, 0);
-      range.setEnd(first, text.length);
-      const rects = range.getClientRects();
-      let top = Infinity;
-      let left = Infinity;
-      let right = -Infinity;
-      let bottom = -Infinity;
-      for (let i = 0; i < rects.length; i++) {
-        const rr = rects[i];
-        if (rr.width === 0 && rr.height === 0) {
-          continue;
-        }
-        top = Math.min(top, rr.top);
-        left = Math.min(left, rr.left);
-        right = Math.max(right, rr.right);
-        bottom = Math.max(bottom, rr.bottom);
-      }
-      if (top !== Infinity && right > left && bottom > top) {
-        return new DOMRect(left, top, right - left, bottom - top);
-      }
-    }
-  }
-
-  return element.getBoundingClientRect();
-}
 
 type HoverAccent = "default" | "web" | "creative";
 
@@ -142,24 +102,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const ctaRef = useRef<HTMLParagraphElement>(null);
   const contentRevealGateRef = useRef<HTMLDivElement>(null);
-  const stuffAnchorRef = useRef<HTMLSpanElement | null>(null);
-  const strikeLineRef = useRef<HTMLSpanElement | null>(null);
-  const stuffGlyphRef = useRef<HTMLSpanElement | null>(null);
-  const shitPortalRef = useRef<HTMLSpanElement | null>(null);
-  const gagPrevActiveRef = useRef(false);
-  const gagActiveRef = useRef(false);
-  const gagTransitionTokenRef = useRef(0);
-  const gagEnterRafIdsRef = useRef<Set<number>>(new Set());
-  const [hoverAccent, setHoverAccent] = useState<HoverAccent | null>(null);
-  const [stuffGagMobileActive, setStuffGagMobileActive] = useState(false);
-  const [stuffGagHover, setStuffGagHover] = useState(false);
-  /** Viewport center + em base (px) from the real “stuff” glyph so the portaled word tracks type scale on any screen. */
-  const [shitPortalLayout, setShitPortalLayout] = useState<{
-    x: number;
-    y: number;
-    emBasePx: number;
-  } | null>(null);
-  const [portalHoldOpen, setPortalHoldOpen] = useState(false);
+  const [hoverAccent, setHoverAccent] = useState<HoverAccent>("default");
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const preloaderComplete = usePreloaderComplete();
   const revealMotionEnabled = useRevealMotionEnabled();
@@ -183,339 +126,6 @@ export function HeroSection({ content }: HeroSectionProps) {
     getServerCoarsePointerSnapshot,
   );
 
-  /** Fine pointers: hover only (no focus / no click-to-hold). Coarse: tap toggle. */
-  const gagActive = coarsePointer ? stuffGagMobileActive : stuffGagHover;
-  const showGagPortalLayer = gagActive || portalHoldOpen;
-  const portalMounted = typeof document !== "undefined";
-
-  const cancelPendingGagEnterFrames = useCallback(() => {
-    gagEnterRafIdsRef.current.forEach((id) => {
-      cancelAnimationFrame(id);
-    });
-    gagEnterRafIdsRef.current.clear();
-  }, []);
-
-  const scheduleGagEnterFrame = useCallback((callback: () => void) => {
-    const id = requestAnimationFrame(() => {
-      gagEnterRafIdsRef.current.delete(id);
-      callback();
-    });
-    gagEnterRafIdsRef.current.add(id);
-    return id;
-  }, []);
-
-  useEffect(() => {
-    gagActiveRef.current = gagActive;
-  }, [gagActive]);
-
-  useEffect(() => {
-    const strikeLine = strikeLineRef.current;
-    const stuffGlyph = stuffGlyphRef.current;
-    const shitPortal = shitPortalRef.current;
-
-    return () => {
-      cancelPendingGagEnterFrames();
-      gsap.killTweensOf([strikeLine, stuffGlyph, shitPortal].filter(Boolean));
-    };
-  }, [cancelPendingGagEnterFrames]);
-
-  useLayoutEffect(() => {
-    const anchor = stuffAnchorRef.current;
-    if (!anchor) {
-      return;
-    }
-
-    const update = () => {
-      const glyph = stuffGlyphRef.current;
-      const boxEl = glyph ?? anchor;
-      const r = glyph ? getTextRunBoundingRect(glyph) : boxEl.getBoundingClientRect();
-      const fontSizePx = glyph
-        ? parseFloat(getComputedStyle(glyph).fontSize)
-        : parseFloat(getComputedStyle(boxEl).fontSize);
-      const emBasePx = Number.isFinite(fontSizePx) && fontSizePx > 0 ? fontSizePx : r.height * 0.72;
-
-      setShitPortalLayout({
-        x: r.left + r.width * 0.5,
-        y: r.top + r.height * 0.5,
-        emBasePx,
-      });
-    };
-
-    update();
-    const raf = requestAnimationFrame(() => {
-      update();
-    });
-
-    const lenis = getLenis();
-    const unsubscribeLenis = lenis?.on("scroll", update);
-
-    window.addEventListener("scroll", update, { capture: true, passive: true });
-    window.addEventListener("resize", update);
-
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", update);
-    vv?.addEventListener("scroll", update);
-
-    const ro = new ResizeObserver(update);
-    ro.observe(anchor);
-    const glyphEl = stuffGlyphRef.current;
-    if (glyphEl) {
-      ro.observe(glyphEl);
-    }
-
-    return () => {
-      cancelAnimationFrame(raf);
-      unsubscribeLenis?.();
-      window.removeEventListener("scroll", update, { capture: true });
-      window.removeEventListener("resize", update);
-      vv?.removeEventListener("resize", update);
-      vv?.removeEventListener("scroll", update);
-      ro.disconnect();
-    };
-  }, [content.statement, gagActive]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const wasActive = gagPrevActiveRef.current;
-
-    if (gagActive && !wasActive) {
-      gagPrevActiveRef.current = true;
-      cancelPendingGagEnterFrames();
-      const transitionToken = ++gagTransitionTokenRef.current;
-
-      gsap.killTweensOf(
-        [strikeLineRef.current, stuffGlyphRef.current, shitPortalRef.current].filter(Boolean),
-      );
-
-      const runEnter = (attempt = 0) => {
-        if (gagTransitionTokenRef.current !== transitionToken || !gagActiveRef.current) {
-          return;
-        }
-
-        const s = strikeLineRef.current;
-        const g = stuffGlyphRef.current;
-        const h = shitPortalRef.current;
-        if (!s || !g) {
-          return;
-        }
-
-        if (!h && attempt < 14) {
-          scheduleGagEnterFrame(() => runEnter(attempt + 1));
-          return;
-        }
-
-        if (reducedMotion) {
-          gsap.set(s, { scaleX: 1 });
-          gsap.set(g, { opacity: 0.35 });
-          if (h) {
-            gsap.set(h, { autoAlpha: 1 });
-          }
-          return;
-        }
-
-        gsap.set(s, { scaleX: 0, transformOrigin: "left center" });
-        gsap.set(g, { opacity: 1 });
-        if (h) {
-          gsap.set(h, { autoAlpha: 0 });
-        }
-
-        /* Snappy UI window (<300ms): strong ease-out, strike leads by a hair so motion reads first */
-        const strikeMs = 0.16;
-        const followMs = 0.14;
-        const easeOut = "power3.out";
-
-        const tl = gsap.timeline();
-        tl.to(
-          s,
-          {
-            scaleX: 1,
-            duration: strikeMs,
-            ease: easeOut,
-          },
-          0,
-        );
-        tl.to(
-          g,
-          {
-            opacity: 0.35,
-            duration: followMs,
-            ease: easeOut,
-          },
-          0.02,
-        );
-        if (h) {
-          /* Opacity only — scaling pixel type causes subpixel shimmer (“jitter”) */
-          tl.to(
-            h,
-            {
-              autoAlpha: 1,
-              duration: followMs,
-              ease: easeOut,
-            },
-            0.03,
-          );
-        }
-      };
-
-      scheduleGagEnterFrame(() => {
-        scheduleGagEnterFrame(() => runEnter(0));
-      });
-      return;
-    }
-
-    if (!gagActive && wasActive) {
-      gagPrevActiveRef.current = false;
-      cancelPendingGagEnterFrames();
-      const transitionToken = ++gagTransitionTokenRef.current;
-
-      const s = strikeLineRef.current;
-      const g = stuffGlyphRef.current;
-      const h = shitPortalRef.current;
-
-      gsap.killTweensOf([s, g, h].filter(Boolean));
-
-      if (!s) {
-        return;
-      }
-
-      if (reducedMotion) {
-        gsap.set(s, { scaleX: 0 });
-        if (g) gsap.set(g, { opacity: 1 });
-        if (h) gsap.set(h, { autoAlpha: 0 });
-        scheduleGagEnterFrame(() => {
-          if (gagTransitionTokenRef.current === transitionToken && !gagActiveRef.current) {
-            setPortalHoldOpen(false);
-          }
-        });
-        return;
-      }
-
-      const strikeMs = 0.14;
-      const followMs = 0.12;
-      const easeOut = "power3.out";
-      const tl = gsap.timeline({
-        onComplete: () => {
-          if (gagTransitionTokenRef.current === transitionToken && !gagActiveRef.current) {
-            setPortalHoldOpen(false);
-          }
-        },
-      });
-
-      tl.to(
-        s,
-        {
-          scaleX: 0,
-          duration: strikeMs,
-          ease: easeOut,
-          transformOrigin: "left center",
-        },
-        0,
-      );
-      if (g) {
-        tl.to(
-          g,
-          {
-            opacity: 1,
-            duration: followMs,
-            ease: easeOut,
-          },
-          0,
-        );
-      }
-      if (h) {
-        tl.to(
-          h,
-          {
-            autoAlpha: 0,
-            duration: followMs,
-            ease: easeOut,
-          },
-          0,
-        );
-      }
-    }
-
-    return undefined;
-  }, [cancelPendingGagEnterFrames, gagActive, scheduleGagEnterFrame]);
-
-  /** Coarse pointers: dismiss the gag on any tap outside “stuff”, or when “stuff” scrolls out of view. */
-  useEffect(() => {
-    if (!coarsePointer || !stuffGagMobileActive) {
-      return undefined;
-    }
-
-    const onDocumentClickCapture = (event: MouseEvent) => {
-      const anchor = stuffAnchorRef.current;
-      const target = event.target;
-      if (!anchor || !(target instanceof Node)) {
-        return;
-      }
-      if (anchor.contains(target)) {
-        return;
-      }
-      setStuffGagMobileActive(false);
-    };
-
-    document.addEventListener("click", onDocumentClickCapture, true);
-
-    return () => {
-      document.removeEventListener("click", onDocumentClickCapture, true);
-    };
-  }, [coarsePointer, stuffGagMobileActive]);
-
-  useEffect(() => {
-    if (!coarsePointer || !stuffGagMobileActive) {
-      return undefined;
-    }
-
-    const anchor = stuffAnchorRef.current;
-    if (!anchor) {
-      return undefined;
-    }
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) {
-          setStuffGagMobileActive(false);
-        }
-      },
-      { root: null, threshold: 0 },
-    );
-
-    io.observe(anchor);
-
-    return () => {
-      io.disconnect();
-    };
-  }, [coarsePointer, stuffGagMobileActive]);
-
-  const handleStuffPointerEnter = useCallback(() => {
-    if (!coarsePointer) {
-      setPortalHoldOpen(true);
-      setStuffGagHover(true);
-    }
-  }, [coarsePointer]);
-
-  const handleStuffPointerLeave = useCallback(() => {
-    if (!coarsePointer) {
-      setStuffGagHover(false);
-    }
-  }, [coarsePointer]);
-
-  const toggleStuffGagMobile = useCallback(() => {
-    setStuffGagMobileActive((value) => {
-      const nextValue = !value;
-      if (nextValue) {
-        setPortalHoldOpen(true);
-      }
-      return nextValue;
-    });
-  }, []);
-
   const stackIntroLines = useSyncExternalStore(
     subscribeIntroStack,
     getIntroStackSnapshot,
@@ -524,10 +134,10 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const introText = useMemo(() => {
     if (stackIntroLines) {
-      return `Hi, I'm ${content.name}\n${content.position}`;
+      return `${INDEPENDENT_DEVELOPER_PHRASE}\n& ${CREATIVE_TECHNOLOGIST_PHRASE}`;
     }
-    return `Hi, I'm ${content.name}, a ${content.position}`;
-  }, [content.name, content.position, stackIntroLines]);
+    return content.position;
+  }, [content.position, stackIntroLines]);
 
   const introLines = usePretextLines(introText, introRef, "pre-wrap", true);
   const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true);
@@ -540,6 +150,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const ctaLines = useMemo(() => (hasCta ? [ctaTextUpper] : []), [hasCta, ctaTextUpper]);
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
+  const walkerVisible = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
 
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
@@ -671,29 +282,31 @@ export function HeroSection({ content }: HeroSectionProps) {
     };
   }, []);
 
-  const handleHeroPointerEnter = useCallback(() => {
-    setHoverAccent((current) => current ?? "default");
-  }, []);
-
-  const handleHeroPointerLeave = useCallback(() => {
-    setHoverAccent(null);
-  }, []);
-
   const handleDefaultAccent = useCallback(() => {
-    setHoverAccent("default");
-  }, []);
+    if (!coarsePointer) {
+      setHoverAccent("default");
+    }
+  }, [coarsePointer]);
 
   const handleWebAccent = useCallback(() => {
+    if (coarsePointer) {
+      setHoverAccent((current) => (current === "web" ? "default" : "web"));
+      return;
+    }
     setHoverAccent("web");
-  }, []);
+  }, [coarsePointer]);
 
   const handleCreativeAccent = useCallback(() => {
+    if (coarsePointer) {
+      setHoverAccent((current) => (current === "creative" ? "default" : "creative"));
+      return;
+    }
     setHoverAccent("creative");
-  }, []);
+  }, [coarsePointer]);
 
   const renderIntroToken = useCallback(
     (token: string) => {
-      const webIndex = token.indexOf(WEB_DEVELOPER_PHRASE);
+      const webIndex = token.indexOf(INDEPENDENT_DEVELOPER_PHRASE);
       const creativeIndex = token.indexOf(CREATIVE_TECHNOLOGIST_PHRASE);
       const hasWebPhrase = webIndex !== -1;
       const hasCreativePhrase = creativeIndex !== -1;
@@ -709,12 +322,14 @@ export function HeroSection({ content }: HeroSectionProps) {
             {token.slice(0, webIndex)}
             <span
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
-              onPointerEnter={handleWebAccent}
+              data-active={hoverAccent === "web" ? "true" : "false"}
+              onPointerEnter={coarsePointer ? undefined : handleWebAccent}
               onPointerLeave={handleDefaultAccent}
+              onClick={coarsePointer ? handleWebAccent : undefined}
             >
-              <span className={styles.introPixelSquare}>{WEB_DEVELOPER_PHRASE}</span>
+              <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
             </span>
-            {token.slice(webIndex + WEB_DEVELOPER_PHRASE.length)}
+            {token.slice(webIndex + INDEPENDENT_DEVELOPER_PHRASE.length)}
           </>
         );
       }
@@ -725,8 +340,10 @@ export function HeroSection({ content }: HeroSectionProps) {
             {token.slice(0, creativeIndex)}
             <span
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
-              onPointerEnter={handleCreativeAccent}
+              data-active={hoverAccent === "creative" ? "true" : "false"}
+              onPointerEnter={coarsePointer ? undefined : handleCreativeAccent}
               onPointerLeave={handleDefaultAccent}
+              onClick={coarsePointer ? handleCreativeAccent : undefined}
             >
               {CREATIVE_TECHNOLOGIST_PHRASE}
             </span>
@@ -735,7 +352,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         );
       }
 
-      const afterWeb = token.slice(webIndex + WEB_DEVELOPER_PHRASE.length);
+      const afterWeb = token.slice(webIndex + INDEPENDENT_DEVELOPER_PHRASE.length);
       const relCreative = afterWeb.indexOf(CREATIVE_TECHNOLOGIST_PHRASE);
       const beforeCreative = relCreative === -1 ? afterWeb : afterWeb.slice(0, relCreative);
       const afterCreative =
@@ -748,16 +365,20 @@ export function HeroSection({ content }: HeroSectionProps) {
           {token.slice(0, webIndex)}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
-            onPointerEnter={handleWebAccent}
+            data-active={hoverAccent === "web" ? "true" : "false"}
+            onPointerEnter={coarsePointer ? undefined : handleWebAccent}
             onPointerLeave={handleDefaultAccent}
+            onClick={coarsePointer ? handleWebAccent : undefined}
           >
-            <span className={styles.introPixelSquare}>{WEB_DEVELOPER_PHRASE}</span>
+            <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
           </span>
           {beforeCreative}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
-            onPointerEnter={handleCreativeAccent}
+            data-active={hoverAccent === "creative" ? "true" : "false"}
+            onPointerEnter={coarsePointer ? undefined : handleCreativeAccent}
             onPointerLeave={handleDefaultAccent}
+            onClick={coarsePointer ? handleCreativeAccent : undefined}
           >
             {CREATIVE_TECHNOLOGIST_PHRASE}
           </span>
@@ -765,69 +386,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         </>
       );
     },
-    [handleCreativeAccent, handleDefaultAccent, handleWebAccent],
-  );
-
-  const renderHeadingToken = useCallback(
-    (token: string, tokenIndex: number) => {
-      if (!token.includes(STUFF_GAG_WORD)) {
-        return token;
-      }
-
-      const segments = token.split(new RegExp(`(${STUFF_GAG_WORD})`, "g"));
-      return segments.map((segment, i) => {
-        if (segment === STUFF_GAG_WORD) {
-          return (
-            <span
-              key={`stuff-gag-${tokenIndex}-${i}`}
-              ref={stuffAnchorRef}
-              role="button"
-              tabIndex={coarsePointer ? 0 : -1}
-              className={styles.stuffGag}
-              data-active={stuffGagMobileActive ? "true" : "false"}
-              data-gag-open={gagActive ? "true" : "false"}
-              aria-label="Alternate emphasis for “stuff”"
-              aria-pressed={coarsePointer ? stuffGagMobileActive : undefined}
-              onPointerEnter={handleStuffPointerEnter}
-              onPointerLeave={handleStuffPointerLeave}
-              onClick={() => {
-                if (typeof window !== "undefined" && window.matchMedia(COARSE_POINTER_QUERY).matches) {
-                  toggleStuffGagMobile();
-                }
-              }}
-              onKeyDown={(event) => {
-                if (typeof window === "undefined" || !window.matchMedia(COARSE_POINTER_QUERY).matches) {
-                  return;
-                }
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleStuffGagMobile();
-                }
-              }}
-            >
-              <span className={styles.stuffSurface}>
-                <span ref={strikeLineRef} className={styles.stuffStrikeLine} aria-hidden="true" />
-                <span ref={stuffGlyphRef} className={styles.stuffGlyph}>
-                  {STUFF_GAG_WORD}
-                </span>
-              </span>
-            </span>
-          );
-        }
-
-        return (
-          <Fragment key={`stuff-seg-${tokenIndex}-${i}`}>{segment}</Fragment>
-        );
-      });
-    },
-    [
-      coarsePointer,
-      gagActive,
-      handleStuffPointerEnter,
-      handleStuffPointerLeave,
-      stuffGagMobileActive,
-      toggleStuffGagMobile,
-    ],
+    [coarsePointer, handleCreativeAccent, handleDefaultAccent, handleWebAccent, hoverAccent],
   );
 
   const renderCtaToken = useCallback((token: string) => {
@@ -846,12 +405,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   }, []);
 
   return (
-    <section
-      id="hero"
-      className={styles.section}
-      onPointerEnter={handleHeroPointerEnter}
-      onPointerLeave={handleHeroPointerLeave}
-    >
+    <section id="hero" className={styles.section}>
       <div className={`page-shell ${styles.inner}`}>
         <div className={styles.stage}>
           <div ref={contentRevealGateRef} className={styles.content}>
@@ -877,7 +431,6 @@ export function HeroSection({ content }: HeroSectionProps) {
               offset={introLines.length}
               total={sequenceTotal}
               stepMs={HEADING_REVEAL_STEP_MS}
-              renderToken={renderHeadingToken}
               immediate={bypassHeroReplay}
               visible={bypassHeroReplay ? true : heroContentRevealVisible}
             />
@@ -901,8 +454,8 @@ export function HeroSection({ content }: HeroSectionProps) {
 
           <div
             className={styles.visualPanel}
-            data-visible={hoverAccent ? "true" : "false"}
-            data-accent={hoverAccent ?? "default"}
+            data-visible={walkerVisible ? "true" : "false"}
+            data-accent={hoverAccent}
             aria-hidden="true"
           >
             <div className={styles.visualPanelInner}>
@@ -914,8 +467,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 frameCount={WALKER_FRAME_COUNT}
                 fps={WALKER_FPS}
                 lazy={false}
-                paused={!hoverAccent}
-                visible={Boolean(hoverAccent)}
+                paused={!walkerVisible}
+                visible={walkerVisible}
                 randomVisibilityReveal
                 randomVisibilityDurationMs={560}
                 color={
@@ -931,31 +484,6 @@ export function HeroSection({ content }: HeroSectionProps) {
           </div>
         </div>
       </div>
-      {portalMounted &&
-        showGagPortalLayer &&
-        shitPortalLayout &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <span
-            className={styles.shitPortalWrap}
-            style={{
-              position: "fixed",
-              left: shitPortalLayout.x,
-              top: shitPortalLayout.y,
-              /* 1em = rendered “stuff” size — `.shitPortal` scales with em */
-              fontSize: shitPortalLayout.emBasePx,
-            }}
-            aria-hidden="true"
-          >
-            {/* Tilt lives only in CSS so GSAP scale/opacity never clears rotation mid-tween */}
-            <span className={styles.shitPortalTilt}>
-              <span ref={shitPortalRef} className={styles.shitPortal}>
-                shit
-              </span>
-            </span>
-          </span>,
-          document.body,
-        )}
     </section>
   );
 }

@@ -11,22 +11,22 @@
 }
 
 .stage {
-  display: grid;
-  grid-template-columns: minmax(0, 2.1fr) minmax(0, 0.9fr);
-  align-items: stretch;
+  position: relative;
+  display: block;
   /* Occupy viewport without endless void — svh tracks mobile browser UI */
   min-height: clamp(26rem, 58svh, 44rem);
-  gap: clamp(1rem, 2vw, 2rem);
 }
 
 .content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: clamp(0.75rem, 1.8vw, 1.1rem);
   padding: clamp(1.5rem, 3.2vw, 2.6rem) 0;
   /* Laptop-ish: keep a comfortable measure; see wide/ultrawide overrides below */
-  max-width: min(52rem, 100%);
+  max-width: min(44rem, 100%);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -57,11 +57,20 @@
   transition: color 180ms ease-out;
 }
 
-.introAccentTriggerWeb:hover {
+@media (hover: none) {
+  .introAccentTrigger {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.introAccentTriggerWeb:hover,
+.introAccentTriggerWeb[data-active="true"] {
   color: var(--hero-walker-web-color);
 }
 
-.introAccentTriggerCreative:hover {
+.introAccentTriggerCreative:hover,
+.introAccentTriggerCreative[data-active="true"] {
   color: var(--hero-walker-creative-color);
 }
 
@@ -75,13 +84,13 @@
 
 .heading {
   margin: 0;
-  /* Desktop / tablet: closer to original scale (cap ~3.5rem), readable min */
-  font-size: clamp(1.55rem, 1.35vw + 0.65rem, 3.35rem);
+  /* Editorial measure — closer to the about lead than a shouty display line */
+  font-size: clamp(1.7rem, 2.15vw + 0.55rem, 2.7rem);
   /* Enough line box that RevealLines’ overflow clips don’t shave descenders */
-  line-height: 1.14;
-  letter-spacing: -0.038em;
+  line-height: 1.08;
+  letter-spacing: -0.048em;
   font-weight: 400;
-  max-width: 100%;
+  max-width: 28ch;
   /* Space between RevealLines rows (Pretext layout + optional \n in copy) */
   --reveal-line-gap: clamp(0.02em, 0.05vw + 0.01em, 0.05em);
 }
@@ -124,130 +133,28 @@
   color: var(--signal-color);
 }
 
-/* “stuff” → strikethrough + pixel “shit” (hover / focus on fine pointers; tap on coarse) */
-.stuffGag {
-  position: relative;
-  display: inline-block;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-  cursor: default;
-  vertical-align: baseline;
-  -webkit-tap-highlight-color: transparent;
-}
-
-@media (hover: none) {
-  .stuffGag {
-    cursor: pointer;
-  }
-}
-
-.stuffSurface {
-  position: relative;
-  display: inline-block;
-  z-index: 0;
-}
-
-/* LTR strike drawn here; opacity of “stuff” is driven by GSAP */
-.stuffStrikeLine {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: max(0.09em, 2px);
-  margin-top: -0.045em;
-  transform-origin: left center;
-  transform: scaleX(0);
-  border-radius: 0.02em;
-  pointer-events: none;
-  /* Solid bar — “stuff” opacity is animated separately */
-  background-color: var(--fg-color);
-}
-
-.stuffGlyph {
-  position: relative;
-  z-index: 1;
-}
-
-@media (hover: none) {
-  .stuffGlyph {
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.18em;
-    text-decoration-color: color-mix(in srgb, var(--muted-color) 78%, transparent);
-  }
-}
-
-.stuffGag[data-gag-open="true"] .stuffGlyph {
-  text-decoration: none;
-}
-
-/* Outer: anchor point only — centering stays correct if GSAP tweens are killed mid-flight */
-.shitPortalWrap {
-  z-index: 10050;
-  display: inline-block;
-  margin: 0;
-  padding: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  /* `font-size` set inline (px) to match the real “stuff” glyph — ties scale to headline on every breakpoint */
-  line-height: 0;
-}
-
-/* Constant tilt — never targeted by GSAP (avoids 0° flashes when tweens are interrupted) */
-.shitPortalTilt {
-  display: inline-block;
-  transform: rotate(-11deg) translateZ(0);
-  transform-origin: 50% 50%;
-  backface-visibility: hidden;
-}
-
-/* GSAP animates autoAlpha only (no scale — avoids pixel-font shimmer) */
-.shitPortal {
-  display: inline-block;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  filter: none;
-  backdrop-filter: none;
-  font-family: var(--font-pixel-square-stack);
-  /* Slightly larger than “stuff”; parent `.shitPortalWrap` font-size tracks the glyph */
-  font-size: 1.28em;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1;
-  color: #e01818;
-  white-space: nowrap;
-  mix-blend-mode: normal;
-  text-rendering: geometricPrecision;
-  opacity: 0;
-  visibility: hidden;
-}
-
 .visualPanel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
   display: flex;
-  align-items: center;
-  min-width: 0;
-  min-height: 100%;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: min(19rem, 34%);
+  height: min(22rem, 72%);
   pointer-events: none;
 }
 
 .visualPanelInner {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
   width: 100%;
+  height: 100%;
   min-width: 0;
-  min-height: clamp(21rem, 54vh, 36rem);
-  padding: clamp(1.25rem, 3vw, 2.75rem);
+  padding: 0;
   overflow: visible;
   contain: layout;
 }
@@ -255,11 +162,11 @@
 .walkerShell {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
   width: 100%;
   min-width: 0;
-  height: clamp(21rem, 54vh, 36rem);
+  height: 100%;
 }
 
 .walker {
@@ -284,42 +191,47 @@
   text-shadow: 0 0 1rem var(--walker-glow);
 }
 
-/* Wide desktop: a bit more measure + weight the copy column so the block isn’t a thin rail */
+/* Wide desktop: keep the statement from stretching into a thin rail */
 @media (min-width: 90rem) {
-  .stage {
-    grid-template-columns: minmax(0, 2.4fr) minmax(0, 0.82fr);
-    gap: clamp(1.25rem, 2.2vw, 2.75rem);
+  .content {
+    max-width: min(50rem, 100%);
   }
 
-  .content {
-    max-width: min(62rem, 100%);
+  .visualPanel {
+    width: min(21rem, 30%);
+    height: min(24rem, 68%);
   }
 }
 
 @media (min-width: 120rem) {
-  .stage {
-    grid-template-columns: minmax(0, 2.58fr) minmax(0, 0.74fr);
-    gap: clamp(1.35rem, 2.4vw, 3rem);
-  }
-
   .content {
-    max-width: min(72rem, 100%);
+    max-width: min(54rem, 100%);
   }
 }
 
 @media (max-width: 64rem) {
   .stage {
-    grid-template-columns: 1fr;
     min-height: clamp(22rem, 50svh, 38rem);
   }
 
-  /* Second column was only for desktop asymmetry — hide so mobile isn’t a two-row grid */
-  .visualPanel {
-    display: none;
+  .content {
+    max-width: min(40rem, 100%);
   }
 
-  .content {
-    max-width: min(46rem, 100%);
+  .heading {
+    max-width: min(28ch, 100%);
+  }
+
+  .intro {
+    max-width: calc(100% - 8.5rem);
+  }
+
+  .visualPanel {
+    top: 1.25rem;
+    right: 0;
+    bottom: auto;
+    width: min(8.5rem, 28vw);
+    height: min(9.5rem, 26svh);
   }
 }
 
@@ -349,24 +261,40 @@
   .stage {
     /* Pull headline into a calmer vertical band — less “stuck to the top” */
     min-height: clamp(38svh, 46svh, 28rem);
-    align-items: center;
   }
 
   .content {
     padding-block: clamp(0.75rem, 2vw, 1.25rem);
-    gap: 0.65rem;
+    gap: 0.7rem;
   }
 
   .heading {
-    font-size: clamp(1.75rem, 0.35rem + 5.5vw, 2.65rem);
-    line-height: 1.14;
-    letter-spacing: -0.035em;
+    font-size: clamp(1.42rem, 0.42rem + 4.6vw, 1.82rem);
+    line-height: 1.08;
+    letter-spacing: -0.042em;
     max-width: 100%;
-    text-wrap: balance;
+    text-wrap: pretty;
   }
 
   .intro {
-    max-width: 38ch;
+    max-width: calc(100% - 6.4rem);
+  }
+
+  .introAccentTrigger {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .visualPanel {
+    top: clamp(0.85rem, 3vw, 1.4rem);
+    right: 0;
+    bottom: auto;
+    width: 5.8rem;
+    height: 6.6rem;
+  }
+
+  .walker {
+    font-size: 0.72rem;
   }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */
