@@ -12,13 +12,13 @@
 
 .stage {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, min(44rem, 100%)) minmax(16rem, 20rem);
-  justify-content: start;
+  display: flex;
   align-items: center;
-  gap: clamp(0.85rem, 2.2vw, 2rem);
+  width: fit-content;
+  max-width: 100%;
+  gap: clamp(0.65rem, 1.6vw, 1.4rem);
   /* Tight enough that the walker reads as a companion, not a void-filler */
-  min-height: clamp(20rem, 44svh, 32rem);
+  min-height: clamp(20rem, 42svh, 30rem);
 }
 
 .content {
@@ -27,10 +27,11 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  flex: 0 1 auto;
+  width: fit-content;
   gap: clamp(0.75rem, 1.8vw, 1.1rem);
   padding: clamp(1.5rem, 3.2vw, 2.6rem) 0;
-  /* Laptop-ish: keep a comfortable measure; see wide/ultrawide overrides below */
-  max-width: min(44rem, 100%);
+  max-width: min(38rem, calc(100% - 12rem));
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -87,7 +88,7 @@
   line-height: 1.08;
   letter-spacing: -0.048em;
   font-weight: 400;
-  max-width: 28ch;
+  max-width: 16.5em;
   /* Space between RevealLines rows (Pretext layout + optional \n in copy) */
   --reveal-line-gap: clamp(0.02em, 0.05vw + 0.01em, 0.05em);
 }
@@ -136,8 +137,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: min(22rem, 52svh);
+  flex: 0 0 15.5rem;
+  width: 15.5rem;
+  height: 17.5rem;
   pointer-events: none;
 }
 
@@ -198,37 +200,37 @@
 
 /* Wide desktop: keep the statement from stretching into a thin rail */
 @media (min-width: 90rem) {
-  .stage {
-    grid-template-columns: minmax(0, min(50rem, 100%)) minmax(18rem, 22rem);
-  }
-
   .content {
-    max-width: min(50rem, 100%);
+    max-width: min(42rem, calc(100% - 14rem));
   }
 
   .visualPanel {
-    height: min(24rem, 48svh);
+    flex-basis: 17rem;
+    width: 17rem;
+    height: 19rem;
   }
 }
 
 @media (min-width: 120rem) {
   .content {
-    max-width: min(54rem, 100%);
+    max-width: min(46rem, calc(100% - 15rem));
   }
 }
 
 @media (max-width: 64rem) {
   .stage {
-    grid-template-columns: 1fr;
+    display: block;
+    width: 100%;
     min-height: clamp(20rem, 42svh, 28rem);
   }
 
   .content {
+    width: 100%;
     max-width: min(40rem, 100%);
   }
 
   .heading {
-    max-width: min(28ch, 100%);
+    max-width: min(16.5em, 100%);
   }
 
   .intro {
@@ -239,6 +241,7 @@
     position: absolute;
     top: 1.1rem;
     right: 0;
+    flex: none;
     width: 7.25rem;
     height: 8.25rem;
   }

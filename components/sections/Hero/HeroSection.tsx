@@ -471,7 +471,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 visible={walkerVisible}
                 randomVisibilityReveal
                 randomVisibilityDurationMs={560}
-                scale={1.18}
+                scale={1.62}
                 ariaLabel="ASCII walking animation"
               />
             </div>
