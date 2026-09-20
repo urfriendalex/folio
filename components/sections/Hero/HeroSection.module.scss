@@ -320,23 +320,24 @@
     max-width: min(46rem, 100%);
   }
 
-  /* Own row under the type — not an overlay, not a leftover second column. */
+  /* Own row under the type, parked in the right half of the section. */
   .visualPanel {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: min(14.5rem, 64%);
-    height: 10rem;
-    min-height: 10rem;
-    margin-inline: auto;
+    justify-content: flex-end;
+    width: min(9.5rem, 42%);
+    height: 7.25rem;
+    min-height: 7.25rem;
+    margin-left: auto;
+    margin-right: 0;
     padding-bottom: 0.15rem;
   }
 
   .visualPanelInner,
   .walkerShell {
     width: 100%;
-    min-height: 10rem;
-    height: 10rem;
+    min-height: 7.25rem;
+    height: 7.25rem;
     padding: 0;
   }
 }
@@ -377,10 +378,10 @@
   }
 
   .heading {
-    font-size: clamp(1.85rem, 0.4rem + 6vw, 2.75rem);
+    font-size: clamp(1.62rem, 0.35rem + 5.4vw, 2.35rem);
     line-height: 1.12;
-    letter-spacing: -0.038em;
-    max-width: 12.5em;
+    letter-spacing: -0.036em;
+    max-width: 16em;
     text-wrap: pretty;
   }
 
@@ -389,15 +390,15 @@
   }
 
   .visualPanel {
-    width: min(12.25rem, 58%);
-    height: 8.75rem;
-    min-height: 8.75rem;
+    width: min(8.25rem, 38%);
+    height: 6.35rem;
+    min-height: 6.35rem;
   }
 
   .visualPanelInner,
   .walkerShell {
-    min-height: 8.75rem;
-    height: 8.75rem;
+    min-height: 6.35rem;
+    height: 6.35rem;
   }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */

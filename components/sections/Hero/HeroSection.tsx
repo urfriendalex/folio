@@ -919,7 +919,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 lazy={false}
                 paused={!walkerActive}
                 visible={walkerActive}
-                scale={coarsePointer ? 1.5 : 1}
+                scale={coarsePointer ? 1.05 : 1}
                 randomVisibilityReveal
                 randomVisibilityDurationMs={560}
                 color={
