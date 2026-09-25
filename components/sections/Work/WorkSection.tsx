@@ -31,7 +31,7 @@ type GridView = "stack" | "wide" | "regular";
 /* Above 13–14" laptop CSS widths (~1440–1512). 16" / external / XL only. */
 const SUPER_WIDE_QUERY = "(min-width: 100rem)";
 
-const desktopViewOptions: Array<{
+const viewOptions: Array<{
   view: GridView;
   label: string;
   columns: number;
@@ -43,7 +43,7 @@ const desktopViewOptions: Array<{
 }> = [
   {
     view: "stack",
-    label: "One column grid",
+    label: "One column grid on desktop",
     columns: 1,
     rows: 2,
     variant: "grid",
@@ -53,7 +53,7 @@ const desktopViewOptions: Array<{
   },
   {
     view: "wide",
-    label: "Two column grid",
+    label: "One column grid on mobile, two column grid on desktop",
     columns: 2,
     rows: 2,
     variant: "grid",
@@ -63,45 +63,13 @@ const desktopViewOptions: Array<{
   },
   {
     view: "regular",
-    label: "Three column grid",
+    label: "Two column grid on mobile, three column grid on desktop",
     columns: 3,
     rows: 2,
     variant: "grid",
     widthRatio: 0.5,
     heightRatio: 0.48,
     gapRatio: 0.095,
-  },
-];
-
-const mobileViewOptions: Array<{
-  view: Extract<GridView, "wide" | "regular">;
-  label: string;
-  columns: number;
-  rows: number;
-  variant: "bars" | "grid";
-  widthRatio: number;
-  heightRatio: number;
-  gapRatio: number;
-}> = [
-  {
-    view: "wide",
-    label: "One column grid",
-    columns: 1,
-    rows: 2,
-    variant: "grid",
-    widthRatio: 0.5,
-    heightRatio: 0.48,
-    gapRatio: 0.09,
-  },
-  {
-    view: "regular",
-    label: "Two column grid",
-    columns: 2,
-    rows: 2,
-    variant: "grid",
-    widthRatio: 0.5,
-    heightRatio: 0.48,
-    gapRatio: 0.092,
   },
 ];
 
@@ -118,17 +86,10 @@ export function WorkSection({ projects }: WorkSectionProps) {
   const [view, setView] = useState<GridView>("wide");
   // Must match SSR: never read viewport in useState initializer or server/desktop
   // and client/mobile first paints diverge and React hydration fails.
-  const [isMobile, setIsMobile] = useState(false);
-  const [isSuperWide, setIsSuperWide] = useState(false);
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousRectsRef = useRef(new Map<string, DOMRect>());
   const hasMountedRef = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const viewOptions = isMobile
-    ? mobileViewOptions
-    : isSuperWide
-      ? desktopViewOptions.filter((option) => option.view !== "stack")
-      : desktopViewOptions;
   const skipEntranceReveal = useRestoredScrollBypass();
   const workSectionRevealVisible = useWorkRevealOnView(sectionRef, {
     ...WORK_SECTION_REVEAL_OPTIONS,
@@ -221,8 +182,6 @@ export function WorkSection({ projects }: WorkSectionProps) {
       const superWide = superWideQuery.matches;
       const viewport = { mobile, superWide };
 
-      setIsMobile(mobile);
-      setIsSuperWide(superWide);
       setView((currentView) => {
         const source = restored ? currentView : readProjectLayout().grid;
         restored = true;

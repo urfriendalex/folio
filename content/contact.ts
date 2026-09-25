@@ -15,7 +15,7 @@ export const contactContent = {
   calLink: process.env.NEXT_PUBLIC_CAL_LINK?.trim() || "yansons",
   responseTime: "Usually replies within two business days.",
   editorialIntro:
-    "For enquiries and new work, email is best. A short note with scope, timeline, and any reference links helps.",
+    "For new work, send a short email.",
   /** Shown on the gooey email hover swap on the home contact block. */
   emailHoverPhrase: "Let's work together",
   instagram: "https://www.instagram.com/yansons.online/",

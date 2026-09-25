@@ -57,6 +57,10 @@
   transition: color 180ms ease-out;
 }
 
+.introMobileBreak {
+  display: none;
+}
+
 .introAccentTriggerWeb:hover {
   color: var(--hero-walker-web-color);
 }
@@ -361,8 +365,10 @@
 
 @media (max-width: 48rem) {
   .section {
+    --mobile-walker-band: clamp(11rem, 31svh, 19rem);
+    --mobile-walker-half-width: clamp(3.1rem, 8.8svh, 5.4rem);
     padding-top: calc(var(--header-height) + 0.35rem);
-    padding-bottom: clamp(1.75rem, 4vw + 0.5rem, 3rem);
+    padding-bottom: clamp(0.5rem, 2.5vw, 0.75rem);
   }
 
   .stage {
@@ -389,16 +395,29 @@
     max-width: 38ch;
   }
 
+  .introMobileBreak {
+    display: block;
+  }
+
   .visualPanel {
-    width: min(8.25rem, 38%);
-    height: 6.35rem;
-    min-height: 6.35rem;
+    width: min(11rem, 42%);
+    height: var(--mobile-walker-band);
+    min-height: var(--mobile-walker-band);
+    margin-top: clamp(2.5rem, 9svh, 5.5rem);
   }
 
   .visualPanelInner,
   .walkerShell {
-    min-height: 6.35rem;
-    height: 6.35rem;
+    min-height: var(--mobile-walker-band);
+    height: var(--mobile-walker-band);
+  }
+
+  /* Align the ASCII's visible edge to the final grid glyph, accounting for the renderer's center transform. */
+  .walker {
+    left: calc(
+      100% - min(50%, var(--mobile-walker-half-width)) - var(--project-view-glyph-rail-inset)
+    );
+    right: auto;
   }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */

@@ -507,6 +507,16 @@
 }
 
 @media (max-width: 48rem) {
+  /*
+   * Mobile scroll parks the section below the header, so a form centered in the
+   * stage lands half a header (plus the 1rem clearance) too low. Asymmetric
+   * margins shift the fields up without changing how the block is centered.
+   */
+  .sectionFormOpen .formView {
+    --contact-form-mobile-lift: min(var(--header-height) / 2 + 1rem, 5svh);
+    margin-block: calc(-1 * var(--contact-form-mobile-lift)) var(--contact-form-mobile-lift);
+  }
+
   /* Bento buttons use border chrome — hide editorial underline from globals */
   .contactChannelButton:global(.link-underline)::after {
     display: none !important;

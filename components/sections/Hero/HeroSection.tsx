@@ -12,7 +12,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
-import ASCIIAnimation from "@/components/Preloader/ascii";
+import ASCIIAnimation, {
+  ASCII_VISIBILITY_REVEAL_DURATION_MS,
+} from "@/components/Preloader/ascii";
 import {
   getFrameFolderForTheme,
   getInitialFrameFolder,
@@ -38,29 +40,7 @@ const INTRO_REVEAL_STEP_MS = 44;
 const HEADING_REVEAL_STEP_MS = 62;
 const REVEAL_TRANSFORM_SETTLE_MS = 620;
 
-/** Same breakpoint as Footer / Work — narrow viewports get a forced two-line intro. */
-const INTRO_STACK_QUERY = "(max-width: 48rem)";
 const COARSE_POINTER_QUERY = "(hover: none)";
-
-function subscribeIntroStack(onStoreChange: () => void) {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-  const mq = window.matchMedia(INTRO_STACK_QUERY);
-  mq.addEventListener("change", onStoreChange);
-  return () => mq.removeEventListener("change", onStoreChange);
-}
-
-function getIntroStackSnapshot(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return window.matchMedia(INTRO_STACK_QUERY).matches;
-}
-
-function getServerIntroStackSnapshot(): boolean {
-  return false;
-}
 
 function subscribeCoarsePointer(onStoreChange: () => void) {
   if (typeof window === "undefined") {
@@ -516,20 +496,9 @@ export function HeroSection({ content }: HeroSectionProps) {
     });
   }, []);
 
-  const stackIntroLines = useSyncExternalStore(
-    subscribeIntroStack,
-    getIntroStackSnapshot,
-    getServerIntroStackSnapshot,
-  );
-
-  const introText = useMemo(() => {
-    if (stackIntroLines) {
-      return `${INDEPENDENT_DEVELOPER_PHRASE}\n& ${CREATIVE_TECHNOLOGIST_PHRASE}`;
-    }
-    return content.position;
-  }, [content.position, stackIntroLines]);
-
-  const introLines = usePretextLines(introText, introRef, "pre-wrap", true);
+  /** Keep the intro string identical on the server and client; the mobile break is CSS-controlled. */
+  const introText = content.position;
+  const introLines = useMemo(() => [introText], [introText]);
   const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true);
 
   const ctaTextUpper = useMemo(
@@ -541,8 +510,13 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
-  /** Desktop keeps the hover reveal. Mobile has no hover, so the walker lives in its own slot. */
+  /** Desktop hover and the mobile intro slot use the same randomized ASCII visibility reveal. */
   const walkerActive = walkerRevealed && (coarsePointer || Boolean(hoverAccent));
+  const walkerRevealPlayedInPreloader =
+    coarsePointer &&
+    preloaderComplete &&
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.preloaderAsciiRevealed === "true";
 
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
@@ -756,6 +730,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           >
             <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
           </span>
+          <br className={styles.introMobileBreak} aria-hidden="true" />
           {beforeCreative}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
@@ -920,8 +895,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 paused={!walkerActive}
                 visible={walkerActive}
                 scale={coarsePointer ? 1.05 : 1}
-                randomVisibilityReveal
-                randomVisibilityDurationMs={560}
+                randomVisibilityReveal={!walkerRevealPlayedInPreloader}
+                randomVisibilityDurationMs={ASCII_VISIBILITY_REVEAL_DURATION_MS}
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"

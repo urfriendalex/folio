@@ -83,7 +83,7 @@ const bootstrapScript = `
   }
   themeColorMeta.setAttribute("content", chromeColor);
 
-  let footerMode = "toolbar";
+  let footerMode = "minimal";
   try {
     const storedFooterMode = localStorage.getItem("footerMode");
     if (storedFooterMode === "toolbar" || storedFooterMode === "minimal") {
@@ -132,7 +132,7 @@ export default function RootLayout({
       className={fontVariables}
       lang="en"
       data-theme="light"
-      data-footer-mode="toolbar"
+      data-footer-mode="minimal"
       data-preloader="run"
       suppressHydrationWarning
     >

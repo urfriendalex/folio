@@ -71,6 +71,8 @@ interface ASCIIAnimationProps {
   randomVisibilityReveal?: boolean;
   /** Duration for random enter visibility reveal (ms). Exit runs slightly faster. */
   randomVisibilityDurationMs?: number;
+  /** Called when a visible random-cell reveal settles, including immediate/reduced-motion paths. */
+  onVisibilityRevealComplete?: () => void;
   /** Color frames: skip solid background so empty areas stay transparent (overrides meta `bgMode` when true). */
   transparentCanvasBackground?: boolean;
   /**
@@ -79,6 +81,8 @@ interface ASCIIAnimationProps {
    */
   revealActive?: boolean;
 }
+
+export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 1100;
 
 const FALLBACK_ORDER: Record<Quality, Quality[]> = {
   low: ["low", "high", "medium"],
@@ -212,10 +216,6 @@ function cellRevealHash01(cellIndex: number, frameKey: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-function easeOutQuart(value: number): number {
-  return 1 - (1 - value) ** 4;
-}
-
 function maskTextFrame(frameText: string, revealProgress: number, frameKey: number): string {
   if (revealProgress >= 1) {
     return frameText;
@@ -325,6 +325,7 @@ export default function ASCIIAnimation({
   visible = true,
   randomVisibilityReveal = false,
   randomVisibilityDurationMs = 520,
+  onVisibilityRevealComplete,
   transparentCanvasBackground = false,
   revealActive = true,
 }: ASCIIAnimationProps) {
@@ -563,6 +564,9 @@ export default function ASCIIAnimation({
     if (!randomVisibilityReveal) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -570,6 +574,9 @@ export default function ASCIIAnimation({
     if (reducedMotion) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -577,6 +584,9 @@ export default function ASCIIAnimation({
     if (Math.abs(startProgress - target) < 0.001) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -593,14 +603,16 @@ export default function ASCIIAnimation({
     const tick = () => {
       const elapsed = performance.now() - start;
       const progress = Math.min(1, elapsed / duration);
-      const nextValue =
-        startProgress + (target - startProgress) * easeOutQuart(progress);
+      // A linear timeline keeps each cell's randomized threshold evenly staggered.
+      const nextValue = startProgress + (target - startProgress) * progress;
 
       visibilityProgressRef.current = nextValue;
       setVisibilityProgress(nextValue);
 
       if (progress < 1) {
         visibilityRafRef.current = window.requestAnimationFrame(tick);
+      } else if (target === 1) {
+        onVisibilityRevealComplete?.();
       }
     };
 
@@ -609,7 +621,7 @@ export default function ASCIIAnimation({
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
     };
-  }, [randomVisibilityDurationMs, randomVisibilityReveal, visible]);
+  }, [onVisibilityRevealComplete, randomVisibilityDurationMs, randomVisibilityReveal, visible]);
 
   useEffect(() => {
     if (totalFrames <= 1 || !shouldPlay) {
