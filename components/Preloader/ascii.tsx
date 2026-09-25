@@ -71,6 +71,17 @@ interface ASCIIAnimationProps {
   randomVisibilityReveal?: boolean;
   /** Duration for random enter visibility reveal (ms). Exit runs slightly faster. */
   randomVisibilityDurationMs?: number;
+  /** Called when a visible random-cell reveal settles, including immediate/reduced-motion paths. */
+  onVisibilityRevealComplete?: () => void;
+  /** Reports the random-cell visibility progress (0–1) on every reveal tick. */
+  onVisibilityProgress?: (progress: number) => void;
+  /**
+   * Text frames: dissolve glyphs with the same random cell mask as the container scrolls up past the
+   * top of the viewport, and bring them back when it scrolls back in.
+   */
+  scrollDissolve?: boolean;
+  /** Contain mode: pin the art's right edge to the container's right edge instead of centering it. */
+  anchorEnd?: boolean;
   /** Color frames: skip solid background so empty areas stay transparent (overrides meta `bgMode` when true). */
   transparentCanvasBackground?: boolean;
   /**
@@ -79,6 +90,23 @@ interface ASCIIAnimationProps {
    */
   revealActive?: boolean;
 }
+
+export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 1100;
+
+/**
+ * Scroll dissolve starts once the art's top edge rises into this share of the viewport (or on the first
+ * scrolled pixel when it already starts above that line)…
+ */
+const SCROLL_DISSOLVE_START_VIEWPORT = 0.3;
+/** …and finishes when this share of the art has scrolled past the top of the viewport. */
+const SCROLL_DISSOLVE_END_FRACTION = 0.35;
+/** Quantize scroll progress so scrolling doesn't re-mask the frame on every pixel. */
+const SCROLL_DISSOLVE_STEPS = 48;
+/**
+ * Timed reveals re-mask the frame at most this many times per pass: each step still pops a random scatter
+ * of glyphs, but the large <pre> is re-laid out ~40× instead of on every animation frame.
+ */
+const VISIBILITY_REVEAL_STEPS = 40;
 
 const FALLBACK_ORDER: Record<Quality, Quality[]> = {
   low: ["low", "high", "medium"],
@@ -204,7 +232,7 @@ function decodeColorFrame(meta: ColorAsciiMeta, buffer: Uint8Array) {
 }
 
 /** Deterministic hash in [0, 1) for cell index + frame — used for random-order glyph reveal. */
-function cellRevealHash01(cellIndex: number, frameKey: number): number {
+export function cellRevealHash01(cellIndex: number, frameKey: number): number {
   let h = Math.imul(cellIndex ^ frameKey, 0x9e3779b9) >>> 0;
   h ^= h >>> 16;
   h = Math.imul(h, 0x85ebca6b);
@@ -212,8 +240,31 @@ function cellRevealHash01(cellIndex: number, frameKey: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-function easeOutQuart(value: number): number {
-  return 1 - (1 - value) ** 4;
+const REVEAL_THRESHOLD_CACHE_LIMIT = 6;
+const revealThresholdCache = new Map<number, Float64Array>();
+
+/** Per-cell reveal thresholds for a seed, computed once and reused by every masked render. */
+function getRevealThresholds(cellCount: number, frameKey: number): Float64Array {
+  const cached = revealThresholdCache.get(frameKey);
+  if (cached && cached.length >= cellCount) {
+    return cached;
+  }
+
+  const thresholds = new Float64Array(cellCount);
+  for (let index = 0; index < cellCount; index += 1) {
+    thresholds[index] = cellRevealHash01(index, frameKey);
+  }
+
+  revealThresholdCache.delete(frameKey);
+  revealThresholdCache.set(frameKey, thresholds);
+  if (revealThresholdCache.size > REVEAL_THRESHOLD_CACHE_LIMIT) {
+    const oldest = revealThresholdCache.keys().next().value;
+    if (oldest !== undefined) {
+      revealThresholdCache.delete(oldest);
+    }
+  }
+
+  return thresholds;
 }
 
 function maskTextFrame(frameText: string, revealProgress: number, frameKey: number): string {
@@ -225,21 +276,22 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
     return frameText.replace(/[^\r\n]/g, " ");
   }
 
+  const thresholds = getRevealThresholds(frameText.length, frameKey);
+  const out = new Array<string>(frameText.length);
   let cellIndex = 0;
-  let masked = "";
 
   for (let index = 0; index < frameText.length; index += 1) {
-    const char = frameText[index] ?? "";
-    if (char === "\r" || char === "\n") {
-      masked += char;
+    const code = frameText.charCodeAt(index);
+    if (code === 10 || code === 13) {
+      out[index] = code === 10 ? "\n" : "\r";
       continue;
     }
 
-    masked += cellRevealHash01(cellIndex, frameKey) <= revealProgress ? char : " ";
+    out[index] = thresholds[cellIndex] <= revealProgress ? frameText[index] : " ";
     cellIndex += 1;
   }
 
-  return masked;
+  return out.join("");
 }
 
 type DrawColorFrameOptions = {
@@ -325,6 +377,10 @@ export default function ASCIIAnimation({
   visible = true,
   randomVisibilityReveal = false,
   randomVisibilityDurationMs = 520,
+  onVisibilityRevealComplete,
+  onVisibilityProgress,
+  scrollDissolve = false,
+  anchorEnd = false,
   transparentCanvasBackground = false,
   revealActive = true,
 }: ASCIIAnimationProps) {
@@ -340,6 +396,7 @@ export default function ASCIIAnimation({
   const [scaled, setScaled] = useState(false);
   const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
   const [visibilitySeed, setVisibilitySeed] = useState(0);
+  const [scrollVisibility, setScrollVisibility] = useState(1);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
@@ -544,16 +601,92 @@ export default function ASCIIAnimation({
     };
   }, [lazy, loadAllFrames]);
 
-  const shouldPlay = isIntersecting && (!playOnHover || isHovered) && !paused;
+  const effectiveVisibility = visibilityProgress * (scrollDissolve ? scrollVisibility : 1);
+  const usesVisibilityMask = randomVisibilityReveal || (scrollDissolve && scrollVisibility < 1);
+  /** Keep walking while glyphs dissolve out; only stop once nothing is left on screen. */
+  const isDissolvingOut = usesVisibilityMask && !visible && effectiveVisibility > 0;
+  const hiddenByMask = usesVisibilityMask && effectiveVisibility <= 0;
+  const shouldPlay =
+    isIntersecting &&
+    !hiddenByMask &&
+    (((!playOnHover || isHovered) && !paused) || isDissolvingOut);
   const totalFrames = format === "color" ? colorFrames.length : frames.length;
   const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
   const maskedTextFrame = useMemo(() => {
-    if (format !== "text" || !randomVisibilityReveal) {
+    if (format !== "text" || !usesVisibilityMask) {
       return currentTextFrame;
     }
 
-    return maskTextFrame(currentTextFrame, visibilityProgress, visibilitySeed);
-  }, [currentTextFrame, format, randomVisibilityReveal, visibilityProgress, visibilitySeed]);
+    return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
+  }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
+
+  useEffect(() => {
+    if (!scrollDissolve) {
+      setScrollVisibility(1);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let rafId = 0;
+    let restingTop = 0;
+    let height = 0;
+
+    // Layout is read only when it can change; the scroll path below never forces layout.
+    const measureLayout = () => {
+      const rect = container.getBoundingClientRect();
+      restingTop = rect.top + window.scrollY;
+      height = rect.height;
+    };
+
+    const apply = () => {
+      rafId = 0;
+      if (height <= 0) {
+        return;
+      }
+
+      const top = restingTop - window.scrollY;
+      const startTop = Math.min(window.innerHeight * SCROLL_DISSOLVE_START_VIEWPORT, restingTop);
+      const endTop = -height * SCROLL_DISSOLVE_END_FRACTION;
+      const raw = Math.min(1, Math.max(0, (top - endTop) / (startTop - endTop)));
+      const next = reducedMotion
+        ? (raw >= 0.5 ? 1 : 0)
+        : Math.round(raw * SCROLL_DISSOLVE_STEPS) / SCROLL_DISSOLVE_STEPS;
+
+      setScrollVisibility(next);
+    };
+
+    const schedule = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(apply);
+      }
+    };
+
+    const remeasure = () => {
+      measureLayout();
+      schedule();
+    };
+
+    measureLayout();
+    apply();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", remeasure);
+    // Content above (fonts, reveals, images) can shift the art without resizing it.
+    const resizeObserver = new ResizeObserver(remeasure);
+    resizeObserver.observe(container);
+    resizeObserver.observe(document.body);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", remeasure);
+      resizeObserver.disconnect();
+    };
+  }, [scrollDissolve, isLoading]);
 
   useEffect(() => {
     window.cancelAnimationFrame(visibilityRafRef.current);
@@ -563,6 +696,10 @@ export default function ASCIIAnimation({
     if (!randomVisibilityReveal) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -570,6 +707,10 @@ export default function ASCIIAnimation({
     if (reducedMotion) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -577,12 +718,19 @@ export default function ASCIIAnimation({
     if (Math.abs(startProgress - target) < 0.001) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
-    const nextSeed = visibilitySeedRef.current + 1;
-    visibilitySeedRef.current = nextSeed;
-    setVisibilitySeed(nextSeed);
+    // Re-roll the cell order only from a settled state; reversing mid-way keeps the same glyphs.
+    if (startProgress <= 0.001 || startProgress >= 0.999) {
+      const nextSeed = visibilitySeedRef.current + 1;
+      visibilitySeedRef.current = nextSeed;
+      setVisibilitySeed(nextSeed);
+    }
 
     const durationBase = Math.max(120, randomVisibilityDurationMs);
     const duration = target > startProgress
@@ -593,14 +741,17 @@ export default function ASCIIAnimation({
     const tick = () => {
       const elapsed = performance.now() - start;
       const progress = Math.min(1, elapsed / duration);
-      const nextValue =
-        startProgress + (target - startProgress) * easeOutQuart(progress);
+      // A linear timeline keeps each cell's randomized threshold evenly staggered.
+      const nextValue = startProgress + (target - startProgress) * progress;
 
       visibilityProgressRef.current = nextValue;
-      setVisibilityProgress(nextValue);
+      setVisibilityProgress(Math.round(nextValue * VISIBILITY_REVEAL_STEPS) / VISIBILITY_REVEAL_STEPS);
+      onVisibilityProgress?.(nextValue);
 
       if (progress < 1) {
         visibilityRafRef.current = window.requestAnimationFrame(tick);
+      } else if (target === 1) {
+        onVisibilityRevealComplete?.();
       }
     };
 
@@ -609,7 +760,13 @@ export default function ASCIIAnimation({
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
     };
-  }, [randomVisibilityDurationMs, randomVisibilityReveal, visible]);
+  }, [
+    onVisibilityProgress,
+    onVisibilityRevealComplete,
+    randomVisibilityDurationMs,
+    randomVisibilityReveal,
+    visible,
+  ]);
 
   useEffect(() => {
     if (totalFrames <= 1 || !shouldPlay) {
@@ -814,7 +971,9 @@ export default function ASCIIAnimation({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [colorFrames.length, currentFrameIndex, currentTextFrame, format, meta, scale, scaled, fillParent]);
+    // Every frame of a sequence shares one size and the observers catch real resizes, so this re-runs
+    // only when frames load or the format changes — not on each animation tick.
+  }, [colorFrames.length, frames.length, format, meta, scale, scaled, fillParent]);
 
   if (isLoading && !frames.length && !colorFrames.length) {
     return <div ref={containerRef} className={className} aria-hidden="true" />;
@@ -829,7 +988,10 @@ export default function ASCIIAnimation({
   const containVisible = !fillParent && scaled;
 
   const sharedStyleContain = {
-    transform: `translate3d(-50%, -50%, 0) scale(${scaleValue})`,
+    ...(anchorEnd
+      ? { left: "auto", right: 0, transformOrigin: "100% 50%" }
+      : {}),
+    transform: `translate3d(${anchorEnd ? "0" : "-50%"}, -50%, 0) scale(${scaleValue})`,
     opacity: containVisible ? 1 : 0,
     transition: "opacity 0.2s ease-out",
   } as const;

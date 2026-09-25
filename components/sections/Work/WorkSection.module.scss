@@ -109,6 +109,11 @@
   transition: color 220ms ease;
 }
 
+/* Keep every control in the SSR markup; responsive visibility must be stable before JS runs. */
+.viewButton[data-layout="stack"] {
+  display: inline-block;
+}
+
 .viewButton[data-active="true"] {
   color: var(--fg-color);
 }
@@ -122,7 +127,7 @@
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 2.6rem;
+  width: var(--project-view-button-frame-width);
   height: 2.3rem;
 }
 
@@ -208,6 +213,10 @@
   .viewSwitch {
     gap: 0.28rem;
   }
+
+  .viewButton[data-layout="stack"] {
+    display: none;
+  }
 }
 
 @media (min-width: 100rem) {
@@ -218,4 +227,16 @@
   .viewButton[data-layout="stack"] {
     display: none;
   }
+}
+
+/* Grid selector rides the title's line-mask reveal; the clip is padded so focus rings aren't cut off. */
+.viewSwitchReveal[data-mode="lines"] {
+  display: inline-grid;
+  width: auto;
+  min-width: auto;
+}
+
+.viewSwitchReveal > span {
+  padding: 0.2rem;
+  margin: -0.2rem;
 }

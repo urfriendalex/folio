@@ -12,15 +12,17 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
+import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
+import { BookingButtonDither } from "./BookingButtonDither";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
 import { replayPreloader } from "@/lib/preloaderReplay";
 import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
-import { useTimeZoneStatus } from "./TimeZoneStatus";
+import { formatZoneMeta, useTimeZoneStatus } from "./TimeZoneStatus";
 import styles from "./Footer.module.scss";
 
 function waitForAnimationFrame() {
@@ -131,7 +133,7 @@ function getFooterModeSnapshot(): FooterMode {
     return "toolbar";
   }
 
-  return document.documentElement.getAttribute("data-footer-mode") === "minimal" ? "minimal" : "toolbar";
+  return document.documentElement.getAttribute("data-footer-mode") === "toolbar" ? "toolbar" : "minimal";
 }
 
 function getServerThemeSnapshot(): Theme {
@@ -139,7 +141,7 @@ function getServerThemeSnapshot(): Theme {
 }
 
 function getServerFooterModeSnapshot(): FooterMode {
-  return "toolbar";
+  return "minimal";
 }
 
 function setRootTheme(nextTheme: Theme) {
@@ -252,6 +254,7 @@ export function Footer() {
     getServerFooterModeSnapshot,
   );
   const timeZoneStatus = useTimeZoneStatus();
+  const { openAbout } = useOverlay();
   const [menuOpen, setMenuOpen] = useState(false);
   const [displayMenuOpen, setDisplayMenuOpen] = useState(false);
   const [startSubmenu, setStartSubmenu] = useState<StartSubmenu>(null);
@@ -544,6 +547,11 @@ export function Footer() {
     replayPreloader();
   };
 
+  const handleOpenAbout = () => {
+    closeMenu();
+    openAbout();
+  };
+
   const handleCascadingRowEnter = (key: StartSubmenuKey) => () => {
     setDisplayMenuOpen(false);
     setStartSubmenu(key);
@@ -579,7 +587,7 @@ export function Footer() {
         onClick={handleDisplayToggle}
         onKeyDown={handleDisplayToggleKeyDown}
       >
-        <span>Display</span>
+        <span>Windows toolbar</span>
         <span className={styles.inlineControlChevron} aria-hidden="true">
           ▸
         </span>
@@ -604,7 +612,7 @@ export function Footer() {
           <span className={styles.winMenuCheck} aria-hidden="true">
             {footerMode === "toolbar" ? "✓" : ""}
           </span>
-          Toolbar
+          Windows
         </button>
         <button
           ref={minimalModeButtonRef}
@@ -644,6 +652,7 @@ export function Footer() {
                       <p className={styles.editorialBody}>{contactContent.availabilityAi}</p>
                     ) : null}
                     <CalBookingTrigger className={styles.bookingButton}>
+                      <BookingButtonDither className={styles.bookingButtonCanvas} />
                       <span className={styles.bookingButtonText}>Schedule a call</span>
                       <span className={styles.bookingButtonMeta}>Cal.com</span>
                     </CalBookingTrigger>
@@ -688,7 +697,7 @@ export function Footer() {
                         <span className={styles.localeLabel}>Time</span>
                         <span className={styles.localeValue}>{localClock}</span>
                         <p className={styles.localeMeta}>
-                          {`${timeZoneStatus.visitorTimeZone} · ${timeZoneStatus.offsetLabel}`}
+                          {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
                         </p>
                       </div>
                     ) : (
@@ -696,12 +705,12 @@ export function Footer() {
                         <div className={styles.localeBlock}>
                           <span className={styles.localeLabel}>Your time</span>
                           <span className={styles.localeValue}>{localClock}</span>
+                          <p className={styles.localeMeta}>{timeZoneStatus.offsetLabel}</p>
                         </div>
                         <div className={styles.localeBlock}>
-                          <span className={styles.localeLabel}>Warsaw (studio)</span>
-                          <span className={styles.localeValue}>{`${timeZoneStatus.warsawTime} · WAW`}</span>
+                          <span className={styles.localeLabel}>Warsaw</span>
+                          <span className={styles.localeValue}>{timeZoneStatus.warsawShortClock}</span>
                         </div>
-                        <p className={styles.localeMeta}>{timeZoneStatus.offsetLabel}</p>
                       </>
                     )}
                   </div>
@@ -837,7 +846,7 @@ export function Footer() {
                 <div
                   className={styles.clockTray}
                   tabIndex={0}
-                  aria-label={`Warsaw time ${timeZoneStatus.warsawDateTime}. Your local time ${timeZoneStatus.visitorDateTime}. ${timeZoneStatus.offsetLabel}.`}
+                  aria-label={`Warsaw time ${timeZoneStatus.warsawDateTime}. Your local time ${timeZoneStatus.visitorDateTime}${timeZoneStatus.offsetLabel ? `. ${timeZoneStatus.offsetLabel}` : ""}.`}
                 >
                   <span className={styles.clockValue}>{`${timeZoneStatus.warsawTime} WAW`}</span>
                   <div className={styles.clockTooltip} role="tooltip">
@@ -846,7 +855,7 @@ export function Footer() {
                         <>
                           <p className={styles.winMenuTooltipPrimary}>{timeZoneStatus.warsawDateTime}</p>
                           <p className={styles.winMenuTooltipMeta}>
-                            {`${timeZoneStatus.visitorTimeZone} · ${timeZoneStatus.offsetLabel}`}
+                            {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
                           </p>
                         </>
                       ) : (
@@ -861,7 +870,7 @@ export function Footer() {
                             <span className={styles.winMenuRowValue}>{timeZoneStatus.visitorDateTime}</span>
                           </div>
                           <p className={styles.winMenuTooltipMeta}>
-                            {`${timeZoneStatus.visitorTimeZone} · ${timeZoneStatus.offsetLabel}`}
+                            {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
                           </p>
                         </>
                       )}
@@ -924,6 +933,14 @@ export function Footer() {
                             {contactContent.availabilityAi.trim() ? (
                               <p className={styles.menuProse}>{contactContent.availabilityAi}</p>
                             ) : null}
+                            <button
+                              type="button"
+                              className={styles.winMenuLink}
+                              role="menuitem"
+                              onClick={handleOpenAbout}
+                            >
+                              Read more
+                            </button>
                             <CalBookingTrigger
                               className={styles.winMenuLink}
                               role="menuitem"
@@ -1069,7 +1086,7 @@ export function Footer() {
                           <span className={styles.winMenuCheck} aria-hidden="true">
                             ✓
                           </span>
-                          Toolbar
+                          Windows
                         </button>
                         <button
                           ref={minimalModeButtonRef}

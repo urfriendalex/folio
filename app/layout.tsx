@@ -26,21 +26,21 @@ const fontVariables = `${GeistPixelGrid.variable} ${GeistPixelSquare.variable} $
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Alexander Yansons | Web Developer & Creative Technologist",
-  description: "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
+  title: "Alexander Yansons | Independent Developer & Creative Technologist",
+  description: "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
   openGraph: {
-    title: "Alexander Yansons | Web Developer & Creative Technologist",
+    title: "Alexander Yansons | Independent Developer & Creative Technologist",
     description:
-      "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
+      "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
     type: "website",
     url: SITE_URL,
     images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alexander Yansons | Web Developer & Creative Technologist",
+    title: "Alexander Yansons | Independent Developer & Creative Technologist",
     description:
-      "Portfolio of Alexander Yansons. Building custom web experiences from creative portfolios to complex SaaS products.",
+      "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
     images: [SITE_OG_IMAGE.url],
   },
 };
@@ -83,7 +83,7 @@ const bootstrapScript = `
   }
   themeColorMeta.setAttribute("content", chromeColor);
 
-  let footerMode = "toolbar";
+  let footerMode = "minimal";
   try {
     const storedFooterMode = localStorage.getItem("footerMode");
     if (storedFooterMode === "toolbar" || storedFooterMode === "minimal") {
@@ -132,7 +132,7 @@ export default function RootLayout({
       className={fontVariables}
       lang="en"
       data-theme="light"
-      data-footer-mode="toolbar"
+      data-footer-mode="minimal"
       data-preloader="run"
       suppressHydrationWarning
     >
