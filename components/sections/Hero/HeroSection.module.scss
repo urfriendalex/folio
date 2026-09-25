@@ -344,6 +344,11 @@
     height: 7.25rem;
     padding: 0;
   }
+
+  /* The walker anchors by its right edge (`anchorEnd`); stop it on the grid selector's last glyph. */
+  .visualPanelInner {
+    padding-right: var(--project-view-glyph-rail-inset);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -366,7 +371,6 @@
 @media (max-width: 48rem) {
   .section {
     --mobile-walker-band: clamp(11rem, 31svh, 19rem);
-    --mobile-walker-half-width: clamp(3.1rem, 8.8svh, 5.4rem);
     padding-top: calc(var(--header-height) + 0.35rem);
     padding-bottom: clamp(0.5rem, 2.5vw, 0.75rem);
   }
@@ -412,16 +416,34 @@
     height: var(--mobile-walker-band);
   }
 
-  /* Align the ASCII's visible edge to the final grid glyph, accounting for the renderer's center transform. */
-  .walker {
-    left: calc(
-      100% - min(50%, var(--mobile-walker-half-width)) - var(--project-view-glyph-rail-inset)
-    );
-    right: auto;
-  }
 
   /* Coarse / narrow viewports: no reliable hover — signal reads as the primary action */
   .heroCtaLink {
     color: var(--signal-color);
   }
+}
+
+/*
+ * Scroll-out dissolve: the hero's scroll driver flips `data-dissolve-off` on individual glyphs (strictly on
+ * or off, never half-faded). Hiding via `color` keeps it paint-only — no layers, no layout.
+ */
+.dissolveChar[data-dissolve-off] {
+  color: transparent;
+}
+
+/* The mobile dotted underline has its own colour; drop it with the word. */
+.stuffSurface[data-dissolve-off] .stuffGlyph {
+  text-decoration-color: transparent;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

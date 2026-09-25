@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -14,6 +15,7 @@ import { createPortal } from "react-dom";
 import gsap from "gsap";
 import ASCIIAnimation, {
   ASCII_VISIBILITY_REVEAL_DURATION_MS,
+  cellRevealHash01,
 } from "@/components/Preloader/ascii";
 import {
   getFrameFolderForTheme,
@@ -62,11 +64,93 @@ function getServerCoarsePointerSnapshot(): boolean {
   return false;
 }
 
+/** Matches the SCSS breakpoint where the walker parks right, under the type. */
+const WALKER_PARKED_QUERY = "(max-width: 64rem)";
+
+function subscribeWalkerParked(onStoreChange: () => void) {
+  const mq = window.matchMedia(WALKER_PARKED_QUERY);
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function getWalkerParkedSnapshot(): boolean {
+  return window.matchMedia(WALKER_PARKED_QUERY).matches;
+}
+
+function getServerWalkerParkedSnapshot(): boolean {
+  return false;
+}
+
 /** Matches the phrases in `heroContent.position`. */
 const INDEPENDENT_DEVELOPER_PHRASE = "Independent Developer";
 const CREATIVE_TECHNOLOGIST_PHRASE = "Creative Technologist";
 const WALKER_FRAME_COUNT = 37;
 const WALKER_FPS = 20;
+/** Touch layout walker scale (contain-fit to its band). */
+const WALKER_COARSE_SCALE = 0.88;
+/** Desktop hover in/out runs 15% quicker than the shared reveal so it keeps up with the pointer. */
+const WALKER_HOVER_REVEAL_DURATION_MS = Math.round(ASCII_VISIBILITY_REVEAL_DURATION_MS * 0.85);
+
+/** Scroll-out dissolve: nothing glitches until the page has scrolled this share of the viewport… */
+const TEXT_DISSOLVE_DELAY_VIEWPORT = 0.08;
+/** …later on desktop, where the hero sits higher and Work is already in view. */
+const TEXT_DISSOLVE_DELAY_VIEWPORT_FINE = 0.2;
+/** Lower lines wait until they've risen this share of the viewport past the first line… */
+const TEXT_DISSOLVE_LEAD_VIEWPORT = 0.1;
+/** …and each line is gone after this much further scroll (share of the viewport). */
+const TEXT_DISSOLVE_RANGE_VIEWPORT = 0.26;
+const TEXT_DISSOLVE_STEPS = 64;
+const INTRO_DISSOLVE_SEED = 101;
+const HEADING_DISSOLVE_SEED = 211;
+const CTA_DISSOLVE_SEED = 307;
+
+function dissolve(text: string, piece: number) {
+  return text ? <DissolveText text={text} seed={INTRO_DISSOLVE_SEED + piece} /> : null;
+}
+/** Thresholds stop short of 1 so no glyph is still flickering at rest. */
+const TEXT_DISSOLVE_THRESHOLD_MAX = 0.9;
+/** Just above its threshold a glyph flickers on alternate steps for this much visibility (≈ five steps). */
+const TEXT_DISSOLVE_FLICKER_BAND = 0.08;
+/** Hover/focus on a live control glitches its glyphs back in (and out on leave) over this long. */
+const TEXT_RESTORE_MS = 320;
+
+function isGlyphShown(visibility: number, threshold: number, phase: number) {
+  if (visibility < threshold) {
+    return false;
+  }
+  if (visibility >= threshold + TEXT_DISSOLVE_FLICKER_BAND) {
+    return true;
+  }
+  return (Math.round(visibility * TEXT_DISSOLVE_STEPS) + phase) % 2 === 1;
+}
+
+/**
+ * Splits text into glyph spans that drop out in the walker's random cell order as their line scrolls
+ * away (the hero's scroll driver flips `data-dissolve-off`). Screen readers get the plain text once.
+ */
+const DissolveText = memo(function DissolveText({ text, seed }: { text: string; seed: number }) {
+  return (
+    <>
+      <span className={styles.srOnly}>{text}</span>
+      <span aria-hidden="true">
+        {Array.from(text, (char, index) =>
+          char === " " ? (
+            " "
+          ) : (
+            <span
+              key={index}
+              className={styles.dissolveChar}
+              data-dissolve-at={(cellRevealHash01(index, seed) * TEXT_DISSOLVE_THRESHOLD_MAX).toFixed(3)}
+              data-dissolve-phase={cellRevealHash01(index, seed + 1) < 0.5 ? 0 : 1}
+            >
+              {char}
+            </span>
+          ),
+        )}
+      </span>
+    </>
+  );
+});
 
 /** Matched in `heroContent.statement` — interactive headline gag (see `renderHeadingToken`). */
 const STUFF_GAG_WORD = "stuff";
@@ -163,6 +247,13 @@ export function HeroSection({ content }: HeroSectionProps) {
     getServerCoarsePointerSnapshot,
   );
 
+  /** Parked walker hugs the grid selector's glyph rail, so it anchors by its right edge. */
+  const walkerParked = useSyncExternalStore(
+    subscribeWalkerParked,
+    getWalkerParkedSnapshot,
+    getServerWalkerParkedSnapshot,
+  );
+
   /** Fine pointers: hover only (no focus / no click-to-hold). Coarse: tap toggle. */
   const gagActive = coarsePointer ? stuffGagMobileActive : stuffGagHover;
   const showGagPortalLayer = gagActive || portalHoldOpen;
@@ -199,9 +290,10 @@ export function HeroSection({ content }: HeroSectionProps) {
     };
   }, [cancelPendingGagEnterFrames]);
 
+  /** Portal tracking only while the gag layer is shown — otherwise every scroll re-rendered the hero. */
   useLayoutEffect(() => {
     const anchor = stuffAnchorRef.current;
-    if (!anchor) {
+    if (!anchor || !showGagPortalLayer) {
       return;
     }
 
@@ -214,11 +306,15 @@ export function HeroSection({ content }: HeroSectionProps) {
         : parseFloat(getComputedStyle(boxEl).fontSize);
       const emBasePx = Number.isFinite(fontSizePx) && fontSizePx > 0 ? fontSizePx : r.height * 0.72;
 
-      setShitPortalLayout({
-        x: r.left + r.width * 0.5,
-        y: r.top + r.height * 0.5,
-        emBasePx,
-      });
+      const next = { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5, emBasePx };
+      setShitPortalLayout((current) =>
+        current &&
+        Math.abs(current.x - next.x) < 0.25 &&
+        Math.abs(current.y - next.y) < 0.25 &&
+        Math.abs(current.emBasePx - next.emBasePx) < 0.25
+          ? current
+          : next,
+      );
     };
 
     update();
@@ -252,7 +348,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       vv?.removeEventListener("scroll", update);
       ro.disconnect();
     };
-  }, [content.statement, gagActive]);
+  }, [content.statement, gagActive, showGagPortalLayer]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -518,6 +614,177 @@ export function HeroSection({ content }: HeroSectionProps) {
     typeof document !== "undefined" &&
     document.documentElement.dataset.preloaderAsciiRevealed === "true";
 
+  /**
+   * Scroll-out: each line drops glyphs in random order as it rises, top lines first; hovering or focusing a
+   * live control glitches its glyphs back. Layout is read only when it changes; per frame this is plain math
+   * over ~160 glyphs plus attribute flips on the few whose state changed.
+   */
+  useEffect(() => {
+    const root = contentRevealGateRef.current;
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    type Glyph = {
+      el: HTMLElement;
+      line: number;
+      control: number;
+      threshold: number;
+      phase: number;
+      shown: boolean | null;
+    };
+
+    const coarseQuery = window.matchMedia(COARSE_POINTER_QUERY);
+    let rafId = 0;
+    let glyphs: Glyph[] = [];
+    let controls: HTMLElement[] = [];
+    let lineStarts: number[] = [];
+    let lineVisibility = new Float64Array(0);
+    let restore = new Float64Array(0);
+    let restoreTarget = new Float64Array(0);
+    let range = 1;
+    let lastFrame = 0;
+    let restoring = false;
+
+    const measure = () => {
+      const lines = Array.from(root.querySelectorAll<HTMLElement>('[data-mode="lines"] > span'));
+      controls = Array.from(root.querySelectorAll<HTMLElement>("[data-dissolve-control]"));
+      restore = new Float64Array(controls.length);
+      restoreTarget = new Float64Array(controls.length);
+
+      const viewport = window.innerHeight;
+      const delay =
+        viewport *
+        (coarseQuery.matches ? TEXT_DISSOLVE_DELAY_VIEWPORT : TEXT_DISSOLVE_DELAY_VIEWPORT_FINE);
+      const lead = viewport * TEXT_DISSOLVE_LEAD_VIEWPORT;
+      range = viewport * TEXT_DISSOLVE_RANGE_VIEWPORT;
+      // Offsets relative to the first line don't depend on scroll position.
+      const tops = lines.map((line) => line.getBoundingClientRect().top);
+      lineStarts = tops.map((top) => delay + Math.max(0, top - (tops[0] ?? 0) - lead));
+      lineVisibility = new Float64Array(lines.length);
+
+      glyphs = [];
+      lines.forEach((line, lineIndex) => {
+        line.querySelectorAll<HTMLElement>("[data-dissolve-at]").forEach((el) => {
+          const control = el.closest<HTMLElement>("[data-dissolve-control]");
+          glyphs.push({
+            el,
+            line: lineIndex,
+            control: control ? controls.indexOf(control) : -1,
+            threshold: Number(el.dataset.dissolveAt),
+            phase: Number(el.dataset.dissolvePhase) || 0,
+            shown: el.hasAttribute("data-dissolve-off") ? false : null,
+          });
+        });
+      });
+    };
+
+    const render = (now: number) => {
+      rafId = 0;
+      const scrollY = window.scrollY;
+
+      for (let index = 0; index < lineStarts.length; index += 1) {
+        const raw = 1 - Math.min(1, Math.max(0, (scrollY - lineStarts[index]) / range));
+        lineVisibility[index] = Math.round(raw * TEXT_DISSOLVE_STEPS) / TEXT_DISSOLVE_STEPS;
+      }
+
+      const step = lastFrame ? Math.min(1, (now - lastFrame) / TEXT_RESTORE_MS) : 0;
+      lastFrame = now;
+      restoring = false;
+      for (let index = 0; index < restore.length; index += 1) {
+        const target = restoreTarget[index];
+        const current = restore[index];
+        if (current !== target) {
+          restore[index] =
+            target > current ? Math.min(target, current + step) : Math.max(target, current - step);
+          restoring ||= restore[index] !== target;
+        }
+      }
+
+      for (const glyph of glyphs) {
+        const visibility = Math.max(
+          lineVisibility[glyph.line],
+          glyph.control >= 0 ? restore[glyph.control] : 0,
+        );
+        const shown = isGlyphShown(visibility, glyph.threshold, glyph.phase);
+        if (shown !== glyph.shown) {
+          glyph.shown = shown;
+          glyph.el.toggleAttribute("data-dissolve-off", !shown);
+        }
+      }
+
+      if (restoring) {
+        rafId = window.requestAnimationFrame(render);
+      } else {
+        lastFrame = 0;
+      }
+    };
+
+    const schedule = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(render);
+      }
+    };
+
+    const remeasure = () => {
+      measure();
+      schedule();
+    };
+
+    const setRestore = (target: EventTarget | null, value: number) => {
+      const control = target instanceof Element ? target.closest("[data-dissolve-control]") : null;
+      const index = control ? controls.indexOf(control as HTMLElement) : -1;
+      if (index >= 0 && restoreTarget[index] !== value) {
+        restoreTarget[index] = value;
+        schedule();
+      }
+    };
+    const onPointerOver = (event: PointerEvent) => {
+      if (event.pointerType === "mouse") {
+        setRestore(event.target, 1);
+      }
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      const control = (event.target as Element | null)?.closest?.("[data-dissolve-control]");
+      if (control && !control.contains(event.relatedTarget as Node | null)) {
+        setRestore(control, 0);
+      }
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      if ((event.target as Element).matches?.(":focus-visible")) {
+        setRestore(event.target, 1);
+      }
+    };
+    const onFocusOut = (event: FocusEvent) => {
+      setRestore(event.target, 0);
+    };
+
+    measure();
+    render(performance.now());
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", remeasure);
+    coarseQuery.addEventListener("change", remeasure);
+    root.addEventListener("pointerover", onPointerOver);
+    root.addEventListener("pointerout", onPointerOut);
+    root.addEventListener("focusin", onFocusIn);
+    root.addEventListener("focusout", onFocusOut);
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(root);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", remeasure);
+      coarseQuery.removeEventListener("change", remeasure);
+      root.removeEventListener("pointerover", onPointerOver);
+      root.removeEventListener("pointerout", onPointerOut);
+      root.removeEventListener("focusin", onFocusIn);
+      root.removeEventListener("focusout", onFocusOut);
+      ro.disconnect();
+      glyphs.forEach((glyph) => glyph.el.removeAttribute("data-dissolve-off"));
+    };
+  }, [headingLines]);
+
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
       return;
@@ -676,22 +943,25 @@ export function HeroSection({ content }: HeroSectionProps) {
       const hasCreativePhrase = creativeIndex !== -1;
 
       if (!hasWebPhrase && !hasCreativePhrase) {
-        return token;
+        return dissolve(token, 0);
       }
 
       /** Only one phrase matched — avoid rendering the full token twice (bug when casing drifted). */
       if (hasWebPhrase && !hasCreativePhrase) {
         return (
           <>
-            {token.slice(0, webIndex)}
+            {dissolve(token.slice(0, webIndex), 0)}
             <span
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
+              data-dissolve-control=""
               onPointerEnter={handleWebAccent}
               onPointerLeave={handleDefaultAccent}
             >
-              <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
+              <span className={styles.introPixelSquare}>
+                {dissolve(INDEPENDENT_DEVELOPER_PHRASE, 1)}
+              </span>
             </span>
-            {token.slice(webIndex + INDEPENDENT_DEVELOPER_PHRASE.length)}
+            {dissolve(token.slice(webIndex + INDEPENDENT_DEVELOPER_PHRASE.length), 2)}
           </>
         );
       }
@@ -699,15 +969,16 @@ export function HeroSection({ content }: HeroSectionProps) {
       if (!hasWebPhrase && hasCreativePhrase) {
         return (
           <>
-            {token.slice(0, creativeIndex)}
+            {dissolve(token.slice(0, creativeIndex), 0)}
             <span
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
+              data-dissolve-control=""
               onPointerEnter={handleCreativeAccent}
               onPointerLeave={handleDefaultAccent}
             >
-              {CREATIVE_TECHNOLOGIST_PHRASE}
+              {dissolve(CREATIVE_TECHNOLOGIST_PHRASE, 3)}
             </span>
-            {token.slice(creativeIndex + CREATIVE_TECHNOLOGIST_PHRASE.length)}
+            {dissolve(token.slice(creativeIndex + CREATIVE_TECHNOLOGIST_PHRASE.length), 4)}
           </>
         );
       }
@@ -722,24 +993,28 @@ export function HeroSection({ content }: HeroSectionProps) {
 
       return (
         <>
-          {token.slice(0, webIndex)}
+          {dissolve(token.slice(0, webIndex), 0)}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
+            data-dissolve-control=""
             onPointerEnter={handleWebAccent}
             onPointerLeave={handleDefaultAccent}
           >
-            <span className={styles.introPixelSquare}>{INDEPENDENT_DEVELOPER_PHRASE}</span>
+            <span className={styles.introPixelSquare}>
+              {dissolve(INDEPENDENT_DEVELOPER_PHRASE, 1)}
+            </span>
           </span>
           <br className={styles.introMobileBreak} aria-hidden="true" />
-          {beforeCreative}
+          {dissolve(beforeCreative, 2)}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
+            data-dissolve-control=""
             onPointerEnter={handleCreativeAccent}
             onPointerLeave={handleDefaultAccent}
           >
-            {CREATIVE_TECHNOLOGIST_PHRASE}
+            {dissolve(CREATIVE_TECHNOLOGIST_PHRASE, 3)}
           </span>
-          {afterCreative}
+          {dissolve(afterCreative, 4)}
         </>
       );
     },
@@ -749,7 +1024,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const renderHeadingToken = useCallback(
     (token: string, tokenIndex: number) => {
       if (!token.includes(STUFF_GAG_WORD)) {
-        return token;
+        return <DissolveText text={token} seed={HEADING_DISSOLVE_SEED + tokenIndex * 8} />;
       }
 
       const segments = token.split(new RegExp(`(${STUFF_GAG_WORD})`, "g"));
@@ -762,6 +1037,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               role="button"
               tabIndex={coarsePointer ? 0 : -1}
               className={styles.stuffGag}
+              data-dissolve-control=""
               data-active={stuffGagMobileActive ? "true" : "false"}
               data-gag-open={gagActive ? "true" : "false"}
               aria-label="Alternate emphasis for “stuff”"
@@ -783,7 +1059,11 @@ export function HeroSection({ content }: HeroSectionProps) {
                 }
               }}
             >
-              <span className={styles.stuffSurface}>
+              <span
+                className={`${styles.stuffSurface} ${styles.dissolveChar}`}
+                data-dissolve-at="0.5"
+                data-dissolve-phase={0}
+              >
                 <span ref={strikeLineRef} className={styles.stuffStrikeLine} aria-hidden="true" />
                 <span ref={stuffGlyphRef} className={styles.stuffGlyph}>
                   {STUFF_GAG_WORD}
@@ -794,7 +1074,11 @@ export function HeroSection({ content }: HeroSectionProps) {
         }
 
         return (
-          <Fragment key={`stuff-seg-${tokenIndex}-${i}`}>{segment}</Fragment>
+          <Fragment key={`stuff-seg-${tokenIndex}-${i}`}>
+            {segment ? (
+              <DissolveText text={segment} seed={HEADING_DISSOLVE_SEED + tokenIndex * 8 + i} />
+            ) : null}
+          </Fragment>
         );
       });
     },
@@ -813,12 +1097,13 @@ export function HeroSection({ content }: HeroSectionProps) {
       <a
         href="#contact"
         className={`link-underline ${styles.heroCtaLink}`}
+        data-dissolve-control=""
         onClick={(event) => {
           event.preventDefault();
           requestHomeContactFormOpen({ instant: true });
         }}
       >
-        {token}
+        <DissolveText text={token} seed={CTA_DISSOLVE_SEED} />
       </a>
     );
   }, []);
@@ -894,9 +1179,13 @@ export function HeroSection({ content }: HeroSectionProps) {
                 lazy={false}
                 paused={!walkerActive}
                 visible={walkerActive}
-                scale={coarsePointer ? 1.05 : 1}
+                scale={coarsePointer ? WALKER_COARSE_SCALE : 1}
+                anchorEnd={walkerParked}
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader}
-                randomVisibilityDurationMs={ASCII_VISIBILITY_REVEAL_DURATION_MS}
+                randomVisibilityDurationMs={
+                  coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
+                }
+                scrollDissolve
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"

@@ -14,7 +14,8 @@ type PreloaderProps = {
 
 const PROGRESS_SMOOTHING = 0.08;
 const COMPLETION_COUNTUP_MS = 420;
-const HOLD_AT_100_MS = 480;
+/** The walker has already been walking through the reveal, so 100% only needs a short beat. */
+const HOLD_AT_100_MS = 360;
 const REDUCED_MOTION_COUNTUP_MS = 160;
 const REDUCED_MOTION_HOLD_MS = 160;
 const EXIT_TIMEOUT_MS = 1200;
@@ -29,6 +30,8 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
   const progressRef = useRef<HTMLSpanElement | null>(null);
   const asciiReadyAtRef = useRef<number | null>(null);
   const asciiRevealCompleteRef = useRef(false);
+  /** Counter never runs ahead of the glyph reveal, so fast loads still show the walker assembling. */
+  const asciiRevealProgressRef = useRef(0);
 
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const [isAsciiReady, setIsAsciiReady] = useState(false);
@@ -43,6 +46,10 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
   }, []);
   const handleAsciiRevealComplete = useCallback(() => {
     asciiRevealCompleteRef.current = true;
+    asciiRevealProgressRef.current = 1;
+  }, []);
+  const handleAsciiRevealProgress = useCallback((progress: number) => {
+    asciiRevealProgressRef.current = progress;
   }, []);
 
   useEffect(() => {
@@ -222,10 +229,13 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
         return;
       }
 
+      const revealCap = prefersReducedMotion ? 1 : asciiRevealProgressRef.current;
+
       if (!isCompleteRef.current) {
         completionStartedAt = null;
         heldAtCompleteSince = null;
-        displayedProgress += (actualProgressRef.current - displayedProgress) * PROGRESS_SMOOTHING;
+        const target = Math.min(actualProgressRef.current, revealCap);
+        displayedProgress += (target - displayedProgress) * PROGRESS_SMOOTHING;
         setProgressText(displayedProgress, false);
         rafId = window.requestAnimationFrame(animate);
         return;
@@ -238,9 +248,10 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
 
       const countupMs = completionDurationMs();
       const t = countupMs === 0 ? 1 : Math.min(1, (now - completionStartedAt) / countupMs);
-      displayedProgress = completionFrom + (1 - completionFrom) * easeOutCubic(t);
+      const countup = completionFrom + (1 - completionFrom) * easeOutCubic(t);
+      displayedProgress = Math.max(displayedProgress, Math.min(countup, revealCap));
 
-      if (t >= 1) {
+      if (t >= 1 && revealCap >= 1) {
         displayedProgress = 1;
         setProgressText(1, true);
 
@@ -311,6 +322,7 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
         randomVisibilityReveal
         randomVisibilityDurationMs={ASCII_VISIBILITY_REVEAL_DURATION_MS}
         onVisibilityRevealComplete={handleAsciiRevealComplete}
+        onVisibilityProgress={handleAsciiRevealProgress}
         ariaLabel="ASCII walking animation"
       />
       <div

@@ -228,3 +228,15 @@
     display: none;
   }
 }
+
+/* Grid selector rides the title's line-mask reveal; the clip is padded so focus rings aren't cut off. */
+.viewSwitchReveal[data-mode="lines"] {
+  display: inline-grid;
+  width: auto;
+  min-width: auto;
+}
+
+.viewSwitchReveal > span {
+  padding: 0.2rem;
+  margin: -0.2rem;
+}
