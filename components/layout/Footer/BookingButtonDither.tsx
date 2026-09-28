@@ -10,6 +10,8 @@ type Dot = {
   phase: number;
 };
 
+const DOT_SPACING = 3.2;
+
 function randomAt(column: number, row: number, salt: number) {
   let value = Math.imul(column + salt, 374761393) + Math.imul(row + salt, 668265263);
   value = Math.imul(value ^ (value >>> 13), 1274126177);
@@ -43,27 +45,30 @@ export function BookingButtonDither({ className }: { className: string }) {
     let blue = "#2446d6";
 
     const draw = () => {
-      context.clearRect(0, 0, width, height);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      const scaleX = canvas.width / width;
+      const scaleY = canvas.height / height;
       for (const dot of dots) {
         // Two broad waves move the field like gusts; the seeded offset keeps it organic.
         const gust = Math.sin(dot.x * 0.045 + dot.y * 0.085 - time * 1.35 + dot.phase * 0.12);
         const swell = Math.sin(dot.x * 0.019 - dot.y * 0.11 - time * 0.82);
-        const x = dot.x + gust * 1.9 + swell * 0.85;
-        const y = dot.y + swell * 1.2 + gust * 0.45;
-        const radius = dot.size * (0.76 + (gust + 1) * 0.18);
-        const distance = Math.hypot(x - pointerX, y - pointerY);
-        const blueAmount = hover * Math.pow(Math.max(0, 1 - distance / 112), 1.35);
-
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
+        const x = dot.x + gust * 0.95 + swell * 0.42;
+        const y = dot.y + swell * 0.62 + gust * 0.24;
+        const size = Math.max(1, Math.round(dot.size * (0.84 + (gust + 1) * 0.13) * scaleX));
+        const left = Math.round(x * scaleX - size / 2);
+        const top = Math.round(y * scaleY - size / 2);
         context.fillStyle = ink;
-        context.globalAlpha = (0.13 + dot.shade * 0.19) * (0.7 + (swell + 1) * 0.18);
-        context.fill();
+        context.globalAlpha = (0.16 + dot.shade * 0.2) * (0.72 + (swell + 1) * 0.16);
+        context.fillRect(left, top, size, size);
 
-        if (blueAmount > 0.01) {
-          context.fillStyle = blue;
-          context.globalAlpha = blueAmount * (0.5 + dot.shade * 0.38);
-          context.fill();
+        if (hover > 0.01) {
+          const distance = Math.hypot(x - pointerX, y - pointerY);
+          const blueAmount = hover * Math.pow(Math.max(0, 1 - distance / 112), 1.35);
+          if (blueAmount > 0.01) {
+            context.fillStyle = blue;
+            context.globalAlpha = blueAmount * (0.45 + dot.shade * 0.3);
+            context.fillRect(left, top, size, size);
+          }
         }
       }
       context.globalAlpha = 1;
@@ -95,28 +100,29 @@ export function BookingButtonDither({ className }: { className: string }) {
 
     const updateColors = () => {
       const styles = window.getComputedStyle(button);
-      ink = styles.color;
+      ink = styles.getPropertyValue("--fg-color").trim() || styles.color;
       blue = styles.getPropertyValue("--taskbar-flag-blue").trim() || "#2446d6";
-      if (reducedMotion.matches) draw();
+      draw();
     };
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       width = rect.width;
       height = rect.height;
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      if (!width || !height) return;
+      const ratio = window.devicePixelRatio || 1;
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.setTransform(1, 0, 0, 1, 0, 0);
       updateColors();
       dots = [];
-      for (let row = 0; row * 6 < height + 6; row++) {
-        for (let column = 0; column * 6 < width + 6; column++) {
+      for (let row = 0; row * DOT_SPACING < height + DOT_SPACING; row++) {
+        for (let column = 0; column * DOT_SPACING < width + DOT_SPACING; column++) {
           const variation = randomAt(column, row, 1);
           dots.push({
-            x: column * 6 + (randomAt(column, row, 2) - 0.5) * 1.5,
-            y: row * 6 + (randomAt(column, row, 3) - 0.5) * 1.5,
-            size: 0.55 + variation * 0.58,
+            x: column * DOT_SPACING + (randomAt(column, row, 2) - 0.5) * 0.65,
+            y: row * DOT_SPACING + (randomAt(column, row, 3) - 0.5) * 0.65,
+            size: 0.55 + variation * 0.65,
             shade: randomAt(column, row, 4),
             phase: variation * Math.PI * 2,
           });
@@ -185,7 +191,7 @@ export function BookingButtonDither({ className }: { className: string }) {
       if (visible) start();
       else stop();
     });
-    resizeObserver.observe(button);
+    resizeObserver.observe(canvas);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
