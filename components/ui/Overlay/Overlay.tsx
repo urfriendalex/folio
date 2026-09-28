@@ -94,6 +94,8 @@ type OverlayProps = {
   /** Immersive only: no page-shell side padding so children can span the viewport. */
   contentFlush?: boolean;
   contentVisible?: boolean;
+  /** Immersive only: reserve a mobile top row for a child-provided header beside Close. */
+  inlineMobileHeader?: boolean;
   onClose: () => void;
   title: string;
   variant?: "panel" | "immersive";
@@ -115,6 +117,7 @@ export function Overlay({
   contentNonScrollable = false,
   contentFlush = false,
   contentVisible = true,
+  inlineMobileHeader = false,
   onClose,
   title,
   variant = "panel",
@@ -240,6 +243,7 @@ export function Overlay({
         className={styles.surface}
         data-variant={variant}
         data-visible={visible}
+        data-inline-mobile-header={inlineMobileHeader ? "true" : undefined}
         role="dialog"
         aria-modal="true"
         aria-label={title}

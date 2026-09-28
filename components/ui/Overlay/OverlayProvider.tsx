@@ -814,6 +814,7 @@ export function OverlayProvider({ children }: OverlayProviderProps) {
           title={projectOverlay.title}
           variant="immersive"
           showTitle={false}
+          inlineMobileHeader
           visible={overlayVisible}
           contentVisible={overlayContentVisible}
         >
