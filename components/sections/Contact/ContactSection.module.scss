@@ -48,19 +48,7 @@
   box-sizing: border-box;
 }
 
-/*
- * In-flow control (not viewport-fixed) so it scrolls with `.stage` when the form is taller than the viewport.
- * Typography aligned with overlay close controls (see Overlay.module.scss) — signal color.
- */
-.formBackRow {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  margin-bottom: clamp(0.25rem, 1.2vw, 0.65rem);
-}
-
+/* Typography aligned with overlay close controls (see Overlay.module.scss) — signal color. */
 .formBackScreen {
   display: inline-flex;
   align-items: center;
@@ -356,16 +344,19 @@
 
 .formHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 1rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.5rem, 2vw, 1rem);
 }
 
 .formTitle {
+  min-width: 0;
   margin: 0;
   font-size: clamp(2rem, 4vw, 3.35rem);
   line-height: 0.96;
   letter-spacing: -0.08em;
+  white-space: nowrap;
 }
 
 .form {
@@ -507,6 +498,10 @@
 }
 
 @media (max-width: 48rem) {
+  .formTitle {
+    font-size: clamp(1.5rem, 7.6vw, 3.35rem);
+  }
+
   /*
    * Mobile scroll parks the section below the header, so a form centered in the
    * stage lands half a header (plus the 1rem clearance) too low. Asymmetric
