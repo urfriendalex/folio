@@ -214,6 +214,22 @@
     gap: 0.28rem;
   }
 
+  /* The desktop `wide` and `regular` options become one and two columns here. Keep their glyphs in sync. */
+  .viewButton[data-layout="wide"] .viewGlyph {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewButton[data-layout="wide"] .viewGlyphCell:nth-child(n + 3),
+  .viewButton[data-layout="regular"] .viewGlyphCell:nth-child(n + 5) {
+    display: none;
+  }
+
+  .viewButton[data-layout="regular"] .viewGlyph {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
   .viewButton[data-layout="stack"] {
     display: none;
   }
