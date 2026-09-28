@@ -176,6 +176,10 @@
   color: var(--overlay-muted);
 }
 
+.scrollDescriptor {
+  margin-bottom: clamp(0.55rem, 1.1vw, 0.85rem);
+}
+
 .title {
   --reveal-line-gap: 0.1em;
   margin: 0;
@@ -454,19 +458,13 @@
     box-sizing: border-box;
     width: 100%;
     max-width: calc(100% - 3.5rem);
-    height: var(--project-inline-header-height, 4.5rem);
+    height: var(--project-inline-header-height, var(--header-height));
     align-content: center;
-    gap: 0.22rem;
     min-width: 0;
   }
 
   .descriptor {
     line-height: 1.2;
-  }
-
-  .title {
-    font-size: clamp(1.15rem, 5.2vw, 1.5rem);
-    line-height: 1;
   }
 
   .bodyScroll {
@@ -497,6 +495,7 @@
 
   .title {
     font-size: clamp(1.4rem, 6.3vw, 1.94rem);
+    line-height: 1;
   }
 
   .lead {

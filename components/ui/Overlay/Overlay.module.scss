@@ -281,7 +281,7 @@
   }
 
   .surface[data-variant="immersive"][data-inline-mobile-header="true"] {
-    --project-inline-header-height: 4.5rem;
+    --project-inline-header-height: var(--header-height);
     padding-top: 0;
     padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
   }
