@@ -92,9 +92,9 @@ const WALKER_COARSE_SCALE = 0.88;
 const WALKER_HOVER_REVEAL_DURATION_MS = Math.round(ASCII_VISIBILITY_REVEAL_DURATION_MS * 0.85);
 
 /** Scroll-out dissolve: nothing glitches until the page has scrolled this share of the viewport… */
-const TEXT_DISSOLVE_DELAY_VIEWPORT = 0.15;
+const TEXT_DISSOLVE_DELAY_VIEWPORT = 0.12;
 /** …later on desktop, where the hero sits higher and Work is already in view. */
-const TEXT_DISSOLVE_DELAY_VIEWPORT_FINE = 0.24;
+const TEXT_DISSOLVE_DELAY_VIEWPORT_FINE = 0.2;
 /** Lower lines wait until they've risen this share of the viewport past the first line… */
 const TEXT_DISSOLVE_LEAD_VIEWPORT = 0.1;
 /** …and each line is gone after this much further scroll (share of the viewport). */
