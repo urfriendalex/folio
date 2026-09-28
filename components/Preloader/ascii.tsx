@@ -91,7 +91,7 @@ interface ASCIIAnimationProps {
   revealActive?: boolean;
 }
 
-export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 1100;
+export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
 
 /**
  * Scroll dissolve starts once the art's top edge rises into this share of the viewport (or on the first

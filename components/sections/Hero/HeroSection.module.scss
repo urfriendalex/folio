@@ -281,7 +281,12 @@
   /* Match preloader typography exactly; size changes come only from `.walkerShell` scale. */
   font-size: clamp(1.12rem, 1.6vw, 1.58rem);
   line-height: 1.02;
-  letter-spacing: 0.02em;
+  /* ASCII is a character grid: added tracking compounds across cells and can rasterize unevenly in Safari. */
+  letter-spacing: 0;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
   transform-origin: center;
   will-change: transform, opacity;
   transition: text-shadow 220ms ease-out;
@@ -370,7 +375,7 @@
 
 @media (max-width: 48rem) {
   .section {
-    --mobile-walker-band: clamp(11rem, 31svh, 19rem);
+    --mobile-walker-band: clamp(9.5rem, 27svh, 16rem);
     padding-top: calc(var(--header-height) + 0.35rem);
     padding-bottom: clamp(0.5rem, 2.5vw, 0.75rem);
   }
@@ -388,9 +393,9 @@
   }
 
   .heading {
-    font-size: clamp(1.62rem, 0.35rem + 5.4vw, 2.35rem);
-    line-height: 1.12;
-    letter-spacing: -0.036em;
+    font-size: clamp(1.45rem, 0.2rem + 5vw, 2.15rem);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
     max-width: 16em;
     text-wrap: pretty;
   }
@@ -404,10 +409,10 @@
   }
 
   .visualPanel {
-    width: min(11rem, 42%);
+    width: min(10.5rem, 40%);
     height: var(--mobile-walker-band);
     min-height: var(--mobile-walker-band);
-    margin-top: clamp(2.5rem, 9svh, 5.5rem);
+    margin-top: clamp(1.5rem, 6svh, 3.5rem);
   }
 
   .visualPanelInner,
