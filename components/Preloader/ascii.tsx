@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 type Quality = "low" | "medium" | "high";
@@ -89,6 +90,8 @@ interface ASCIIAnimationProps {
    * Lets the asset load off-hover while avoiding repeated decode/network work on each hover.
    */
   revealActive?: boolean;
+  /** Add a touch-only, per-glyph splash over the live text animation. */
+  touchSplash?: boolean;
 }
 
 export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
@@ -118,6 +121,20 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
+const TOUCH_SPLASH_RADIUS_MAX = 68;
+const TOUCH_SPLASH_RADIUS_MIN = 38;
+const TOUCH_SPLASH_GLYPH_LIMIT = 640;
+const TOUCH_SPLASH_DURATION_MS = 360;
+const TOUCH_SPLASH_STAGGER_MS = 105;
+
+type TouchSplashGlyph = {
+  character: string;
+  x: number;
+  y: number;
+  angle: number;
+  distance: number;
+  rank: number;
+};
 
 async function fetchFrame(url: string): Promise<Response> {
   let lastResponse: Response | null = null;
@@ -383,6 +400,7 @@ export default function ASCIIAnimation({
   anchorEnd = false,
   transparentCanvasBackground = false,
   revealActive = true,
+  touchSplash = false,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -401,6 +419,9 @@ export default function ASCIIAnimation({
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const touchBurstCanvasRef = useRef<HTMLCanvasElement>(null);
+  const touchBurstRafRef = useRef<number>(0);
+  const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const fullLoadTriggered = useRef(false);
   const resolvedSource = useRef<ResolvedSource | null>(null);
   const previewFrameRef = useRef<string | Uint8Array | null>(null);
@@ -418,6 +439,213 @@ export default function ASCIIAnimation({
     hasNotifiedReadyRef.current = true;
     onReady?.();
   }, [onReady]);
+
+  const playTouchSplash = useCallback(
+    (clientX: number, clientY: number) => {
+      if (
+        !touchSplash ||
+        !visible ||
+        format !== "text" ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return;
+      }
+
+      const container = containerRef.current;
+      const pre = preRef.current;
+      const canvas = touchBurstCanvasRef.current;
+      if (!container || !pre || !canvas) {
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const artRect = pre.getBoundingClientRect();
+      if (
+        artRect.width <= 0 ||
+        artRect.height <= 0 ||
+        clientX < artRect.left ||
+        clientX > artRect.right ||
+        clientY < artRect.top ||
+        clientY > artRect.bottom
+      ) {
+        return;
+      }
+
+      const lines = (pre.textContent ?? "").replaceAll("\r", "").split("\n");
+      const columnCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
+      if (!columnCount || !lines.length) {
+        return;
+      }
+
+      const cellWidth = artRect.width / columnCount;
+      const cellHeight = artRect.height / lines.length;
+      const artLeft = artRect.left - containerRect.left;
+      const artTop = artRect.top - containerRect.top;
+      const touchX = clientX - containerRect.left;
+      const touchY = clientY - containerRect.top;
+      const radius = Math.max(
+        TOUCH_SPLASH_RADIUS_MIN,
+        Math.min(TOUCH_SPLASH_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.55),
+      );
+      const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17)) >>> 0;
+      const glyphs: TouchSplashGlyph[] = [];
+
+      lines.forEach((line, row) => {
+        for (let column = 0; column < line.length; column += 1) {
+          const character = line[column];
+          if (!character || /\s/.test(character)) {
+            continue;
+          }
+
+          const x = artLeft + (column + 0.5) * cellWidth;
+          const y = artTop + (row + 0.5) * cellHeight;
+          const dx = x - touchX;
+          const dy = y - touchY;
+          const distance = Math.hypot(dx, dy);
+          if (distance > radius) {
+            continue;
+          }
+
+          const rank = cellRevealHash01(row * columnCount + column, seed);
+          glyphs.push({
+            character,
+            x,
+            y,
+            angle: distance > 0.5 ? Math.atan2(dy, dx) : rank * Math.PI * 2,
+            distance,
+            rank,
+          });
+        }
+      });
+
+      if (!glyphs.length) {
+        return;
+      }
+
+      if (glyphs.length > TOUCH_SPLASH_GLYPH_LIMIT) {
+        glyphs.sort((a, b) => a.rank - b.rank);
+        glyphs.length = TOUCH_SPLASH_GLYPH_LIMIT;
+      }
+
+      window.cancelAnimationFrame(touchBurstRafRef.current);
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return;
+      }
+
+      const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+      const canvasWidth = container.clientWidth;
+      const canvasHeight = container.clientHeight;
+      canvas.width = Math.max(1, Math.round(canvasWidth * pixelRatio));
+      canvas.height = Math.max(1, Math.round(canvasHeight * pixelRatio));
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      const computed = window.getComputedStyle(pre);
+      const cssFontSize = Number.parseFloat(computed.fontSize);
+      const cssLineHeight = Number.parseFloat(computed.lineHeight);
+      const scaleY = Number.isFinite(cssLineHeight)
+        ? artRect.height / (cssLineHeight * lines.length)
+        : artRect.height / (pre.scrollHeight || artRect.height);
+      const fontSize = cssFontSize * scaleY;
+      context.font = `${computed.fontStyle} ${computed.fontWeight} ${fontSize}px ${computed.fontFamily}`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = computed.color;
+      const measuredCellWidth = context.measureText("M").width;
+      if (!measuredCellWidth) {
+        return;
+      }
+      const scaleX = cellWidth / measuredCellWidth;
+      const startTime = performance.now();
+
+      const render = (now: number) => {
+        const elapsed = now - startTime;
+        context.clearRect(0, 0, canvasWidth, canvasHeight);
+        let hasPendingGlyphs = false;
+
+        for (const glyph of glyphs) {
+          const delay =
+            (glyph.distance / radius) * TOUCH_SPLASH_STAGGER_MS + glyph.rank * 24;
+          const progress = (elapsed - delay) / TOUCH_SPLASH_DURATION_MS;
+          if (progress < 0) {
+            hasPendingGlyphs = true;
+            continue;
+          }
+          if (progress >= 1) {
+            continue;
+          }
+
+          hasPendingGlyphs = true;
+          const pulse = Math.sin(progress * Math.PI);
+          const travel = 1 - (1 - progress) ** 3;
+          const reach = 6 + (1 - glyph.distance / radius) * 14;
+
+          context.save();
+          context.globalAlpha = pulse * 0.9;
+          context.translate(
+            glyph.x + Math.cos(glyph.angle) * reach * travel,
+            glyph.y + Math.sin(glyph.angle) * reach * travel,
+          );
+          context.rotate((glyph.rank - 0.5) * 0.42 * pulse);
+          const scale = 1 + pulse * 0.9;
+          context.scale(scaleX * scale, scale);
+          context.fillText(glyph.character, 0, 0);
+          context.restore();
+        }
+
+        if (hasPendingGlyphs) {
+          touchBurstRafRef.current = window.requestAnimationFrame(render);
+        } else {
+          context.clearRect(0, 0, canvasWidth, canvasHeight);
+          touchBurstRafRef.current = 0;
+        }
+      };
+
+      touchBurstRafRef.current = window.requestAnimationFrame(render);
+    },
+    [format, touchSplash, visible],
+  );
+
+  const handleTouchPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!touchSplash || (event.pointerType !== "touch" && event.pointerType !== "pen")) {
+        return;
+      }
+      touchStartRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    },
+    [touchSplash],
+  );
+
+  const handleTouchPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    if (
+      start?.pointerId === event.pointerId &&
+      Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+    ) {
+      touchStartRef.current = null;
+    }
+  }, []);
+
+  const handleTouchPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (
+        !start ||
+        start.pointerId !== event.pointerId ||
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+      ) {
+        return;
+      }
+      playTouchSplash(event.clientX, event.clientY);
+    },
+    [playTouchSplash],
+  );
+
+  const handleTouchPointerCancel = useCallback(() => {
+    touchStartRef.current = null;
+  }, []);
 
   const frameFiles = useMemo(
     () =>
@@ -914,6 +1142,7 @@ export default function ASCIIAnimation({
   useEffect(() => {
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
+      window.cancelAnimationFrame(touchBurstRafRef.current);
     };
   }, []);
 
@@ -1018,6 +1247,10 @@ export default function ASCIIAnimation({
       {...(ariaLabel ? { role: "img", "aria-label": ariaLabel } : {})}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onPointerDown={touchSplash ? handleTouchPointerDown : undefined}
+      onPointerMove={touchSplash ? handleTouchPointerMove : undefined}
+      onPointerUp={touchSplash ? handleTouchPointerUp : undefined}
+      onPointerCancel={touchSplash ? handleTouchPointerCancel : undefined}
     >
       {showFrameCounter ? (
         <div>
@@ -1073,6 +1306,21 @@ export default function ASCIIAnimation({
           {maskedTextFrame}
         </pre>
       )}
+      {touchSplash && format === "text" ? (
+        <canvas
+          ref={touchBurstCanvasRef}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 2,
+            width: "100%",
+            height: "100%",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
     </div>
   );
 }

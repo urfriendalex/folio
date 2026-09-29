@@ -316,6 +316,16 @@
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .visualPanel {
+    pointer-events: auto;
+  }
+
+  .visualPanel[data-visible="false"] {
+    pointer-events: none;
+  }
+}
+
 @media (max-width: 64rem) {
   .stage {
     grid-template-columns: 1fr;
