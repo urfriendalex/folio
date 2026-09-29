@@ -121,14 +121,18 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
-const TOUCH_SPLASH_RADIUS_MAX = 68;
-const TOUCH_SPLASH_RADIUS_MIN = 38;
+const TOUCH_SPLASH_RADIUS_MAX = 104;
+const TOUCH_SPLASH_RADIUS_MIN = 58;
 const TOUCH_SPLASH_GLYPH_LIMIT = 640;
-const TOUCH_SPLASH_DURATION_MS = 360;
-const TOUCH_SPLASH_STAGGER_MS = 105;
+const TOUCH_SPLASH_DURATION_MS = 640;
+const TOUCH_SPLASH_STAGGER_MS = 250;
+const TOUCH_SPLASH_RANK_STAGGER_MS = 72;
+const TOUCH_SPLASH_MASK_HOLD_MS =
+  TOUCH_SPLASH_DURATION_MS + TOUCH_SPLASH_STAGGER_MS + TOUCH_SPLASH_RANK_STAGGER_MS + 32;
 
 type TouchSplashGlyph = {
   character: string;
+  cellIndex: number;
   x: number;
   y: number;
   angle: number;
@@ -311,6 +315,29 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
   return out.join("");
 }
 
+/** Hide the source cells while their enlarged copies carry the touch burst. */
+function maskTouchSplashFrame(frameText: string, hiddenCells: ReadonlySet<number>): string {
+  if (!hiddenCells.size) {
+    return frameText;
+  }
+
+  const out = new Array<string>(frameText.length);
+  let cellIndex = 0;
+
+  for (let index = 0; index < frameText.length; index += 1) {
+    const code = frameText.charCodeAt(index);
+    if (code === 10 || code === 13) {
+      out[index] = code === 10 ? "\n" : "\r";
+      continue;
+    }
+
+    out[index] = hiddenCells.has(cellIndex) ? " " : frameText[index];
+    cellIndex += 1;
+  }
+
+  return out.join("");
+}
+
 type DrawColorFrameOptions = {
   revealProgress?: number;
   frameKey?: number;
@@ -415,12 +442,16 @@ export default function ASCIIAnimation({
   const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
   const [visibilitySeed, setVisibilitySeed] = useState(0);
   const [scrollVisibility, setScrollVisibility] = useState(1);
+  const [touchSplashHiddenCells, setTouchSplashHiddenCells] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const touchBurstCanvasRef = useRef<HTMLCanvasElement>(null);
   const touchBurstRafRef = useRef<number>(0);
+  const touchBurstMaskTimeoutRef = useRef<number>(0);
   const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const fullLoadTriggered = useRef(false);
   const resolvedSource = useRef<ResolvedSource | null>(null);
@@ -430,6 +461,7 @@ export default function ASCIIAnimation({
   const visibilityRafRef = useRef<number>(0);
   const visibilityProgressRef = useRef(visible ? 1 : 0);
   const visibilitySeedRef = useRef(0);
+  const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
 
   const notifyReady = useCallback(() => {
     if (hasNotifiedReadyRef.current) {
@@ -471,7 +503,7 @@ export default function ASCIIAnimation({
         return;
       }
 
-      const lines = (pre.textContent ?? "").replaceAll("\r", "").split("\n");
+      const lines = currentTextFrame.replaceAll("\r", "").split("\n");
       const columnCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
       if (!columnCount || !lines.length) {
         return;
@@ -489,10 +521,13 @@ export default function ASCIIAnimation({
       );
       const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17)) >>> 0;
       const glyphs: TouchSplashGlyph[] = [];
+      let cellIndex = 0;
 
       lines.forEach((line, row) => {
         for (let column = 0; column < line.length; column += 1) {
           const character = line[column];
+          const currentCellIndex = cellIndex;
+          cellIndex += 1;
           if (!character || /\s/.test(character)) {
             continue;
           }
@@ -509,6 +544,7 @@ export default function ASCIIAnimation({
           const rank = cellRevealHash01(row * columnCount + column, seed);
           glyphs.push({
             character,
+            cellIndex: currentCellIndex,
             x,
             y,
             angle: distance > 0.5 ? Math.atan2(dy, dx) : rank * Math.PI * 2,
@@ -557,6 +593,12 @@ export default function ASCIIAnimation({
         return;
       }
       const scaleX = cellWidth / measuredCellWidth;
+      window.clearTimeout(touchBurstMaskTimeoutRef.current);
+      setTouchSplashHiddenCells(new Set(glyphs.map((glyph) => glyph.cellIndex)));
+      touchBurstMaskTimeoutRef.current = window.setTimeout(() => {
+        setTouchSplashHiddenCells(new Set());
+        touchBurstMaskTimeoutRef.current = 0;
+      }, TOUCH_SPLASH_MASK_HOLD_MS);
       const startTime = performance.now();
 
       const render = (now: number) => {
@@ -566,7 +608,8 @@ export default function ASCIIAnimation({
 
         for (const glyph of glyphs) {
           const delay =
-            (glyph.distance / radius) * TOUCH_SPLASH_STAGGER_MS + glyph.rank * 24;
+            (glyph.distance / radius) * TOUCH_SPLASH_STAGGER_MS +
+            glyph.rank * TOUCH_SPLASH_RANK_STAGGER_MS;
           const progress = (elapsed - delay) / TOUCH_SPLASH_DURATION_MS;
           if (progress < 0) {
             hasPendingGlyphs = true;
@@ -577,18 +620,18 @@ export default function ASCIIAnimation({
           }
 
           hasPendingGlyphs = true;
-          const pulse = Math.sin(progress * Math.PI);
-          const travel = 1 - (1 - progress) ** 3;
-          const reach = 6 + (1 - glyph.distance / radius) * 14;
+          const expansion = 1 - (1 - progress) ** 3;
+          const fade = (1 - progress) ** 1.1;
+          const reach = 18 + (1 - glyph.distance / radius) * 42;
 
           context.save();
-          context.globalAlpha = pulse * 0.9;
+          context.globalAlpha = fade * 0.94;
           context.translate(
-            glyph.x + Math.cos(glyph.angle) * reach * travel,
-            glyph.y + Math.sin(glyph.angle) * reach * travel,
+            glyph.x + Math.cos(glyph.angle) * reach * expansion,
+            glyph.y + Math.sin(glyph.angle) * reach * expansion,
           );
-          context.rotate((glyph.rank - 0.5) * 0.42 * pulse);
-          const scale = 1 + pulse * 0.9;
+          context.rotate((glyph.rank - 0.5) * 0.62 * expansion);
+          const scale = 1 + expansion * 2.1;
           context.scale(scaleX * scale, scale);
           context.fillText(glyph.character, 0, 0);
           context.restore();
@@ -604,7 +647,7 @@ export default function ASCIIAnimation({
 
       touchBurstRafRef.current = window.requestAnimationFrame(render);
     },
-    [format, touchSplash, visible],
+    [currentTextFrame, format, touchSplash, visible],
   );
 
   const handleTouchPointerDown = useCallback(
@@ -839,7 +882,6 @@ export default function ASCIIAnimation({
     !hiddenByMask &&
     (((!playOnHover || isHovered) && !paused) || isDissolvingOut);
   const totalFrames = format === "color" ? colorFrames.length : frames.length;
-  const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
   const maskedTextFrame = useMemo(() => {
     if (format !== "text" || !usesVisibilityMask) {
       return currentTextFrame;
@@ -847,6 +889,12 @@ export default function ASCIIAnimation({
 
     return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
   }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
+  const touchMaskedTextFrame = useMemo(
+    () => touchSplash
+      ? maskTouchSplashFrame(maskedTextFrame, touchSplashHiddenCells)
+      : maskedTextFrame,
+    [maskedTextFrame, touchSplash, touchSplashHiddenCells],
+  );
 
   useEffect(() => {
     if (!scrollDissolve) {
@@ -1143,6 +1191,7 @@ export default function ASCIIAnimation({
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
       window.cancelAnimationFrame(touchBurstRafRef.current);
+      window.clearTimeout(touchBurstMaskTimeoutRef.current);
     };
   }, []);
 
@@ -1303,7 +1352,7 @@ export default function ASCIIAnimation({
                 }
           }
         >
-          {maskedTextFrame}
+          {touchMaskedTextFrame}
         </pre>
       )}
       {touchSplash && format === "text" ? (
