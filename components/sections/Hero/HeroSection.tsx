@@ -1186,7 +1186,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                   coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
                 }
                 scrollDissolve
-                touchSplash
+                touchWave
+                touchWaveCharacterClassName={styles.touchWaveGlyph}
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"

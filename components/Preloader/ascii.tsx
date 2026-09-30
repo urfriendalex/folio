@@ -7,6 +7,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
@@ -90,8 +92,10 @@ interface ASCIIAnimationProps {
    * Lets the asset load off-hover while avoiding repeated decode/network work on each hover.
    */
   revealActive?: boolean;
-  /** Add a touch-only, per-glyph splash over the live text animation. */
-  touchSplash?: boolean;
+  /** Add a touch-only color/scale wave to the live text glyphs. */
+  touchWave?: boolean;
+  /** CSS class applied to live glyphs while they pass through the touch wave. */
+  touchWaveCharacterClassName?: string;
 }
 
 export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
@@ -121,23 +125,25 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
-const TOUCH_SPLASH_RADIUS_MAX = 104;
-const TOUCH_SPLASH_RADIUS_MIN = 58;
-const TOUCH_SPLASH_GLYPH_LIMIT = 640;
-const TOUCH_SPLASH_DURATION_MS = 640;
-const TOUCH_SPLASH_STAGGER_MS = 250;
-const TOUCH_SPLASH_RANK_STAGGER_MS = 72;
-const TOUCH_SPLASH_MASK_HOLD_MS =
-  TOUCH_SPLASH_DURATION_MS + TOUCH_SPLASH_STAGGER_MS + TOUCH_SPLASH_RANK_STAGGER_MS + 32;
+const TOUCH_WAVE_RADIUS_MAX = 126;
+const TOUCH_WAVE_RADIUS_MIN = 64;
+const TOUCH_WAVE_CELL_LIMIT = 640;
+const TOUCH_WAVE_DURATION_MS = 760;
+const TOUCH_WAVE_RADIAL_STAGGER_MS = 340;
+const TOUCH_WAVE_DITHER_MS = 76;
+const TOUCH_WAVE_CLEANUP_MS =
+  TOUCH_WAVE_DURATION_MS + TOUCH_WAVE_RADIAL_STAGGER_MS + TOUCH_WAVE_DITHER_MS + 80;
 
-type TouchSplashGlyph = {
-  character: string;
+type TouchWaveCell = {
   cellIndex: number;
-  x: number;
-  y: number;
-  angle: number;
-  distance: number;
+  delay: number;
   rank: number;
+};
+
+type TouchWave = {
+  id: number;
+  accent: string;
+  delays: ReadonlyMap<number, number>;
 };
 
 async function fetchFrame(url: string): Promise<Response> {
@@ -315,27 +321,59 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
   return out.join("");
 }
 
-/** Hide the source cells while their enlarged copies carry the touch burst. */
-function maskTouchSplashFrame(frameText: string, hiddenCells: ReadonlySet<number>): string {
-  if (!hiddenCells.size) {
+/** Animate the source glyphs in place; untouched cells remain compact text runs. */
+function renderTouchWaveFrame(
+  frameText: string,
+  touchWave: TouchWave | null,
+  characterClassName: string,
+): ReactNode {
+  if (!touchWave || !characterClassName) {
     return frameText;
   }
 
-  const out = new Array<string>(frameText.length);
+  const children: ReactNode[] = [];
+  let textRun = "";
   let cellIndex = 0;
+  const flushTextRun = () => {
+    if (textRun) {
+      children.push(textRun);
+      textRun = "";
+    }
+  };
 
   for (let index = 0; index < frameText.length; index += 1) {
     const code = frameText.charCodeAt(index);
     if (code === 10 || code === 13) {
-      out[index] = code === 10 ? "\n" : "\r";
+      textRun += code === 10 ? "\n" : "\r";
       continue;
     }
 
-    out[index] = hiddenCells.has(cellIndex) ? " " : frameText[index];
+    const character = frameText[index] ?? "";
+    const delay = touchWave.delays.get(cellIndex);
+    if (delay !== undefined) {
+      flushTextRun();
+      children.push(
+        <span
+          key={`${touchWave.id}-${cellIndex}`}
+          className={characterClassName}
+          style={{
+            animationDelay: `${delay}ms`,
+            animationDuration: `${TOUCH_WAVE_DURATION_MS}ms`,
+            "--touch-wave-accent": touchWave.accent,
+          } as CSSProperties}
+        >
+          {character}
+        </span>,
+      );
+    } else {
+      textRun += character;
+    }
+
     cellIndex += 1;
   }
 
-  return out.join("");
+  flushTextRun();
+  return children;
 }
 
 type DrawColorFrameOptions = {
@@ -427,7 +465,8 @@ export default function ASCIIAnimation({
   anchorEnd = false,
   transparentCanvasBackground = false,
   revealActive = true,
-  touchSplash = false,
+  touchWave = false,
+  touchWaveCharacterClassName = "",
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -442,16 +481,13 @@ export default function ASCIIAnimation({
   const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
   const [visibilitySeed, setVisibilitySeed] = useState(0);
   const [scrollVisibility, setScrollVisibility] = useState(1);
-  const [touchSplashHiddenCells, setTouchSplashHiddenCells] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  );
+  const [activeTouchWave, setActiveTouchWave] = useState<TouchWave | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const touchBurstCanvasRef = useRef<HTMLCanvasElement>(null);
-  const touchBurstRafRef = useRef<number>(0);
-  const touchBurstMaskTimeoutRef = useRef<number>(0);
+  const touchWaveTimeoutRef = useRef<number>(0);
+  const touchWaveIdRef = useRef(0);
   const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const fullLoadTriggered = useRef(false);
   const resolvedSource = useRef<ResolvedSource | null>(null);
@@ -472,10 +508,10 @@ export default function ASCIIAnimation({
     onReady?.();
   }, [onReady]);
 
-  const playTouchSplash = useCallback(
+  const playTouchWave = useCallback(
     (clientX: number, clientY: number) => {
       if (
-        !touchSplash ||
+        !touchWave ||
         !visible ||
         format !== "text" ||
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -485,12 +521,10 @@ export default function ASCIIAnimation({
 
       const container = containerRef.current;
       const pre = preRef.current;
-      const canvas = touchBurstCanvasRef.current;
-      if (!container || !pre || !canvas) {
+      if (!container || !pre) {
         return;
       }
 
-      const containerRect = container.getBoundingClientRect();
       const artRect = pre.getBoundingClientRect();
       if (
         artRect.width <= 0 ||
@@ -503,7 +537,7 @@ export default function ASCIIAnimation({
         return;
       }
 
-      const lines = currentTextFrame.replaceAll("\r", "").split("\n");
+      const lines = (pre.textContent ?? "").replaceAll("\r", "").split("\n");
       const columnCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
       if (!columnCount || !lines.length) {
         return;
@@ -511,16 +545,15 @@ export default function ASCIIAnimation({
 
       const cellWidth = artRect.width / columnCount;
       const cellHeight = artRect.height / lines.length;
-      const artLeft = artRect.left - containerRect.left;
-      const artTop = artRect.top - containerRect.top;
-      const touchX = clientX - containerRect.left;
-      const touchY = clientY - containerRect.top;
+      const touchX = clientX - artRect.left;
+      const touchY = clientY - artRect.top;
       const radius = Math.max(
-        TOUCH_SPLASH_RADIUS_MIN,
-        Math.min(TOUCH_SPLASH_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.55),
+        TOUCH_WAVE_RADIUS_MIN,
+        Math.min(TOUCH_WAVE_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.72),
       );
-      const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17)) >>> 0;
-      const glyphs: TouchSplashGlyph[] = [];
+      const waveId = touchWaveIdRef.current + 1;
+      const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17) ^ waveId) >>> 0;
+      const cells: TouchWaveCell[] = [];
       let cellIndex = 0;
 
       lines.forEach((line, row) => {
@@ -532,8 +565,8 @@ export default function ASCIIAnimation({
             continue;
           }
 
-          const x = artLeft + (column + 0.5) * cellWidth;
-          const y = artTop + (row + 0.5) * cellHeight;
+          const x = (column + 0.5) * cellWidth;
+          const y = (row + 0.5) * cellHeight;
           const dx = x - touchX;
           const dy = y - touchY;
           const distance = Math.hypot(dx, dy);
@@ -542,122 +575,47 @@ export default function ASCIIAnimation({
           }
 
           const rank = cellRevealHash01(row * columnCount + column, seed);
-          glyphs.push({
-            character,
+          cells.push({
             cellIndex: currentCellIndex,
-            x,
-            y,
-            angle: distance > 0.5 ? Math.atan2(dy, dx) : rank * Math.PI * 2,
-            distance,
+            delay:
+              (distance / radius) * TOUCH_WAVE_RADIAL_STAGGER_MS + rank * TOUCH_WAVE_DITHER_MS,
             rank,
           });
         }
       });
 
-      if (!glyphs.length) {
+      if (!cells.length) {
         return;
       }
 
-      if (glyphs.length > TOUCH_SPLASH_GLYPH_LIMIT) {
-        glyphs.sort((a, b) => a.rank - b.rank);
-        glyphs.length = TOUCH_SPLASH_GLYPH_LIMIT;
+      if (cells.length > TOUCH_WAVE_CELL_LIMIT) {
+        cells.sort((a, b) => a.rank - b.rank);
+        cells.length = TOUCH_WAVE_CELL_LIMIT;
       }
 
-      window.cancelAnimationFrame(touchBurstRafRef.current);
-      const context = canvas.getContext("2d");
-      if (!context) {
-        return;
-      }
-
-      const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
-      const canvasWidth = container.clientWidth;
-      const canvasHeight = container.clientHeight;
-      canvas.width = Math.max(1, Math.round(canvasWidth * pixelRatio));
-      canvas.height = Math.max(1, Math.round(canvasHeight * pixelRatio));
-      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      context.clearRect(0, 0, canvasWidth, canvasHeight);
-
-      const computed = window.getComputedStyle(pre);
-      const cssFontSize = Number.parseFloat(computed.fontSize);
-      const cssLineHeight = Number.parseFloat(computed.lineHeight);
-      const scaleY = Number.isFinite(cssLineHeight)
-        ? artRect.height / (cssLineHeight * lines.length)
-        : artRect.height / (pre.scrollHeight || artRect.height);
-      const fontSize = cssFontSize * scaleY;
-      context.font = `${computed.fontStyle} ${computed.fontWeight} ${fontSize}px ${computed.fontFamily}`;
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillStyle = computed.color;
-      const measuredCellWidth = context.measureText("M").width;
-      if (!measuredCellWidth) {
-        return;
-      }
-      const scaleX = cellWidth / measuredCellWidth;
-      window.clearTimeout(touchBurstMaskTimeoutRef.current);
-      setTouchSplashHiddenCells(new Set(glyphs.map((glyph) => glyph.cellIndex)));
-      touchBurstMaskTimeoutRef.current = window.setTimeout(() => {
-        setTouchSplashHiddenCells(new Set());
-        touchBurstMaskTimeoutRef.current = 0;
-      }, TOUCH_SPLASH_MASK_HOLD_MS);
-      const startTime = performance.now();
-
-      const render = (now: number) => {
-        const elapsed = now - startTime;
-        context.clearRect(0, 0, canvasWidth, canvasHeight);
-        let hasPendingGlyphs = false;
-
-        for (const glyph of glyphs) {
-          const delay =
-            (glyph.distance / radius) * TOUCH_SPLASH_STAGGER_MS +
-            glyph.rank * TOUCH_SPLASH_RANK_STAGGER_MS;
-          const progress = (elapsed - delay) / TOUCH_SPLASH_DURATION_MS;
-          if (progress < 0) {
-            hasPendingGlyphs = true;
-            continue;
-          }
-          if (progress >= 1) {
-            continue;
-          }
-
-          hasPendingGlyphs = true;
-          const expansion = 1 - (1 - progress) ** 3;
-          const fade = (1 - progress) ** 1.1;
-          const reach = 18 + (1 - glyph.distance / radius) * 42;
-
-          context.save();
-          context.globalAlpha = fade * 0.94;
-          context.translate(
-            glyph.x + Math.cos(glyph.angle) * reach * expansion,
-            glyph.y + Math.sin(glyph.angle) * reach * expansion,
-          );
-          context.rotate((glyph.rank - 0.5) * 0.62 * expansion);
-          const scale = 1 + expansion * 2.1;
-          context.scale(scaleX * scale, scale);
-          context.fillText(glyph.character, 0, 0);
-          context.restore();
-        }
-
-        if (hasPendingGlyphs) {
-          touchBurstRafRef.current = window.requestAnimationFrame(render);
-        } else {
-          context.clearRect(0, 0, canvasWidth, canvasHeight);
-          touchBurstRafRef.current = 0;
-        }
-      };
-
-      touchBurstRafRef.current = window.requestAnimationFrame(render);
+      const delays = new Map(cells.map(({ cellIndex: index, delay }) => [index, delay]));
+      touchWaveIdRef.current = waveId;
+      const accent = waveId % 2 === 1
+        ? "var(--signal-color)"
+        : "var(--hero-walker-web-color)";
+      setActiveTouchWave({ id: waveId, accent, delays });
+      window.clearTimeout(touchWaveTimeoutRef.current);
+      touchWaveTimeoutRef.current = window.setTimeout(() => {
+        setActiveTouchWave(null);
+        touchWaveTimeoutRef.current = 0;
+      }, TOUCH_WAVE_CLEANUP_MS);
     },
-    [currentTextFrame, format, touchSplash, visible],
+    [format, touchWave, visible],
   );
 
   const handleTouchPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (!touchSplash || (event.pointerType !== "touch" && event.pointerType !== "pen")) {
+      if (!touchWave || (event.pointerType !== "touch" && event.pointerType !== "pen")) {
         return;
       }
       touchStartRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
     },
-    [touchSplash],
+    [touchWave],
   );
 
   const handleTouchPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
@@ -681,9 +639,9 @@ export default function ASCIIAnimation({
       ) {
         return;
       }
-      playTouchSplash(event.clientX, event.clientY);
+      playTouchWave(event.clientX, event.clientY);
     },
-    [playTouchSplash],
+    [playTouchWave],
   );
 
   const handleTouchPointerCancel = useCallback(() => {
@@ -889,11 +847,13 @@ export default function ASCIIAnimation({
 
     return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
   }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
-  const touchMaskedTextFrame = useMemo(
-    () => touchSplash
-      ? maskTouchSplashFrame(maskedTextFrame, touchSplashHiddenCells)
-      : maskedTextFrame,
-    [maskedTextFrame, touchSplash, touchSplashHiddenCells],
+  const touchWaveText = useMemo(
+    () => renderTouchWaveFrame(
+      maskedTextFrame,
+      activeTouchWave,
+      touchWaveCharacterClassName,
+    ),
+    [activeTouchWave, maskedTextFrame, touchWaveCharacterClassName],
   );
 
   useEffect(() => {
@@ -1190,8 +1150,7 @@ export default function ASCIIAnimation({
   useEffect(() => {
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
-      window.cancelAnimationFrame(touchBurstRafRef.current);
-      window.clearTimeout(touchBurstMaskTimeoutRef.current);
+      window.clearTimeout(touchWaveTimeoutRef.current);
     };
   }, []);
 
@@ -1296,10 +1255,10 @@ export default function ASCIIAnimation({
       {...(ariaLabel ? { role: "img", "aria-label": ariaLabel } : {})}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onPointerDown={touchSplash ? handleTouchPointerDown : undefined}
-      onPointerMove={touchSplash ? handleTouchPointerMove : undefined}
-      onPointerUp={touchSplash ? handleTouchPointerUp : undefined}
-      onPointerCancel={touchSplash ? handleTouchPointerCancel : undefined}
+      onPointerDown={touchWave ? handleTouchPointerDown : undefined}
+      onPointerMove={touchWave ? handleTouchPointerMove : undefined}
+      onPointerUp={touchWave ? handleTouchPointerUp : undefined}
+      onPointerCancel={touchWave ? handleTouchPointerCancel : undefined}
     >
       {showFrameCounter ? (
         <div>
@@ -1352,24 +1311,9 @@ export default function ASCIIAnimation({
                 }
           }
         >
-          {touchMaskedTextFrame}
+          {touchWaveText}
         </pre>
       )}
-      {touchSplash && format === "text" ? (
-        <canvas
-          ref={touchBurstCanvasRef}
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 2,
-            width: "100%",
-            height: "100%",
-            display: "block",
-            pointerEvents: "none",
-          }}
-        />
-      ) : null}
     </div>
   );
 }
