@@ -125,24 +125,24 @@ const TOUCH_WAVE_DURATION_MS = 600;
 const TOUCH_WAVE_OVERSHOOT_MIN = 18;
 const TOUCH_WAVE_OVERSHOOT_MAX = 32;
 const TOUCH_WAVE_OVERSHOOT_FACTOR = 0.12;
-const TOUCH_WAVE_HALF_WIDTH = 18;
-const TOUCH_WAVE_EDGE_JITTER = 6;
+const TOUCH_WAVE_HALF_WIDTH = 24;
+const TOUCH_WAVE_EDGE_JITTER = 8;
 const TOUCH_WAVE_MAX_HALF_WIDTH = TOUCH_WAVE_HALF_WIDTH + TOUCH_WAVE_EDGE_JITTER;
-const TOUCH_WAVE_DENSITY = 0.82;
+const TOUCH_WAVE_DENSITY = 0.86;
 const TOUCH_WAVE_CLEANUP_MS = TOUCH_WAVE_DURATION_MS + 64;
-
-type TouchWaveCell = {
-  textIndex: number;
-  distance: number;
-  halfWidth: number;
-  sample: number;
-};
 
 type TouchWave = {
   id: number;
   startedAt: number;
   radius: number;
-  cells: TouchWaveCell[];
+  touchX: number;
+  touchY: number;
+  cellWidth: number;
+  cellHeight: number;
+  columnCount: number;
+  rowOffsets: number[];
+  rowLengths: number[];
+  seed: number;
 };
 
 async function fetchFrame(url: string): Promise<Response> {
@@ -320,21 +320,44 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
   return out.join("");
 }
 
-function lowerBoundTouchWaveCell(cells: TouchWaveCell[], distance: number, inclusive: boolean): number {
-  let low = 0;
-  let high = cells.length;
+function applyTouchDitherRange(
+  output: string[],
+  frameText: string,
+  touchWave: TouchWave,
+  row: number,
+  rowOffset: number,
+  rowDistance: number,
+  waveRadius: number,
+  innerRadius: number,
+  firstColumn: number,
+  lastColumn: number,
+): void {
+  for (let column = firstColumn; column <= lastColumn; column += 1) {
+    const textIndex = rowOffset + column;
+    if (frameText.charCodeAt(textIndex) <= 32) {
+      continue;
+    }
 
-  while (low < high) {
-    const middle = (low + high) >>> 1;
-    const cellDistance = cells[middle]?.distance ?? 0;
-    if (inclusive ? cellDistance <= distance : cellDistance < distance) {
-      low = middle + 1;
-    } else {
-      high = middle;
+    const dx = (column + 0.5) * touchWave.cellWidth - touchWave.touchX;
+    const distance = Math.sqrt(dx * dx + rowDistance * rowDistance);
+    if (distance < innerRadius || distance > waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH) {
+      continue;
+    }
+
+    const cellIndex = row * touchWave.columnCount + column;
+    const halfWidth =
+      TOUCH_WAVE_HALF_WIDTH +
+      Math.round((cellRevealHash01(cellIndex, touchWave.seed + 1) - 0.5) * TOUCH_WAVE_EDGE_JITTER * 2);
+    const edgeProgress = 1 - Math.abs(distance - waveRadius) / halfWidth;
+    if (edgeProgress <= 0) {
+      continue;
+    }
+
+    const easedEdge = edgeProgress * edgeProgress * (3 - 2 * edgeProgress);
+    if (cellRevealHash01(cellIndex, touchWave.seed + 2) < TOUCH_WAVE_DENSITY * easedEdge) {
+      output[textIndex] = " ";
     }
   }
-
-  return low;
 }
 
 /** Apply overlapping, soft-edged dither rings directly to the source string. */
@@ -347,7 +370,7 @@ function applyTouchDitherFrame(
     return frameText;
   }
 
-  const droppedIndexes: number[] = [];
+  const output = frameText.split("");
   for (const touchWave of touchWaves) {
     const elapsed = now - touchWave.startedAt;
     if (elapsed < 0 || elapsed >= TOUCH_WAVE_DURATION_MS) {
@@ -355,45 +378,79 @@ function applyTouchDitherFrame(
     }
 
     const progress = elapsed / TOUCH_WAVE_DURATION_MS;
-    const easedProgress = (1 - Math.cos(progress * Math.PI)) / 2;
+    const easedProgress = 1 - (1 - progress) ** 2;
     const waveRadius = touchWave.radius * easedProgress;
-    const firstCell = lowerBoundTouchWaveCell(
-      touchWave.cells,
-      waveRadius - TOUCH_WAVE_MAX_HALF_WIDTH,
-      false,
-    );
-    const afterLastCell = lowerBoundTouchWaveCell(
-      touchWave.cells,
-      waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH,
-      true,
-    );
-
-    for (let index = firstCell; index < afterLastCell; index += 1) {
-      const cell = touchWave.cells[index];
-      if (!cell || frameText.charCodeAt(cell.textIndex) <= 32) {
+    const innerRadius = Math.max(0, waveRadius - TOUCH_WAVE_MAX_HALF_WIDTH);
+    const outerRadius = waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH;
+    for (let row = 0; row < touchWave.rowLengths.length; row += 1) {
+      const rowLength = touchWave.rowLengths[row] ?? 0;
+      const rowOffset = touchWave.rowOffsets[row] ?? 0;
+      const rowDistance = (row + 0.5) * touchWave.cellHeight - touchWave.touchY;
+      if (!rowLength || Math.abs(rowDistance) > outerRadius) {
         continue;
       }
 
-      const edgeProgress = 1 - Math.abs(cell.distance - waveRadius) / cell.halfWidth;
-      if (edgeProgress <= 0) {
+      const outerX = Math.sqrt(outerRadius * outerRadius - rowDistance * rowDistance);
+      const firstColumn = Math.max(0, Math.ceil((touchWave.touchX - outerX) / touchWave.cellWidth - 0.5));
+      const lastColumn = Math.min(
+        rowLength - 1,
+        Math.floor((touchWave.touchX + outerX) / touchWave.cellWidth - 0.5),
+      );
+      if (firstColumn > lastColumn) {
         continue;
       }
 
-      const easedEdge = edgeProgress * edgeProgress * (3 - 2 * edgeProgress);
-      if (cell.sample < TOUCH_WAVE_DENSITY * easedEdge) {
-        droppedIndexes.push(cell.textIndex);
+      if (innerRadius > Math.abs(rowDistance)) {
+        const innerX = Math.sqrt(innerRadius * innerRadius - rowDistance * rowDistance);
+        const leftLastColumn = Math.min(
+          lastColumn,
+          Math.floor((touchWave.touchX - innerX) / touchWave.cellWidth - 0.5),
+        );
+        const rightFirstColumn = Math.max(
+          firstColumn,
+          Math.ceil((touchWave.touchX + innerX) / touchWave.cellWidth - 0.5),
+        );
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          firstColumn,
+          leftLastColumn,
+        );
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          rightFirstColumn,
+          lastColumn,
+        );
+      } else {
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          firstColumn,
+          lastColumn,
+        );
       }
     }
   }
 
-  if (!droppedIndexes.length) {
-    return frameText;
-  }
-
-  const output = frameText.split("");
-  for (const index of droppedIndexes) {
-    output[index] = " ";
-  }
   return output.join("");
 }
 
@@ -565,6 +622,20 @@ export default function ASCIIAnimation({
         return;
       }
 
+      const rowOffsets = new Array<number>(lines.length);
+      const rowLengths = lines.map((line) => line.length);
+      let textIndex = 0;
+      for (let row = 0; row < lines.length; row += 1) {
+        rowOffsets[row] = textIndex;
+        textIndex += rowLengths[row] ?? 0;
+        if (row < lines.length - 1 && sourceText[textIndex] === "\r") {
+          textIndex += 1;
+        }
+        if (row < lines.length - 1 && sourceText[textIndex] === "\n") {
+          textIndex += 1;
+        }
+      }
+
       const cellWidth = artRect.width / columnCount;
       const cellHeight = artRect.height / lines.length;
       const touchX = clientX - artRect.left;
@@ -585,46 +656,20 @@ export default function ASCIIAnimation({
       const radius = farthestCorner + overshoot;
       const waveId = touchWaveIdRef.current + 1;
       const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17) ^ waveId) >>> 0;
-      const cells: TouchWaveCell[] = [];
-      let textIndex = 0;
-
-      lines.forEach((line, row) => {
-        for (let column = 0; column < line.length; column += 1) {
-          const currentTextIndex = textIndex;
-          textIndex += 1;
-
-          const x = (column + 0.5) * cellWidth;
-          const y = (row + 0.5) * cellHeight;
-          const dx = x - touchX;
-          const dy = y - touchY;
-          const distance = Math.hypot(dx, dy);
-
-          cells.push({
-            textIndex: currentTextIndex,
-            distance,
-            halfWidth:
-              TOUCH_WAVE_HALF_WIDTH +
-              Math.round((cellRevealHash01(row * columnCount + column, seed + 1) - 0.5) *
-                TOUCH_WAVE_EDGE_JITTER * 2),
-            sample: cellRevealHash01(row * columnCount + column, seed + 2),
-          });
-        }
-
-        if (row < lines.length - 1 && sourceText[textIndex] === "\r") {
-          textIndex += 1;
-        }
-        if (row < lines.length - 1 && sourceText[textIndex] === "\n") {
-          textIndex += 1;
-        }
-      });
-
-      if (!cells.length) {
-        return;
-      }
-
-      cells.sort((left, right) => left.distance - right.distance);
       touchWaveIdRef.current = waveId;
-      const nextTouchWave = { id: waveId, startedAt: performance.now(), radius, cells };
+      const nextTouchWave = {
+        id: waveId,
+        startedAt: performance.now(),
+        radius,
+        touchX,
+        touchY,
+        cellWidth,
+        cellHeight,
+        columnCount,
+        rowOffsets,
+        rowLengths,
+        seed,
+      };
       setActiveTouchWaves((activeWaves) => [...activeWaves, nextTouchWave]);
       const timeoutId = window.setTimeout(() => {
         setActiveTouchWaves((activeWaves) => activeWaves.filter((wave) => wave.id !== waveId));
