@@ -121,22 +121,25 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
-const TOUCH_WAVE_RADIUS_MAX = 92;
-const TOUCH_WAVE_RADIUS_MIN = 48;
-const TOUCH_WAVE_DURATION_MS = 420;
-const TOUCH_WAVE_HALF_WIDTH = 14;
-const TOUCH_WAVE_EDGE_JITTER = 5;
-const TOUCH_WAVE_DENSITY = 0.64;
+const TOUCH_WAVE_DURATION_MS = 600;
+const TOUCH_WAVE_OVERSHOOT_MIN = 18;
+const TOUCH_WAVE_OVERSHOOT_MAX = 32;
+const TOUCH_WAVE_OVERSHOOT_FACTOR = 0.12;
+const TOUCH_WAVE_HALF_WIDTH = 18;
+const TOUCH_WAVE_EDGE_JITTER = 6;
+const TOUCH_WAVE_MAX_HALF_WIDTH = TOUCH_WAVE_HALF_WIDTH + TOUCH_WAVE_EDGE_JITTER;
+const TOUCH_WAVE_DENSITY = 0.82;
 const TOUCH_WAVE_CLEANUP_MS = TOUCH_WAVE_DURATION_MS + 64;
 
 type TouchWaveCell = {
   textIndex: number;
   distance: number;
   halfWidth: number;
-  dropsOut: boolean;
+  sample: number;
 };
 
 type TouchWave = {
+  id: number;
   startedAt: number;
   radius: number;
   cells: TouchWaveCell[];
@@ -317,30 +320,69 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
   return out.join("");
 }
 
-/** Apply a brief dither ring to the source string; it creates no per-cell DOM nodes. */
+function lowerBoundTouchWaveCell(cells: TouchWaveCell[], distance: number, inclusive: boolean): number {
+  let low = 0;
+  let high = cells.length;
+
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const cellDistance = cells[middle]?.distance ?? 0;
+    if (inclusive ? cellDistance <= distance : cellDistance < distance) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+
+  return low;
+}
+
+/** Apply overlapping, soft-edged dither rings directly to the source string. */
 function applyTouchDitherFrame(
   frameText: string,
-  touchWave: TouchWave | null,
+  touchWaves: TouchWave[],
   now: number,
 ): string {
-  if (!touchWave) {
+  if (!touchWaves.length) {
     return frameText;
   }
 
-  const elapsed = now - touchWave.startedAt;
-  if (elapsed < 0 || elapsed >= TOUCH_WAVE_DURATION_MS) {
-    return frameText;
-  }
-
-  const waveRadius = touchWave.radius * (elapsed / TOUCH_WAVE_DURATION_MS);
   const droppedIndexes: number[] = [];
-  for (const cell of touchWave.cells) {
-    if (
-      cell.dropsOut &&
-      frameText.charCodeAt(cell.textIndex) > 32 &&
-      Math.abs(cell.distance - waveRadius) <= cell.halfWidth
-    ) {
-      droppedIndexes.push(cell.textIndex);
+  for (const touchWave of touchWaves) {
+    const elapsed = now - touchWave.startedAt;
+    if (elapsed < 0 || elapsed >= TOUCH_WAVE_DURATION_MS) {
+      continue;
+    }
+
+    const progress = elapsed / TOUCH_WAVE_DURATION_MS;
+    const easedProgress = (1 - Math.cos(progress * Math.PI)) / 2;
+    const waveRadius = touchWave.radius * easedProgress;
+    const firstCell = lowerBoundTouchWaveCell(
+      touchWave.cells,
+      waveRadius - TOUCH_WAVE_MAX_HALF_WIDTH,
+      false,
+    );
+    const afterLastCell = lowerBoundTouchWaveCell(
+      touchWave.cells,
+      waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH,
+      true,
+    );
+
+    for (let index = firstCell; index < afterLastCell; index += 1) {
+      const cell = touchWave.cells[index];
+      if (!cell || frameText.charCodeAt(cell.textIndex) <= 32) {
+        continue;
+      }
+
+      const edgeProgress = 1 - Math.abs(cell.distance - waveRadius) / cell.halfWidth;
+      if (edgeProgress <= 0) {
+        continue;
+      }
+
+      const easedEdge = edgeProgress * edgeProgress * (3 - 2 * edgeProgress);
+      if (cell.sample < TOUCH_WAVE_DENSITY * easedEdge) {
+        droppedIndexes.push(cell.textIndex);
+      }
     }
   }
 
@@ -460,12 +502,12 @@ export default function ASCIIAnimation({
   const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
   const [visibilitySeed, setVisibilitySeed] = useState(0);
   const [scrollVisibility, setScrollVisibility] = useState(1);
-  const [activeTouchWave, setActiveTouchWave] = useState<TouchWave | null>(null);
+  const [activeTouchWaves, setActiveTouchWaves] = useState<TouchWave[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const touchWaveTimeoutRef = useRef<number>(0);
+  const touchWaveTimeoutsRef = useRef<Map<number, number>>(new Map());
   const touchWaveIdRef = useRef(0);
   const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const fullLoadTriggered = useRef(false);
@@ -527,10 +569,20 @@ export default function ASCIIAnimation({
       const cellHeight = artRect.height / lines.length;
       const touchX = clientX - artRect.left;
       const touchY = clientY - artRect.top;
-      const radius = Math.max(
-        TOUCH_WAVE_RADIUS_MIN,
-        Math.min(TOUCH_WAVE_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.62),
+      const farthestCorner = Math.max(
+        Math.hypot(touchX, touchY),
+        Math.hypot(artRect.width - touchX, touchY),
+        Math.hypot(touchX, artRect.height - touchY),
+        Math.hypot(artRect.width - touchX, artRect.height - touchY),
       );
+      const overshoot = Math.max(
+        TOUCH_WAVE_OVERSHOOT_MIN,
+        Math.min(
+          TOUCH_WAVE_OVERSHOOT_MAX,
+          Math.min(artRect.width, artRect.height) * TOUCH_WAVE_OVERSHOOT_FACTOR,
+        ),
+      );
+      const radius = farthestCorner + overshoot;
       const waveId = touchWaveIdRef.current + 1;
       const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17) ^ waveId) >>> 0;
       const cells: TouchWaveCell[] = [];
@@ -546,9 +598,6 @@ export default function ASCIIAnimation({
           const dx = x - touchX;
           const dy = y - touchY;
           const distance = Math.hypot(dx, dy);
-          if (distance > radius + TOUCH_WAVE_HALF_WIDTH + TOUCH_WAVE_EDGE_JITTER) {
-            continue;
-          }
 
           cells.push({
             textIndex: currentTextIndex,
@@ -557,7 +606,7 @@ export default function ASCIIAnimation({
               TOUCH_WAVE_HALF_WIDTH +
               Math.round((cellRevealHash01(row * columnCount + column, seed + 1) - 0.5) *
                 TOUCH_WAVE_EDGE_JITTER * 2),
-            dropsOut: cellRevealHash01(row * columnCount + column, seed + 2) < TOUCH_WAVE_DENSITY,
+            sample: cellRevealHash01(row * columnCount + column, seed + 2),
           });
         }
 
@@ -573,13 +622,15 @@ export default function ASCIIAnimation({
         return;
       }
 
+      cells.sort((left, right) => left.distance - right.distance);
       touchWaveIdRef.current = waveId;
-      setActiveTouchWave({ startedAt: performance.now(), radius, cells });
-      window.clearTimeout(touchWaveTimeoutRef.current);
-      touchWaveTimeoutRef.current = window.setTimeout(() => {
-        setActiveTouchWave(null);
-        touchWaveTimeoutRef.current = 0;
+      const nextTouchWave = { id: waveId, startedAt: performance.now(), radius, cells };
+      setActiveTouchWaves((activeWaves) => [...activeWaves, nextTouchWave]);
+      const timeoutId = window.setTimeout(() => {
+        setActiveTouchWaves((activeWaves) => activeWaves.filter((wave) => wave.id !== waveId));
+        touchWaveTimeoutsRef.current.delete(waveId);
       }, TOUCH_WAVE_CLEANUP_MS);
+      touchWaveTimeoutsRef.current.set(waveId, timeoutId);
     },
     [format, touchWave, visible],
   );
@@ -839,8 +890,8 @@ export default function ASCIIAnimation({
     return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
   }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
   const touchWaveText = useMemo(
-    () => applyTouchDitherFrame(maskedTextFrame, activeTouchWave, performance.now()),
-    [activeTouchWave, maskedTextFrame],
+    () => applyTouchDitherFrame(maskedTextFrame, activeTouchWaves, performance.now()),
+    [activeTouchWaves, maskedTextFrame],
   );
 
   useEffect(() => {
@@ -1135,9 +1186,11 @@ export default function ASCIIAnimation({
   ]);
 
   useEffect(() => {
+    const timeouts = touchWaveTimeoutsRef.current;
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
-      window.clearTimeout(touchWaveTimeoutRef.current);
+      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      timeouts.clear();
     };
   }, []);
 
