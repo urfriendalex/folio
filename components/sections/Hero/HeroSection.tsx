@@ -595,7 +595,10 @@ export function HeroSection({ content }: HeroSectionProps) {
   /** Keep the intro string identical on the server and client; the mobile break is CSS-controlled. */
   const introText = content.position;
   const introLines = useMemo(() => [introText], [introText]);
-  const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true);
+  // Let mobile use identical SSR/client line tokens; measuring into per-line wrappers can move words at hydration.
+  const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true, {
+    preserveNaturalWrappingMedia: "(max-width: 48rem)",
+  });
 
   const ctaTextUpper = useMemo(
     () => content.ctaLine?.trim().toUpperCase() ?? "",
