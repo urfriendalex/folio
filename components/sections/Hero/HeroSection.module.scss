@@ -293,57 +293,6 @@
   text-shadow: 0 0 1rem var(--walker-glow);
 }
 
-/* The touch ripple styles the source glyph in its own monospace cell; it creates no duplicate layer. */
-.touchWaveGlyph {
-  position: relative;
-  z-index: 1;
-  display: inline-block;
-  width: 1ch;
-  line-height: inherit;
-  text-align: center;
-  transform-origin: 50% 50%;
-  animation-name: touchGlyphWave;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-fill-mode: both;
-}
-
-@keyframes touchGlyphWave {
-  0% {
-    color: inherit;
-    opacity: 1;
-    text-shadow: none;
-    transform: scale(1);
-  }
-
-  22% {
-    color: var(--touch-wave-accent);
-    opacity: 1;
-    text-shadow: 0 0 0.34em var(--touch-wave-accent);
-    transform: scale(1.42);
-  }
-
-  48% {
-    color: var(--touch-wave-accent);
-    opacity: 0.3;
-    text-shadow: none;
-    transform: scale(0.84);
-  }
-
-  67% {
-    color: var(--touch-wave-accent);
-    opacity: 0.92;
-    text-shadow: 0 0 0.2em var(--touch-wave-accent);
-    transform: scale(1.16);
-  }
-
-  100% {
-    color: inherit;
-    opacity: 1;
-    text-shadow: none;
-    transform: scale(1);
-  }
-}
-
 /* Wide desktop: a bit more measure + weight the copy column so the block isn’t a thin rail */
 @media (min-width: 90rem) {
   .stage {
@@ -430,12 +379,6 @@
 
   .walker {
     transition: text-shadow 140ms ease-out;
-    text-shadow: none;
-  }
-
-  .touchWaveGlyph {
-    animation: none;
-    transform: none;
     text-shadow: none;
   }
 }

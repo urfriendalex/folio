@@ -7,8 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
-  type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
@@ -92,10 +90,8 @@ interface ASCIIAnimationProps {
    * Lets the asset load off-hover while avoiding repeated decode/network work on each hover.
    */
   revealActive?: boolean;
-  /** Add a touch-only color/scale wave to the live text glyphs. */
+  /** Add a touch-only dither ripple by temporarily masking source glyphs in the text frame. */
   touchWave?: boolean;
-  /** CSS class applied to live glyphs while they pass through the touch wave. */
-  touchWaveCharacterClassName?: string;
 }
 
 export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
@@ -125,25 +121,25 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
-const TOUCH_WAVE_RADIUS_MAX = 126;
-const TOUCH_WAVE_RADIUS_MIN = 64;
-const TOUCH_WAVE_CELL_LIMIT = 640;
-const TOUCH_WAVE_DURATION_MS = 760;
-const TOUCH_WAVE_RADIAL_STAGGER_MS = 340;
-const TOUCH_WAVE_DITHER_MS = 76;
-const TOUCH_WAVE_CLEANUP_MS =
-  TOUCH_WAVE_DURATION_MS + TOUCH_WAVE_RADIAL_STAGGER_MS + TOUCH_WAVE_DITHER_MS + 80;
+const TOUCH_WAVE_RADIUS_MAX = 92;
+const TOUCH_WAVE_RADIUS_MIN = 48;
+const TOUCH_WAVE_DURATION_MS = 420;
+const TOUCH_WAVE_HALF_WIDTH = 14;
+const TOUCH_WAVE_EDGE_JITTER = 5;
+const TOUCH_WAVE_DENSITY = 0.64;
+const TOUCH_WAVE_CLEANUP_MS = TOUCH_WAVE_DURATION_MS + 64;
 
 type TouchWaveCell = {
-  cellIndex: number;
-  delay: number;
-  rank: number;
+  textIndex: number;
+  distance: number;
+  halfWidth: number;
+  dropsOut: boolean;
 };
 
 type TouchWave = {
-  id: number;
-  accent: string;
-  delays: ReadonlyMap<number, number>;
+  startedAt: number;
+  radius: number;
+  cells: TouchWaveCell[];
 };
 
 async function fetchFrame(url: string): Promise<Response> {
@@ -321,59 +317,42 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
   return out.join("");
 }
 
-/** Animate the source glyphs in place; untouched cells remain compact text runs. */
-function renderTouchWaveFrame(
+/** Apply a brief dither ring to the source string; it creates no per-cell DOM nodes. */
+function applyTouchDitherFrame(
   frameText: string,
   touchWave: TouchWave | null,
-  characterClassName: string,
-): ReactNode {
-  if (!touchWave || !characterClassName) {
+  now: number,
+): string {
+  if (!touchWave) {
     return frameText;
   }
 
-  const children: ReactNode[] = [];
-  let textRun = "";
-  let cellIndex = 0;
-  const flushTextRun = () => {
-    if (textRun) {
-      children.push(textRun);
-      textRun = "";
-    }
-  };
-
-  for (let index = 0; index < frameText.length; index += 1) {
-    const code = frameText.charCodeAt(index);
-    if (code === 10 || code === 13) {
-      textRun += code === 10 ? "\n" : "\r";
-      continue;
-    }
-
-    const character = frameText[index] ?? "";
-    const delay = touchWave.delays.get(cellIndex);
-    if (delay !== undefined) {
-      flushTextRun();
-      children.push(
-        <span
-          key={`${touchWave.id}-${cellIndex}`}
-          className={characterClassName}
-          style={{
-            animationDelay: `${delay}ms`,
-            animationDuration: `${TOUCH_WAVE_DURATION_MS}ms`,
-            "--touch-wave-accent": touchWave.accent,
-          } as CSSProperties}
-        >
-          {character}
-        </span>,
-      );
-    } else {
-      textRun += character;
-    }
-
-    cellIndex += 1;
+  const elapsed = now - touchWave.startedAt;
+  if (elapsed < 0 || elapsed >= TOUCH_WAVE_DURATION_MS) {
+    return frameText;
   }
 
-  flushTextRun();
-  return children;
+  const waveRadius = touchWave.radius * (elapsed / TOUCH_WAVE_DURATION_MS);
+  const droppedIndexes: number[] = [];
+  for (const cell of touchWave.cells) {
+    if (
+      cell.dropsOut &&
+      frameText.charCodeAt(cell.textIndex) > 32 &&
+      Math.abs(cell.distance - waveRadius) <= cell.halfWidth
+    ) {
+      droppedIndexes.push(cell.textIndex);
+    }
+  }
+
+  if (!droppedIndexes.length) {
+    return frameText;
+  }
+
+  const output = frameText.split("");
+  for (const index of droppedIndexes) {
+    output[index] = " ";
+  }
+  return output.join("");
 }
 
 type DrawColorFrameOptions = {
@@ -466,7 +445,6 @@ export default function ASCIIAnimation({
   transparentCanvasBackground = false,
   revealActive = true,
   touchWave = false,
-  touchWaveCharacterClassName = "",
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -474,7 +452,8 @@ export default function ASCIIAnimation({
   const [format, setFormat] = useState<"text" | "color" | null>(providedFrames ? "text" : null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
-  const [isIntersecting, setIsIntersecting] = useState(!lazy);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [isDocumentVisible, setIsDocumentVisible] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [scaleValue, setScaleValue] = useState(scale);
   const [scaled, setScaled] = useState(false);
@@ -537,7 +516,8 @@ export default function ASCIIAnimation({
         return;
       }
 
-      const lines = (pre.textContent ?? "").replaceAll("\r", "").split("\n");
+      const sourceText = pre.textContent ?? "";
+      const lines = sourceText.replaceAll("\r", "").split("\n");
       const columnCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
       if (!columnCount || !lines.length) {
         return;
@@ -549,38 +529,43 @@ export default function ASCIIAnimation({
       const touchY = clientY - artRect.top;
       const radius = Math.max(
         TOUCH_WAVE_RADIUS_MIN,
-        Math.min(TOUCH_WAVE_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.72),
+        Math.min(TOUCH_WAVE_RADIUS_MAX, Math.min(artRect.width, artRect.height) * 0.62),
       );
       const waveId = touchWaveIdRef.current + 1;
       const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17) ^ waveId) >>> 0;
       const cells: TouchWaveCell[] = [];
-      let cellIndex = 0;
+      let textIndex = 0;
 
       lines.forEach((line, row) => {
         for (let column = 0; column < line.length; column += 1) {
-          const character = line[column];
-          const currentCellIndex = cellIndex;
-          cellIndex += 1;
-          if (!character || /\s/.test(character)) {
-            continue;
-          }
+          const currentTextIndex = textIndex;
+          textIndex += 1;
 
           const x = (column + 0.5) * cellWidth;
           const y = (row + 0.5) * cellHeight;
           const dx = x - touchX;
           const dy = y - touchY;
           const distance = Math.hypot(dx, dy);
-          if (distance > radius) {
+          if (distance > radius + TOUCH_WAVE_HALF_WIDTH + TOUCH_WAVE_EDGE_JITTER) {
             continue;
           }
 
-          const rank = cellRevealHash01(row * columnCount + column, seed);
           cells.push({
-            cellIndex: currentCellIndex,
-            delay:
-              (distance / radius) * TOUCH_WAVE_RADIAL_STAGGER_MS + rank * TOUCH_WAVE_DITHER_MS,
-            rank,
+            textIndex: currentTextIndex,
+            distance,
+            halfWidth:
+              TOUCH_WAVE_HALF_WIDTH +
+              Math.round((cellRevealHash01(row * columnCount + column, seed + 1) - 0.5) *
+                TOUCH_WAVE_EDGE_JITTER * 2),
+            dropsOut: cellRevealHash01(row * columnCount + column, seed + 2) < TOUCH_WAVE_DENSITY,
           });
+        }
+
+        if (row < lines.length - 1 && sourceText[textIndex] === "\r") {
+          textIndex += 1;
+        }
+        if (row < lines.length - 1 && sourceText[textIndex] === "\n") {
+          textIndex += 1;
         }
       });
 
@@ -588,17 +573,8 @@ export default function ASCIIAnimation({
         return;
       }
 
-      if (cells.length > TOUCH_WAVE_CELL_LIMIT) {
-        cells.sort((a, b) => a.rank - b.rank);
-        cells.length = TOUCH_WAVE_CELL_LIMIT;
-      }
-
-      const delays = new Map(cells.map(({ cellIndex: index, delay }) => [index, delay]));
       touchWaveIdRef.current = waveId;
-      const accent = waveId % 2 === 1
-        ? "var(--signal-color)"
-        : "var(--hero-walker-web-color)";
-      setActiveTouchWave({ id: waveId, accent, delays });
+      setActiveTouchWave({ startedAt: performance.now(), radius, cells });
       window.clearTimeout(touchWaveTimeoutRef.current);
       touchWaveTimeoutRef.current = window.setTimeout(() => {
         setActiveTouchWave(null);
@@ -723,7 +699,6 @@ export default function ASCIIAnimation({
     setMeta(null);
     setFormat(providedFrames ? "text" : null);
     setCurrentFrameIndex(0);
-    setIsIntersecting(!lazy);
     setIsLoading(!providedFrames);
     setScaled(false);
 
@@ -806,7 +781,15 @@ export default function ASCIIAnimation({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !lazy) {
+    if (!container) {
+      return;
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsIntersecting(true);
+      if (lazy && !fullLoadTriggered.current) {
+        void loadAllFrames();
+      }
       return;
     }
 
@@ -815,7 +798,7 @@ export default function ASCIIAnimation({
         entries.forEach((entry) => {
           setIsIntersecting(entry.isIntersecting);
 
-          if (entry.isIntersecting && !fullLoadTriggered.current) {
+          if (lazy && entry.isIntersecting && !fullLoadTriggered.current) {
             void loadAllFrames();
           }
         });
@@ -830,6 +813,13 @@ export default function ASCIIAnimation({
     };
   }, [lazy, loadAllFrames]);
 
+  useEffect(() => {
+    const updateDocumentVisibility = () => setIsDocumentVisible(!document.hidden);
+    updateDocumentVisibility();
+    document.addEventListener("visibilitychange", updateDocumentVisibility);
+    return () => document.removeEventListener("visibilitychange", updateDocumentVisibility);
+  }, []);
+
   const effectiveVisibility = visibilityProgress * (scrollDissolve ? scrollVisibility : 1);
   const usesVisibilityMask = randomVisibilityReveal || (scrollDissolve && scrollVisibility < 1);
   /** Keep walking while glyphs dissolve out; only stop once nothing is left on screen. */
@@ -837,6 +827,7 @@ export default function ASCIIAnimation({
   const hiddenByMask = usesVisibilityMask && effectiveVisibility <= 0;
   const shouldPlay =
     isIntersecting &&
+    isDocumentVisible &&
     !hiddenByMask &&
     (((!playOnHover || isHovered) && !paused) || isDissolvingOut);
   const totalFrames = format === "color" ? colorFrames.length : frames.length;
@@ -848,12 +839,8 @@ export default function ASCIIAnimation({
     return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
   }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
   const touchWaveText = useMemo(
-    () => renderTouchWaveFrame(
-      maskedTextFrame,
-      activeTouchWave,
-      touchWaveCharacterClassName,
-    ),
-    [activeTouchWave, maskedTextFrame, touchWaveCharacterClassName],
+    () => applyTouchDitherFrame(maskedTextFrame, activeTouchWave, performance.now()),
+    [activeTouchWave, maskedTextFrame],
   );
 
   useEffect(() => {

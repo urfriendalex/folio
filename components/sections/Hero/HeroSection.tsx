@@ -1187,7 +1187,6 @@ export function HeroSection({ content }: HeroSectionProps) {
                 }
                 scrollDissolve
                 touchWave
-                touchWaveCharacterClassName={styles.touchWaveGlyph}
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"
