@@ -4,6 +4,7 @@ import { useEffect, useState, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useWorkCtaRevealAligned } from "@/lib/heroRevealTimeline";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
+import { useClientMounted } from "@/lib/useClientMounted";
 
 export type UseWorkRevealOnViewOptions = {
   once?: boolean;
@@ -22,6 +23,7 @@ export function useWorkRevealOnView<T extends HTMLElement>(
   const preloaderComplete = usePreloaderComplete();
   const ctaAligned = useWorkCtaRevealAligned();
   const revealMotionEnabled = useRevealMotionEnabled();
+  const clientMounted = useClientMounted();
 
   const [visible, setVisible] = useState(
     () =>
@@ -134,6 +136,14 @@ export function useWorkRevealOnView<T extends HTMLElement>(
     observerDisabled,
     options?.revealDelayMs,
   ]);
+
+  /**
+   * SSR/hydration can't see the reveal policy yet; answering `true` there paints Work visible, then hides it
+   * and replays the entrance. Hidden styles are gated on `html.reveals-enabled`, so `false` is safe pre-mount.
+   */
+  if (!clientMounted) {
+    return false;
+  }
 
   return revealMotionEnabled ? visible : true;
 }

@@ -176,6 +176,10 @@
   color: var(--overlay-muted);
 }
 
+.scrollDescriptor {
+  margin-bottom: clamp(0.55rem, 1.1vw, 0.85rem);
+}
+
 .title {
   --reveal-line-gap: 0.1em;
   margin: 0;
@@ -446,7 +450,39 @@
 @media (max-width: 48rem) {
   .root {
     width: calc(100% + 2 * var(--content-padding-inline));
-    gap: clamp(1.1rem, 3vw, 1.65rem);
+    gap: 0.4rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .header {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(100% - 3.5rem);
+    height: var(--project-inline-header-height, var(--header-height));
+    align-content: center;
+    min-width: 0;
+  }
+
+  .descriptor {
+    line-height: 1.2;
+  }
+
+  .bodyScroll {
+    padding-block: 0.35rem 0;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.35rem,
+      #000 calc(100% - 0.4rem),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.35rem,
+      #000 calc(100% - 0.4rem),
+      transparent 100%
+    );
   }
 
   .sheetLayout {
@@ -459,6 +495,7 @@
 
   .title {
     font-size: clamp(1.4rem, 6.3vw, 1.94rem);
+    line-height: 1;
   }
 
   .lead {

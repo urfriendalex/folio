@@ -342,20 +342,17 @@ export function ContactSectionGooey({
 
         {view === "form" ? (
           <div className={styles.formView} data-visible={formVisible}>
-            <div className={styles.formBackRow}>
-              <button
-                type="button"
-                className={styles.formBackScreen}
-                data-visible={formVisible}
-                onClick={dismissFormSheet}
-              >
-                Back
-              </button>
-            </div>
-
             <div className={styles.formColumn}>
               <div className={styles.formHeader}>
                 <h2 className={styles.formTitle}>Send a message</h2>
+                <button
+                  type="button"
+                  className={styles.formBackScreen}
+                  data-visible={formVisible}
+                  onClick={dismissFormSheet}
+                >
+                  Back
+                </button>
               </div>
 
               <form

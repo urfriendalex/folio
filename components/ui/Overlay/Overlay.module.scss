@@ -75,7 +75,7 @@
   height: auto;
   margin: 0;
   inset: 0;
-  /* Mobile gets extra top pad in max-width rule. Desktop: align with close — see min-width block. */
+  /* Mobile reserves room for Close unless child content supplies an inline header. */
   padding: 0 0 1rem;
   border-radius: 0;
   overflow: visible;
@@ -278,6 +278,17 @@
   .surface[data-variant="immersive"] {
     padding-top: calc(var(--header-height) + 0.45rem);
     border-radius: 0;
+  }
+
+  .surface[data-variant="immersive"][data-inline-mobile-header="true"] {
+    --project-inline-header-height: var(--header-height);
+    padding-top: 0;
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .surface[data-variant="immersive"][data-inline-mobile-header="true"]
+    .closeButton[data-variant="immersive"] {
+    height: var(--project-inline-header-height);
   }
 }
 

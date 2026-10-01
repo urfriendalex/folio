@@ -11,12 +11,15 @@ type PreloaderGateProps = {
 
 export function PreloaderGate({ children }: PreloaderGateProps) {
   const [showPreloader, setShowPreloader] = useState(true);
+  const [session, setSession] = useState(0);
 
   useEffect(() => {
     const handleReplay = () => {
       const html = document.documentElement;
       html.setAttribute("data-preloader", "run");
       html.classList.add("is-loading");
+      html.classList.remove("is-preloader-exiting");
+      setSession((current) => current + 1);
       setShowPreloader(true);
     };
 
@@ -32,7 +35,9 @@ export function PreloaderGate({ children }: PreloaderGateProps) {
 
   return (
     <>
-      {showPreloader ? <Preloader onDone={handleDone} /> : null}
+      {showPreloader ? (
+        <Preloader key={session} replay={session > 0} onDone={handleDone} />
+      ) : null}
       {children}
     </>
   );

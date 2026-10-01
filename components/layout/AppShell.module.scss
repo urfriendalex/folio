@@ -13,6 +13,20 @@
   pointer-events: none;
 }
 
+/* The immersive overlay's fixed blur must sample the footer too. Keep it above
+   the footer chrome, but below the overlay itself (500) and the open navbar. */
+:global(html.is-overlay-blur-pending) .navbarFrost,
+:global(html.is-overlay-blur) .navbarFrost,
+:global(html.is-overlay-blur-closing) .navbarFrost {
+  z-index: 470;
+}
+
+/* Mobile navigation owns the 470 layer; keep its shared page blur just below it
+   so footer chrome cannot sit above the blur during the menu transition. */
+:global(html.is-nav-open) .navbarFrost {
+  z-index: 469;
+}
+
 .navbar {
   position: sticky;
   top: 0;

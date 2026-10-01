@@ -1534,7 +1534,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-crossfade={layoutEpoch > 0 ? "true" : undefined}
       data-entered={entered ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
-      data-list-layout={isList && !exitingView ? "true" : undefined}
+      data-list-layout={isList ? "true" : undefined}
       data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}
       style={{ "--preview-intro-delay": `${previewIntroDelayMs / 1000}s` } as CSSProperties}
     >

@@ -192,8 +192,9 @@
 
 .metaBlock li {
   --reveal-line-gap: 0.12em;
+  font-size: clamp(0.86rem, 0.18vw + 0.82rem, 0.92rem);
   color: var(--overlay-muted);
-  line-height: 1.45;
+  line-height: 1.42;
   transition:
     color 200ms ease,
     opacity 200ms ease;
@@ -348,8 +349,13 @@
   }
 
   .metaBlock li {
-    font-size: 0.84rem;
-    line-height: 1.34;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+  }
+
+  .metaBlock :global(.section-label) {
+    font-size: 0.58rem;
   }
 
   .metaGrid {
@@ -449,5 +455,43 @@
   .metaBlock::after {
     transform: none;
     transition: none;
+  }
+}
+
+/* Touch: replay the desktop ink hover as a slow sequential pulse. */
+@media (hover: none) {
+  .metaBlock:nth-child(1) li:nth-child(1) { --about-ink-index: 0; }
+  .metaBlock:nth-child(1) li:nth-child(2) { --about-ink-index: 1; }
+  .metaBlock:nth-child(1) li:nth-child(3) { --about-ink-index: 2; }
+  .metaBlock:nth-child(2) li:nth-child(1) { --about-ink-index: 3; }
+  .metaBlock:nth-child(2) li:nth-child(2) { --about-ink-index: 4; }
+  .metaBlock:nth-child(2) li:nth-child(3) { --about-ink-index: 5; }
+  .metaBlock:nth-child(2) li:nth-child(4) { --about-ink-index: 6; }
+  .metaBlock:nth-child(3) li:nth-child(1) { --about-ink-index: 7; }
+  .metaBlock:nth-child(3) li:nth-child(2) { --about-ink-index: 8; }
+  .metaBlock:nth-child(3) li:nth-child(3) { --about-ink-index: 9; }
+
+  .about[data-content-visible="true"] .metaBlock li {
+    animation: aboutInkCycle 16s ease-in-out infinite;
+    animation-delay: calc(var(--about-ink-index, 0) * 1.6s + 1.6s);
+  }
+}
+
+@media (hover: none) and (prefers-reduced-motion: reduce) {
+  .about[data-content-visible="true"] .metaBlock li {
+    animation: none;
+  }
+}
+
+@keyframes aboutInkCycle {
+  0%,
+  7%,
+  100% {
+    color: var(--overlay-muted);
+  }
+
+  2%,
+  5% {
+    color: var(--overlay-fg);
   }
 }

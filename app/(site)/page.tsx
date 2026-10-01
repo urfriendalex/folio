@@ -56,7 +56,7 @@ export default function Home() {
     url: SITE_URL,
     name: "Alexander Yansons",
     description:
-      "Portfolio of Alexander Yansons — custom websites, e-commerce, portfolios, and product UI for brands and teams.",
+      "Portfolio of Alexander Yansons — custom websites, e-commerce, portfolios, and product interfaces for brands and teams.",
     publisher: { "@id": `${SITE_URL}/#organization` },
     dateModified: SITE_LAST_UPDATED.toISOString(),
   };

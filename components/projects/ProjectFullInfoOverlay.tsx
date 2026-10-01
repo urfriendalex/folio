@@ -65,15 +65,6 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
     <div className={styles.root} data-content-visible={contentVisible}>
       <header className={styles.header}>
         <RevealLines
-          as="p"
-          className={styles.descriptor}
-          text={project.descriptor}
-          offset={get("descriptor")}
-          stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-          total={total}
-          visible={contentVisible}
-        />
-        <RevealLines
           as="h2"
           className={styles.title}
           text={project.title}
@@ -86,6 +77,15 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
       </header>
 
       <div className={styles.bodyScroll} data-lenis-prevent="">
+        <RevealLines
+          as="p"
+          className={`${styles.descriptor} ${styles.scrollDescriptor}`}
+          text={project.descriptor}
+          offset={get("descriptor")}
+          stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+          total={total}
+          visible={contentVisible}
+        />
         <div className={styles.sheetLayout}>
           <div className={styles.sheetIntro}>
             <RevealLines

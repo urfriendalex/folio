@@ -1,34 +1,55 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import ASCIIAnimation from "./ascii";
+import ASCIIAnimation, { ASCII_VISIBILITY_REVEAL_DURATION_MS } from "./ascii";
 import { getFrameFolderForTheme, getInitialFrameFolder } from "./frameFolder";
 import styles from "./preloader.module.scss";
 import { usePreloaderAssets } from "./usePreloaderAssets";
 
 type PreloaderProps = {
   onDone: () => void;
+  /** Play the walker through once before the overlay can close. */
+  replay?: boolean;
 };
 
 const PROGRESS_SMOOTHING = 0.08;
 const COMPLETION_COUNTUP_MS = 420;
-const HOLD_AT_100_MS = 480;
+/** The walker has already been walking through the reveal, so 100% only needs a short beat. */
+const HOLD_AT_100_MS = 360;
 const REDUCED_MOTION_COUNTUP_MS = 160;
 const REDUCED_MOTION_HOLD_MS = 160;
 const EXIT_TIMEOUT_MS = 1200;
 const ENTER_DURATION_MS = 320;
 const ASCII_SCALE = 1;
+const ASCII_FRAME_COUNT = 37;
+const ASCII_FPS = 20;
+const ASCII_LOOP_MS = (ASCII_FRAME_COUNT / ASCII_FPS) * 1000;
 
-export function Preloader({ onDone }: PreloaderProps) {
+export function Preloader({ onDone, replay = false }: PreloaderProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLSpanElement | null>(null);
+  const asciiReadyAtRef = useRef<number | null>(null);
+  const asciiRevealCompleteRef = useRef(false);
+  /** Counter never runs ahead of the glyph reveal, so fast loads still show the walker assembling. */
+  const asciiRevealProgressRef = useRef(0);
 
   const [frameFolder, setFrameFolder] = useState(getInitialFrameFolder);
   const [isAsciiReady, setIsAsciiReady] = useState(false);
   const [hasStartedAssetLoading, setHasStartedAssetLoading] = useState(false);
   const { actualProgressRef, isCompleteRef } = usePreloaderAssets(hasStartedAssetLoading);
   const handleAsciiReady = useCallback(() => {
+    if (asciiReadyAtRef.current == null) {
+      asciiReadyAtRef.current = performance.now();
+    }
+
     setIsAsciiReady(true);
+  }, []);
+  const handleAsciiRevealComplete = useCallback(() => {
+    asciiRevealCompleteRef.current = true;
+    asciiRevealProgressRef.current = 1;
+  }, []);
+  const handleAsciiRevealProgress = useCallback((progress: number) => {
+    asciiRevealProgressRef.current = progress;
   }, []);
 
   useEffect(() => {
@@ -147,6 +168,7 @@ export function Preloader({ onDone }: PreloaderProps) {
         html.classList.remove("is-loading");
         html.classList.remove("is-preloader-exiting");
         html.setAttribute("data-preloader", "skip");
+        html.setAttribute("data-preloader-ascii-revealed", "true");
 
         try {
           sessionStorage.setItem("preloaded", "true");
@@ -207,10 +229,13 @@ export function Preloader({ onDone }: PreloaderProps) {
         return;
       }
 
+      const revealCap = prefersReducedMotion ? 1 : asciiRevealProgressRef.current;
+
       if (!isCompleteRef.current) {
         completionStartedAt = null;
         heldAtCompleteSince = null;
-        displayedProgress += (actualProgressRef.current - displayedProgress) * PROGRESS_SMOOTHING;
+        const target = Math.min(actualProgressRef.current, revealCap);
+        displayedProgress += (target - displayedProgress) * PROGRESS_SMOOTHING;
         setProgressText(displayedProgress, false);
         rafId = window.requestAnimationFrame(animate);
         return;
@@ -223,9 +248,10 @@ export function Preloader({ onDone }: PreloaderProps) {
 
       const countupMs = completionDurationMs();
       const t = countupMs === 0 ? 1 : Math.min(1, (now - completionStartedAt) / countupMs);
-      displayedProgress = completionFrom + (1 - completionFrom) * easeOutCubic(t);
+      const countup = completionFrom + (1 - completionFrom) * easeOutCubic(t);
+      displayedProgress = Math.max(displayedProgress, Math.min(countup, revealCap));
 
-      if (t >= 1) {
+      if (t >= 1 && revealCap >= 1) {
         displayedProgress = 1;
         setProgressText(1, true);
 
@@ -233,7 +259,19 @@ export function Preloader({ onDone }: PreloaderProps) {
           heldAtCompleteSince = now;
         }
 
-        if (now - heldAtCompleteSince >= holdDurationMs) {
+        const replayAnchor = asciiReadyAtRef.current;
+        const replayStillPlaying =
+          replay &&
+          !prefersReducedMotion &&
+          (replayAnchor == null || now - replayAnchor < ASCII_LOOP_MS + ENTER_DURATION_MS);
+        const asciiRevealStillPlaying =
+          !prefersReducedMotion && !asciiRevealCompleteRef.current;
+
+        if (
+          now - heldAtCompleteSince >= holdDurationMs &&
+          !replayStillPlaying &&
+          !asciiRevealStillPlaying
+        ) {
           finishPreloader();
           return;
         }
@@ -261,7 +299,7 @@ export function Preloader({ onDone }: PreloaderProps) {
 
       html.classList.remove("is-preloader-exiting");
     };
-  }, [actualProgressRef, hasStartedAssetLoading, isCompleteRef, onDone]);
+  }, [actualProgressRef, hasStartedAssetLoading, isCompleteRef, onDone, replay]);
 
   return (
     <div
@@ -275,11 +313,16 @@ export function Preloader({ onDone }: PreloaderProps) {
         preClassName={styles.walker}
         frameFolder={frameFolder}
         quality="high"
-        frameCount={37}
-        fps={20}
+        frameCount={ASCII_FRAME_COUNT}
+        fps={ASCII_FPS}
         lazy={false}
         scale={ASCII_SCALE}
         onReady={handleAsciiReady}
+        visible={isAsciiReady}
+        randomVisibilityReveal
+        randomVisibilityDurationMs={ASCII_VISIBILITY_REVEAL_DURATION_MS}
+        onVisibilityRevealComplete={handleAsciiRevealComplete}
+        onVisibilityProgress={handleAsciiRevealProgress}
         ariaLabel="ASCII walking animation"
       />
       <div

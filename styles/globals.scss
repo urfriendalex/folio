@@ -95,6 +95,9 @@
   --project-toolbar-block-bg-hover: color-mix(in srgb, var(--surface-strong) 98%, var(--bg-color));
   --project-toolbar-text: var(--fg-color);
   --project-toolbar-muted: var(--muted-color);
+  /* Shared rail geometry for the project view glyphs and mobile hero ASCII. */
+  --project-view-button-frame-width: 2.6rem;
+  --project-view-glyph-rail-inset: 0.65rem;
   --project-toolbar-panel-shadow:
     0 0.85rem 2rem color-mix(in srgb, var(--fg-color) 8%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 30%, transparent);

@@ -6,6 +6,11 @@ import { useLayoutEffect, useState, type RefObject } from "react";
 
 export type PretextLinesWhiteSpace = "normal" | "pre-wrap";
 
+export type UsePretextLinesOptions = {
+  /** Keep browser-native wrapping on matching layouts so hydration cannot replace SSR line breaks. */
+  preserveNaturalWrappingMedia?: string;
+};
+
 function fallbackLines(text: string): string[] {
   return text.split("\n");
 }
@@ -55,6 +60,7 @@ export function usePretextLines(
   containerRef: RefObject<HTMLElement | null>,
   whiteSpace: PretextLinesWhiteSpace = "pre-wrap",
   enabled = true,
+  { preserveNaturalWrappingMedia }: UsePretextLinesOptions = {},
 ): string[] {
   const normalizedText = lockInternalHyphenWrapping(text);
   const [lines, setLines] = useState<string[]>(() => fallbackLines(normalizedText));
@@ -69,17 +75,33 @@ export function usePretextLines(
       return undefined;
     }
 
+    const preserveNaturalWrapping = preserveNaturalWrappingMedia
+      ? window.matchMedia(preserveNaturalWrappingMedia)
+      : null;
+    const commitLines = (nextLines: string[]) =>
+      setLines((currentLines) =>
+        currentLines.length === nextLines.length &&
+        currentLines.every((line, index) => line === nextLines[index])
+          ? currentLines
+          : nextLines,
+      );
+
     const update = () => {
+      if (preserveNaturalWrapping?.matches) {
+        commitLines(fallbackLines(normalizedText));
+        return;
+      }
+
       const cs = getComputedStyle(el);
       const font = cs.font;
       const width = pretextMaxWidthPx(contentWidthPx(el, cs), cs);
 
       if (width <= 1 || !font) {
-        setLines(fallbackLines(normalizedText));
+        commitLines(fallbackLines(normalizedText));
         return;
       }
 
-      setLines(
+      commitLines(
         layoutLinesWordWrap(normalizedText, width, font, whiteSpace, textIndentPx(cs)),
       );
     };
@@ -88,10 +110,12 @@ export function usePretextLines(
 
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    preserveNaturalWrapping?.addEventListener("change", update);
     return () => {
       ro.disconnect();
+      preserveNaturalWrapping?.removeEventListener("change", update);
     };
-  }, [normalizedText, whiteSpace, enabled, containerRef]);
+  }, [normalizedText, whiteSpace, enabled, containerRef, preserveNaturalWrappingMedia]);
 
   useLayoutEffect(() => {
     if (enabled) {

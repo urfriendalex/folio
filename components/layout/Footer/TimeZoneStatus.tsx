@@ -16,6 +16,8 @@ export type TimeZoneStatusSnapshot = {
   warsawClockLine: string;
   /** `HH:mm:ss` + short zone (e.g. `EST`) — ticks in sync with studio clock */
   visitorClockLine: string;
+  /** `4:28 pm CEST` — same shape as the visitor clock in the footer */
+  warsawShortClock: string;
   visitorTimeZone: string;
   offsetLabel: string;
   offsetMinutes: number;
@@ -71,21 +73,41 @@ function formatVisitorClockLine(date: Date, visitorTimeZone: string) {
   return tzShort ? `${time} ${tzShort}` : time;
 }
 
+export function formatZoneMeta(timeZone: string, offsetLabel: string) {
+  return offsetLabel ? `${timeZone} · ${offsetLabel}` : timeZone;
+}
+
 function formatOffsetLabel(diffMinutes: number) {
   if (diffMinutes === 0) {
-    return "Same time as Warsaw";
+    return "";
   }
 
-  const sign = diffMinutes > 0 ? "+" : "-";
+  const relation = diffMinutes > 0 ? "ahead of Warsaw" : "behind Warsaw";
   const absoluteMinutes = Math.abs(diffMinutes);
   const hours = Math.floor(absoluteMinutes / 60);
   const minutes = absoluteMinutes % 60;
+  const hourLabel = hours === 1 ? "hour" : "hours";
+  const minuteLabel = minutes === 1 ? "minute" : "minutes";
 
-  if (minutes === 0) {
-    return `${sign}${hours}h from Warsaw`;
+  if (hours === 0) {
+    return `${minutes} ${minuteLabel} ${relation}`;
   }
 
-  return `${sign}${hours}h ${minutes}m from Warsaw`;
+  if (minutes === 0) {
+    return `${hours} ${hourLabel} ${relation}`;
+  }
+
+  return `${hours} ${hourLabel} ${minutes} ${minuteLabel} ${relation}`;
+}
+
+function formatShortClock(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).format(date);
 }
 
 function getPlaceholderSnapshot(): TimeZoneStatusSnapshot {
@@ -96,6 +118,7 @@ function getPlaceholderSnapshot(): TimeZoneStatusSnapshot {
     visitorDateTime: PLACEHOLDER_DATE_TIME,
     warsawClockLine: `${PLACEHOLDER_TIME} WAW`,
     visitorClockLine: PLACEHOLDER_TIME,
+    warsawShortClock: PLACEHOLDER_TIME,
     visitorTimeZone: "Resolving local timezone...",
     offsetLabel: "Comparing with Warsaw...",
     offsetMinutes: 0,
@@ -146,6 +169,7 @@ export function useTimeZoneStatus(): TimeZoneStatusSnapshot {
     visitorDateTime: formatDateTime(now, visitorTimeZone),
     warsawClockLine: formatWarsawClockLine(now),
     visitorClockLine: formatVisitorClockLine(now, visitorTimeZone),
+    warsawShortClock: formatShortClock(now, WARSAW_TIME_ZONE),
     visitorTimeZone,
     offsetLabel: formatOffsetLabel(offsetMinutes),
     offsetMinutes,

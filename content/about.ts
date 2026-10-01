@@ -26,7 +26,7 @@ export const AboutOverlayContent = {
     {
       label: "(Care about)",
       items: [
-        "Clear hierarchy and thoughtful UX",
+        "Clear hierarchy and thoughtful UX, down to the details",
         "Motion with a purpose",
         "Work that holds up after launch",
       ],

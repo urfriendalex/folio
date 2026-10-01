@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 type Quality = "low" | "medium" | "high";
@@ -71,6 +72,17 @@ interface ASCIIAnimationProps {
   randomVisibilityReveal?: boolean;
   /** Duration for random enter visibility reveal (ms). Exit runs slightly faster. */
   randomVisibilityDurationMs?: number;
+  /** Called when a visible random-cell reveal settles, including immediate/reduced-motion paths. */
+  onVisibilityRevealComplete?: () => void;
+  /** Reports the random-cell visibility progress (0–1) on every reveal tick. */
+  onVisibilityProgress?: (progress: number) => void;
+  /**
+   * Text frames: dissolve glyphs with the same random cell mask as the container scrolls up past the
+   * top of the viewport, and bring them back when it scrolls back in.
+   */
+  scrollDissolve?: boolean;
+  /** Contain mode: pin the art's right edge to the container's right edge instead of centering it. */
+  anchorEnd?: boolean;
   /** Color frames: skip solid background so empty areas stay transparent (overrides meta `bgMode` when true). */
   transparentCanvasBackground?: boolean;
   /**
@@ -78,7 +90,26 @@ interface ASCIIAnimationProps {
    * Lets the asset load off-hover while avoiding repeated decode/network work on each hover.
    */
   revealActive?: boolean;
+  /** Add a touch-only dither ripple by temporarily masking source glyphs in the text frame. */
+  touchWave?: boolean;
 }
+
+export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
+
+/**
+ * Scroll dissolve starts once the art's top edge rises into this share of the viewport (or on the first
+ * scrolled pixel when it already starts above that line)…
+ */
+const SCROLL_DISSOLVE_START_VIEWPORT = 0.3;
+/** …and finishes when this share of the art has scrolled past the top of the viewport. */
+const SCROLL_DISSOLVE_END_FRACTION = 0.35;
+/** Quantize scroll progress so scrolling doesn't re-mask the frame on every pixel. */
+const SCROLL_DISSOLVE_STEPS = 48;
+/**
+ * Timed reveals re-mask the frame at most this many times per pass: each step still pops a random scatter
+ * of glyphs, but the large <pre> is re-laid out ~40× instead of on every animation frame.
+ */
+const VISIBILITY_REVEAL_STEPS = 40;
 
 const FALLBACK_ORDER: Record<Quality, Quality[]> = {
   low: ["low", "high", "medium"],
@@ -90,6 +121,29 @@ const CONTAIN_SCALE_FACTOR = 1;
 const FONT_SIZE = 10;
 const FONT_FAMILY = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace";
 const FRAME_FETCH_ATTEMPTS = 2;
+const TOUCH_WAVE_DURATION_MS = 600;
+const TOUCH_WAVE_OVERSHOOT_MIN = 18;
+const TOUCH_WAVE_OVERSHOOT_MAX = 32;
+const TOUCH_WAVE_OVERSHOOT_FACTOR = 0.12;
+const TOUCH_WAVE_HALF_WIDTH = 24;
+const TOUCH_WAVE_EDGE_JITTER = 8;
+const TOUCH_WAVE_MAX_HALF_WIDTH = TOUCH_WAVE_HALF_WIDTH + TOUCH_WAVE_EDGE_JITTER;
+const TOUCH_WAVE_DENSITY = 0.86;
+const TOUCH_WAVE_CLEANUP_MS = TOUCH_WAVE_DURATION_MS + 64;
+
+type TouchWave = {
+  id: number;
+  startedAt: number;
+  radius: number;
+  touchX: number;
+  touchY: number;
+  cellWidth: number;
+  cellHeight: number;
+  columnCount: number;
+  rowOffsets: number[];
+  rowLengths: number[];
+  seed: number;
+};
 
 async function fetchFrame(url: string): Promise<Response> {
   let lastResponse: Response | null = null;
@@ -204,7 +258,7 @@ function decodeColorFrame(meta: ColorAsciiMeta, buffer: Uint8Array) {
 }
 
 /** Deterministic hash in [0, 1) for cell index + frame — used for random-order glyph reveal. */
-function cellRevealHash01(cellIndex: number, frameKey: number): number {
+export function cellRevealHash01(cellIndex: number, frameKey: number): number {
   let h = Math.imul(cellIndex ^ frameKey, 0x9e3779b9) >>> 0;
   h ^= h >>> 16;
   h = Math.imul(h, 0x85ebca6b);
@@ -212,8 +266,31 @@ function cellRevealHash01(cellIndex: number, frameKey: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-function easeOutQuart(value: number): number {
-  return 1 - (1 - value) ** 4;
+const REVEAL_THRESHOLD_CACHE_LIMIT = 6;
+const revealThresholdCache = new Map<number, Float64Array>();
+
+/** Per-cell reveal thresholds for a seed, computed once and reused by every masked render. */
+function getRevealThresholds(cellCount: number, frameKey: number): Float64Array {
+  const cached = revealThresholdCache.get(frameKey);
+  if (cached && cached.length >= cellCount) {
+    return cached;
+  }
+
+  const thresholds = new Float64Array(cellCount);
+  for (let index = 0; index < cellCount; index += 1) {
+    thresholds[index] = cellRevealHash01(index, frameKey);
+  }
+
+  revealThresholdCache.delete(frameKey);
+  revealThresholdCache.set(frameKey, thresholds);
+  if (revealThresholdCache.size > REVEAL_THRESHOLD_CACHE_LIMIT) {
+    const oldest = revealThresholdCache.keys().next().value;
+    if (oldest !== undefined) {
+      revealThresholdCache.delete(oldest);
+    }
+  }
+
+  return thresholds;
 }
 
 function maskTextFrame(frameText: string, revealProgress: number, frameKey: number): string {
@@ -225,21 +302,156 @@ function maskTextFrame(frameText: string, revealProgress: number, frameKey: numb
     return frameText.replace(/[^\r\n]/g, " ");
   }
 
+  const thresholds = getRevealThresholds(frameText.length, frameKey);
+  const out = new Array<string>(frameText.length);
   let cellIndex = 0;
-  let masked = "";
 
   for (let index = 0; index < frameText.length; index += 1) {
-    const char = frameText[index] ?? "";
-    if (char === "\r" || char === "\n") {
-      masked += char;
+    const code = frameText.charCodeAt(index);
+    if (code === 10 || code === 13) {
+      out[index] = code === 10 ? "\n" : "\r";
       continue;
     }
 
-    masked += cellRevealHash01(cellIndex, frameKey) <= revealProgress ? char : " ";
+    out[index] = thresholds[cellIndex] <= revealProgress ? frameText[index] : " ";
     cellIndex += 1;
   }
 
-  return masked;
+  return out.join("");
+}
+
+function applyTouchDitherRange(
+  output: string[],
+  frameText: string,
+  touchWave: TouchWave,
+  row: number,
+  rowOffset: number,
+  rowDistance: number,
+  waveRadius: number,
+  innerRadius: number,
+  firstColumn: number,
+  lastColumn: number,
+): void {
+  for (let column = firstColumn; column <= lastColumn; column += 1) {
+    const textIndex = rowOffset + column;
+    if (frameText.charCodeAt(textIndex) <= 32) {
+      continue;
+    }
+
+    const dx = (column + 0.5) * touchWave.cellWidth - touchWave.touchX;
+    const distance = Math.sqrt(dx * dx + rowDistance * rowDistance);
+    if (distance < innerRadius || distance > waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH) {
+      continue;
+    }
+
+    const cellIndex = row * touchWave.columnCount + column;
+    const halfWidth =
+      TOUCH_WAVE_HALF_WIDTH +
+      Math.round((cellRevealHash01(cellIndex, touchWave.seed + 1) - 0.5) * TOUCH_WAVE_EDGE_JITTER * 2);
+    const edgeProgress = 1 - Math.abs(distance - waveRadius) / halfWidth;
+    if (edgeProgress <= 0) {
+      continue;
+    }
+
+    const easedEdge = edgeProgress * edgeProgress * (3 - 2 * edgeProgress);
+    if (cellRevealHash01(cellIndex, touchWave.seed + 2) < TOUCH_WAVE_DENSITY * easedEdge) {
+      output[textIndex] = " ";
+    }
+  }
+}
+
+/** Apply overlapping, soft-edged dither rings directly to the source string. */
+function applyTouchDitherFrame(
+  frameText: string,
+  touchWaves: TouchWave[],
+  now: number,
+): string {
+  if (!touchWaves.length) {
+    return frameText;
+  }
+
+  const output = frameText.split("");
+  for (const touchWave of touchWaves) {
+    const elapsed = now - touchWave.startedAt;
+    if (elapsed < 0 || elapsed >= TOUCH_WAVE_DURATION_MS) {
+      continue;
+    }
+
+    const progress = elapsed / TOUCH_WAVE_DURATION_MS;
+    const easedProgress = 1 - (1 - progress) ** 2;
+    const waveRadius = touchWave.radius * easedProgress;
+    const innerRadius = Math.max(0, waveRadius - TOUCH_WAVE_MAX_HALF_WIDTH);
+    const outerRadius = waveRadius + TOUCH_WAVE_MAX_HALF_WIDTH;
+    for (let row = 0; row < touchWave.rowLengths.length; row += 1) {
+      const rowLength = touchWave.rowLengths[row] ?? 0;
+      const rowOffset = touchWave.rowOffsets[row] ?? 0;
+      const rowDistance = (row + 0.5) * touchWave.cellHeight - touchWave.touchY;
+      if (!rowLength || Math.abs(rowDistance) > outerRadius) {
+        continue;
+      }
+
+      const outerX = Math.sqrt(outerRadius * outerRadius - rowDistance * rowDistance);
+      const firstColumn = Math.max(0, Math.ceil((touchWave.touchX - outerX) / touchWave.cellWidth - 0.5));
+      const lastColumn = Math.min(
+        rowLength - 1,
+        Math.floor((touchWave.touchX + outerX) / touchWave.cellWidth - 0.5),
+      );
+      if (firstColumn > lastColumn) {
+        continue;
+      }
+
+      if (innerRadius > Math.abs(rowDistance)) {
+        const innerX = Math.sqrt(innerRadius * innerRadius - rowDistance * rowDistance);
+        const leftLastColumn = Math.min(
+          lastColumn,
+          Math.floor((touchWave.touchX - innerX) / touchWave.cellWidth - 0.5),
+        );
+        const rightFirstColumn = Math.max(
+          firstColumn,
+          Math.ceil((touchWave.touchX + innerX) / touchWave.cellWidth - 0.5),
+        );
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          firstColumn,
+          leftLastColumn,
+        );
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          rightFirstColumn,
+          lastColumn,
+        );
+      } else {
+        applyTouchDitherRange(
+          output,
+          frameText,
+          touchWave,
+          row,
+          rowOffset,
+          rowDistance,
+          waveRadius,
+          innerRadius,
+          firstColumn,
+          lastColumn,
+        );
+      }
+    }
+  }
+
+  return output.join("");
 }
 
 type DrawColorFrameOptions = {
@@ -325,8 +537,13 @@ export default function ASCIIAnimation({
   visible = true,
   randomVisibilityReveal = false,
   randomVisibilityDurationMs = 520,
+  onVisibilityRevealComplete,
+  onVisibilityProgress,
+  scrollDissolve = false,
+  anchorEnd = false,
   transparentCanvasBackground = false,
   revealActive = true,
+  touchWave = false,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -334,16 +551,22 @@ export default function ASCIIAnimation({
   const [format, setFormat] = useState<"text" | "color" | null>(providedFrames ? "text" : null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
-  const [isIntersecting, setIsIntersecting] = useState(!lazy);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [isDocumentVisible, setIsDocumentVisible] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [scaleValue, setScaleValue] = useState(scale);
   const [scaled, setScaled] = useState(false);
   const [visibilityProgress, setVisibilityProgress] = useState(visible ? 1 : 0);
   const [visibilitySeed, setVisibilitySeed] = useState(0);
+  const [scrollVisibility, setScrollVisibility] = useState(1);
+  const [activeTouchWaves, setActiveTouchWaves] = useState<TouchWave[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const touchWaveTimeoutsRef = useRef<Map<number, number>>(new Map());
+  const touchWaveIdRef = useRef(0);
+  const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const fullLoadTriggered = useRef(false);
   const resolvedSource = useRef<ResolvedSource | null>(null);
   const previewFrameRef = useRef<string | Uint8Array | null>(null);
@@ -352,6 +575,7 @@ export default function ASCIIAnimation({
   const visibilityRafRef = useRef<number>(0);
   const visibilityProgressRef = useRef(visible ? 1 : 0);
   const visibilitySeedRef = useRef(0);
+  const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
 
   const notifyReady = useCallback(() => {
     if (hasNotifiedReadyRef.current) {
@@ -361,6 +585,140 @@ export default function ASCIIAnimation({
     hasNotifiedReadyRef.current = true;
     onReady?.();
   }, [onReady]);
+
+  const playTouchWave = useCallback(
+    (clientX: number, clientY: number) => {
+      if (
+        !touchWave ||
+        !visible ||
+        format !== "text" ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return;
+      }
+
+      const container = containerRef.current;
+      const pre = preRef.current;
+      if (!container || !pre) {
+        return;
+      }
+
+      const artRect = pre.getBoundingClientRect();
+      if (
+        artRect.width <= 0 ||
+        artRect.height <= 0 ||
+        clientX < artRect.left ||
+        clientX > artRect.right ||
+        clientY < artRect.top ||
+        clientY > artRect.bottom
+      ) {
+        return;
+      }
+
+      const sourceText = pre.textContent ?? "";
+      const lines = sourceText.replaceAll("\r", "").split("\n");
+      const columnCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
+      if (!columnCount || !lines.length) {
+        return;
+      }
+
+      const rowOffsets = new Array<number>(lines.length);
+      const rowLengths = lines.map((line) => line.length);
+      let textIndex = 0;
+      for (let row = 0; row < lines.length; row += 1) {
+        rowOffsets[row] = textIndex;
+        textIndex += rowLengths[row] ?? 0;
+        if (row < lines.length - 1 && sourceText[textIndex] === "\r") {
+          textIndex += 1;
+        }
+        if (row < lines.length - 1 && sourceText[textIndex] === "\n") {
+          textIndex += 1;
+        }
+      }
+
+      const cellWidth = artRect.width / columnCount;
+      const cellHeight = artRect.height / lines.length;
+      const touchX = clientX - artRect.left;
+      const touchY = clientY - artRect.top;
+      const farthestCorner = Math.max(
+        Math.hypot(touchX, touchY),
+        Math.hypot(artRect.width - touchX, touchY),
+        Math.hypot(touchX, artRect.height - touchY),
+        Math.hypot(artRect.width - touchX, artRect.height - touchY),
+      );
+      const overshoot = Math.max(
+        TOUCH_WAVE_OVERSHOOT_MIN,
+        Math.min(
+          TOUCH_WAVE_OVERSHOOT_MAX,
+          Math.min(artRect.width, artRect.height) * TOUCH_WAVE_OVERSHOOT_FACTOR,
+        ),
+      );
+      const radius = farthestCorner + overshoot;
+      const waveId = touchWaveIdRef.current + 1;
+      const seed = (Math.floor(clientX * 31) ^ Math.floor(clientY * 17) ^ waveId) >>> 0;
+      touchWaveIdRef.current = waveId;
+      const nextTouchWave = {
+        id: waveId,
+        startedAt: performance.now(),
+        radius,
+        touchX,
+        touchY,
+        cellWidth,
+        cellHeight,
+        columnCount,
+        rowOffsets,
+        rowLengths,
+        seed,
+      };
+      setActiveTouchWaves((activeWaves) => [...activeWaves, nextTouchWave]);
+      const timeoutId = window.setTimeout(() => {
+        setActiveTouchWaves((activeWaves) => activeWaves.filter((wave) => wave.id !== waveId));
+        touchWaveTimeoutsRef.current.delete(waveId);
+      }, TOUCH_WAVE_CLEANUP_MS);
+      touchWaveTimeoutsRef.current.set(waveId, timeoutId);
+    },
+    [format, touchWave, visible],
+  );
+
+  const handleTouchPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!touchWave || (event.pointerType !== "touch" && event.pointerType !== "pen")) {
+        return;
+      }
+      touchStartRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    },
+    [touchWave],
+  );
+
+  const handleTouchPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    if (
+      start?.pointerId === event.pointerId &&
+      Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+    ) {
+      touchStartRef.current = null;
+    }
+  }, []);
+
+  const handleTouchPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (
+        !start ||
+        start.pointerId !== event.pointerId ||
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+      ) {
+        return;
+      }
+      playTouchWave(event.clientX, event.clientY);
+    },
+    [playTouchWave],
+  );
+
+  const handleTouchPointerCancel = useCallback(() => {
+    touchStartRef.current = null;
+  }, []);
 
   const frameFiles = useMemo(
     () =>
@@ -437,7 +795,6 @@ export default function ASCIIAnimation({
     setMeta(null);
     setFormat(providedFrames ? "text" : null);
     setCurrentFrameIndex(0);
-    setIsIntersecting(!lazy);
     setIsLoading(!providedFrames);
     setScaled(false);
 
@@ -520,7 +877,15 @@ export default function ASCIIAnimation({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !lazy) {
+    if (!container) {
+      return;
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsIntersecting(true);
+      if (lazy && !fullLoadTriggered.current) {
+        void loadAllFrames();
+      }
       return;
     }
 
@@ -529,7 +894,7 @@ export default function ASCIIAnimation({
         entries.forEach((entry) => {
           setIsIntersecting(entry.isIntersecting);
 
-          if (entry.isIntersecting && !fullLoadTriggered.current) {
+          if (lazy && entry.isIntersecting && !fullLoadTriggered.current) {
             void loadAllFrames();
           }
         });
@@ -544,16 +909,103 @@ export default function ASCIIAnimation({
     };
   }, [lazy, loadAllFrames]);
 
-  const shouldPlay = isIntersecting && (!playOnHover || isHovered) && !paused;
+  useEffect(() => {
+    const updateDocumentVisibility = () => setIsDocumentVisible(!document.hidden);
+    updateDocumentVisibility();
+    document.addEventListener("visibilitychange", updateDocumentVisibility);
+    return () => document.removeEventListener("visibilitychange", updateDocumentVisibility);
+  }, []);
+
+  const effectiveVisibility = visibilityProgress * (scrollDissolve ? scrollVisibility : 1);
+  const usesVisibilityMask = randomVisibilityReveal || (scrollDissolve && scrollVisibility < 1);
+  /** Keep walking while glyphs dissolve out; only stop once nothing is left on screen. */
+  const isDissolvingOut = usesVisibilityMask && !visible && effectiveVisibility > 0;
+  const hiddenByMask = usesVisibilityMask && effectiveVisibility <= 0;
+  const shouldPlay =
+    isIntersecting &&
+    isDocumentVisible &&
+    !hiddenByMask &&
+    (((!playOnHover || isHovered) && !paused) || isDissolvingOut);
   const totalFrames = format === "color" ? colorFrames.length : frames.length;
-  const currentTextFrame = frames[currentFrameIndex] || frames[0] || "";
   const maskedTextFrame = useMemo(() => {
-    if (format !== "text" || !randomVisibilityReveal) {
+    if (format !== "text" || !usesVisibilityMask) {
       return currentTextFrame;
     }
 
-    return maskTextFrame(currentTextFrame, visibilityProgress, visibilitySeed);
-  }, [currentTextFrame, format, randomVisibilityReveal, visibilityProgress, visibilitySeed]);
+    return maskTextFrame(currentTextFrame, effectiveVisibility, visibilitySeed);
+  }, [currentTextFrame, effectiveVisibility, format, usesVisibilityMask, visibilitySeed]);
+  const touchWaveText = useMemo(
+    () => applyTouchDitherFrame(maskedTextFrame, activeTouchWaves, performance.now()),
+    [activeTouchWaves, maskedTextFrame],
+  );
+
+  useEffect(() => {
+    if (!scrollDissolve) {
+      setScrollVisibility(1);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let rafId = 0;
+    let restingTop = 0;
+    let height = 0;
+
+    // Layout is read only when it can change; the scroll path below never forces layout.
+    const measureLayout = () => {
+      const rect = container.getBoundingClientRect();
+      restingTop = rect.top + window.scrollY;
+      height = rect.height;
+    };
+
+    const apply = () => {
+      rafId = 0;
+      if (height <= 0) {
+        return;
+      }
+
+      const top = restingTop - window.scrollY;
+      const startTop = Math.min(window.innerHeight * SCROLL_DISSOLVE_START_VIEWPORT, restingTop);
+      const endTop = -height * SCROLL_DISSOLVE_END_FRACTION;
+      const raw = Math.min(1, Math.max(0, (top - endTop) / (startTop - endTop)));
+      const next = reducedMotion
+        ? (raw >= 0.5 ? 1 : 0)
+        : Math.round(raw * SCROLL_DISSOLVE_STEPS) / SCROLL_DISSOLVE_STEPS;
+
+      setScrollVisibility(next);
+    };
+
+    const schedule = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(apply);
+      }
+    };
+
+    const remeasure = () => {
+      measureLayout();
+      schedule();
+    };
+
+    measureLayout();
+    apply();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", remeasure);
+    // Content above (fonts, reveals, images) can shift the art without resizing it.
+    const resizeObserver = new ResizeObserver(remeasure);
+    resizeObserver.observe(container);
+    resizeObserver.observe(document.body);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", remeasure);
+      resizeObserver.disconnect();
+    };
+  }, [scrollDissolve, isLoading]);
 
   useEffect(() => {
     window.cancelAnimationFrame(visibilityRafRef.current);
@@ -563,6 +1015,10 @@ export default function ASCIIAnimation({
     if (!randomVisibilityReveal) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -570,6 +1026,10 @@ export default function ASCIIAnimation({
     if (reducedMotion) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
@@ -577,12 +1037,19 @@ export default function ASCIIAnimation({
     if (Math.abs(startProgress - target) < 0.001) {
       visibilityProgressRef.current = target;
       setVisibilityProgress(target);
+      onVisibilityProgress?.(target);
+      if (visible) {
+        onVisibilityRevealComplete?.();
+      }
       return;
     }
 
-    const nextSeed = visibilitySeedRef.current + 1;
-    visibilitySeedRef.current = nextSeed;
-    setVisibilitySeed(nextSeed);
+    // Re-roll the cell order only from a settled state; reversing mid-way keeps the same glyphs.
+    if (startProgress <= 0.001 || startProgress >= 0.999) {
+      const nextSeed = visibilitySeedRef.current + 1;
+      visibilitySeedRef.current = nextSeed;
+      setVisibilitySeed(nextSeed);
+    }
 
     const durationBase = Math.max(120, randomVisibilityDurationMs);
     const duration = target > startProgress
@@ -593,14 +1060,17 @@ export default function ASCIIAnimation({
     const tick = () => {
       const elapsed = performance.now() - start;
       const progress = Math.min(1, elapsed / duration);
-      const nextValue =
-        startProgress + (target - startProgress) * easeOutQuart(progress);
+      // A linear timeline keeps each cell's randomized threshold evenly staggered.
+      const nextValue = startProgress + (target - startProgress) * progress;
 
       visibilityProgressRef.current = nextValue;
-      setVisibilityProgress(nextValue);
+      setVisibilityProgress(Math.round(nextValue * VISIBILITY_REVEAL_STEPS) / VISIBILITY_REVEAL_STEPS);
+      onVisibilityProgress?.(nextValue);
 
       if (progress < 1) {
         visibilityRafRef.current = window.requestAnimationFrame(tick);
+      } else if (target === 1) {
+        onVisibilityRevealComplete?.();
       }
     };
 
@@ -609,7 +1079,13 @@ export default function ASCIIAnimation({
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
     };
-  }, [randomVisibilityDurationMs, randomVisibilityReveal, visible]);
+  }, [
+    onVisibilityProgress,
+    onVisibilityRevealComplete,
+    randomVisibilityDurationMs,
+    randomVisibilityReveal,
+    visible,
+  ]);
 
   useEffect(() => {
     if (totalFrames <= 1 || !shouldPlay) {
@@ -755,8 +1231,11 @@ export default function ASCIIAnimation({
   ]);
 
   useEffect(() => {
+    const timeouts = touchWaveTimeoutsRef.current;
     return () => {
       window.cancelAnimationFrame(visibilityRafRef.current);
+      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      timeouts.clear();
     };
   }, []);
 
@@ -814,7 +1293,9 @@ export default function ASCIIAnimation({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [colorFrames.length, currentFrameIndex, currentTextFrame, format, meta, scale, scaled, fillParent]);
+    // Every frame of a sequence shares one size and the observers catch real resizes, so this re-runs
+    // only when frames load or the format changes — not on each animation tick.
+  }, [colorFrames.length, frames.length, format, meta, scale, scaled, fillParent]);
 
   if (isLoading && !frames.length && !colorFrames.length) {
     return <div ref={containerRef} className={className} aria-hidden="true" />;
@@ -829,7 +1310,10 @@ export default function ASCIIAnimation({
   const containVisible = !fillParent && scaled;
 
   const sharedStyleContain = {
-    transform: `translate3d(-50%, -50%, 0) scale(${scaleValue})`,
+    ...(anchorEnd
+      ? { left: "auto", right: 0, transformOrigin: "100% 50%" }
+      : {}),
+    transform: `translate3d(${anchorEnd ? "0" : "-50%"}, -50%, 0) scale(${scaleValue})`,
     opacity: containVisible ? 1 : 0,
     transition: "opacity 0.2s ease-out",
   } as const;
@@ -856,6 +1340,10 @@ export default function ASCIIAnimation({
       {...(ariaLabel ? { role: "img", "aria-label": ariaLabel } : {})}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onPointerDown={touchWave ? handleTouchPointerDown : undefined}
+      onPointerMove={touchWave ? handleTouchPointerMove : undefined}
+      onPointerUp={touchWave ? handleTouchPointerUp : undefined}
+      onPointerCancel={touchWave ? handleTouchPointerCancel : undefined}
     >
       {showFrameCounter ? (
         <div>
@@ -908,7 +1396,7 @@ export default function ASCIIAnimation({
                 }
           }
         >
-          {maskedTextFrame}
+          {touchWaveText}
         </pre>
       )}
     </div>

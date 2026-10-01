@@ -598,6 +598,20 @@
     padding-inline: var(--content-padding-inline);
   }
 
+  /* Shell padding flips with the incoming view. Hold the fading view on its old inset so the change isn't a visible jump. */
+  .page:not([data-list-layout="true"]) .table[data-outgoing="true"] {
+    inset-inline: var(--bleed);
+  }
+
+  .page[data-list-layout="true"] .grid[data-outgoing="true"] {
+    inset-inline: var(--content-padding-inline);
+  }
+
+  .page:has(.table[data-outgoing="true"]),
+  .page:has(.grid[data-outgoing="true"]) {
+    overflow-x: clip;
+  }
+
   .header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
