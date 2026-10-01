@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import {
   useCallback,
   useEffect,
@@ -39,6 +40,7 @@ type ProjectMediaProps = {
 
 type UseIntersectionOptions = {
   enabled?: boolean;
+  rootMargin?: string;
 };
 
 /** Keep video observers cheap; we only need enter/exit state for mount/playback. */
@@ -46,7 +48,7 @@ const VIEWPORT_THRESHOLD_STEPS = [0] as const;
 
 function useIntersectionState<T extends HTMLElement>(
   ref: RefObject<T | null>,
-  { enabled = true }: UseIntersectionOptions,
+  { enabled = true, rootMargin = "0px" }: UseIntersectionOptions,
 ) {
   const [intersecting, setIntersecting] = useState(false);
   const [hasIntersected, setHasIntersected] = useState(false);
@@ -70,12 +72,12 @@ function useIntersectionState<T extends HTMLElement>(
           setHasIntersected(true);
         }
       },
-      { threshold: [...VIEWPORT_THRESHOLD_STEPS] },
+      { threshold: [...VIEWPORT_THRESHOLD_STEPS], rootMargin },
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [enabled, ref]);
+  }, [enabled, ref, rootMargin]);
 
   return {
     hasIntersected: enabled ? hasIntersected : false,
@@ -140,8 +142,6 @@ function reducedMotionServerSnapshot() {
   return false;
 }
 
-const POSTER_FALLBACK_MS = 900;
-
 function whenVideoFramePainted(video: HTMLVideoElement, onFrame: () => void) {
   if (typeof video.requestVideoFrameCallback === "function") {
     video.requestVideoFrameCallback(() => {
@@ -157,7 +157,6 @@ async function ensureVideoPlayback(video: HTMLVideoElement) {
   video.muted = true;
   video.defaultMuted = true;
   video.playsInline = true;
-  video.autoplay = true;
 
   try {
     await video.play();
@@ -213,22 +212,24 @@ function ProjectMediaInner({
     reducedMotionServerSnapshot,
   );
   const mountVideoEager = media.kind === "video" && (loading === "eager" || imagePreload);
+  const preloaderComplete = usePreloaderComplete();
   const {
-    hasIntersected: hasMountedVideo,
+    hasIntersected: hasBeenVisible,
     intersecting: isInViewport,
   } = useIntersectionState(rootRef, {
-    enabled: media.kind === "video" && !reducedMotion && !mountVideoEager,
+    enabled: media.kind === "video" && !reducedMotion,
+  });
+  const { hasIntersected: hasPreparedVideo } = useIntersectionState(rootRef, {
+    enabled: media.kind === "video" && !reducedMotion && !mountVideoEager && preloaderComplete,
+    rootMargin: "0px 0px 600px 0px",
   });
   const [assetReady, setAssetReady] = useState(() => hasLoadedProjectMediaSource(activeAsset.src));
   const [posterReady, setPosterReady] = useState(() => (
     hasLoadedProjectMediaSource(activeAsset.poster)
   ));
   const [videoReady, setVideoReady] = useState(false);
-  const [posterFallback, setPosterFallback] = useState(false);
-  const showVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasMountedVideo);
-  const holdPosterForMotion = media.kind === "video" && reveal !== "instant" && !reducedMotion;
-  const posterVisible = posterReady && (!holdPosterForMotion || posterFallback);
-  const ready = media.kind === "video" ? posterVisible || videoReady : assetReady;
+  const showVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasPreparedVideo || hasBeenVisible);
+  const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
 
   useEffect(() => {
     if (!showVideo) {
@@ -241,26 +242,14 @@ function ProjectMediaInner({
       return undefined;
     }
 
-    if (mountVideoEager || isInViewport) {
+    if (isInViewport) {
       void ensureVideoPlayback(video);
     } else {
       video.pause();
     }
 
-    return undefined;
-  }, [isInViewport, mountVideoEager, showVideo]);
-
-  useEffect(() => {
-    if (media.kind !== "video" || reducedMotion || reveal === "instant" || videoReady) {
-      return undefined;
-    }
-
-    const id = window.setTimeout(() => {
-      setPosterFallback(true);
-    }, POSTER_FALLBACK_MS);
-
-    return () => window.clearTimeout(id);
-  }, [media.kind, reducedMotion, reveal, videoReady]);
+    return () => video.pause();
+  }, [isInViewport, showVideo]);
 
   const markVideoReady = useCallback((video: HTMLVideoElement) => {
     if (videoReadyOnceRef.current) {
@@ -312,8 +301,6 @@ function ProjectMediaInner({
       data-media-height={activeAsset.height}
       data-reveal={reveal}
       data-video-ready={videoReady ? "true" : "false"}
-      data-hold-poster={holdPosterForMotion ? "true" : undefined}
-      data-poster-fallback={posterFallback ? "true" : undefined}
     >
       <ProjectMediaPlaceholderGrid
         grid={placeholderGrid}
@@ -350,10 +337,8 @@ function ProjectMediaInner({
                   ref={videoRef}
                   className={styles.video}
                   src={activeAsset.src}
-                  poster={holdPosterForMotion ? undefined : activeAsset.poster}
                   muted
                   playsInline
-                  autoPlay
                   preload="auto"
                   loop={media.loop !== false}
                   disablePictureInPicture
