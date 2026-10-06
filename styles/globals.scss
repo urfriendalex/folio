@@ -5,6 +5,10 @@
 }
 
 :root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --project-media-video-fade-duration: 200ms;
+  --project-media-grid-fade-duration: 260ms;
+  --project-media-grid-trail-duration: 640ms;
   --font-body-stack: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
   --font-mono-stack: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
   --font-pixel-stack: var(--font-geist-pixel-grid), monospace;

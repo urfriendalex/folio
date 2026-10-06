@@ -12,13 +12,15 @@
   background: var(--project-media-grid);
   opacity: 1;
   visibility: visible;
-  transition: opacity 260ms ease, visibility 0s;
+  transition: opacity var(--project-media-grid-fade-duration) var(--ease-out), visibility 0s;
 }
 
 .root[data-visible="false"] {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 260ms ease, visibility 0s linear 260ms;
+  transition:
+    opacity var(--project-media-grid-fade-duration) var(--ease-out),
+    visibility 0s linear var(--project-media-grid-fade-duration);
   pointer-events: none;
 }
 
@@ -26,12 +28,14 @@
   min-width: 0;
   min-height: 0;
   background: var(--project-media-placeholder-cell);
-  transition: background-color 640ms ease-out;
+  transition: background-color var(--project-media-grid-trail-duration) var(--ease-out);
 }
 
-.cell:hover {
-  background: var(--project-media-grid);
-  transition: none;
+@media (hover: hover) and (pointer: fine) {
+  .cell:hover {
+    background: var(--project-media-grid);
+    transition: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
