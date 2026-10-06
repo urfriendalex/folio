@@ -13,6 +13,7 @@
     "generate:project-media:clean": "node scripts/generate-project-media.mjs --clean-public-projects",
     "generate:archive-manifest": "node scripts/generate-archive-manifest.mjs",
     "optimize:archive": "node scripts/optimize-archive-images.mjs && pnpm generate:archive-manifest",
+    "optimize:projects": "node scripts/optimize-project-assets.mjs",
     "start": "next start",
     "lint": "eslint"
   },

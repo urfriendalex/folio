@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Project Asset Optimization
+
+Run `pnpm optimize:projects` to losslessly optimize all checked-in project PNGs
+and MP4 containers, including curated projects. Requires ffmpeg and ffprobe.
+The project media generator also runs this pass after generating its outputs.
+
+PNG replacements must preserve decoded pixels, dimensions, orientation, and ICC
+profiles. Videos are stream-copied, never re-encoded; packet hashes, timestamps,
+and codec/color metadata must match. Files are replaced only when smaller
+(MP4 container savings must be at least 1 KiB). Resolution, frame rate, duration,
+asset paths, and page layouts stay unchanged. Already optimized files are kept.
+
+Curated captures remain curated: this command does not regenerate them from
+sources, change their gallery ordering, or trim their clips.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
