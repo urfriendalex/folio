@@ -46,13 +46,12 @@
 
 .layer,
 .posterLayer {
-  opacity: 0;
-  transition: opacity 220ms ease;
+  visibility: hidden;
 }
 
 .layer[data-loaded="true"],
 .posterLayer[data-loaded="true"] {
-  opacity: 1;
+  visibility: visible;
 }
 
 .asset,
@@ -84,7 +83,8 @@
 }
 
 .root[data-video-ready="true"] .posterLayer {
-  opacity: 0;
+  visibility: hidden;
+  transition: visibility 0s linear 200ms;
 }
 
 .root[data-reveal="instant"] .layer,
