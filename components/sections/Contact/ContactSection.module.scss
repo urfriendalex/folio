@@ -81,7 +81,7 @@
 }
 
 .formBackScreen:hover,
-.formBackScreen:focus-visible {
+.formBackScreen:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--fg-color);
 }
 
@@ -128,7 +128,7 @@
   text-decoration: none;
 
   &:hover,
-  &:focus-visible {
+  &:focus-visible:not(:where([data-input-modality="pointer"] *)) {
     text-decoration: none;
   }
 }
@@ -229,12 +229,12 @@
 }
 
 .emailLink:hover .emailTextPixel,
-.emailLink:focus-visible .emailTextPixel {
+.emailLink:focus-visible:not(:where([data-input-modality="pointer"] *)) .emailTextPixel {
   transform: translate3d(0.03em, 0.01em, 0);
 }
 
 .emailLink:hover .emailTextPixelGhost,
-.emailLink:focus-visible .emailTextPixelGhost {
+.emailLink:focus-visible:not(:where([data-input-modality="pointer"] *)) .emailTextPixelGhost {
   opacity: 0.24;
   transform: translate3d(0.1em, 0.01em, 0);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 
 type Dot = {
   x: number;
@@ -149,7 +150,7 @@ export function BookingButtonDither({ className }: { className: string }) {
     };
 
     const onPointerLeave = () => {
-      hoverTarget = button.matches(":focus-visible") ? 1 : 0;
+      hoverTarget = button.matches(KEYBOARD_FOCUS_SELECTOR) ? 1 : 0;
       if (reducedMotion.matches) {
         hover = hoverTarget;
         draw();

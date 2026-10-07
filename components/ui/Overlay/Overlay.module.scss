@@ -199,12 +199,12 @@
 }
 
 .closeButton:hover,
-.closeButton:focus-visible {
+.closeButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--fg-color);
 }
 
 .closeButton[data-variant="immersive"]:hover,
-.closeButton[data-variant="immersive"]:focus-visible {
+.closeButton[data-variant="immersive"]:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--overlay-fg);
 }
 

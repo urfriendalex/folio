@@ -32,7 +32,7 @@
   --project-media-surface: transparent;
 }
 
-.media:focus-visible {
+.media:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 2px;
 }
@@ -90,7 +90,7 @@
   text-decoration: none;
 }
 
-.titleLink:focus-visible {
+.titleLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 2px;
 }
@@ -174,7 +174,7 @@
 }
 
 .visit:hover,
-.visit:focus-visible {
+.visit:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--fg-color);
 }
 
@@ -182,19 +182,19 @@
   transform: scale(0.96);
 }
 
-.visit:focus-visible {
+.visit:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .visit:hover .visitWordClip,
-  .visit:focus-visible .visitWordClip {
+  .visit:focus-visible:not(:where([data-input-modality="pointer"] *)) .visitWordClip {
     grid-template-columns: 1fr;
   }
 
   .visit:hover .visitWord,
-  .visit:focus-visible .visitWord {
+  .visit:focus-visible:not(:where([data-input-modality="pointer"] *)) .visitWord {
     opacity: 1;
     filter: blur(0);
     translate: 0;

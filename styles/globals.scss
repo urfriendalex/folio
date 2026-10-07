@@ -5,6 +5,10 @@
 }
 
 :root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --project-media-video-fade-duration: 200ms;
+  --project-media-grid-fade-duration: 260ms;
+  --project-media-grid-trail-duration: 640ms;
   --font-body-stack: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
   --font-mono-stack: var(--font-geist-mono), "SFMono-Regular", "Menlo", "Consolas", monospace;
   --font-pixel-stack: var(--font-geist-pixel-grid), monospace;
@@ -717,9 +721,9 @@ img {
 }
 
 .link-underline:hover::after,
-.link-underline:focus-visible::after,
+.link-underline:focus-visible:not(:where([data-input-modality="pointer"] *))::after,
 .text-link:hover::after,
-.text-link:focus-visible::after {
+.text-link:focus-visible:not(:where([data-input-modality="pointer"] *))::after {
   transform-origin: 0% 50%;
   transform: scale3d(1, 1, 1);
 }
@@ -731,9 +735,9 @@ img {
   }
 
   .link-underline:hover::after,
-  .link-underline:focus-visible::after,
+  .link-underline:focus-visible:not(:where([data-input-modality="pointer"] *))::after,
   .text-link:hover::after,
-  .text-link:focus-visible::after {
+  .text-link:focus-visible:not(:where([data-input-modality="pointer"] *))::after {
     transform-origin: 0% 50%;
     transform: scale3d(1, 1, 1);
   }
@@ -762,7 +766,7 @@ img {
 }
 
 .pill-button:hover,
-.pill-button:focus-visible {
+.pill-button:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   border-color: var(--surface-outline-strong);
   background: linear-gradient(180deg, var(--surface-strong), var(--surface-color));
   color: var(--fg-color);
@@ -782,9 +786,16 @@ img {
   border: 0;
 }
 
-:focus-visible {
+// :where keeps the modality gate at zero specificity so component styles win.
+:focus-visible:not(:where([data-input-modality="pointer"] *)),
+:where(input, textarea, select, [contenteditable], [role="textbox"]):focus-visible {
   outline: 2px solid var(--fg-color);
   outline-offset: 3px;
+}
+
+// Reset browser outlines only for pointer-focused, non-editable controls.
+:focus:where([data-input-modality="pointer"] *):not(:where(input, textarea, select, [contenteditable], [role="textbox"])) {
+  outline: none;
 }
 
 input,

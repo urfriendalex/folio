@@ -61,6 +61,16 @@ const bootstrapScript = `
   const html = document.documentElement;
   html.classList.add("js-enabled");
 
+  // Track input before hydration, including programmatic dialog focus/restore.
+  document.addEventListener("pointerdown", () => {
+    html.setAttribute("data-input-modality", "pointer");
+  }, { capture: true, passive: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey ||
+        ["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
+    html.setAttribute("data-input-modality", "keyboard");
+  }, true);
+
   let theme = "light";
   try {
     const storedTheme = localStorage.getItem("theme");

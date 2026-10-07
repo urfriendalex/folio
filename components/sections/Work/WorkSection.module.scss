@@ -57,7 +57,7 @@
     transform 160ms ease-out;
 }
 
-.allProjects:focus-visible,
+.allProjects:focus-visible:not(:where([data-input-modality="pointer"] *)),
 .allProjects:active {
   color: var(--fg-color);
 }
@@ -79,7 +79,7 @@
   }
 
   .allProjects:hover .allProjectsArrow,
-  .allProjects:focus-visible .allProjectsArrow {
+  .allProjects:focus-visible:not(:where([data-input-modality="pointer"] *)) .allProjectsArrow {
     transform: translateX(0.16em);
   }
 }
@@ -95,7 +95,7 @@
   }
 
   .allProjects:hover .allProjectsArrow,
-  .allProjects:focus-visible .allProjectsArrow {
+  .allProjects:focus-visible:not(:where([data-input-modality="pointer"] *)) .allProjectsArrow {
     transform: none;
   }
 }
@@ -119,7 +119,7 @@
 }
 
 .viewButton[data-active="false"]:hover,
-.viewButton[data-active="false"]:focus-visible {
+.viewButton[data-active="false"]:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: color-mix(in srgb, var(--fg-color) 62%, transparent);
 }
 

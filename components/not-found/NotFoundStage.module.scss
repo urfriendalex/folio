@@ -389,9 +389,9 @@
 }
 
 .closeButton:hover,
-.closeButton:focus-visible,
+.closeButton:focus-visible:not(:where([data-input-modality="pointer"] *)),
 .actionButton:hover,
-.actionButton:focus-visible {
+.actionButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: color-mix(in srgb, var(--window-button-face) 88%, white);
   outline: none;
 }

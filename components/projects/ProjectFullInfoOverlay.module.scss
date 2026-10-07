@@ -39,7 +39,7 @@
 }
 
 .root :global(.text-link:hover),
-.root :global(.text-link:focus-visible) {
+.root :global(.text-link:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   color: var(--overlay-fg);
   opacity: 0.82;
 }
@@ -315,7 +315,7 @@
   }
 }
 
-.visitSiteLink:focus-visible {
+.visitSiteLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   border-color: color-mix(in srgb, var(--overlay-fg) 44%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 14%, transparent);
   box-shadow:

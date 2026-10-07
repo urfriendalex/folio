@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import sharp from "sharp";
+import { optimizeProjectAssets } from "./optimize-project-assets.mjs";
 
 const execFile = promisify(execFileCallback);
 
@@ -705,6 +706,7 @@ for (const project of projects) {
 
 progress.tick("write content/projects/generated-media.ts");
 await fs.writeFile(generatedContentPath, renderGeneratedFile(generatedMedia));
+await optimizeProjectAssets(outputDir);
 divider(useColor);
 const relOutDone = path.relative(rootDir, outputDir) || outputDir;
 console.log(

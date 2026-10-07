@@ -13,6 +13,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
+import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 import ASCIIAnimation, {
   ASCII_VISIBILITY_REVEAL_DURATION_MS,
   cellRevealHash01,
@@ -754,7 +755,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       }
     };
     const onFocusIn = (event: FocusEvent) => {
-      if ((event.target as Element).matches?.(":focus-visible")) {
+      if ((event.target as Element).matches?.(KEYBOARD_FOCUS_SELECTOR)) {
         setRestore(event.target, 1);
       }
     };
