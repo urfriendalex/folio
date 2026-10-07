@@ -227,7 +227,7 @@
   }
 }
 
-.mediaViewerControlButton:focus-visible .mediaViewerControlGlass {
+.mediaViewerControlButton:focus-visible:not(:where([data-input-modality="pointer"] *)) .mediaViewerControlGlass {
   background: color-mix(in srgb, var(--overlay-immersive-fg) 15%, transparent);
   border-color: color-mix(
     in srgb,
@@ -295,7 +295,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.mobileMediaTrigger:focus-visible {
+.mobileMediaTrigger:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 2px;
 }
@@ -662,7 +662,7 @@
 }
 
 .expandToggle:hover,
-.expandToggle:focus-visible {
+.expandToggle:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--project-toolbar-block-bg-hover);
   border-color: var(--project-toolbar-border-strong);
 }
@@ -906,7 +906,7 @@
 
 /* Until armed, keep the global underline collapsed — no hover sweep mid-reveal. */
 .toolbarAction:not([data-underline-ready="true"]):global(.link-underline):hover::after,
-.toolbarAction:not([data-underline-ready="true"]):global(.link-underline):focus-visible::after {
+.toolbarAction:not([data-underline-ready="true"]):global(.link-underline):focus-visible:not(:where([data-input-modality="pointer"] *))::after {
   transform-origin: 100% 50%;
   transform: scale3d(0, 1, 1);
 }
@@ -982,7 +982,7 @@ button.toolbarAction {
 }
 
 .navButton:hover,
-.navButton:focus-visible {
+.navButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--project-toolbar-block-bg-hover);
   border-color: var(--project-toolbar-border-strong);
   box-shadow: var(--project-toolbar-panel-shadow-strong);

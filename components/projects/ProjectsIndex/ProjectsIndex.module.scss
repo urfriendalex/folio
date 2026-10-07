@@ -187,7 +187,7 @@
   color: var(--fg-color);
 }
 
-.filter:focus-visible {
+.filter:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 3px;
 }
@@ -229,7 +229,7 @@
   color: var(--fg-color);
 }
 
-.viewButton[data-active="false"]:focus-visible {
+.viewButton[data-active="false"]:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: color-mix(in srgb, var(--fg-color) 62%, transparent);
 }
 
@@ -324,7 +324,7 @@
   transition: background 160ms var(--ease-out);
 }
 
-.row:focus-visible {
+.row:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
   outline-offset: 2px;
 }
@@ -654,7 +654,7 @@
     transform: scale(0.97);
   }
 
-  .filterTrigger:focus-visible {
+  .filterTrigger:focus-visible:not(:where([data-input-modality="pointer"] *)) {
     outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
     outline-offset: 3px;
   }
@@ -750,7 +750,7 @@
     color: var(--taskbar-flag-red);
   }
 
-  .filterOption:focus-visible {
+  .filterOption:focus-visible:not(:where([data-input-modality="pointer"] *)) {
     outline: 2px solid color-mix(in srgb, var(--fg-color) 40%, transparent);
     outline-offset: 2px;
   }

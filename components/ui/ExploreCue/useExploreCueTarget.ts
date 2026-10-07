@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type FocusEvent, type PointerEvent } from "react";
 import { useExploreCue } from "./ExploreCueProvider";
+import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 import { isPointerOverLoadedMedia, loadedMediaPaintBox } from "./loadedMediaHit";
 
 function isFinePointer(pointerType: string) {
@@ -113,7 +114,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
           return;
         }
 
-        if (wasRecentFinePointer() || !node.matches(":focus-visible")) {
+        if (wasRecentFinePointer() || !node.matches(KEYBOARD_FOCUS_SELECTOR)) {
           return;
         }
 
@@ -239,7 +240,7 @@ export function useExploreCueTarget<T extends HTMLElement>({
         return;
       }
 
-      if (!event.currentTarget.matches(":focus-visible")) {
+      if (!event.currentTarget.matches(KEYBOARD_FOCUS_SELECTOR)) {
         return;
       }
 

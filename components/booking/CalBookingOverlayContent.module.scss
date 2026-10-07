@@ -50,7 +50,7 @@
 }
 
 .root :global(.text-link:hover),
-.root :global(.text-link:focus-visible) {
+.root :global(.text-link:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   color: var(--overlay-fg);
   opacity: 0.82;
 }
@@ -120,7 +120,7 @@
 }
 
 .stepNavButton:hover,
-.stepNavButton:focus-visible {
+.stepNavButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--signal-color);
   opacity: 1;
 }
@@ -164,12 +164,12 @@
   }
 }
 
-.restartButton:focus-visible {
+.restartButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 1px solid color-mix(in srgb, var(--overlay-fg) 38%, transparent);
   outline-offset: 3px;
 }
 
-.restartButton:focus:not(:focus-visible) {
+.restartButton:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
 }
 
@@ -733,14 +733,14 @@
   }
 }
 
-.primaryLink:focus-visible:not(:disabled) {
+.primaryLink:focus-visible:not(:where([data-input-modality="pointer"] *)):not(:disabled) {
   border-color: color-mix(in srgb, var(--overlay-fg) 30%, transparent);
   background: color-mix(in srgb, var(--overlay-fg) 10%, transparent);
   outline: 1px solid color-mix(in srgb, var(--overlay-fg) 38%, transparent);
   outline-offset: 3px;
 }
 
-.primaryLink:focus:not(:focus-visible) {
+.primaryLink:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
 }
 
@@ -820,12 +820,12 @@
   }
 }
 
-.meetingUrl:focus-visible {
+.meetingUrl:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 1px solid color-mix(in srgb, var(--overlay-fg) 36%, transparent);
   outline-offset: 3px;
 }
 
-.meetingUrl:focus:not(:focus-visible) {
+.meetingUrl:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
 }
 
@@ -861,12 +861,12 @@
   }
 }
 
-.copyLinkAction:focus-visible {
+.copyLinkAction:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 1px solid color-mix(in srgb, var(--overlay-fg) 36%, transparent);
   outline-offset: 3px;
 }
 
-.copyLinkAction:focus:not(:focus-visible) {
+.copyLinkAction:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
 }
 

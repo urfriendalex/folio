@@ -300,7 +300,7 @@
     margin-left 200ms ease;
 }
 
-.logo:is(:hover, :focus-visible) .hiddenPart {
+.logo:is(:hover, :focus-visible:not(:where([data-input-modality="pointer"] *))) .hiddenPart {
   max-width: 8.5ch;
   transform: translateY(0) skew(0deg, 0deg);
 }
@@ -310,7 +310,7 @@
   transform: translateY(0) skew(0deg, 0deg);
 }
 
-.logo:is(:hover, :focus-visible) .initialY {
+.logo:is(:hover, :focus-visible:not(:where([data-input-modality="pointer"] *))) .initialY {
   margin-left: 0.32em;
 }
 
@@ -318,7 +318,7 @@
   margin-left: 0.32em;
 }
 
-.logo:is(:hover, :focus-visible) .hiddenSurname {
+.logo:is(:hover, :focus-visible:not(:where([data-input-modality="pointer"] *))) .hiddenSurname {
   max-width: 7ch;
   transform: translateY(0) skew(0deg, 0deg);
 }
@@ -328,7 +328,7 @@
   transform: translateY(0) skew(0deg, 0deg);
 }
 
-.logo:is(:hover, :focus-visible) .dot {
+.logo:is(:hover, :focus-visible:not(:where([data-input-modality="pointer"] *))) .dot {
   max-width: 0;
   opacity: 0;
   margin-left: 0;
@@ -371,7 +371,7 @@
 }
 
 .navLink:hover,
-.navLink:focus-visible {
+.navLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   opacity: 0.72;
 }
 

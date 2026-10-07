@@ -20,7 +20,7 @@
 /* Only globals `.link-underline` (animated ::after) — no browser underline on top. */
 .footer :global(.link-underline),
 .footer :global(.link-underline:hover),
-.footer :global(.link-underline:focus-visible) {
+.footer :global(.link-underline:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   text-decoration: none;
 }
 
@@ -208,12 +208,12 @@
   }
 }
 
-.bookingButton:focus-visible {
+.bookingButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 1px solid color-mix(in srgb, var(--fg-color) 42%, transparent);
   outline-offset: 3px;
 }
 
-.bookingButton:focus:not(:focus-visible) {
+.bookingButton:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
 }
 
@@ -308,7 +308,7 @@
 }
 
 .connectLink:hover,
-.connectLink:focus-visible {
+.connectLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--fg-color);
 }
 
@@ -366,7 +366,7 @@
   border-radius: 2px;
 }
 
-.columnControlBtn:focus-visible {
+.columnControlBtn:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid var(--fg-color);
   outline-offset: 2px;
 }
@@ -398,7 +398,7 @@
   border-radius: 2px;
 }
 
-.inlineControlButton:focus-visible {
+.inlineControlButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 2px solid var(--fg-color);
   outline-offset: 2px;
 }
@@ -485,7 +485,7 @@
 }
 
 .startButton:hover,
-.startButton:focus-visible {
+.startButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   filter: brightness(var(--taskbar-start-hover-brightness));
 }
 
@@ -552,7 +552,7 @@
 }
 
 .quickLaunchBtn:hover,
-.quickLaunchBtn:focus-visible {
+.quickLaunchBtn:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   filter: brightness(var(--taskbar-quick-hover-brightness));
 }
 
@@ -674,7 +674,7 @@
     transform 220ms cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
-.clockTray:is(:hover, :focus-visible) .clockTooltip {
+.clockTray:is(:hover, :focus-visible:not(:where([data-input-modality="pointer"] *))) .clockTooltip {
   opacity: 1;
   transform: translateY(0);
 }
@@ -794,13 +794,13 @@
 
 /* Win98: hover + checked = classic #000080 bar + white label */
 .winMenuItem:hover,
-.winMenuItem:focus-visible {
+.winMenuItem:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--win-menu-hilite-bg);
   color: var(--win-menu-hilite-fg);
 }
 
 .winMenuChoice:hover,
-.winMenuChoice:focus-visible,
+.winMenuChoice:focus-visible:not(:where([data-input-modality="pointer"] *)),
 .winMenuChoice[data-active="true"] {
   background: var(--win-menu-hilite-bg);
   color: var(--win-menu-hilite-fg);
@@ -825,7 +825,7 @@
 }
 
 .menuItemButtonSubmenu:hover,
-.menuItemButtonSubmenu:focus-visible {
+.menuItemButtonSubmenu:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--taskbar-menu-item-hover);
 }
 
@@ -879,7 +879,7 @@
 }
 
 .startMenuParent:hover,
-.startMenuParent:focus-visible {
+.startMenuParent:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--win-menu-hilite-bg);
   color: var(--win-menu-hilite-fg);
 }
@@ -928,7 +928,7 @@
 }
 
 .winMenuLink:hover,
-.winMenuLink:focus-visible {
+.winMenuLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: var(--win-menu-hilite-bg);
   color: var(--win-menu-hilite-fg);
 }
@@ -1035,7 +1035,7 @@
 }
 
 .menuItem:is(a):hover,
-.menuItem:is(a):focus-visible {
+.menuItem:is(a):focus-visible:not(:where([data-input-modality="pointer"] *)) {
   background: transparent;
   text-decoration: none;
 }

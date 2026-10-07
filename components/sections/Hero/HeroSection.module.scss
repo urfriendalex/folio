@@ -69,11 +69,11 @@
   color: var(--hero-walker-creative-color);
 }
 
-.introAccentTriggerWeb:focus-visible {
+.introAccentTriggerWeb:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--hero-walker-web-color);
 }
 
-.introAccentTriggerCreative:focus-visible {
+.introAccentTriggerCreative:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--hero-walker-creative-color);
 }
 
@@ -120,7 +120,7 @@
   }
 }
 
-.heroCtaLink:focus-visible {
+.heroCtaLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--signal-color);
 }
 
