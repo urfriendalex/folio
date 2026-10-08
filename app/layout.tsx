@@ -4,6 +4,7 @@ import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/analytics/SiteAnalytics";
 import { PreloaderGate } from "@/components/Preloader/PreloaderGate";
 import {
   FALLBACK_THEME_COLORS,
@@ -209,6 +210,7 @@ export default function RootLayout({
         </PreloaderGate>
         <SpeedInsights />
         <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );
