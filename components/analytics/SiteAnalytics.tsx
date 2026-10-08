@@ -1,5 +1,4 @@
-import { GoogleAnalytics } from "@next/third-parties/google";
-import Script from "next/script";
+import { DeferredSiteAnalytics } from "@/components/analytics/DeferredSiteAnalytics";
 
 /**
  * Optional GA4 + Cloudflare Web Analytics.
@@ -15,16 +14,9 @@ export function SiteAnalytics() {
   }
 
   return (
-    <>
-      {gaMeasurementId ? <GoogleAnalytics gaId={gaMeasurementId} /> : null}
-      {cfBeaconToken ? (
-        <Script
-          id="cf-web-analytics"
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          strategy="afterInteractive"
-          data-cf-beacon={JSON.stringify({ token: cfBeaconToken })}
-        />
-      ) : null}
-    </>
+    <DeferredSiteAnalytics
+      gaMeasurementId={gaMeasurementId || undefined}
+      cfBeaconToken={cfBeaconToken || undefined}
+    />
   );
 }
