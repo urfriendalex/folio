@@ -205,6 +205,12 @@ export function Navbar() {
     guardedPush("/", { scroll: false });
   };
 
+  const prefetchHome = () => {
+    if (pathname !== "/" && allowNavigatorRoutePrefetch()) {
+      router.prefetch("/");
+    }
+  };
+
   const handleMobileNavLinkClick = () => {
     setMenuOpen(false);
   };
@@ -254,6 +260,9 @@ export function Navbar() {
           </IntentPrefetchLink>
           <a
             href={getAnchor(pathname, "contact")}
+            onFocus={prefetchHome}
+            onPointerEnter={prefetchHome}
+            onTouchStart={prefetchHome}
             className={`link-underline ${styles.navLink}`}
           >
             Contact
@@ -310,6 +319,9 @@ export function Navbar() {
             </IntentPrefetchLink>
             <a
               href={getAnchor(pathname, "contact")}
+              onFocus={prefetchHome}
+              onPointerEnter={prefetchHome}
+              onTouchStart={prefetchHome}
               className={`link-underline ${styles.mobileNavLink}`}
               style={{ "--item-index": 3 } as CSSProperties}
               onClick={handleMobileNavLinkClick}
