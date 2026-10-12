@@ -153,7 +153,7 @@
   line-height: 1;
   transition-property: grid-template-columns;
   transition-duration: 280ms;
-  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  transition-timing-function: var(--ease-move);
 }
 
 .visitWord {
@@ -170,7 +170,7 @@
   translate: -0.2em 0;
   transition-property: opacity, filter, translate;
   transition-duration: 280ms;
-  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  transition-timing-function: var(--ease-move);
 }
 
 .visit:hover,

@@ -69,7 +69,7 @@
   pointer-events: none;
   transition:
     opacity 320ms ease,
-    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 480ms var(--ease-reveal),
     color 220ms ease;
   transition-delay: 180ms;
 }
@@ -102,16 +102,18 @@
 
 .emailView {
   --contact-email-gap: clamp(0.9rem, 1.5vw, 1rem);
-  /* One cascade top → bottom: same rise, same curve, 70ms apart. Exit drops the delay so it never lags. */
-  --contact-reveal-step: 70ms;
+  /* One cascade top → bottom on the global motion tokens. Exit is faster, undelayed, ease-out. */
+  --contact-reveal-step: var(--stagger);
   --contact-reveal-offset: 0;
-  --contact-reveal-rise: 0.75rem;
-  --contact-reveal-opacity-ms: 420ms;
-  --contact-reveal-transform-ms: 720ms;
-  --contact-reveal-ease: cubic-bezier(0.2, 0.88, 0.24, 1);
-  /* Mobile bento: hairline frame is traced like a pen stroke (on-screen movement → ease-in-out). */
-  --contact-frame-draw-ms: 820ms;
-  --contact-frame-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --contact-reveal-rise: var(--reveal-rise);
+  --contact-reveal-opacity-ms: var(--duration-reveal-fade);
+  --contact-reveal-transform-ms: var(--duration-reveal-move);
+  --contact-reveal-ease: var(--ease-reveal);
+  --contact-exit-ms: var(--duration-exit);
+  --contact-exit-ease: var(--ease-out);
+  /* Mobile bento: hairline frame is traced like a pen stroke. */
+  --contact-frame-draw-ms: var(--duration-draw);
+  --contact-frame-ease: var(--ease-draw);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,6 +131,15 @@
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+  /* Desktop line mask: clip vertically (generous sideways) while the email slides up, then release it
+     once the entrance ends so the gooey hover swap (±5 viewBox units) can overflow freely. */
+  clip-path: inset(0 -20%);
+  transition: clip-path 0ms linear;
+}
+
+.contactGooeyCard[data-visible="true"] {
+  clip-path: inset(-100% -20%);
+  transition-delay: calc(var(--cell-delay) + var(--contact-reveal-transform-ms));
 }
 
 .emailLink {
@@ -155,18 +166,15 @@
   white-space: nowrap;
   overflow-x: visible;
   overflow-y: visible;
-  /* No blur in the entrance: a filter transition over this full-width SVG banner repaints every frame mid-scroll. */
-  opacity: 0;
-  transform: translate3d(0, var(--contact-reveal-rise), 0);
-  transition:
-    opacity 280ms ease,
-    transform 360ms var(--contact-reveal-ease);
+  /* Desktop: same line mask as the button labels (slides up inside `.contactGooeyCard`'s clip), no blur. */
+  transform: translate3d(0, 100%, 0);
+  transition: transform var(--contact-exit-ms) var(--contact-exit-ease);
 }
 
 .emailWord[data-visible="true"] {
-  opacity: 1;
   transform: translate3d(0, 0, 0);
-  transition-duration: var(--contact-reveal-opacity-ms), var(--contact-reveal-transform-ms);
+  transition-duration: var(--contact-reveal-transform-ms);
+  transition-timing-function: var(--contact-reveal-ease);
   transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
 
@@ -304,12 +312,13 @@
 .revealLineText {
   display: block;
   transform: translate3d(0, 110%, 0);
-  transition: transform 260ms var(--contact-reveal-ease);
+  transition: transform var(--contact-exit-ms) var(--contact-exit-ease);
 }
 
 [data-visible="true"] > .revealLine .revealLineText {
   transform: translate3d(0, 0, 0);
   transition-duration: var(--contact-reveal-transform-ms);
+  transition-timing-function: var(--contact-reveal-ease);
   transition-delay: calc(var(--cell-delay) + var(--line-delay, 0ms));
 }
 
@@ -319,10 +328,10 @@
 }
 
 :global(html.home-section-arrival-reveal) .section .emailView {
-  --contact-reveal-step: 30ms;
-  --contact-reveal-opacity-ms: 240ms;
-  --contact-reveal-transform-ms: 320ms;
-  --contact-frame-draw-ms: 420ms;
+  --contact-reveal-step: var(--stagger-tight);
+  --contact-reveal-opacity-ms: var(--duration-exit);
+  --contact-reveal-transform-ms: calc(var(--duration-base) + 40ms);
+  --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
 }
 
 /* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
@@ -356,8 +365,8 @@
   transform: translate3d(0, 1rem, 0);
   transition:
     opacity 360ms ease,
-    filter 620ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    filter 620ms var(--ease-reveal),
+    transform 620ms var(--ease-reveal);
 }
 
 .formView[data-visible="true"] {
@@ -425,7 +434,7 @@
   background: color-mix(in srgb, var(--fg-color) 85%, transparent);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 720ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition: transform 720ms var(--ease-reveal);
   transition-delay: calc(var(--field-delay) + 80ms);
 }
 
@@ -443,8 +452,8 @@
   transform: translate3d(-1rem, 0, 0);
   transition:
     opacity 360ms ease,
-    filter 520ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    filter 520ms var(--ease-reveal),
+    transform 620ms var(--ease-reveal);
   transition-delay: var(--field-delay);
 }
 
@@ -570,20 +579,21 @@
     opacity: 0;
     transform: translate3d(0, var(--contact-reveal-rise), 0);
     transition:
-      opacity 280ms ease,
-      transform 360ms var(--contact-reveal-ease);
+      opacity var(--contact-exit-ms) var(--contact-exit-ease),
+      transform var(--contact-exit-ms) var(--contact-exit-ease);
   }
 
   .emailView[data-visible="true"] .mobileSectionTitle {
     opacity: 1;
     transform: translate3d(0, 0, 0);
-    transition-duration: var(--contact-reveal-opacity-ms), var(--contact-reveal-transform-ms);
-    transition-delay: 0ms;
+    transition:
+      opacity var(--contact-reveal-opacity-ms) ease,
+      transform var(--contact-reveal-transform-ms) var(--contact-reveal-ease);
   }
 
   .emailView {
     --contact-reveal-offset: 1;
-    --contact-reveal-step: 110ms;
+    --contact-reveal-step: var(--stagger-loose);
     flex: 1;
     min-height: 0;
     align-items: stretch;
@@ -618,16 +628,23 @@
     line-height: 1.35;
     text-transform: uppercase;
     text-align: center;
-    transition: color 160ms ease, transform 160ms ease-out;
+    /* Release springs back (slow, physical); press-in below is immediate. */
+    transition:
+      color var(--duration-fast) ease,
+      transform var(--duration-release) var(--ease-spring-press);
   }
 
   .contactChannelButton[data-visible="true"]:active:not(:disabled) {
-    transform: scale(0.985);
+    transform: scale(0.97);
+    transition-duration: var(--duration-fast), var(--duration-press);
+    transition-timing-function: ease, var(--ease-out);
   }
 
   /* —— Bento cell chrome: fill layer (::before) + traced hairline frame (svg) —— */
   .contactChannelButton,
   .contactGooeyCard {
+    /* Stroke traces in "wet ink" (stronger) and dries to the resting hairline once the fill lands. */
+    --cell-stroke-ink: color-mix(in srgb, var(--fg-color) 34%, transparent);
     --cell-stroke: color-mix(in srgb, var(--fg-color) 12%, transparent);
     --cell-fill:
       linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
@@ -648,15 +665,15 @@
     border-radius: inherit;
     background: var(--cell-fill);
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--contact-exit-ms) ease;
     pointer-events: none;
   }
 
   .contactChannelButton[data-visible="true"]::before,
   .contactGooeyCard[data-visible="true"]::before {
     opacity: 1;
-    transition-duration: 520ms;
-    transition-delay: calc(var(--cell-delay) + 260ms);
+    transition-duration: var(--contact-reveal-opacity-ms);
+    transition-delay: calc(var(--cell-delay) + var(--contact-frame-draw-ms) * 0.35);
   }
 
   .cellFrame {
@@ -677,21 +694,33 @@
     height: calc(100% - 1px);
     rx: calc(1rem - 0.5px);
     fill: none;
-    stroke: var(--cell-stroke);
+    stroke: var(--cell-stroke-ink);
     stroke-width: 1px;
     /* `--frame-length` is the measured perimeter (ContactCellFrame); large fallback keeps it hidden until then. */
     stroke-dasharray: var(--frame-length, 100000);
     stroke-dashoffset: var(--frame-length, 100000);
+    /* Exit: un-trace quickly; ink colour only returns after the stroke is gone (no flash). */
     transition:
-      stroke-dashoffset 240ms ease-out,
-      stroke 200ms cubic-bezier(0.23, 1, 0.32, 1);
+      stroke-dashoffset var(--contact-exit-ms) var(--contact-exit-ease),
+      stroke 0ms linear var(--contact-exit-ms);
   }
 
   [data-visible="true"] > .cellFrame rect {
+    stroke: var(--cell-stroke);
     stroke-dashoffset: 0;
-    transition-duration: var(--contact-frame-draw-ms), 200ms;
-    transition-timing-function: var(--contact-frame-ease), cubic-bezier(0.23, 1, 0.32, 1);
-    transition-delay: var(--cell-delay), 0ms;
+    transition:
+      stroke-dashoffset var(--contact-frame-draw-ms) var(--contact-frame-ease) var(--cell-delay),
+      stroke var(--contact-reveal-opacity-ms) ease
+        calc(var(--cell-delay) + var(--contact-frame-draw-ms) * 0.85);
+  }
+
+  /* Hover recolours immediately once revealed. */
+  @media (hover: hover) and (pointer: fine) {
+    .contactChannelButton[data-visible="true"]:hover > .cellFrame rect {
+      transition:
+        stroke-dashoffset 0ms,
+        stroke var(--duration-fast) var(--ease-out);
+    }
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -727,9 +756,28 @@
     pointer-events: none;
   }
 
+  /* Card is taller than the email here, so a line mask wouldn't hide it: no clip, fade + rise inside the frame. */
+  .contactGooeyCard,
+  .contactGooeyCard[data-visible="true"] {
+    clip-path: none;
+  }
+
   .emailWord {
     flex-shrink: 0;
     font-size: clamp(2.4rem, 12vw, 5.2rem);
+    opacity: 0;
+    transform: translate3d(0, var(--contact-reveal-rise), 0);
+    transition:
+      opacity var(--contact-exit-ms) var(--contact-exit-ease),
+      transform var(--contact-exit-ms) var(--contact-exit-ease);
+  }
+
+  .emailWord[data-visible="true"] {
+    opacity: 1;
+    transition:
+      opacity var(--contact-reveal-opacity-ms) ease,
+      transform var(--contact-reveal-transform-ms) var(--contact-reveal-ease);
+    transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
   }
 
   .form {
@@ -755,7 +803,12 @@
   transition: none;
 }
 
+:global(html:not(.reveals-enabled)) .contactGooeyCard {
+  clip-path: none;
+}
+
 :global(html:not(.reveals-enabled)) .cellFrame rect {
+  stroke: var(--cell-stroke);
   stroke-dashoffset: 0;
   transition: none;
 }

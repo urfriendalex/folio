@@ -5,7 +5,41 @@
 }
 
 :root {
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* —— Motion tokens ——————————————————————————————————————————————————————
+     Pick by intent, not by look. Mirrored for JS (WAAPI/GSAP) in `lib/motion.ts`.
+     Entering/exiting → ease-out family · moving on screen → move/in-out · strokes → draw.
+     Never ease-in for UI: it delays the first frames, the ones people watch. */
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* UI enter/exit, hover, popovers — instant response */
+  --ease-out-strong: cubic-bezier(0.16, 1, 0.32, 1); /* large surfaces: overlays, sheets, panels */
+  --ease-out-soft: cubic-bezier(0.33, 1, 0.68, 1); /* small nudges that should settle quietly */
+  --ease-reveal: cubic-bezier(0.2, 0.88, 0.24, 1); /* editorial scroll reveals: quick start, long soft tail */
+  --ease-move: cubic-bezier(0.32, 0, 0.2, 1); /* on-screen movement/morphs (layout, FLIP, grids) */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* strong, deliberate on-screen travel */
+  --ease-draw: cubic-bezier(0.5, 0, 0.2, 1); /* traced strokes and rules: pen lands, then glides to rest */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* iOS-like drawer / sheet */
+  --ease-spring-press: var(--ease-out); /* release after :active (spring below where supported) */
+
+  /* Duration */
+  --duration-press: 120ms; /* :active press-in — immediate */
+  --duration-release: 320ms; /* :active release — spring settles back */
+  --duration-fast: 200ms; /* hover, colour, small toggles */
+  --duration-exit: 240ms; /* leaving is always quicker than arriving */
+  --duration-base: 280ms; /* UI enter: popovers, labels */
+  --duration-reveal-fade: 420ms; /* scroll-reveal opacity */
+  --duration-reveal-move: 720ms; /* scroll-reveal transform / line masks */
+  --duration-draw: 820ms; /* stroke traces (frames, short rules) */
+  --duration-draw-long: 1000ms; /* full-bleed rules */
+
+  /* Stagger step between siblings (keep 30–110ms; longer feels slow) */
+  --stagger-tight: 30ms; /* fast arrivals, dense lists */
+  --stagger: 70ms; /* default cascade */
+  --stagger-loose: 110ms; /* large blocks (mobile bento cells) */
+
+  /* Distance */
+  --reveal-rise: 0.75rem; /* scroll-reveal travel; small, never from far away */
+
   --project-media-video-fade-duration: 200ms;
   --project-media-grid-fade-duration: 260ms;
   --project-media-grid-trail-duration: 640ms;
@@ -206,6 +240,20 @@
   --navbar-safe-area-fill: var(--bg-color);
   --navbar-overlay-backdrop-blur: 20px;
   --navbar-overlay-backdrop-saturate: 112%;
+}
+
+/* Physical motion where the browser can express it: springs sampled into `linear()`.
+   All critically damped (no overshoot) except press. "Launch" = initial velocity, tuned per use:
+   reveal → light launch, long settle · out-strong → fast first frames for clicks · move → between.
+   Generated from spring physics (settle to 0.4%); cubic tokens above stay as the fallback. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-reveal: linear(0, 0.016 0.6%, 0.046 1.7%, 0.087 3.2%, 0.137 4.9%, 0.194 6.8%, 0.257 8.9%, 0.324 11.3%, 0.393 13.8%, 0.462 16.4%, 0.528 19.2%, 0.592 22.2%, 0.651 25.3%, 0.705 28.5%, 0.753 31.9%, 0.795 35.4%, 0.832 38.9%, 0.864 42.7%, 0.891 46.5%, 0.913 50.4%, 0.932 54.4%, 0.947 58.6%, 0.959 62.8%, 0.968 67.1%, 0.976 71.6%, 0.982 76.1%, 0.986 80.7%, 0.99 85.4%, 0.992 90.2%, 0.995 95%, 1);
+    --ease-out-strong: linear(0, 0.03 0.6%, 0.084 1.7%, 0.149 3.2%, 0.22 4.9%, 0.294 6.8%, 0.369 8.9%, 0.441 11.3%, 0.509 13.8%, 0.574 16.4%, 0.633 19.2%, 0.686 22.2%, 0.734 25.3%, 0.777 28.5%, 0.814 31.9%, 0.846 35.4%, 0.874 38.9%, 0.897 42.7%, 0.917 46.5%, 0.933 50.4%, 0.946 54.4%, 0.957 58.6%, 0.967 62.8%, 0.974 67.1%, 0.98 71.6%, 0.984 76.1%, 0.988 80.7%, 0.991 85.4%, 0.993 90.2%, 0.995 95%, 1);
+    --ease-move: linear(0, 0.023 0.6%, 0.065 1.7%, 0.118 3.2%, 0.178 4.9%, 0.244 6.8%, 0.312 8.9%, 0.382 11.3%, 0.45 13.8%, 0.516 16.4%, 0.579 19.2%, 0.637 22.2%, 0.691 25.3%, 0.739 28.5%, 0.782 31.9%, 0.819 35.4%, 0.851 38.9%, 0.879 42.7%, 0.903 46.5%, 0.922 50.4%, 0.938 54.4%, 0.951 58.6%, 0.962 62.8%, 0.971 67.1%, 0.977 71.6%, 0.983 76.1%, 0.987 80.7%, 0.99 85.4%, 0.993 90.2%, 0.995 95%, 1);
+    /* Underdamped, bounce 0.2 (~1.5% overshoot): a pressed surface springs back. */
+    --ease-spring-press: linear(0, 0.001 0.6%, 0.007 1.7%, 0.021 3.2%, 0.047 4.9%, 0.086 6.8%, 0.137 8.9%, 0.199 11.3%, 0.27 13.8%, 0.348 16.4%, 0.429 19.2%, 0.511 22.2%, 0.591 25.3%, 0.666 28.5%, 0.735 31.9%, 0.797 35.4%, 0.85 38.9%, 0.894 42.7%, 0.931 46.5%, 0.959 50.4%, 0.98 54.4%, 0.995 58.6%, 1.005 62.8%, 1.011 67.1%, 1.014 71.6%, 1.015 76.1%, 1.014 80.7%, 1.013 85.4%, 1.011 90.2%, 1.009 95%, 1);
+  }
 }
 
 @media (max-width: 48rem) {
@@ -439,8 +487,8 @@ html:has([data-archive-experience="true"]) body {
 html [data-app-shell="true"] {
   position: relative;
   transition:
-    opacity 720ms cubic-bezier(0.23, 0.96, 0.32, 1),
-    transform 720ms cubic-bezier(0.23, 0.96, 0.32, 1);
+    opacity 720ms var(--ease-out),
+    transform 720ms var(--ease-out);
 }
 
 html.is-loading [data-app-shell="true"] {
@@ -577,7 +625,7 @@ html:has([data-archive-experience="true"]).is-overlay-open [data-app-navbar="tru
 html [data-overlay-toolbar-slide="true"] {
   will-change: transform;
   /* Match text reveals: the toolbar rises back into place with the site's soft ease-out. */
-  transition: transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition: transform 620ms var(--ease-reveal);
 }
 
 html.is-overlay-toolbar-fixed [data-overlay-toolbar-slide="true"] {
@@ -594,7 +642,7 @@ html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"] {
   transform: translate3d(0, calc(100% + env(safe-area-inset-bottom, 0px) + 2rem), 0);
   /* Exit stays direct, but remains visible above the opening overlay while it slides down. */
   transition-duration: 560ms;
-  transition-timing-function: cubic-bezier(0.32, 0, 0.2, 1);
+  transition-timing-function: var(--ease-move);
 }
 
 @media (prefers-reduced-motion: reduce) {

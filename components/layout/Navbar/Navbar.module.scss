@@ -594,7 +594,7 @@
     transform: translate3d(0, 1rem, 0);
     transition:
       opacity 360ms ease,
-      transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+      transform 620ms var(--ease-reveal);
     transition-delay: calc((3 - var(--item-index, 0)) * 50ms);
   }
 
@@ -639,7 +639,7 @@
     transform: translate3d(0, 0.75rem, 0);
     transition:
       opacity 300ms ease,
-      transform 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+      transform 560ms var(--ease-reveal);
     transition-delay: 0ms;
   }
 
@@ -678,7 +678,7 @@
     transform: translate3d(0, 0.75rem, 0);
     transition:
       opacity 300ms ease,
-      transform 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+      transform 560ms var(--ease-reveal);
     transition-delay: 0ms;
   }
 

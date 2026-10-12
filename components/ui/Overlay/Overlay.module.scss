@@ -15,7 +15,7 @@
   pointer-events: none;
   background: var(--overlay-default-backdrop);
   opacity: 0;
-  transition: opacity 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 420ms var(--ease-reveal);
 }
 
 .backdrop[data-visible="true"]::before {
@@ -58,8 +58,8 @@
   transform: scale(1.01);
   isolation: isolate;
   transition:
-    opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity 360ms var(--ease-reveal),
+    transform 420ms var(--ease-reveal);
 }
 
 .surface[data-variant="immersive"] {
@@ -101,7 +101,7 @@
   pointer-events: none;
   background: var(--overlay-immersive-backdrop);
   opacity: 0;
-  transition: opacity 780ms cubic-bezier(0.22, 0.9, 0.2, 1);
+  transition: opacity 780ms var(--ease-reveal);
 }
 
 .surface[data-variant="immersive"][data-visible="true"]::after {
@@ -110,7 +110,7 @@
 
 .surface[data-variant="immersive"][data-visible="false"]::after {
   opacity: 0;
-  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+  transition: opacity 480ms var(--ease-reveal);
 }
 
 .surface[data-visible="true"] {
@@ -127,7 +127,7 @@
 
 .surface[data-variant="immersive"][data-visible="false"] {
   opacity: 0;
-  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+  transition: opacity 480ms var(--ease-reveal);
 }
 
 .atmosphere {

@@ -60,7 +60,7 @@
 }
 
 :global(html.home-section-arrival-reveal) .main:has(#work) {
-  animation: home-section-arrival 180ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: home-section-arrival 180ms var(--ease-move) both;
 }
 
 @keyframes home-section-arrival {

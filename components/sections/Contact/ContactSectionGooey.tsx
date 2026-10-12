@@ -16,6 +16,7 @@ import {
   type HomeContactFormOpenOptions,
 } from "@/lib/homeContactForm";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
+import { DURATION_MS } from "@/lib/motion";
 import { scrollElementIntoView } from "@/lib/smoothScroll";
 import { GooeyContactEmail } from "./GooeyContactEmail";
 import workSectionStyles from "../Work/WorkSection.module.scss";
@@ -37,7 +38,8 @@ type ContactSectionGooeyProps = {
 
 type ContactView = "email" | "form";
 
-const EMAIL_TRANSITION_MS = 760;
+/** Email stack exits on `--duration-exit`; swap to the form right after, with no dead pause. */
+const EMAIL_TRANSITION_MS = DURATION_MS.exit + 20;
 const FORM_EXIT_MS = 420;
 
 /** Inline form open — distinct from `#contact` (email/actions) so back closes the form, not history. */

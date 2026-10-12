@@ -11,7 +11,7 @@
     transition:
       opacity var(--reveal-line-opacity-ms, 380ms) ease,
       transform var(--reveal-line-transform-ms, 480ms)
-        var(--reveal-line-transform-ease, cubic-bezier(0.16, 1, 0.32, 1));
+        var(--reveal-line-transform-ease, var(--ease-out-strong));
   }
 
   #{$roots}:not([data-visible="true"]) > span > span {
