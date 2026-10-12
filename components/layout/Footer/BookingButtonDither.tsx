@@ -12,6 +12,8 @@ type Dot = {
 };
 
 const DOT_SPACING = 3.2;
+/** Resume the field this long after the last scroll event; motion under a moving page is imperceptible. */
+const SCROLL_IDLE_MS = 160;
 
 function randomAt(column: number, row: number, salt: number) {
   let value = Math.imul(column + salt, 374761393) + Math.imul(row + salt, 668265263);
@@ -34,6 +36,8 @@ export function BookingButtonDither({ className }: { className: string }) {
     let dots: Dot[] = [];
     let frame = 0;
     let visible = false;
+    let scrolling = false;
+    let scrollIdleTimer = 0;
     let lastTime = 0;
     let time = 0;
     let hover = 0;
@@ -49,6 +53,8 @@ export function BookingButtonDither({ className }: { className: string }) {
       context.clearRect(0, 0, canvas.width, canvas.height);
       const scaleX = canvas.width / width;
       const scaleY = canvas.height / height;
+      const tinting = hover > 0.01;
+      context.fillStyle = ink;
       for (const dot of dots) {
         // Two broad waves move the field like gusts; the seeded offset keeps it organic.
         const gust = Math.sin(dot.x * 0.045 + dot.y * 0.085 - time * 1.35 + dot.phase * 0.12);
@@ -58,17 +64,17 @@ export function BookingButtonDither({ className }: { className: string }) {
         const size = Math.max(1, Math.round(dot.size * (0.84 + (gust + 1) * 0.13) * scaleX));
         const left = Math.round(x * scaleX - size / 2);
         const top = Math.round(y * scaleY - size / 2);
-        context.fillStyle = ink;
         context.globalAlpha = (0.16 + dot.shade * 0.2) * (0.72 + (swell + 1) * 0.16);
         context.fillRect(left, top, size, size);
 
-        if (hover > 0.01) {
+        if (tinting) {
           const distance = Math.hypot(x - pointerX, y - pointerY);
           const blueAmount = hover * Math.pow(Math.max(0, 1 - distance / 112), 1.35);
           if (blueAmount > 0.01) {
             context.fillStyle = blue;
             context.globalAlpha = blueAmount * (0.45 + dot.shade * 0.3);
             context.fillRect(left, top, size, size);
+            context.fillStyle = ink;
           }
         }
       }
@@ -88,7 +94,7 @@ export function BookingButtonDither({ className }: { className: string }) {
     };
 
     const start = () => {
-      if (frame || !visible || reducedMotion.matches || document.hidden) return;
+      if (frame || !visible || scrolling || reducedMotion.matches || document.hidden) return;
       lastTime = 0;
       frame = window.requestAnimationFrame(tick);
     };
@@ -185,6 +191,19 @@ export function BookingButtonDither({ className }: { className: string }) {
       else start();
     };
 
+    /* Hold the field still while the page scrolls so the canvas never competes with scroll frames. */
+    const onScroll = () => {
+      if (!scrolling) {
+        scrolling = true;
+        stop();
+      }
+      window.clearTimeout(scrollIdleTimer);
+      scrollIdleTimer = window.setTimeout(() => {
+        scrolling = false;
+        start();
+      }, SCROLL_IDLE_MS);
+    };
+
     const resizeObserver = new ResizeObserver(resize);
     const themeObserver = new MutationObserver(updateColors);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
@@ -197,6 +216,7 @@ export function BookingButtonDither({ className }: { className: string }) {
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("scroll", onScroll, { passive: true });
     button.addEventListener("pointerenter", onPointerMove);
     button.addEventListener("pointermove", onPointerMove);
     button.addEventListener("pointerleave", onPointerLeave);
@@ -206,6 +226,8 @@ export function BookingButtonDither({ className }: { className: string }) {
 
     return () => {
       stop();
+      window.clearTimeout(scrollIdleTimer);
+      window.removeEventListener("scroll", onScroll);
       resizeObserver.disconnect();
       themeObserver.disconnect();
       visibilityObserver.disconnect();

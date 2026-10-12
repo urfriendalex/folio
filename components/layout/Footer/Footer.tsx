@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
+import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
@@ -20,6 +21,7 @@ import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
+import { isBodyScrollLocked } from "@/lib/scrollLock";
 import { replayPreloader } from "@/lib/preloaderReplay";
 import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
 import { formatZoneMeta, useTimeZoneStatus } from "./TimeZoneStatus";
@@ -283,6 +285,12 @@ export function Footer() {
 
   /** Mobile always uses the editorial “minimal” layout; no toolbar chrome. */
   const minimalFooter = isMobileViewport || footerMode === "minimal";
+  /* Rule draws once it is well above the bottom edge (not as a sliver at the fold). Cover only mounts in minimal mode, so re-observe on switch. */
+  const footerLineVisible = useRevealOnView(minimalFooterCoverRef, {
+    rootMargin: "0px 0px -18% 0px",
+    threshold: 0,
+    observerDisabled: !minimalFooter,
+  });
   /** Desktop + toolbar: only the taskbar (editorial + wordmark hidden). */
   const desktopToolbar = !isMobileViewport && footerMode === "toolbar";
   const showDisplayModeToggle = footerMode === "minimal" && !isMobileViewport;
@@ -328,6 +336,12 @@ export function Footer() {
     }
 
     const update = () => {
+      // The fixed body resets native scroll and can emit intermediate resize/scroll events.
+      // Keep the underlying page's reveal state until its scroll position is restored.
+      if (isBodyScrollLocked()) {
+        return;
+      }
+
       const rect = footer.getBoundingClientRect();
       const vh = window.innerHeight;
       const centerY = rect.top + rect.height * 0.5;
@@ -642,7 +656,11 @@ export function Footer() {
     >
       {minimalFooter && (
         <>
-          <div ref={minimalFooterCoverRef} className={styles.minimalFooterCover}>
+          <div
+            ref={minimalFooterCoverRef}
+            className={styles.minimalFooterCover}
+            data-line-visible={footerLineVisible}
+          >
             <div className={`page-shell ${styles.inner}`}>
               <div className={styles.editorial}>
                 <div className={`${styles.editorialCol} ${styles.editorialColPrimary}`}>

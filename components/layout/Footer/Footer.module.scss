@@ -1136,7 +1136,38 @@
   width: 100%;
   box-sizing: border-box;
   background: var(--bg-color);
-  border-top: 1px solid var(--line-color);
+  /* Transparent border keeps the 1px in layout; the visible rule is the drawn `::before`. */
+  border-top: 1px solid transparent;
+}
+
+/* Top rule draws left → right when the footer enters view (transform only — compositor-friendly). */
+.minimalFooterCover::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line-color);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 900ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  pointer-events: none;
+}
+
+.minimalFooterCover[data-line-visible="true"]::before {
+  transform: scaleX(1);
+}
+
+:global(html:not(.reveals-enabled)) .minimalFooterCover::before {
+  transform: scaleX(1);
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .minimalFooterCover::before {
+    transition: none;
+  }
 }
 
 /* Portaled into `#footer-wordmark-underlay` (AppShell; viewport-fixed when active). Full viewport width — no page-shell insets. */
@@ -1298,9 +1329,14 @@
     min-height: 2.75rem;
     display: inline-flex;
     align-items: center;
-    width: 100%;
+    width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  .connectLink:global(.link-underline)::after,
+  .columnControlBtn:global(.link-underline)::after {
+    top: calc(50% + 0.55em);
   }
 
   .localeBlock + .localeBlock {

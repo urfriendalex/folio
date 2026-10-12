@@ -17,9 +17,10 @@ import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
-import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
+import { lockBodyScroll, onBodyScrollLock, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
+import { NavbarWordmark } from "./NavbarWordmark";
 
 export function NavbarGradientBlur() {
   return (
@@ -42,7 +43,7 @@ export function NavbarGradientBlur() {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { openAbout, activeOverlay } = useOverlay();
+  const { openAbout, closeOverlay, activeOverlay } = useOverlay();
   const [menuOpen, setMenuOpen] = useState(false);
   const firstMenuActionRef = useRef<HTMLButtonElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -194,6 +195,25 @@ export function Navbar() {
       return;
     }
 
+    if (activeOverlay === "about") {
+      event.preventDefault();
+      const unsubscribe = onBodyScrollLock({
+        afterUnlock: () => {
+          unsubscribe();
+          window.requestAnimationFrame(() => {
+            if (pathname === "/") {
+              clearLocationHash();
+              scrollToHeroSection();
+            } else {
+              guardedPush("/", { scroll: false });
+            }
+          });
+        },
+      });
+      closeOverlay();
+      return;
+    }
+
     if (pathname === "/") {
       event.preventDefault();
       clearLocationHash();
@@ -209,153 +229,146 @@ export function Navbar() {
     setMenuOpen(false);
   };
 
+  const logoLink = (
+    <NextLink
+      href="/"
+      prefetch={false}
+      scroll={false}
+      className={styles.logo}
+      aria-label="Alexander Yansons"
+      onClick={handleLogoClick}
+    >
+      <NavbarWordmark expanded={activeOverlay === "about"} />
+    </NextLink>
+  );
+
   return (
-    <header className={styles.header} data-about-open={activeOverlay === "about"}>
-      <div className={`page-shell ${styles.inner}`}>
-        <NextLink
-          href="/"
-          prefetch={false}
-          scroll={false}
-          className={styles.logo}
-          aria-label="Alexander Yansons"
-          tabIndex={activeOverlay === "about" ? -1 : undefined}
-          onClick={handleLogoClick}
-        >
-          <span aria-hidden="true">A</span>
-          <span aria-hidden="true" className={styles.hiddenPart}>
-            LEXANDER
-          </span>
-          <span aria-hidden="true" className={styles.initialY}>
-            Y
-          </span>
-          <span aria-hidden="true" className={styles.hiddenSurname}>
-            ANSONS
-          </span>
-          <span aria-hidden="true" className={styles.dot}>
-            .
-          </span>
-        </NextLink>
+    <>
+      <header className={styles.header} data-about-open={activeOverlay === "about"}>
+        <div className={`page-shell ${styles.inner}`}>
+          {logoLink}
 
-        <nav className={styles.nav} aria-label="Primary">
-          <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
-            About
-          </button>
-          <IntentPrefetchLink
-            href="/projects"
-            className={`link-underline ${styles.navLink}`}
-          >
-            Work
-          </IntentPrefetchLink>
-          <IntentPrefetchLink
-            href="/archive"
-            className={`link-underline ${styles.navLink} ${styles.archiveNavLink}`}
-          >
-            Archive
-          </IntentPrefetchLink>
-          <a
-            href={getAnchor(pathname, "contact")}
-            className={`link-underline ${styles.navLink}`}
-          >
-            Contact
-          </a>
-        </nav>
-
-        <button
-          ref={menuButtonRef}
-          type="button"
-          className={styles.menuButton}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-navigation"
-          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          <span className={styles.menuButtonLine} />
-          <span className={styles.menuButtonLine} />
-        </button>
-      </div>
-      <div className={styles.workToolbarSlot} data-work-toolbar-slot="true" />
-
-      <div
-        id="mobile-navigation"
-        className={styles.mobileOverlay}
-        data-open={menuOpen}
-        aria-hidden={!menuOpen}
-      >
-        <div className={`page-shell ${styles.mobileOverlayInner}`}>
-          <nav className={styles.mobileNav} aria-label="Mobile primary">
-            <button
-              ref={firstMenuActionRef}
-              type="button"
-              className={`link-underline ${styles.mobileNavLink}`}
-              style={{ "--item-index": 0 } as CSSProperties}
-              onClick={openAboutFromMenu}
-            >
+          <nav className={styles.nav} aria-label="Primary">
+            <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
               About
             </button>
             <IntentPrefetchLink
               href="/projects"
-              className={`link-underline ${styles.mobileNavLink}`}
-              style={{ "--item-index": 1 } as CSSProperties}
-              onClick={handleMobileNavLinkClick}
+              className={`link-underline ${styles.navLink}`}
             >
               Work
             </IntentPrefetchLink>
             <IntentPrefetchLink
               href="/archive"
-              className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}
-              style={{ "--item-index": 2 } as CSSProperties}
-              onClick={() => setMenuOpen(false)}
+              className={`link-underline ${styles.navLink} ${styles.archiveNavLink}`}
             >
               Archive
             </IntentPrefetchLink>
             <a
               href={getAnchor(pathname, "contact")}
-              className={`link-underline ${styles.mobileNavLink}`}
-              style={{ "--item-index": 3 } as CSSProperties}
-              onClick={handleMobileNavLinkClick}
+              className={`link-underline ${styles.navLink}`}
             >
               Contact
             </a>
           </nav>
 
-          <div className={styles.mobileFooterRow}>
-            <div className={styles.mobileClockBlock}>
-              {sameAsWarsaw ? (
-                <span className={styles.mobileClockMono}>{timeZoneStatus.warsawClockLine}</span>
-              ) : (
-                <>
-                  <span className={styles.mobileClockLine}>
-                    <span className={styles.mobileClockLabel}>Warsaw</span>
-                    <span className={styles.mobileClockValue}>{timeZoneStatus.warsawClockLine}</span>
-                  </span>
-                  <span className={styles.mobileClockLine}>
-                    <span className={styles.mobileClockLabel}>Your time</span>
-                    <span className={styles.mobileClockValue}>{timeZoneStatus.visitorClockLine}</span>
-                  </span>
-                </>
-              )}
-            </div>
-            <div className={styles.mobileFooterLinks}>
-              <a
-                href={contactContent.instagram}
-                className={`link-underline ${styles.mobileFooterLink}`}
-                target="_blank"
-                rel="noreferrer"
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className={styles.menuButton}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <span className={styles.menuButtonLine} />
+            <span className={styles.menuButtonLine} />
+          </button>
+        </div>
+        <div className={styles.workToolbarSlot} data-work-toolbar-slot="true" />
+
+        <div
+          id="mobile-navigation"
+          className={styles.mobileOverlay}
+          data-open={menuOpen}
+          aria-hidden={!menuOpen}
+        >
+          <div className={`page-shell ${styles.mobileOverlayInner}`}>
+            <nav className={styles.mobileNav} aria-label="Mobile primary">
+              <button
+                ref={firstMenuActionRef}
+                type="button"
+                className={`link-underline ${styles.mobileNavLink}`}
+                style={{ "--item-index": 0 } as CSSProperties}
+                onClick={openAboutFromMenu}
               >
-                Instagram
-              </a>
-              <a
-                href={contactContent.linkedin}
-                className={`link-underline ${styles.mobileFooterLink}`}
-                target="_blank"
-                rel="noreferrer"
+                About
+              </button>
+              <IntentPrefetchLink
+                href="/projects"
+                className={`link-underline ${styles.mobileNavLink}`}
+                style={{ "--item-index": 1 } as CSSProperties}
+                onClick={handleMobileNavLinkClick}
               >
-                LinkedIn
+                Work
+              </IntentPrefetchLink>
+              <IntentPrefetchLink
+                href="/archive"
+                className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}
+                style={{ "--item-index": 2 } as CSSProperties}
+                onClick={() => setMenuOpen(false)}
+              >
+                Archive
+              </IntentPrefetchLink>
+              <a
+                href={getAnchor(pathname, "contact")}
+                className={`link-underline ${styles.mobileNavLink}`}
+                style={{ "--item-index": 3 } as CSSProperties}
+                onClick={handleMobileNavLinkClick}
+              >
+                Contact
               </a>
+            </nav>
+
+            <div className={styles.mobileFooterRow}>
+              <div className={styles.mobileClockBlock}>
+                {sameAsWarsaw ? (
+                  <span className={styles.mobileClockMono}>{timeZoneStatus.warsawClockLine}</span>
+                ) : (
+                  <>
+                    <span className={styles.mobileClockLine}>
+                      <span className={styles.mobileClockLabel}>Warsaw</span>
+                      <span className={styles.mobileClockValue}>{timeZoneStatus.warsawClockLine}</span>
+                    </span>
+                    <span className={styles.mobileClockLine}>
+                      <span className={styles.mobileClockLabel}>Your time</span>
+                      <span className={styles.mobileClockValue}>{timeZoneStatus.visitorClockLine}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className={styles.mobileFooterLinks}>
+                <a
+                  href={contactContent.instagram}
+                  className={`link-underline ${styles.mobileFooterLink}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Instagram
+                </a>
+                <a
+                  href={contactContent.linkedin}
+                  className={`link-underline ${styles.mobileFooterLink}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  LinkedIn
+                </a>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

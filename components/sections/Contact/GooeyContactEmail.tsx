@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { getLenis } from "@/lib/smoothScroll";
 import baseStyles from "./ContactSection.module.scss";
 import gooeyStyles from "./ContactSectionGooey.module.scss";
 import { createGooeyContactTimeline } from "./gooeyContactTimeline";
@@ -44,6 +45,11 @@ function getMobileServerSnapshot() {
 
 const MOBILE_LOOP_REPEAT_DELAY = 1.75;
 
+/** Let the `.emailWord` entrance (760ms) settle before rasterizing the filter off-screen. */
+const PREWARM_AFTER_REVEAL_MS = 900;
+/** While the page is still scrolling, re-check this often instead of prewarming mid-scroll. */
+const PREWARM_SCROLL_RETRY_MS = 200;
+
 /** Shared baseline for both lines; viewBox height stays 20 so GSAP `y: ±5` stays proportional */
 const TEXT_BASELINE_Y = 15.5;
 
@@ -75,7 +81,16 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
     getMobileServerSnapshot,
   );
 
-  /* viewBox not in deps: getBBox churn must not reset GSAP mid-hover */
+  const visibleRef = useRef(visible);
+  /** Set by the timeline effect; reacts to `visible` without rebuilding the timeline. */
+  const setTimelineVisibleRef = useRef<((nextVisible: boolean) => void) | null>(null);
+
+  useEffect(() => {
+    visibleRef.current = visible;
+    setTimelineVisibleRef.current?.(visible);
+  }, [visible]);
+
+  /* viewBox and `visible` not in deps: rebuilding mid-scroll/hover re-runs the filter prewarm and resets GSAP */
   useEffect(() => {
     if (prefersReducedMotion) {
       return;
@@ -123,15 +138,19 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         repeat: -1,
         yoyo: true,
         repeatDelay: MOBILE_LOOP_REPEAT_DELAY,
-        paused: !visible,
+        paused: !visibleRef.current,
         onUpdate: () => {
           feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
           const p = tl.progress();
           (textsGroupEl as SVGGElement).style.filter = p > 0 && p < 1 ? filterUrl : "none";
         },
       });
+      setTimelineVisibleRef.current = (nextVisible) => {
+        progressTween?.paused(!nextVisible);
+      };
     } else {
       let hoverActivated = false;
+      let prewarmed = false;
       let prewarmFrame = 0;
       let prewarmTimer = 0;
       let idleCallback = 0;
@@ -140,9 +159,16 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
 
       const prewarmFilter = () => {
         const svg = svgRef.current;
-        if (hoverActivated || !svg || !document.contains(el)) {
+        if (prewarmed || hoverActivated || !svg || !document.contains(el)) {
           return;
         }
+
+        if (getLenis()?.isScrolling) {
+          prewarmTimer = window.setTimeout(schedulePrewarmIdle, PREWARM_SCROLL_RETRY_MS);
+          return;
+        }
+
+        prewarmed = true;
 
         const rect = svg.getBoundingClientRect();
         const svgStyle = svg.getAttribute("style");
@@ -191,14 +217,39 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         });
       };
 
-      prewarmTimer = window.setTimeout(() => {
+      function schedulePrewarmIdle() {
+        prewarmTimer = 0;
         if ("requestIdleCallback" in window) {
-          idleCallback = window.requestIdleCallback(prewarmFilter, { timeout: 1500 });
+          idleCallback = window.requestIdleCallback(
+            () => {
+              idleCallback = 0;
+              prewarmFilter();
+            },
+            { timeout: 1500 },
+          );
           return;
         }
 
         prewarmFilter();
-      }, 250);
+      }
+
+      const cancelScheduledPrewarm = () => {
+        window.clearTimeout(prewarmTimer);
+        prewarmTimer = 0;
+        if (idleCallback) {
+          window.cancelIdleCallback(idleCallback);
+          idleCallback = 0;
+        }
+      };
+
+      /* Prewarm only once the banner is actually painted (ancestor opacity 0 skips raster) and its entrance has settled. */
+      setTimelineVisibleRef.current = (nextVisible) => {
+        cancelScheduledPrewarm();
+        if (nextVisible && !prewarmed) {
+          prewarmTimer = window.setTimeout(schedulePrewarmIdle, PREWARM_AFTER_REVEAL_MS);
+        }
+      };
+      setTimelineVisibleRef.current(visibleRef.current);
 
       const onEnter = () => {
         hoverActivated = false;
@@ -230,10 +281,8 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         el.removeEventListener("mouseenter", onEnter);
         el.removeEventListener("pointermove", onPointerMove);
         el.removeEventListener("mouseleave", onLeave);
-        window.clearTimeout(prewarmTimer);
-        if (idleCallback) {
-          window.cancelIdleCallback(idleCallback);
-        }
+        setTimelineVisibleRef.current = null;
+        cancelScheduledPrewarm();
         if (prewarmFrame) {
           window.cancelAnimationFrame(prewarmFrame);
         }
@@ -246,11 +295,12 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
     }
 
     return () => {
+      setTimelineVisibleRef.current = null;
       progressTween?.kill();
       tl.kill();
       (textsGroupEl as SVGGElement).style.filter = "none";
     };
-  }, [prefersReducedMotion, isMobileViewport, visible]);
+  }, [prefersReducedMotion, isMobileViewport]);
 
   /* Line 1 = phrase (default); line 2 = email (hover / loop phase 2) */
   const line1 = hoverPhrase.toUpperCase();
@@ -293,7 +343,7 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
       ro.disconnect();
       window.removeEventListener("resize", run);
     };
-  }, [layoutViewBoxFromContent, line1, line2, visible]);
+  }, [layoutViewBoxFromContent, line1, line2]);
 
   return (
     <span className={`${baseStyles.emailWord} ${gooeyStyles.gooeyEmailWord}`} data-visible={visible}>

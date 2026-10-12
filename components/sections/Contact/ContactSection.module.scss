@@ -102,6 +102,16 @@
 
 .emailView {
   --contact-email-gap: clamp(0.9rem, 1.5vw, 1rem);
+  /* One cascade top → bottom: same rise, same curve, 70ms apart. Exit drops the delay so it never lags. */
+  --contact-reveal-step: 70ms;
+  --contact-reveal-offset: 0;
+  --contact-reveal-rise: 0.75rem;
+  --contact-reveal-opacity-ms: 420ms;
+  --contact-reveal-transform-ms: 720ms;
+  --contact-reveal-ease: cubic-bezier(0.2, 0.88, 0.24, 1);
+  /* Mobile bento: hairline frame is traced like a pen stroke (on-screen movement → ease-in-out). */
+  --contact-frame-draw-ms: 820ms;
+  --contact-frame-ease: cubic-bezier(0.65, 0, 0.35, 1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -145,19 +155,19 @@
   white-space: nowrap;
   overflow-x: visible;
   overflow-y: visible;
+  /* No blur in the entrance: a filter transition over this full-width SVG banner repaints every frame mid-scroll. */
   opacity: 0;
-  filter: blur(18px);
-  transform: translate3d(0, -1rem, 0);
+  transform: translate3d(0, var(--contact-reveal-rise), 0);
   transition:
-    opacity 360ms ease,
-    filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    opacity 280ms ease,
+    transform 360ms var(--contact-reveal-ease);
 }
 
 .emailWord[data-visible="true"] {
   opacity: 1;
-  filter: blur(0);
   transform: translate3d(0, 0, 0);
+  transition-duration: var(--contact-reveal-opacity-ms), var(--contact-reveal-transform-ms);
+  transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
 
 .emailText {
@@ -264,39 +274,65 @@
   text-decoration: none;
   text-transform: uppercase;
   cursor: pointer;
-  opacity: 0;
-  transform: translate3d(0, 0.6rem, 0);
   pointer-events: none;
-  transition:
-    opacity 320ms ease,
-    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
 .contactChannelButton[data-visible="true"] {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
   pointer-events: auto;
-  transition-delay: 180ms;
 }
 
-.contactChannelButton[data-visible="false"] {
-  transition-delay: 0ms;
+/* Per-cell start time on the shared cascade; children offset from it. */
+.contactChannelButton,
+.contactGooeyCard {
+  --cell-delay: calc(
+    (var(--contact-reveal-index, 0) + var(--contact-reveal-offset)) * var(--contact-reveal-step)
+  );
 }
 
-:global(html.home-section-arrival-reveal) .section .emailWord,
-:global(html.home-section-arrival-reveal) .section .contactGooeyCard {
-  transition-duration: 240ms, 320ms, 320ms;
+/* Button label: line-mask reveal (text slides up inside its own clip) — no blur, no box motion. */
+.revealLine {
+  display: block;
+  overflow: hidden;
 }
 
-:global(html.home-section-arrival-reveal) .section .contactChannelButton {
-  transition-duration: 220ms, 300ms;
-  transition-delay: 40ms;
+@supports (overflow: clip) {
+  .revealLine {
+    overflow: clip;
+  }
+}
+
+.revealLineText {
+  display: block;
+  transform: translate3d(0, 110%, 0);
+  transition: transform 260ms var(--contact-reveal-ease);
+}
+
+[data-visible="true"] > .revealLine .revealLineText {
+  transform: translate3d(0, 0, 0);
+  transition-duration: var(--contact-reveal-transform-ms);
+  transition-delay: calc(var(--cell-delay) + var(--line-delay, 0ms));
+}
+
+/* Drawn frame + fill layer exist only for the mobile bento cells. */
+.cellFrame {
+  display: none;
+}
+
+:global(html.home-section-arrival-reveal) .section .emailView {
+  --contact-reveal-step: 30ms;
+  --contact-reveal-opacity-ms: 240ms;
+  --contact-reveal-transform-ms: 320ms;
+  --contact-frame-draw-ms: 420ms;
 }
 
 /* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
 :global(html:not(.reveals-enabled)) .emailWord,
 :global(html:not(.reveals-enabled)) .contactChannelButton,
-:global(html:not(.reveals-enabled)) .contactGooeyCard {
+:global(html:not(.reveals-enabled)) .contactGooeyCard,
+:global(html:not(.reveals-enabled)) .mobileSectionTitle,
+:global(html:not(.reveals-enabled)) .revealLineText,
+:global(html:not(.reveals-enabled)) .contactChannelButton::before,
+:global(html:not(.reveals-enabled)) .contactGooeyCard::before {
   opacity: 1;
   filter: none;
   transform: none;
@@ -531,9 +567,23 @@
     width: 100%;
     padding: 0.2rem 0 clamp(0.5rem, 2.2vw, 0.85rem);
     box-sizing: border-box;
+    opacity: 0;
+    transform: translate3d(0, var(--contact-reveal-rise), 0);
+    transition:
+      opacity 280ms ease,
+      transform 360ms var(--contact-reveal-ease);
+  }
+
+  .emailView[data-visible="true"] .mobileSectionTitle {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-duration: var(--contact-reveal-opacity-ms), var(--contact-reveal-transform-ms);
+    transition-delay: 0ms;
   }
 
   .emailView {
+    --contact-reveal-offset: 1;
+    --contact-reveal-step: 110ms;
     flex: 1;
     min-height: 0;
     align-items: stretch;
@@ -542,7 +592,7 @@
     padding-block: 0;
   }
 
-  /* Hairline frame + glass fill — enter/exit aligned with `.emailWord` (opacity 360ms, blur/move 760ms) */
+  /* Hairline frame + glass fill — enter/exit on the shared `--contact-reveal-*` cascade */
   .contactChannelButton {
     flex: 1 1 0;
     min-height: 0;
@@ -553,14 +603,13 @@
     justify-content: center;
     align-items: center;
     gap: 0;
-    padding: clamp(0.75rem, 2.5vw, 1.1rem) clamp(1rem, 3vw, 1.15rem);
+    /* +1px replaces the old border so the drawn frame sits exactly where it was. */
+    padding: calc(clamp(0.75rem, 2.5vw, 1.1rem) + 1px) calc(clamp(1rem, 3vw, 1.15rem) + 1px);
     overflow: hidden;
     border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+    border: 0;
     box-shadow: none;
-    background:
-      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
-      var(--overlay-default-surface-base);
+    background: transparent;
     color: var(--signal-color);
     font-family: var(--font-pixel-stack);
     font-size: clamp(0.84rem, 2.6vw, 0.98rem);
@@ -569,34 +618,86 @@
     line-height: 1.35;
     text-transform: uppercase;
     text-align: center;
-    opacity: 0;
-    filter: blur(18px);
-    transform: translate3d(0, -1rem, 0);
-    transition:
-      opacity 360ms ease,
-      filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
-      background 200ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms ease;
-  }
-
-  .contactChannelButton[data-visible="true"] {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0);
+    transition: color 160ms ease, transform 160ms ease-out;
   }
 
   .contactChannelButton[data-visible="true"]:active:not(:disabled) {
-    transform: translate3d(0, 0, 0) scale(0.985);
-    filter: blur(0);
+    transform: scale(0.985);
+  }
+
+  /* —— Bento cell chrome: fill layer (::before) + traced hairline frame (svg) —— */
+  .contactChannelButton,
+  .contactGooeyCard {
+    --cell-stroke: color-mix(in srgb, var(--fg-color) 12%, transparent);
+    --cell-fill:
+      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
+      var(--overlay-default-surface-base);
+    position: relative;
+    isolation: isolate;
+    /* Content follows the pen: label + email start once the stroke is underway. */
+    --line-delay: 200ms;
+    --email-delay: 220ms;
+  }
+
+  .contactChannelButton::before,
+  .contactGooeyCard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--cell-fill);
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+
+  .contactChannelButton[data-visible="true"]::before,
+  .contactGooeyCard[data-visible="true"]::before {
+    opacity: 1;
+    transition-duration: 520ms;
+    transition-delay: calc(var(--cell-delay) + 260ms);
+  }
+
+  .cellFrame {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .cellFrame rect {
+    x: 0.5px;
+    y: 0.5px;
+    width: calc(100% - 1px);
+    height: calc(100% - 1px);
+    rx: calc(1rem - 0.5px);
+    fill: none;
+    stroke: var(--cell-stroke);
+    stroke-width: 1px;
+    /* `--frame-length` is the measured perimeter (ContactCellFrame); large fallback keeps it hidden until then. */
+    stroke-dasharray: var(--frame-length, 100000);
+    stroke-dashoffset: var(--frame-length, 100000);
+    transition:
+      stroke-dashoffset 240ms ease-out,
+      stroke 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  [data-visible="true"] > .cellFrame rect {
+    stroke-dashoffset: 0;
+    transition-duration: var(--contact-frame-draw-ms), 200ms;
+    transition-timing-function: var(--contact-frame-ease), cubic-bezier(0.23, 1, 0.32, 1);
+    transition-delay: var(--cell-delay), 0ms;
   }
 
   @media (hover: hover) and (pointer: fine) {
     .contactChannelButton:hover:not(:disabled) {
-      border-color: color-mix(in srgb, var(--fg-color) 22%, transparent);
-      box-shadow: none;
-      background:
+      --cell-stroke: color-mix(in srgb, var(--fg-color) 22%, transparent);
+      --cell-fill:
         linear-gradient(
           180deg,
           color-mix(in srgb, var(--overlay-default-surface-top) 92%, var(--fg-color)),
@@ -614,31 +715,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(0.65rem, 2.2vw, 1rem);
+    padding: calc(clamp(0.65rem, 2.2vw, 1rem) + 1px);
     overflow: visible;
     border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+    border: 0;
     box-shadow: none;
-    background:
-      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
-      var(--overlay-default-surface-base);
-    transition:
-      opacity 360ms ease,
-      filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    background: transparent;
   }
 
   .contactGooeyCard[data-visible="false"] {
-    opacity: 0;
-    filter: blur(18px);
-    transform: translate3d(0, -1rem, 0);
     pointer-events: none;
-  }
-
-  .contactGooeyCard[data-visible="true"] {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0);
   }
 
   .emailWord {
@@ -669,11 +755,21 @@
   transition: none;
 }
 
+:global(html:not(.reveals-enabled)) .cellFrame rect {
+  stroke-dashoffset: 0;
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .formView,
   .emailWord,
+  .mobileSectionTitle,
   .contactChannelButton,
   .contactGooeyCard,
+  .contactChannelButton::before,
+  .contactGooeyCard::before,
+  .revealLineText,
+  .cellFrame rect,
   .formBackScreen,
   .field::after,
   .field span,

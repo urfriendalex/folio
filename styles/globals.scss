@@ -474,8 +474,7 @@ html:has([data-work-index]) [data-app-main="true"] {
 
 html.is-archive-route [data-footer-wordmark-underlay="true"],
 body:has([data-archive-experience="true"]) [data-footer-wordmark-underlay="true"],
-html.is-fullscreen-route [data-footer-wordmark-underlay="true"],
-html.is-overlay-open [data-footer-wordmark-underlay="true"] {
+html.is-fullscreen-route [data-footer-wordmark-underlay="true"] {
   display: none;
 }
 
@@ -559,6 +558,15 @@ html [data-app-footer="true"] {
 
 html.is-overlay-open [data-app-navbar="true"] {
   z-index: 499;
+  pointer-events: none;
+}
+
+/* Keep the original navbar logo above About; the rest of the row lets clicks
+   reach the overlay's Close action. Only the logo link opts back into hit testing. */
+html.is-overlay-open [data-app-navbar="true"]:has(header[data-about-open="true"]),
+html.is-archive-route.is-overlay-open [data-app-navbar="true"]:has(header[data-about-open="true"]),
+html:has([data-archive-experience="true"]).is-overlay-open [data-app-navbar="true"]:has(header[data-about-open="true"]) {
+  z-index: 510;
   pointer-events: none;
 }
 

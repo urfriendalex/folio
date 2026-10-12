@@ -89,6 +89,8 @@
   /* Below `.footerChrome` (35) so editorial/footer paints over the strip; above `.main` (20) so project toolbar stays under. */
   z-index: 34;
   pointer-events: none;
+  /* Retain the fixed layer when body scroll-lock and the overlay backdrop blur change. */
+  transform: translateZ(0);
   opacity: 0;
   visibility: hidden;
   transition: none;

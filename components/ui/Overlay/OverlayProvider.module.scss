@@ -472,8 +472,8 @@
   .metaBlock:nth-child(3) li:nth-child(3) { --about-ink-index: 9; }
 
   .about[data-content-visible="true"] .metaBlock li {
-    animation: aboutInkCycle 16s ease-in-out infinite;
-    animation-delay: calc(var(--about-ink-index, 0) * 1.6s + 1.6s);
+    animation: aboutInkCycle 1.2s ease-in-out 1 both;
+    animation-delay: calc(var(--about-ink-index, 0) * 650ms + 300ms);
   }
 }
 
@@ -485,13 +485,13 @@
 
 @keyframes aboutInkCycle {
   0%,
-  7%,
+  20%,
   100% {
     color: var(--overlay-muted);
   }
 
-  2%,
-  5% {
+  45%,
+  65% {
     color: var(--overlay-fg);
   }
 }

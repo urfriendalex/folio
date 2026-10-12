@@ -77,6 +77,46 @@ function stripContactFormHashIfPresent(): void {
   window.history.replaceState(window.history.state, "", url.toString());
 }
 
+/** Mobile bento hairline, traced on reveal. Perimeter is measured so the stroke draws at a true pace. */
+function ContactCellFrame() {
+  const rectRef = useRef<SVGRectElement | null>(null);
+
+  useLayoutEffect(() => {
+    const rect = rectRef.current;
+    const svg = rect?.ownerSVGElement;
+    if (!rect || !svg) {
+      return;
+    }
+
+    const measure = () => {
+      const length = rect.getTotalLength();
+      if (length > 0) {
+        svg.style.setProperty("--frame-length", `${Math.ceil(length) + 1}`);
+      }
+    };
+
+    measure();
+    /* Hidden on desktop (display: none) — re-measures when the mobile layout shows it. */
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(svg);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  return (
+    <svg className={styles.cellFrame} aria-hidden focusable="false">
+      <rect ref={rectRef} width="100%" height="100%" rx="16" />
+    </svg>
+  );
+}
+
+function RevealLabel({ children }: { children: string }) {
+  return (
+    <span className={styles.revealLine}>
+      <span className={styles.revealLineText}>{children}</span>
+    </span>
+  );
+}
+
 export function ContactSectionGooey({
   content,
   hoverPhrase = "Let's work together",
@@ -84,7 +124,12 @@ export function ContactSectionGooey({
   const sectionRef = useRef<HTMLElement | null>(null);
   const switchTimerRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
-  const sectionVisible = useRevealOnView(sectionRef, { rootMargin: "0px 0px -12% 0px" });
+  /* Anchor on the email card, not the 100svh section: the section top enters long before the content does. */
+  const revealAnchorRef = useRef<HTMLDivElement | null>(null);
+  const sectionVisible = useRevealOnView(revealAnchorRef, {
+    rootMargin: "0px 0px -4% 0px",
+    threshold: 0.1,
+  });
   const [view, setView] = useState<ContactView>("email");
   const [emailVisible, setEmailVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
@@ -321,11 +366,19 @@ export function ContactSectionGooey({
             <CalBookingTrigger
               className={`link-underline ${styles.contactChannelButton}`}
               data-visible={emailVisible}
+              style={{ "--contact-reveal-index": 0 } as CSSProperties}
             >
-              Schedule a call
+              <ContactCellFrame />
+              <RevealLabel>Schedule a call</RevealLabel>
             </CalBookingTrigger>
 
-            <div className={styles.contactGooeyCard} data-visible={emailVisible}>
+            <div
+              ref={revealAnchorRef}
+              className={styles.contactGooeyCard}
+              data-visible={emailVisible}
+              style={{ "--contact-reveal-index": 1 } as CSSProperties}
+            >
+              <ContactCellFrame />
               <GooeyContactEmail email={content.email} hoverPhrase={hoverPhrase} visible={emailVisible} />
             </div>
 
@@ -333,9 +386,11 @@ export function ContactSectionGooey({
               type="button"
               className={`link-underline ${styles.contactChannelButton}`}
               data-visible={emailVisible}
+              style={{ "--contact-reveal-index": 2 } as CSSProperties}
               onClick={() => openForm()}
             >
-              Open contact form
+              <ContactCellFrame />
+              <RevealLabel>Open contact form</RevealLabel>
             </button>
           </div>
         ) : null}
