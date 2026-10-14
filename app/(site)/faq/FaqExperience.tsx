@@ -33,6 +33,82 @@ export function FaqExperience({ children }: { children: ReactNode }) {
   }, [complete, motionEnabled]);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const disclosures = Array.from(root.querySelectorAll<HTMLDetailsElement>("[data-faq-disclosure]"));
+    const transitions = new Map<HTMLDetailsElement, { height: Animation; opacity: Animation; open: boolean }>();
+    // Preserve native exclusive behavior without JS; manage it here so closing can animate too.
+    disclosures.forEach((detail) => detail.removeAttribute("name"));
+    const change = (detail: HTMLDetailsElement, open: boolean, instant: boolean) => {
+      const summary = detail.querySelector("summary");
+      const answer = detail.querySelector<HTMLElement>("[data-faq-answer]");
+      if (!summary || !answer) return;
+      const start = detail.getBoundingClientRect().height;
+      const alpha = getComputedStyle(answer).opacity;
+      const previous = transitions.get(detail);
+      previous?.height.cancel();
+      previous?.opacity.cancel();
+      transitions.delete(detail);
+      detail.dataset.faqExpanded = String(open);
+      if (instant) {
+        detail.open = open;
+        detail.style.removeProperty("height");
+        detail.style.removeProperty("overflow");
+        return;
+      }
+      const wasOpen = detail.open;
+      detail.open = true;
+      detail.style.removeProperty("height");
+      const end = open ? detail.getBoundingClientRect().height : summary.getBoundingClientRect().height;
+      detail.style.height = `${end}px`;
+      detail.style.overflow = "hidden";
+      const height = detail.animate([{ height: `${start}px` }, { height: `${end}px` }], {
+        duration: 240, easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+      });
+      const opacity = answer.animate([{ opacity: wasOpen ? alpha : 0 }, { opacity: open ? 1 : 0 }], {
+        duration: open ? 200 : 140, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards",
+      });
+      transitions.set(detail, { height, opacity, open });
+      height.onfinish = () => {
+        if (transitions.get(detail)?.height !== height) return;
+        detail.open = open;
+        detail.style.removeProperty("height");
+        detail.style.removeProperty("overflow");
+        opacity.cancel();
+        transitions.delete(detail);
+      };
+    };
+    const click = (event: MouseEvent) => {
+      const summary = (event.target as Element).closest("summary");
+      const detail = summary?.parentElement as HTMLDetailsElement | null;
+      if (!detail || !disclosures.includes(detail)) return;
+      event.preventDefault();
+      const open = !(transitions.get(detail)?.open ?? detail.open);
+      const instant = event.detail === 0 || reduced.matches;
+      if (open) disclosures.forEach((other) => {
+        if (other !== detail && (other.open || transitions.has(other))) change(other, false, instant);
+      });
+      change(detail, open, instant);
+    };
+    const finishMotion = () => {
+      if (reduced.matches) disclosures.forEach((detail) => change(detail, transitions.get(detail)?.open ?? detail.open, true));
+    };
+    root.addEventListener("click", click);
+    reduced.addEventListener("change", finishMotion);
+    return () => {
+      root.removeEventListener("click", click);
+      reduced.removeEventListener("change", finishMotion);
+      transitions.forEach(({ height, opacity }) => { height.cancel(); opacity.cancel(); });
+      disclosures.forEach((detail) => {
+        detail.style.removeProperty("height");
+        detail.style.removeProperty("overflow");
+        detail.setAttribute("name", "faq");
+      });
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     const root = rootRef.current;
     const context = canvas?.getContext("2d");
@@ -52,15 +128,15 @@ export function FaqExperience({ children }: { children: ReactNode }) {
     };
     const draw = () => {
       context.clearRect(0, 0, width, height);
-      context.font = "10px monospace";
+      context.font = "11px monospace";
       context.fillStyle = ink;
       for (const cell of cells) {
         // Leave the reading column quiet, including when an answer expands.
         if (cell.x > contentBox.left && cell.x < contentBox.right && cell.y > contentBox.top && cell.y < contentBox.bottom) continue;
         const distance = Math.hypot(cell.x - pointer.x, cell.y - pointer.y);
-        const hover = Math.max(0, 1 - distance / 115);
-        context.globalAlpha = cell.alpha + hover * 0.22;
-        context.fillText(hover > 0.55 ? "+" : cell.glyph, cell.x, cell.y);
+        const hover = Math.max(0, 1 - distance / 165);
+        context.globalAlpha = cell.alpha + hover * 0.5;
+        context.fillText(hover > 0.7 ? "#" : hover > 0.35 ? "+" : cell.glyph, cell.x, cell.y);
       }
       context.globalAlpha = 1;
     };
@@ -84,15 +160,15 @@ export function FaqExperience({ children }: { children: ReactNode }) {
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       ink = getComputedStyle(root).getPropertyValue("--fg-color").trim();
       const content = root.querySelector<HTMLElement>("[data-faq-content]")?.getBoundingClientRect();
-      if (content) contentBox = { left: content.left - box.left - 28, right: content.right - box.left + 28, top: content.top - box.top - 16, bottom: content.bottom - box.top + 16 };
-      // At most 2,200 candidate cells; only ~10% become visible glyphs.
+      if (content) contentBox = { left: content.left - box.left - 12, right: content.right - box.left + 12, top: content.top - box.top - 16, bottom: content.bottom - box.top + 16 };
+      // A bounded grid with ~35% visible glyphs and no continuous idle animation.
       const step = Math.max(28, Math.sqrt(width * height / 2200));
       cells = [];
       for (let row = 0; row * step < height; row++) {
         for (let column = 0; column * step < width; column++) {
           const seed = hash(column, row);
-          if (seed < 0.9) continue;
-          cells.push({ x: column * step + step * 0.4, y: row * step + step * 0.6, glyph: seed > 0.97 ? ":" : ".", alpha: 0.12 + (seed - 0.9) * 0.7 });
+          if (seed < 0.65) continue;
+          cells.push({ x: column * step + step * 0.4, y: row * step + step * 0.6, glyph: seed > 0.93 ? "+" : seed > 0.85 ? ":" : seed > 0.75 ? "·" : ".", alpha: 0.2 + (seed - 0.65) * 0.35 });
         }
       }
       draw();

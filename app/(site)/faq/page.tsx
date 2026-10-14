@@ -59,12 +59,12 @@ export default function FaqPage() {
           {faqContent.map(({ id, question, answer }, index) => (
             <div className={styles.item} key={id}>
               <span className={styles.rule} data-faq-rule aria-hidden="true" />
-              <details className={styles.detail} name="faq" open={index === 0}>
+              <details className={styles.detail} name="faq" data-faq-disclosure open={index === 0}>
               <summary className={styles.summary}>
                 <h2 id={`faq-${id}`} className={styles.question} data-faq-reveal>{question}</h2>
                 <span className={styles.toggle} aria-hidden="true" />
               </summary>
-              <p className={styles.answerText} data-faq-reveal>{answer}</p>
+              <p className={styles.answerText} data-faq-reveal data-faq-answer>{answer}</p>
               </details>
               {index === faqContent.length - 1 && (
                 <span className={`${styles.rule} ${styles.bottomRule}`} data-faq-rule aria-hidden="true" />

@@ -90,7 +90,7 @@
   &::after { top: 0; bottom: 0; left: 50%; width: 1px; }
 }
 
-.detail[open] .toggle::after { display: none; }
+.detail[open]:not([data-faq-expanded="false"]) .toggle::after { display: none; }
 
 .answerText {
   max-width: 39rem;
