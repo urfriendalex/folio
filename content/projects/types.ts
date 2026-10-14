@@ -69,6 +69,8 @@ export type ProjectEntry = {
   /** Fuller project summary shown on the project page. */
   descriptor: string;
   year: string;
+  /** Date of the last substantive case-study update, in YYYY-MM-DD format. */
+  lastModified: string;
   role: string;
   technologies: string[];
   description: string;

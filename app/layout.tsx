@@ -11,7 +11,7 @@ import {
   ROOT_THEME_ATTRIBUTE,
 } from "@/lib/browserChrome";
 import { SITE_URL } from "@/lib/site";
-import { SITE_OG_IMAGE } from "@/lib/metadata";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE } from "@/lib/metadata";
 import "@/styles/globals.scss";
 
 const screenBody = Geist({
@@ -26,21 +26,20 @@ const fontVariables = `${GeistPixelGrid.variable} ${GeistPixelSquare.variable} $
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Alexander Yansons | Independent Developer & Creative Technologist",
-  description: "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   openGraph: {
-    title: "Alexander Yansons | Independent Developer & Creative Technologist",
-    description:
-      "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
     type: "website",
     url: SITE_URL,
     images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alexander Yansons | Independent Developer & Creative Technologist",
-    description:
-      "Portfolio of Alexander Yansons. Custom websites, e-commerce, portfolios, and product interfaces for brands, studios, and product teams.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [SITE_OG_IMAGE.url],
   },
 };
@@ -198,12 +197,6 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: bootstrapScript }} />
       </head>
       <body>
-        <noscript>
-          <div className="noscript-loader" role="status" aria-live="polite">
-            <span className="noscript-loader__spinner" />
-            <span>Loading portfolio…</span>
-          </div>
-        </noscript>
         <PreloaderGate>
           {children}
         </PreloaderGate>

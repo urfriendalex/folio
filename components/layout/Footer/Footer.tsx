@@ -11,12 +11,13 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
-import { BookingButtonDither } from "./BookingButtonDither";
+import { BookingButtonAscii } from "./BookingButtonAscii";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
@@ -670,7 +671,7 @@ export function Footer() {
                       <p className={styles.editorialBody}>{contactContent.availabilityAi}</p>
                     ) : null}
                     <CalBookingTrigger className={styles.bookingButton}>
-                      <BookingButtonDither className={styles.bookingButtonCanvas} />
+                      <BookingButtonAscii className={styles.bookingButtonCanvas} />
                       <span className={styles.bookingButtonText}>Schedule a call</span>
                       <span className={styles.bookingButtonMeta}>Cal.com</span>
                     </CalBookingTrigger>
@@ -733,6 +734,9 @@ export function Footer() {
                     )}
                   </div>
                   <div className={styles.columnControls}>
+                    <Link href="/faq" className={`link-underline ${styles.columnControlBtn}`}>
+                      FAQ
+                    </Link>
                     <button
                       type="button"
                       className={`link-underline ${styles.columnControlBtn}`}
@@ -832,6 +836,9 @@ export function Footer() {
                 <span className={styles.taskbarGroove} aria-hidden="true" />
 
                 <div className={styles.quickLaunch} aria-label="Quick links">
+                  <Link href="/faq" className={styles.quickLaunchBtn} title="Frequently asked questions">
+                    FAQ
+                  </Link>
                   {QUICK_LINKS.map((link) => (
                     <a
                       key={link.label}

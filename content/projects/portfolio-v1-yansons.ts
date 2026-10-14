@@ -9,6 +9,7 @@ export const portfolioV1YansonsProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "First portfolio site",
   year: "2020",
+  lastModified: "2026-10-14",
   role: "Solo Designer & Developer",
   technologies: ["React", "GSAP", "JavaScript", "CSS"],
   shortDescription:

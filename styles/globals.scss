@@ -666,35 +666,15 @@ html.js-enabled[data-preloader="skip"] [data-preloader-overlay="true"] {
   display: none !important;
 }
 
-.noscript-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  background: var(--preloader-bg);
-  color: var(--preloader-progress-color);
-  letter-spacing: var(--tracking-label-sm);
-  text-transform: uppercase;
-  font-size: 0.8rem;
+// Server-rendered content stays readable when enhancement scripts are unavailable.
+html:not(.js-enabled),
+html:not(.js-enabled) body {
+  overflow: auto;
 }
 
-.noscript-loader__spinner {
-  width: 2.75rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--preloader-progress-color) 28%, transparent);
-  border-top-color: var(--preloader-progress-color);
-  animation: nojs-spin 900ms linear infinite;
-}
-
-@keyframes nojs-spin {
-  to {
-    transform: rotate(360deg);
-  }
+html:not(.js-enabled) [data-app-shell="true"] {
+  opacity: 1;
+  transform: none;
 }
 
 main,

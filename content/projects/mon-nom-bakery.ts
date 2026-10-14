@@ -9,6 +9,7 @@ export const monNomBakeryProject: ProjectEntry = {
   category: "product",
   descriptor: "Custom bilingual restaurant website and interactive menu experience",
   year: "2026",
+  lastModified: "2026-10-14",
   role: "Solo Designer & Developer",
   technologies: ["Next.js", "Sanity", "React", "SCSS", "Technical SEO"],
   shortDescription:
