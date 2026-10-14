@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArchiveCanvas } from "@/components/Archive/ArchiveCanvas";
 import { archiveEntries } from "@/content/archive/archive-data";
-import { clampMetaDescription, SITE_OG_IMAGE } from "@/lib/metadata";
+import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 
 const archiveDescription = clampMetaDescription(
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     canonical: "/archive",
   },
   openGraph: {
+    siteName: SITE_NAME,
     title: "Archive · Alexander Yansons",
     description: archiveDescription,
     type: "website",

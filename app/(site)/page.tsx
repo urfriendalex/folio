@@ -5,7 +5,7 @@ import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectio
 import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
-import { SITE_OG_IMAGE } from "@/lib/metadata";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE } from "@/lib/metadata";
 import { HeroRevealTimelineProvider } from "@/lib/heroRevealTimeline";
 import type { Metadata } from "next";
 
@@ -14,9 +14,17 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    type: "website",
+    url: SITE_URL,
     images: [SITE_OG_IMAGE],
   },
   twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [SITE_OG_IMAGE.url],
   },
 };

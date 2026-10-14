@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ProjectsIndex } from "@/components/projects/ProjectsIndex/ProjectsIndex";
 import { parseProjectFilter, projects } from "@/content/projects";
-import { clampMetaDescription, SITE_OG_IMAGE } from "@/lib/metadata";
+import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 
 type ProjectsIndexRouteProps = {
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     canonical: "/projects",
   },
   openGraph: {
+    siteName: SITE_NAME,
     title: "Work · Alexander Yansons",
     description: projectsDescription,
     type: "website",

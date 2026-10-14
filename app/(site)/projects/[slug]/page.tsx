@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
-import { projectShareDescription, projectShareOgImage } from "@/lib/metadata";
+import { projectShareDescription, projectShareOgImage, SITE_NAME } from "@/lib/metadata";
 import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
 
 const ProjectPage = dynamic(() =>
@@ -38,6 +38,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
       canonical,
     },
     openGraph: {
+      siteName: SITE_NAME,
       title: `${project.title} | Alexander Y.`,
       description,
       type: "article",
