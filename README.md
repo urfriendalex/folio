@@ -35,6 +35,18 @@ asset paths, and page layouts stay unchanged. Already optimized files are kept.
 Curated captures remain curated: this command does not regenerate them from
 sources, change their gallery ordering, or trim their clips.
 
+## Search and content metadata
+
+The FAQ at `/faq`, project notes, and archive index render their text on the
+server. Keep visible FAQ answers and their JSON-LD in sync by editing the shared
+FAQ content in `app/(site)/faq/content.ts`.
+
+When a page's content, structured data, or substantive links change, update its
+date in `lib/site.ts`. For a case study, update only that project's
+`lastModified` in `content/projects`. Use `YYYY-MM-DD` dates. These dates feed the
+sitemap and JSON-LD; do not replace them with build timestamps or update
+unrelated projects just because the site is deployed.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

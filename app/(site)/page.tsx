@@ -4,7 +4,7 @@ import { HOME_RECENT_PROJECT_COUNT, projects } from "@/content/projects";
 import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectionGooey";
 import { HeroSection } from "@/components/sections/Hero/HeroSection";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
-import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE } from "@/lib/metadata";
 import { HeroRevealTimelineProvider } from "@/lib/heroRevealTimeline";
 import type { Metadata } from "next";
@@ -54,7 +54,7 @@ export default function Home() {
     logo: `${SITE_URL}/favicons/dark/apple-touch-icon.png`,
     email: contactContent.email,
     sameAs: personSchema.sameAs,
-    dateModified: SITE_LAST_UPDATED.toISOString(),
+    dateModified: PAGE_LAST_MODIFIED.home,
   };
 
   const websiteSchema = {
@@ -66,51 +66,16 @@ export default function Home() {
     description:
       "Portfolio of Alexander Yansons — custom websites, e-commerce, portfolios, and product interfaces for brands and teams.",
     publisher: { "@id": `${SITE_URL}/#organization` },
-    dateModified: SITE_LAST_UPDATED.toISOString(),
+    dateModified: PAGE_LAST_MODIFIED.home,
   };
 
   const structuredData = [personSchema, organizationSchema, websiteSchema];
-
-  const faqPageSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "What kinds of projects do you take on?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "I work on marketing sites, portfolios, e-commerce, and product UI—anything where structure, UX, and performance matter. Briefs range from brand-led launches to more technical dashboards and internal tools.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "How should I get in touch for a new project?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Email hello@yansons.online with a short note: goals, timeline, budget range if you can share it, and links to references or live products. That context makes the first reply much more useful.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Where are you based, and do you work remotely?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "I am based in Warsaw, Poland, and collaborate with teams and clients internationally. Most work is remote-first; on-site sessions are possible when the project needs them.",
-        },
-      },
-    ],
-  };
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }}
       />
       <HeroRevealTimelineProvider>
         <HeroSection content={heroContent} />

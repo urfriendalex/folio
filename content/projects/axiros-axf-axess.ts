@@ -9,6 +9,7 @@ export const axirosAxfAxessProject: ProjectEntry = {
   category: "product",
   descriptor: "Telecom device-management platform (AXF JS framework / component library + AXESS)",
   year: "2019–2026",
+  lastModified: "2026-10-14",
   role: "Lead UI Engineer · Frontend Architect",
   technologies: ["JavaScript", "SCSS", "Handlebars", "Vite"],
   shortDescription:

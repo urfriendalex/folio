@@ -27,8 +27,9 @@ I am based in Warsaw, Poland, and collaborate with teams and clients internation
 ## Primary pages
 
 - Home: https://yansons.online/
-- Project index (from home): https://yansons.online/#work
+- Project index: https://yansons.online/projects
 - Archive: https://yansons.online/archive/
+- Common questions: https://yansons.online/faq
 
 ## Contact
 

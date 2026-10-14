@@ -197,12 +197,6 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: bootstrapScript }} />
       </head>
       <body>
-        <noscript>
-          <div className="noscript-loader" role="status" aria-live="polite">
-            <span className="noscript-loader__spinner" />
-            <span>Loading portfolio…</span>
-          </div>
-        </noscript>
         <PreloaderGate>
           {children}
         </PreloaderGate>

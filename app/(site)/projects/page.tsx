@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProjectsIndex } from "@/components/projects/ProjectsIndex/ProjectsIndex";
 import { parseProjectFilter, projects } from "@/content/projects";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
-import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 
 type ProjectsIndexRouteProps = {
   searchParams: Promise<{ type?: string | string[] }>;
@@ -46,7 +46,7 @@ export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndex
     url: pageUrl,
     description: projectsDescription,
     isPartOf: { "@id": `${SITE_URL}/#website` },
-    dateModified: SITE_LAST_UPDATED.toISOString(),
+    dateModified: PAGE_LAST_MODIFIED.projects,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: projects.length,
