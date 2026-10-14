@@ -1,5 +1,7 @@
 /* Full viewport behind sticky navbar (navbar z-index 400). */
 .viewport {
+  --archive-edge-inline: 0.65rem;
+  --archive-edge-bottom: 0.55rem;
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -298,8 +300,8 @@
 
 .focusLabel {
   position: absolute;
-  right: 0.65rem;
-  bottom: 0.55rem;
+  right: var(--archive-edge-inline);
+  bottom: var(--archive-edge-bottom);
   z-index: 1;
   margin: 0;
   max-width: min(calc(50vw - 1rem), 28rem);
@@ -314,6 +316,10 @@
 }
 
 @media (max-width: 48rem) {
+  .viewport {
+    --archive-edge-inline: max(0.75rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    --archive-edge-bottom: max(1.0625rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+  }
   .assetsLoadingIndicator {
     left: max(0.75rem, env(safe-area-inset-left, 0px));
     bottom: max(1.0625rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
@@ -336,13 +342,8 @@
   }
 
   .focusLabel {
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
     /* Nudged ~50% closer to the bottom edge than the prior touch offset so the
        name reads nearer the thumb / home indicator while still clearing safe area. */
-    bottom: max(
-      1.0625rem,
-      calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
-    );
     max-width: min(calc(50vw - 1.5rem), 20rem);
     font-size: clamp(0.8rem, 2.9vw, 0.95rem);
     line-height: 1.3;

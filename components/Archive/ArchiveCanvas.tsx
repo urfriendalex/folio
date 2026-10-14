@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
+import { ArchiveFocusContext } from "./ArchiveIndexLink";
 import type { ArchiveEntry } from "@/content/archive/archive-data";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
@@ -191,8 +192,13 @@ function fileNameFromArchivePath(path: string) {
 
 export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
   const preloaderComplete = usePreloaderComplete();
+  const [focusRequest, setFocusRequest] = useState<{ id: string; requestId: number }>();
   const isTouchPrimary = useIsTouchDevice();
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
+  const requestFocus = useCallback((id: string) => {
+    setHoveredLabel("");
+    setFocusRequest((previous) => ({ id, requestId: (previous?.requestId ?? 0) + 1 }));
+  }, []);
   const [focusLabel, setFocusLabel] = useState<string>("");
   const [sceneLoadState, setSceneLoadState] = useState<SceneLoadState | null>(null);
   /** Lets the preparing overlay play its exit animation after the first media becomes available. */
@@ -226,7 +232,7 @@ export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
     setFocusLabel(nextLabel);
   }, []);
 
-  const activeLabel = isTouchPrimary ? focusLabel : hoveredLabel;
+  const activeLabel = isTouchPrimary ? focusLabel : (hoveredLabel || focusLabel);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -321,6 +327,7 @@ export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
   }, [experienceReady]);
 
   return (
+    <ArchiveFocusContext.Provider value={requestFocus}>
     <section
       ref={viewportRef}
       className={styles.viewport}
@@ -336,6 +343,7 @@ export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
       >
         <ArchiveCanvasScene
           items={items}
+          focusRequest={focusRequest}
           onFocusLabelChange={onFocusLabelChange}
           onSceneLoadStateChange={setSceneLoadState}
           onHoverLabelChange={onHoverLabelChange}
@@ -364,5 +372,6 @@ export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
       </div>
       {children}
     </section>
+    </ArchiveFocusContext.Provider>
   );
 }

@@ -3,6 +3,7 @@
 import { KeyboardControls, useKeyboardControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,6 +16,7 @@ import type { ArchiveAssetKind, ArchiveEntry } from "@/content/archive/archive-d
 import { projectMediaPlaceholderGridForAsset } from "@/lib/projectMedia";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
+import { archiveFocusDistance, nearestArchiveOccurrence } from "./archiveFocus";
 
 const CHUNK_SIZE = 110;
 const RENDER_DISTANCE = 2;
@@ -31,12 +33,7 @@ const MOBILE_TOUCH_DRAG_MULTIPLIER = 1.3;
 const INITIAL_CAMERA_Z = 50;
 /** Must match `<Canvas camera={{ fov: … }}>` below so click-to-focus framing stays accurate. */
 const ARCHIVE_CAMERA_FOV = 85;
-const ARCHIVE_FOCUS_VIEWPORT_FILL = 0.33;
-/** Multiplier on computed click-focus distance (<1 = closer / larger on screen). 0.65 ⇒ 35% closer. */
-const ARCHIVE_FOCUS_CLICK_DISTANCE_SCALE = 0.65;
 const ARCHIVE_FOCUS_LAMBDA = 4.35;
-const ARCHIVE_FOCUS_MIN_PLANE_DISTANCE = 14;
-const ARCHIVE_FOCUS_MAX_PLANE_DISTANCE = 240;
 const ARCHIVE_FOCUS_COMPLETE_TOL = 0.075;
 const MAX_PLANE_CACHE = 256;
 const PIXELS_PER_WORLD_UNIT = 120;
@@ -56,21 +53,6 @@ const archiveImageCenterScratch = new THREE.Vector3();
 const archiveFocusBounds = new THREE.Box3();
 const archiveFocusSize = new THREE.Vector3();
 
-function archiveDistanceForViewportFill(
-  planeWorldWidth: number,
-  planeWorldHeight: number,
-  viewportAspect: number,
-): number {
-  const tanHalfV = Math.tan((ARCHIVE_CAMERA_FOV * Math.PI) / 360);
-  const denomBase = 2 * ARCHIVE_FOCUS_VIEWPORT_FILL * tanHalfV;
-  const dFromH = planeWorldHeight / denomBase;
-  const dFromW = planeWorldWidth / Math.max(denomBase * viewportAspect, 1e-6);
-
-  const rawD = Math.max(dFromH, dFromW) * ARCHIVE_FOCUS_CLICK_DISTANCE_SCALE;
-
-  return clamp(rawD, ARCHIVE_FOCUS_MIN_PLANE_DISTANCE, ARCHIVE_FOCUS_MAX_PLANE_DISTANCE);
-}
-
 const KEYBOARD_MAP: Array<{ name: KeyboardKey; keys: string[] }> = [
   { name: "forward", keys: ["w", "W", "ArrowUp"] },
   { name: "backward", keys: ["s", "S", "ArrowDown"] },
@@ -81,6 +63,7 @@ const KEYBOARD_MAP: Array<{ name: KeyboardKey; keys: string[] }> = [
 ];
 
 type ArchiveMediaItem = {
+  id: string;
   url: string;
   width: number;
   height: number;
@@ -142,7 +125,10 @@ type SceneLoadState = {
   total: number;
 };
 
+export type ArchiveFocusRequest = { id: string; requestId: number };
+
 type ArchiveCanvasSceneProps = {
+  focusRequest?: ArchiveFocusRequest;
   items: ArchiveEntry[];
   onSceneLoadStateChange?: (state: SceneLoadState) => void;
   onHoverLabelChange: (label: string | null) => void;
@@ -734,7 +720,12 @@ function MediaPlane({
       scale={displayScale}
       visible={false}
       geometry={PLANE_GEOMETRY}
-      userData={{ archiveImageLabel: media.label }}
+      userData={{
+        archiveImageLabel: media.label,
+        archiveImageId: media.id,
+        archiveSourceWidth: intrinsicSize?.width ?? media.width,
+        archiveSourceHeight: intrinsicSize?.height ?? media.height,
+      }}
       onPointerEnter={() => {
         if (!pointerHoverForLabel || !localState.current.ready) {
           return;
@@ -832,11 +823,13 @@ function Chunk({
 
 function SceneController({
   media,
+  focusRequest,
   onHoverLabelChange,
   onFocusLabelChange,
   placeholderColor,
 }: {
   media: ArchiveMediaItem[];
+  focusRequest?: ArchiveFocusRequest;
   onHoverLabelChange: (label: string | null) => void;
   onFocusLabelChange: (label: string | null) => void;
   placeholderColor: string;
@@ -863,10 +856,11 @@ function SceneController({
   });
   const archiveCameraFocusRef = useRef<{
     active: boolean;
+    locked: boolean;
     goalX: number;
     goalY: number;
     goalZ: number;
-  }>({ active: false, goalX: 0, goalY: 0, goalZ: INITIAL_CAMERA_Z });
+  }>({ active: false, locked: false, goalX: 0, goalY: 0, goalZ: INITIAL_CAMERA_Z });
   const touchTapRef = useRef({
     gestureActive: false,
     /** True once a second finger joins — avoids focusing after a pinch. */
@@ -885,6 +879,98 @@ function SceneController({
   );
 
   useEffect(() => {
+    state.current = createInitialState(INITIAL_CAMERA_Z);
+    camera.position.set(0, 0, INITIAL_CAMERA_Z);
+    cameraGridRef.current = { cx: 0, cy: 0, cz: 0, camZ: INITIAL_CAMERA_Z };
+  }, [camera]);
+
+  const focusPlane = useCallback((
+    position: THREE.Vector3,
+    worldWidth: number,
+    worldHeight: number,
+    sourceWidth: number,
+    sourceHeight: number,
+    id: string,
+    label: string,
+  ) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const distance = archiveFocusDistance({
+      worldWidth,
+      worldHeight,
+      sourceWidth,
+      sourceHeight,
+      viewportWidth: rect.width,
+      viewportHeight: rect.height,
+      pixelRatio: gl.getPixelRatio(),
+      verticalFov: ARCHIVE_CAMERA_FOV,
+    });
+    archiveCameraFocusRef.current = {
+      active: true,
+      locked: true,
+      goalX: position.x,
+      goalY: position.y,
+      goalZ: position.z + distance,
+    };
+    const currentState = state.current;
+    currentState.velocity = { x: 0, y: 0, z: 0 };
+    currentState.targetVel = { x: 0, y: 0, z: 0 };
+    currentState.scrollAccum = 0;
+    currentState.mouse = { x: 0, y: 0 };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const goal = archiveCameraFocusRef.current;
+      goal.active = false;
+      currentState.basePos = { x: goal.goalX, y: goal.goalY, z: goal.goalZ };
+      currentState.drift = { x: 0, y: 0 };
+      camera.position.set(goal.goalX, goal.goalY, goal.goalZ);
+      const cx = Math.floor(goal.goalX / CHUNK_SIZE);
+      const cy = Math.floor(goal.goalY / CHUNK_SIZE);
+      const cz = Math.floor(goal.goalZ / CHUNK_SIZE);
+      setChunks(CHUNK_OFFSETS.map((offset) => ({
+        key: `${cx + offset.dx},${cy + offset.dy},${cz + offset.dz}`,
+        cx: cx + offset.dx,
+        cy: cy + offset.dy,
+        cz: cz + offset.dz,
+      })));
+    }
+    lastFocusLabelRef.current = label;
+    onFocusLabelChange(label);
+    gl.domElement.setAttribute("data-archive-focus-state", archiveCameraFocusRef.current.active ? "moving" : "settled");
+    gl.domElement.setAttribute("data-archive-focused-id", id);
+    gl.domElement.setAttribute("data-archive-focus-distance", distance.toFixed(3));
+  }, [camera, gl, onFocusLabelChange]);
+
+  const releaseFocus = useCallback(() => {
+    const focus = archiveCameraFocusRef.current;
+    if (!focus.locked && !focus.active) return;
+    focus.active = false;
+    focus.locked = false;
+    lastFocusLabelRef.current = null;
+    onFocusLabelChange(null);
+    gl.domElement.setAttribute("data-archive-focus-state", "exploring");
+  }, [gl, onFocusLabelChange]);
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const mediaIndex = media.findIndex((item) => item.id === focusRequest.id || item.url === focusRequest.id);
+    if (mediaIndex < 0) return;
+    const item = media[mediaIndex];
+    const plane = nearestArchiveOccurrence({
+      camera: camera.position,
+      chunkSize: CHUNK_SIZE,
+      getPlanes: generateChunkPlanesCached,
+      matches: (candidate) => candidate.mediaIndex % media.length === mediaIndex,
+    });
+    if (!plane) return;
+    const texture = getTexture(item);
+    const intrinsic = readIntrinsicPixelSize(texture);
+    const sourceWidth = intrinsic?.width ?? item.width;
+    const sourceHeight = intrinsic?.height ?? item.height;
+    const scale = getDisplayScaleFromPixelSize(sourceWidth, sourceHeight);
+    focusPlane(plane.position, scale.x, scale.y, sourceWidth, sourceHeight, item.id, item.label);
+  }, [camera, focusPlane, focusRequest, media]);
+
+  useEffect(() => {
     const canvas = gl.domElement;
     const tapThresholdSq = ARCHIVE_IMAGE_TAP_MAX_MOVE_PX * ARCHIVE_IMAGE_TAP_MAX_MOVE_PX;
 
@@ -899,7 +985,7 @@ function SceneController({
       const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
       clickRaycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
       const hits = clickRaycaster.intersectObjects(scene.children, true);
-      const hit = hits.find((h) => typeof h.object.userData?.archiveImageLabel === "string");
+      const hit = hits.find((h) => h.object.visible && typeof h.object.userData?.archiveImageLabel === "string");
 
       if (!hit) {
         return;
@@ -909,31 +995,17 @@ function SceneController({
       archiveFocusBounds.setFromObject(hit.object);
       archiveFocusBounds.getSize(archiveFocusSize);
 
-      const planeH = Math.max(archiveFocusSize.y, 1e-3);
-      const planeW = Math.max(archiveFocusSize.x, 1e-3);
-      const viewportAspect = rect.width / Math.max(rect.height, 1);
-      const distance = archiveDistanceForViewportFill(planeW, planeH, viewportAspect);
-
       hit.object.getWorldPosition(archiveImageCenterScratch);
-      const px = archiveImageCenterScratch.x;
-      const py = archiveImageCenterScratch.y;
-      const pz = archiveImageCenterScratch.z;
-
-      archiveCameraFocusRef.current = {
-        active: true,
-        goalX: px,
-        goalY: py,
-        goalZ: pz + distance,
-      };
-
-      const currentState = state.current;
-      currentState.velocity.x = 0;
-      currentState.velocity.y = 0;
-      currentState.velocity.z = 0;
-      currentState.targetVel.x = 0;
-      currentState.targetVel.y = 0;
-      currentState.targetVel.z = 0;
-      currentState.scrollAccum = 0;
+      const data = hit.object.userData;
+      focusPlane(
+        archiveImageCenterScratch,
+        Math.max(archiveFocusSize.x, 1e-3),
+        Math.max(archiveFocusSize.y, 1e-3),
+        data.archiveSourceWidth,
+        data.archiveSourceHeight,
+        data.archiveImageId,
+        data.archiveImageLabel,
+      );
     };
 
     const onMouseDown = (event: MouseEvent) => {
@@ -994,6 +1066,14 @@ function SceneController({
         return;
       }
 
+      if (archiveCameraFocusRef.current.locked) {
+        if (g.active && g.maxMoveSq <= tapThresholdSq) {
+          currentState.lastMouse = { x: event.clientX, y: event.clientY };
+          return;
+        }
+        releaseFocus();
+      }
+
       currentState.targetVel.x -= (event.clientX - currentState.lastMouse.x) * 0.025;
       currentState.targetVel.y += (event.clientY - currentState.lastMouse.y) * 0.025;
       currentState.lastMouse = { x: event.clientX, y: event.clientY };
@@ -1002,7 +1082,7 @@ function SceneController({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       state.current.scrollAccum += event.deltaY * 0.006;
-      archiveCameraFocusRef.current.active = false;
+      releaseFocus();
     };
 
     const onTouchStart = (event: TouchEvent) => {
@@ -1012,7 +1092,7 @@ function SceneController({
 
       if (event.touches.length >= 2) {
         tap.disallowTap = true;
-        archiveCameraFocusRef.current.active = false;
+        releaseFocus();
       }
 
       if (event.touches.length === 1 && !tap.disallowTap) {
@@ -1045,6 +1125,14 @@ function SceneController({
           const dy = finger.clientY - tap.startY;
           tap.maxMoveSq = Math.max(tap.maxMoveSq, dx * dx + dy * dy);
         }
+      }
+
+      if (archiveCameraFocusRef.current.locked) {
+        if (touches.length === 1 && tap.maxMoveSq <= tapThresholdSq) {
+          currentState.lastTouches = touches;
+          return;
+        }
+        releaseFocus();
       }
 
       if (touches.length === 1 && currentState.lastTouches.length >= 1) {
@@ -1106,16 +1194,8 @@ function SceneController({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
-  }, [camera, gl, onHoverLabelChange, scene, touchDragSpeed]);
+  }, [camera, focusPlane, gl, onHoverLabelChange, releaseFocus, scene, touchDragSpeed]);
 
-  useEffect(() => {
-    if (isTouchDevice) {
-      return;
-    }
-
-    lastFocusLabelRef.current = null;
-    onFocusLabelChange(null);
-  }, [isTouchDevice, onFocusLabelChange]);
 
   useFrame((_, delta) => {
     const currentState = state.current;
@@ -1127,7 +1207,7 @@ function SceneController({
     let cameraFocusFlight = focusRef.active;
 
     if (
-      cameraFocusFlight &&
+      focusRef.locked &&
       (forward ||
         backward ||
         left ||
@@ -1136,7 +1216,7 @@ function SceneController({
         down ||
         Math.abs(currentState.scrollAccum) > 0.018)
     ) {
-      focusRef.active = false;
+      releaseFocus();
       cameraFocusFlight = false;
     }
 
@@ -1170,7 +1250,11 @@ function SceneController({
       const driftAmount = 8 * zoomFactor;
       const driftLerp = isZoomingPhysics ? 0.2 : 0.12;
 
-      if (currentState.isDragging) {
+      if (focusRef.locked) {
+        // A settled selection stays framed even when the pointer moves over the canvas.
+        currentState.drift.x = 0;
+        currentState.drift.y = 0;
+      } else if (currentState.isDragging) {
         // Preserve the current drift while dragging, matching the reference interaction.
       } else if (isTouchDevice) {
         currentState.drift.x = lerp(currentState.drift.x, 0, driftLerp);
@@ -1243,6 +1327,9 @@ function SceneController({
         Math.abs(currentState.basePos.z - tz) < ARCHIVE_FOCUS_COMPLETE_TOL
       ) {
         focusRef.active = false;
+        currentState.basePos = { x: focusRef.goalX, y: focusRef.goalY, z: focusRef.goalZ };
+        currentState.drift = { x: 0, y: 0 };
+        gl.domElement.setAttribute("data-archive-focus-state", "settled");
       }
     }
 
@@ -1296,7 +1383,7 @@ function SceneController({
       );
     }
 
-    if (isTouchDevice) {
+    if (isTouchDevice && !cameraFocusFlight) {
       centerRaycaster.setFromCamera(centerNdc, camera);
       const hits = centerRaycaster.intersectObjects(scene.children, true);
       const labelHit = hits.find(
@@ -1311,11 +1398,6 @@ function SceneController({
     }
   });
 
-  useEffect(() => {
-    state.current = createInitialState(INITIAL_CAMERA_Z);
-    camera.position.set(0, 0, INITIAL_CAMERA_Z);
-    cameraGridRef.current = { cx: 0, cy: 0, cz: 0, camZ: INITIAL_CAMERA_Z };
-  }, [camera]);
 
   return (
     <>
@@ -1416,6 +1498,7 @@ export function ArchiveCanvasScene({
   onHoverLabelChange,
   onFocusLabelChange,
   onSceneLoadStateChange,
+  focusRequest,
 }: ArchiveCanvasSceneProps) {
   const isTouchDevice = useIsTouchDevice();
   const [sceneBackground, setSceneBackground] = useState("#f7f6f2");
@@ -1423,6 +1506,7 @@ export function ArchiveCanvasScene({
   const media = useMemo<ArchiveMediaItem[]>(
     () =>
       items.map((item) => ({
+        id: item.id,
         url: item.image,
         width: item.width,
         height: item.height,
@@ -1555,6 +1639,7 @@ export function ArchiveCanvasScene({
           <fog attach="fog" args={[sceneBackground, 120, 320]} />
           <SceneController
             media={media}
+            focusRequest={focusRequest}
             onHoverLabelChange={onHoverLabelChange}
             onFocusLabelChange={onFocusLabelChange}
             placeholderColor={placeholderColor}

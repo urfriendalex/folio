@@ -1,13 +1,13 @@
 .index {
   position: absolute;
-  left: var(--content-padding-inline);
-  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  left: var(--archive-edge-inline);
+  bottom: var(--archive-edge-bottom);
   z-index: 6;
   color: var(--navbar-ink);
   mix-blend-mode: difference;
   font-family: var(--font-body-stack);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.65rem;
+  line-height: 1.25;
 }
 
 :global(html.js-enabled [data-archive-ready="false"]) .index {
@@ -17,17 +17,19 @@
 
 .catalogue > summary {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   min-height: 2.75rem;
   cursor: pointer;
   list-style: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .catalogue > summary::-webkit-details-marker { display: none; }
 .catalogue > summary::marker { content: ""; }
 
-.catalogue summary:focus-visible,
-.entries a:focus-visible {
+.catalogue summary:focus-visible:not(:where([data-input-modality="pointer"] *)),
+.entries a:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   outline: 1px solid currentColor;
   outline-offset: 4px;
 }

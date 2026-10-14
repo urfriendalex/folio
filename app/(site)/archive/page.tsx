@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ArchiveCanvas } from "@/components/Archive/ArchiveCanvas";
+import { ArchiveIndexLink } from "@/components/Archive/ArchiveIndexLink";
 import { archiveEntries } from "@/content/archive/archive-data";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
@@ -71,7 +72,7 @@ export default function ArchiveRoute() {
                   <li key={entry.id}>
                     <div>
                       <h2>
-                        <a className="link-underline" href={entry.image}>{entry.title}</a>
+                        <ArchiveIndexLink id={entry.id} href={entry.image} title={entry.title} />
                       </h2>
                       <p className={styles.entryDescription}>
                         {entry.year} · {entry.medium} · {entry.kind === "video" ? "Video" : "Image"}
