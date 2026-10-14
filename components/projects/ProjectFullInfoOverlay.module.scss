@@ -11,10 +11,10 @@
   /* Keep in sync with `PROJECT_OVERLAY_REVEAL_STEP_MS` in ProjectFullInfoOverlay.tsx */
   --project-overlay-step: 10ms;
   box-sizing: border-box;
-  /* Bleed past `page-shell` padding so copy can use the full immersive surface; re-inset with fluid padding. */
-  width: calc(100% + 2 * var(--content-padding-inline));
-  max-width: none;
-  margin-inline: calc(-1 * var(--content-padding-inline));
+  /* Keep the sheet cohesive on wide displays; the mobile rule restores the immersive bleed. */
+  width: 100%;
+  max-width: 100rem;
+  margin-inline: auto;
   padding-inline: max(clamp(1rem, 4.5vw, 3.5rem), env(safe-area-inset-left, 0px))
     max(clamp(1rem, 4.5vw, 3.5rem), env(safe-area-inset-right, 0px));
   flex: 1;
@@ -130,6 +130,10 @@
   }
 
   .extraGridFull {
+    grid-column: auto;
+  }
+
+  .sheetBody > :is([aria-label="Impact"], [aria-label="Tags"]) {
     grid-column: 1 / -1;
   }
 }
@@ -142,13 +146,17 @@
   .sheetLayout {
     grid-template-columns: minmax(0, 1fr) minmax(11.5rem, min(22vw, 19rem));
     grid-template-rows: auto auto;
-    column-gap: clamp(2rem, 6vw, 5.5rem);
-    row-gap: clamp(1.65rem, 3.5vw, 2.65rem);
+    column-gap: clamp(2rem, 3vw, 3rem);
+    row-gap: clamp(1.4rem, 2vw, 2rem);
   }
 
   .sheetIntro {
     grid-column: 1;
     grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    align-items: start;
   }
 
   .sheetBody {
@@ -163,6 +171,46 @@
     /* Sticks within `.bodyScroll` for the full project sheet, not only beside the intro block. */
     top: max(0.35rem, env(safe-area-inset-top, 0px));
     align-self: start;
+  }
+}
+
+/* Wide screens use the extra space for shorter columns, rather than longer text lines. */
+@media (min-width: 90rem) {
+  .sheetLayout {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.75fr) minmax(10.5rem, 0.55fr);
+    grid-template-rows: auto;
+    column-gap: clamp(2rem, 2.5vw, 2.75rem);
+  }
+
+  .sheetIntro {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sheetBody {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 0.9rem 1.5rem;
+  }
+
+  .sheetAside {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .extraGridFull {
+    grid-column: auto;
+  }
+
+  .sheetBody > :is([aria-label="Impact"], [aria-label="Tags"]) {
+    grid-column: 1 / -1;
+  }
+
+  .detailList {
+    gap: 0.3rem;
   }
 }
 
@@ -450,6 +498,7 @@
 @media (max-width: 48rem) {
   .root {
     width: calc(100% + 2 * var(--content-padding-inline));
+    margin-inline: calc(-1 * var(--content-padding-inline));
     gap: 0.4rem;
     padding-bottom: 0.25rem;
   }

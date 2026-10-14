@@ -87,6 +87,10 @@ function slideToolbarIn() {
 }
 
 type OverlayProps = {
+  /** Keep one closed native dialog in SSR HTML for user-triggered content. */
+  keepMounted?: boolean;
+  /** Persistent overlays remain active through their exit animation. */
+  active?: boolean;
   children: ReactNode;
   closeLabel?: string;
   /** Immersive only: disable inner `.content` scrolling (e.g. full-screen media; avoids scrollbar flash). */
@@ -113,6 +117,8 @@ function getFocusableElements(container: HTMLElement) {
 
 export function Overlay({
   children,
+  keepMounted = false,
+  active = true,
   closeLabel = "Close",
   contentNonScrollable = false,
   contentFlush = false,
@@ -125,6 +131,8 @@ export function Overlay({
   visible = true,
 }: OverlayProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const isActive = !keepMounted || active;
+  const Backdrop = keepMounted ? "dialog" : "div";
   const portalRoot = useSyncExternalStore(
     () => () => undefined,
     () => document.body,
@@ -132,7 +140,7 @@ export function Overlay({
   );
 
   useLayoutEffect(() => {
-    if (!portalRoot) {
+    if (!portalRoot || !isActive) {
       return;
     }
 
@@ -148,18 +156,20 @@ export function Overlay({
       slideToolbarIn();
       unlockBodyScroll();
     };
-  }, [portalRoot]);
+  }, [isActive, portalRoot]);
 
   useEffect(() => {
+    if (!portalRoot || !isActive) return;
     if (visible) {
       slideToolbarOut();
       return;
     }
 
     slideToolbarIn();
-  }, [visible]);
+  }, [isActive, portalRoot, visible]);
 
   useEffect(() => {
+    if (!portalRoot || !isActive) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       const panelNode = panelRef.current;
 
@@ -196,9 +206,10 @@ export function Overlay({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [isActive, onClose, portalRoot]);
 
   useEffect(() => {
+    if (!portalRoot || !isActive) return;
     const html = document.documentElement;
     if (visible) {
       html.classList.add("is-overlay-blur");
@@ -209,10 +220,10 @@ export function Overlay({
     return () => {
       html.classList.remove("is-overlay-blur");
     };
-  }, [visible]);
+  }, [isActive, portalRoot, visible]);
 
   useEffect(() => {
-    if (!visible) {
+    if (!portalRoot || !isActive || !visible) {
       return;
     }
 
@@ -224,18 +235,21 @@ export function Overlay({
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [visible]);
+  }, [isActive, portalRoot, visible]);
 
-  if (!portalRoot) {
+  if (!portalRoot && !keepMounted) {
     return null;
   }
 
-  return createPortal(
-    <div
-      className={styles.backdrop}
+  const overlay = (
+    <Backdrop
+      className={`${styles.backdrop} ${keepMounted ? styles.persistentDialog : ""}`}
+      open={keepMounted ? isActive : undefined}
+      aria-modal={keepMounted && isActive ? "true" : undefined}
+      aria-label={keepMounted ? title : undefined}
       data-variant={variant}
       data-visible={visible}
-      role="presentation"
+      role={keepMounted ? undefined : "presentation"}
       onClick={onClose}
     >
       <div
@@ -244,9 +258,9 @@ export function Overlay({
         data-variant={variant}
         data-visible={visible}
         data-inline-mobile-header={inlineMobileHeader ? "true" : undefined}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
+        role={keepMounted ? undefined : "dialog"}
+        aria-modal={keepMounted ? undefined : "true"}
+        aria-label={keepMounted ? undefined : title}
         onClick={(event) => event.stopPropagation()}
       >
         {variant === "panel" ? (
@@ -280,7 +294,8 @@ export function Overlay({
           {children}
         </div>
       </div>
-    </div>,
-    portalRoot,
+    </Backdrop>
   );
+
+  return portalRoot ? createPortal(overlay, portalRoot) : overlay;
 }
