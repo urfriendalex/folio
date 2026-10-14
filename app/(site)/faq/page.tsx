@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookingButtonAscii } from "@/components/layout/Footer/BookingButtonAscii";
+import { FaqExperience } from "./FaqExperience";
 import { contactContent } from "@/content/contact";
 import { SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
@@ -48,44 +48,37 @@ export default function FaqPage() {
   };
 
   return (
-    <div className={`page-shell ${styles.page}`}>
+    <FaqExperience>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }}
       />
-      <header className={styles.header}>
-        <BookingButtonAscii className={styles.field} />
-        <div className={styles.intro}>
-          <p className={styles.eyebrow}>Before we begin / FAQ</p>
-          <h1 className={styles.title}>A few <br />good questions<span aria-hidden="true">.</span></h1>
-          <p className={styles.description}>
-            The basics of working together. Projects, first conversations, and where I call home.
-          </p>
-        </div>
-        <span className={styles.marker} aria-hidden="true">?</span>
-        <p className={styles.headerMeta}>03 questions / Straight answers</p>
-      </header>
-
-      <section className={styles.answers} aria-label="Frequently asked questions">
-        {faqContent.map(({ id, question, answer }, index) => (
-          <article className={styles.answer} key={id} aria-labelledby={`faq-${id}`}>
-            <span className={styles.number} aria-hidden="true">0{index + 1}</span>
-            <h2 id={`faq-${id}`} className={styles.question}>{question}</h2>
-            <p className={styles.answerText}>{answer}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className={styles.contact} aria-labelledby="faq-contact-title">
-        <div>
-          <p className={styles.eyebrow}>Keep the conversation going</p>
-          <h2 id="faq-contact-title">Something else on your mind?</h2>
-        </div>
-        <a className={styles.contactLink} href={`mailto:${contactContent.email}`}>
-          {contactContent.email}<span aria-hidden="true">↗</span>
-        </a>
-      </section>
-      <Link href="/projects" className={`link-underline ${styles.workLink}`}>Explore selected work ↗</Link>
-    </div>
+      <div className={styles.content} data-faq-content>
+        <h1 className={styles.title} data-faq-reveal>Frequently asked questions</h1>
+        <section aria-label="Working together">
+          {faqContent.map(({ id, question, answer }, index) => (
+            <div className={styles.item} key={id}>
+              <span className={styles.rule} data-faq-rule aria-hidden="true" />
+              <details className={styles.detail} name="faq" open={index === 0}>
+              <summary className={styles.summary}>
+                <h2 id={`faq-${id}`} className={styles.question} data-faq-reveal>{question}</h2>
+                <span className={styles.toggle} aria-hidden="true" />
+              </summary>
+              <p className={styles.answerText} data-faq-reveal>{answer}</p>
+              </details>
+              {index === faqContent.length - 1 && (
+                <span className={`${styles.rule} ${styles.bottomRule}`} data-faq-rule aria-hidden="true" />
+              )}
+            </div>
+          ))}
+        </section>
+        <p className={styles.note} data-faq-reveal>
+          Something else on your mind? Write to {" "}
+          <a className="link-underline" href={`mailto:${contactContent.email}`}>{contactContent.email}</a>
+          {" "}or take a look at {" "}
+          <Link href="/projects" className="link-underline">selected work</Link>.
+        </p>
+      </div>
+    </FaqExperience>
   );
 }
