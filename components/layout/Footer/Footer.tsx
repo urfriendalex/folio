@@ -15,7 +15,7 @@ import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
-import { BookingButtonDither } from "./BookingButtonDither";
+import { BookingButtonAscii } from "./BookingButtonAscii";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
@@ -652,7 +652,7 @@ export function Footer() {
                       <p className={styles.editorialBody}>{contactContent.availabilityAi}</p>
                     ) : null}
                     <CalBookingTrigger className={styles.bookingButton}>
-                      <BookingButtonDither className={styles.bookingButtonCanvas} />
+                      <BookingButtonAscii className={styles.bookingButtonCanvas} />
                       <span className={styles.bookingButtonText}>Schedule a call</span>
                       <span className={styles.bookingButtonMeta}>Cal.com</span>
                     </CalBookingTrigger>
