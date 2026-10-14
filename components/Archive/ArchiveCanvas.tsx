@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import type { ArchiveEntry } from "@/content/archive/archive-data";
 import { useIsTouchDevice } from "@/lib/useIsTouchDevice";
 import styles from "./ArchiveCanvas.module.scss";
@@ -178,6 +180,7 @@ const ArchiveCanvasScene = dynamic(
 
 type ArchiveCanvasProps = {
   items: ArchiveEntry[];
+  children?: ReactNode;
 };
 
 function fileNameFromArchivePath(path: string) {
@@ -186,7 +189,8 @@ function fileNameFromArchivePath(path: string) {
   return segment || path;
 }
 
-export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
+export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
+  const preloaderComplete = usePreloaderComplete();
   const isTouchPrimary = useIsTouchDevice();
   const [hoveredLabel, setHoveredLabel] = useState<string>("");
   const [focusLabel, setFocusLabel] = useState<string>("");
@@ -266,6 +270,8 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
   const isPreparing = sceneLoadState === null || (!hasMedia && sceneLoadState.active);
   const assetsStillLoading = sceneLoadState?.active === true;
   const experienceReady = hasMedia && preparingOverlayDismissed;
+  const indexReady = preparingOverlayDismissed && sceneLoadState !== null
+    && !assetsStillLoading && preloaderComplete;
 
   const hideSceneUntilReady = isPreparing;
 
@@ -318,13 +324,15 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
     <section
       ref={viewportRef}
       className={styles.viewport}
-      aria-busy={isPreparing}
+      aria-busy={isPreparing && preloaderComplete}
       aria-label="Archive canvas"
       data-archive-experience="true"
+      data-archive-ready={indexReady ? "true" : "false"}
     >
       <div
         className={`${styles.sceneShell} ${hideSceneUntilReady ? styles.sceneShellHidden : ""}`}
         aria-hidden={hideSceneUntilReady || undefined}
+        data-archive-scene="true"
       >
         <ArchiveCanvasScene
           items={items}
@@ -334,7 +342,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
         />
       </div>
 
-      <div className={styles.hud} aria-live="polite">
+      <div className={styles.hud} aria-live="polite" data-archive-hud="true">
         {sceneLoadState !== null && activeLabel ? (
           <span className={styles.focusLabel}>
             {fileNameFromArchivePath(activeLabel)}
@@ -354,6 +362,7 @@ export function ArchiveCanvas({ items }: ArchiveCanvasProps) {
           />
         ) : null}
       </div>
+      {children}
     </section>
   );
 }

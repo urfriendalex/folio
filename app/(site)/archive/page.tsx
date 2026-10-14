@@ -50,45 +50,43 @@ export default function ArchiveRoute() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
-      <ArchiveCanvas items={archiveEntries} />
-      <section className={styles.index} aria-labelledby="archive-heading" data-archive-index="true">
-        <header className={styles.header}>
-          <h1 id="archive-heading">Archive</h1>
-          <p>Experiments, visuals, and studies between client work.</p>
-        </header>
-        <details className={styles.catalogue}>
-          <summary>
-            <span>Browse the index</span>
-            <span className={styles.count}>{archiveEntries.length} fragments</span>
-            <span className={styles.toggle} aria-hidden="true">+</span>
-          </summary>
-          <div className={styles.catalogueBody} data-lenis-prevent>
-            <p className={styles.introduction}>
-              A collection of interface experiments, motion stills, material studies,
-              and visual references by Alexander Yansons. Explore the canvas or open
-              a fragment directly from the list below.
-            </p>
-            <ol className={styles.entries}>
-              {archiveEntries.map((entry) => (
-                <li key={entry.id}>
-                  <span className={styles.entryNumber} aria-hidden="true">{entry.indexLabel}</span>
-                  <div>
-                    <h2>
-                      <a href={entry.image}>{entry.title}<span aria-hidden="true"> ↗</span></a>
-                    </h2>
-                    <p className={styles.entryMeta}>
-                      {entry.year} · {entry.medium} · {entry.kind === "video" ? "Video" : "Image"}
-                    </p>
-                    <p className={styles.entryNote}>{entry.note}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </details>
-      </section>
+      <ArchiveCanvas items={archiveEntries}>
+        <section className={styles.index} aria-labelledby="archive-heading" data-archive-index="true">
+          <header className="sr-only">
+            <h1 id="archive-heading">Archive</h1>
+            <p>Experiments, visuals, and studies between client work.</p>
+          </header>
+          <details className={styles.catalogue}>
+            <summary>
+              <span className="link-underline">Index</span>
+            </summary>
+            <div className={styles.catalogueBody} data-lenis-prevent>
+              <p className="sr-only">
+                A collection of interface experiments, motion stills, material studies,
+                and visual references by Alexander Yansons. Explore the canvas or open
+                a fragment directly from the list below.
+              </p>
+              <ol className={styles.entries}>
+                {archiveEntries.map((entry) => (
+                  <li key={entry.id}>
+                    <div>
+                      <h2>
+                        <a className="link-underline" href={entry.image}>{entry.title}</a>
+                      </h2>
+                      <p className={styles.entryDescription}>
+                        {entry.year} · {entry.medium} · {entry.kind === "video" ? "Video" : "Image"}
+                      </p>
+                      <p className={styles.entryDescription}>{entry.note}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </details>
+        </section>
+      </ArchiveCanvas>
       <noscript>
-        <style>{'[data-archive-experience="true"] { display: none !important; }'}</style>
+        <style>{'[data-archive-experience="true"] { position: static !important; height: auto !important; min-height: 0 !important; overflow: visible !important; } [data-archive-scene="true"], [data-archive-hud="true"] { display: none !important; }'}</style>
       </noscript>
     </>
   );

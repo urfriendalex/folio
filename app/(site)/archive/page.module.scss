@@ -1,97 +1,49 @@
 .index {
-  position: fixed;
-  top: calc(var(--header-height) + 1rem);
+  position: absolute;
   left: var(--content-padding-inline);
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   z-index: 6;
-  width: min(25rem, calc(100% - 2 * var(--content-padding-inline)));
-  border: 1px solid var(--line-color);
-  background: color-mix(in srgb, var(--bg-color) 96%, transparent);
-  color: var(--fg-color);
-  border-radius: 0.5rem;
+  color: var(--navbar-ink);
+  mix-blend-mode: difference;
+  font-family: var(--font-body-stack);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
-.header {
-  padding: 1rem 1.15rem 0.9rem;
+:global(html.js-enabled [data-archive-ready="false"]) .index {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.06em;
-}
-
-.header p {
-  max-width: 32ch;
-  margin: 0.55rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: var(--muted-color);
-}
-
-.catalogue summary {
-  display: flex;
+.catalogue > summary {
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
   min-height: 2.75rem;
-  padding: 0.7rem 1.15rem;
-  border-top: 1px solid var(--line-color);
   cursor: pointer;
   list-style: none;
-  font-family: var(--font-pixel-stack);
-  font-size: 0.62rem;
-  line-height: 1.4;
 }
 
-.catalogue summary::-webkit-details-marker {
-  display: none;
-}
-
-.catalogue summary:hover,
-.catalogue summary:focus-visible {
-  color: var(--signal-color);
-}
+.catalogue > summary::-webkit-details-marker { display: none; }
+.catalogue > summary::marker { content: ""; }
 
 .catalogue summary:focus-visible,
 .entries a:focus-visible {
-  outline: 2px solid var(--signal-color);
-  outline-offset: -3px;
-}
-
-.count {
-  margin-left: auto;
-  color: var(--muted-color);
-  font-family: var(--font-mono-stack);
-  font-size: 0.62rem;
-}
-
-.toggle {
-  width: 1rem;
-  text-align: center;
-  font-family: var(--font-mono-stack);
-  font-size: 1rem;
-}
-
-.catalogue[open] .toggle {
-  transform: rotate(45deg);
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
 }
 
 .catalogueBody {
-  max-height: calc(100svh - var(--header-height) - 13rem);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.5rem);
+  width: min(20rem, calc(100vw - 2 * var(--content-padding-inline)));
+  max-height: min(28rem, calc(100svh - var(--header-height) - 6rem));
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  border-top: 1px solid var(--line-color);
-  padding: 0 1.15rem 0.25rem;
+  scrollbar-width: none;
 }
 
-.introduction {
-  margin: 0;
-  padding: 1rem 0;
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
+.catalogueBody::-webkit-scrollbar { display: none; }
 
 .entries {
   margin: 0;
@@ -99,85 +51,57 @@
   list-style: none;
 }
 
-.entries li {
-  display: grid;
-  grid-template-columns: 1.65rem 1fr;
-  gap: 0.55rem;
-  padding: 0.95rem 0;
-  border-top: 1px solid var(--line-color);
-}
-
-.entryNumber {
-  padding-top: 0.1rem;
-  color: var(--signal-color);
-  font-family: var(--font-pixel-stack);
-  font-size: 0.58rem;
-}
+.entries li { padding-block: 0.3rem; }
 
 .entries h2 {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.35;
-  letter-spacing: -0.015em;
+  font: inherit;
+  font-weight: 400;
 }
 
 .entries a {
-  text-decoration: none;
-  text-underline-offset: 0.2em;
+  display: inline-block;
+  max-width: 100%;
+  color: inherit;
+  text-wrap: pretty;
 }
 
-.entries a:hover {
-  text-decoration: underline;
-}
-
-.entryMeta {
-  margin: 0.35rem 0 0;
-  color: var(--muted-color);
-  font-family: var(--font-mono-stack);
-  font-size: 0.6rem;
-  line-height: 1.5;
-}
-
-.entryNote {
-  margin: 0.5rem 0 0;
-  color: var(--muted-color);
-  font-size: 0.78rem;
-  line-height: 1.55;
+// Detail remains available to assistive readers; the visual index stays names only.
+.entryDescription {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 :global(html:not(.js-enabled)) .index {
   position: relative;
-  top: auto;
   left: auto;
+  bottom: auto;
   width: min(45rem, calc(100% - 2 * var(--content-padding-inline)));
-  margin: 2rem auto;
+  margin: calc(var(--header-height) + 2rem) auto 2rem;
+  color: var(--fg-color);
+  mix-blend-mode: normal;
 }
 
 :global(html:not(.js-enabled)) .catalogueBody {
+  position: static;
+  width: 100%;
   max-height: none;
   overflow: visible;
+  padding-block: 0.75rem;
 }
 
-@media (max-width: 48rem) {
-  .index {
-    top: calc(var(--header-height) + 0.5rem);
-    width: min(22rem, calc(100% - 2 * var(--content-padding-inline)));
-  }
-
-  .header {
-    padding: 0.85rem 1rem 0.75rem;
-  }
-
-  .header h1 {
-    font-size: 1.5rem;
-  }
-
-  .catalogue summary {
-    padding-inline: 1rem;
-  }
-
-  .catalogueBody {
-    padding-inline: 1rem;
-  }
+:global(html:not(.js-enabled)) .entryDescription {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0.35rem 0 0;
+  clip: auto;
+  white-space: normal;
+  font-size: 0.8rem;
+  color: var(--muted-color);
 }
