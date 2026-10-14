@@ -1,0 +1,127 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100svh - var(--header-height));
+  padding: clamp(3rem, 9vh, 6rem) var(--content-padding-inline) clamp(4rem, 10vh, 7rem);
+  color: var(--fg-color);
+}
+
+.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.content {
+  width: min(100%, 46rem);
+  margin-inline: auto;
+}
+
+.title {
+  margin: 0 0 1.75rem;
+  color: var(--muted-color);
+  font-family: var(--font-mono-stack);
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.item {
+  position: relative;
+  padding-block: 1.4rem;
+}
+
+.rule {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--line-color);
+  transform-origin: left;
+}
+
+.bottomRule { top: auto; bottom: 0; }
+
+.summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &::-webkit-details-marker { display: none; }
+  &::marker { content: ""; }
+
+  &:focus-visible {
+    outline: 2px solid var(--fg-color);
+    outline-offset: 6px;
+  }
+}
+
+.question {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.3vw, 1.45rem);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+  text-wrap: pretty;
+}
+
+.toggle {
+  flex: 0 0 auto;
+  position: relative;
+  width: 0.7rem;
+  height: 0.7rem;
+  color: var(--muted-color);
+
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    background: currentColor;
+  }
+
+  &::before { left: 0; right: 0; top: 50%; height: 1px; }
+  &::after { top: 0; bottom: 0; left: 50%; width: 1px; }
+}
+
+.detail[open]:not([data-faq-expanded="false"]) .toggle::after { display: none; }
+
+.answerText {
+  max-width: 39rem;
+  margin: 1rem 2rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--muted-color);
+  text-wrap: pretty;
+}
+
+.note {
+  margin: 2rem 0 0;
+  max-width: 35rem;
+  font-size: 0.8rem;
+  line-height: 1.9;
+  color: var(--muted-color);
+
+  a {
+    display: inline-block;
+    width: fit-content;
+    padding: 0;
+    line-height: 1.2;
+    vertical-align: baseline;
+    color: var(--fg-color);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 48rem) {
+  .page { padding-top: 2.5rem; }
+  .item { padding-block: 1.2rem; }
+  .answerText { font-size: 0.9rem; }
+  .note { max-width: 25rem; }
+}

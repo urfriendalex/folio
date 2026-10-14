@@ -3,6 +3,11 @@ import { SITE_URL } from "@/lib/site";
 
 const META_DESC_MAX = 160;
 
+export const SITE_NAME = "Alexander Yansons";
+export const SITE_TITLE = "Alexander Yansons | Developer & Creative Technologist";
+export const SITE_DESCRIPTION =
+  "Custom websites, e-commerce, portfolios, and product interfaces by Alexander Yansons for brands, studios, and teams.";
+
 /** Shared Open Graph / Twitter Card image — file must exist at `public/og.png`. */
 export const SITE_OG_IMAGE = {
   url: "/og.png",

@@ -2,7 +2,13 @@
 export const SITE_URL = "https://yansons.online";
 
 /**
- * Last meaningful content update for freshness signals (sitemap lastmod, JSON-LD).
- * Bump when shipping substantive homepage or site-wide content changes.
+ * Editorial dates, not build timestamps. Update only the affected page when its
+ * content, structured data, or substantive links change. Project dates live in
+ * each ProjectEntry.lastModified so unrelated case studies keep their dates.
  */
-export const SITE_LAST_UPDATED = new Date("2026-09-19T12:00:00.000Z");
+export const PAGE_LAST_MODIFIED = {
+  home: "2026-10-14",
+  projects: "2026-10-14",
+  archive: "2026-10-14",
+  faq: "2026-10-14",
+} as const;

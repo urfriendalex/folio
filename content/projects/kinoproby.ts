@@ -9,6 +9,7 @@ export const kinoprobyProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Website for a production studio / creative duo",
   year: "2019",
+  lastModified: "2026-10-14",
   role: "Solo Designer & Developer",
   technologies: ["Tilda", "HTML", "CSS", "JavaScript"],
   shortDescription:

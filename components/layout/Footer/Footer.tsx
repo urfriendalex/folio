@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
@@ -715,6 +716,9 @@ export function Footer() {
                     )}
                   </div>
                   <div className={styles.columnControls}>
+                    <Link href="/faq" className={`link-underline ${styles.columnControlBtn}`}>
+                      FAQ
+                    </Link>
                     <button
                       type="button"
                       className={`link-underline ${styles.columnControlBtn}`}
@@ -814,6 +818,9 @@ export function Footer() {
                 <span className={styles.taskbarGroove} aria-hidden="true" />
 
                 <div className={styles.quickLaunch} aria-label="Quick links">
+                  <Link href="/faq" className={styles.quickLaunchBtn} title="Frequently asked questions">
+                    FAQ
+                  </Link>
                   {QUICK_LINKS.map((link) => (
                     <a
                       key={link.label}

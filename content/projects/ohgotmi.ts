@@ -9,6 +9,7 @@ export const ohgotmiProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Film producer / creative portfolio",
   year: "2026",
+  lastModified: "2026-10-14",
   role: "Solo Designer & Developer",
   technologies: ["Framer", "React", "JavaScript", "CSS"],
   shortDescription:

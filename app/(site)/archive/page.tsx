@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { ArchiveCanvas } from "@/components/Archive/ArchiveCanvas";
+import { ArchiveIndexLink } from "@/components/Archive/ArchiveIndexLink";
 import { archiveEntries } from "@/content/archive/archive-data";
-import { clampMetaDescription, SITE_OG_IMAGE } from "@/lib/metadata";
-import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
+import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
+import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
+import styles from "./page.module.scss";
 
 const archiveDescription = clampMetaDescription(
   "Alexander Yansons archive: experiments, visuals, and side projects in one spatial canvas — sketches, tests, and studies between client work.",
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
     canonical: "/archive",
   },
   openGraph: {
+    siteName: SITE_NAME,
     title: "Archive · Alexander Yansons",
     description: archiveDescription,
     type: "website",
@@ -39,7 +42,7 @@ export default function ArchiveRoute() {
     url: pageUrl,
     description: archiveDescription,
     isPartOf: { "@id": `${SITE_URL}/#website` },
-    dateModified: SITE_LAST_UPDATED.toISOString(),
+    dateModified: PAGE_LAST_MODIFIED.archive,
   };
 
   return (
@@ -48,7 +51,44 @@ export default function ArchiveRoute() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
-      <ArchiveCanvas items={archiveEntries} />
+      <ArchiveCanvas items={archiveEntries}>
+        <section className={styles.index} aria-labelledby="archive-heading" data-archive-index="true">
+          <header className="sr-only">
+            <h1 id="archive-heading">Archive</h1>
+            <p>Experiments, visuals, and studies between client work.</p>
+          </header>
+          <details className={styles.catalogue}>
+            <summary>
+              <span className="link-underline">Index</span>
+            </summary>
+            <div className={styles.catalogueBody} data-lenis-prevent>
+              <p className="sr-only">
+                A collection of interface experiments, motion stills, material studies,
+                and visual references by Alexander Yansons. Explore the canvas or open
+                a fragment directly from the list below.
+              </p>
+              <ol className={styles.entries}>
+                {archiveEntries.map((entry) => (
+                  <li key={entry.id}>
+                    <div>
+                      <h2>
+                        <ArchiveIndexLink id={entry.id} href={entry.image} title={entry.title} />
+                      </h2>
+                      <p className={styles.entryDescription}>
+                        {entry.year} · {entry.medium} · {entry.kind === "video" ? "Video" : "Image"}
+                      </p>
+                      <p className={styles.entryDescription}>{entry.note}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </details>
+        </section>
+      </ArchiveCanvas>
+      <noscript>
+        <style>{'[data-archive-experience="true"] { position: static !important; height: auto !important; min-height: 0 !important; overflow: visible !important; } [data-archive-scene="true"], [data-archive-hud="true"] { display: none !important; }'}</style>
+      </noscript>
     </>
   );
 }

@@ -1,13 +1,10 @@
-import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
-import { projectShareDescription, projectShareOgImage } from "@/lib/metadata";
-import { SITE_LAST_UPDATED, SITE_URL } from "@/lib/site";
-
-const ProjectPage = dynamic(() =>
-  import("@/components/projects/ProjectPage").then((mod) => ({ default: mod.ProjectPage })),
-);
+import { projectShareDescription, projectShareOgImage, SITE_NAME } from "@/lib/metadata";
+import { SITE_URL } from "@/lib/site";
+import { ProjectCaseStudy } from "@/components/projects/ProjectCaseStudy";
+import { ProjectPage } from "@/components/projects/ProjectPage";
 
 type RouteProps = {
   params: Promise<{ slug: string }> | { slug: string };
@@ -24,7 +21,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const project = getProjectBySlug(resolvedParams.slug);
 
   if (!project) {
-    return {};
+    notFound();
   }
 
   const canonical = `/projects/${project.slug}`;
@@ -38,6 +35,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
       canonical,
     },
     openGraph: {
+      siteName: SITE_NAME,
       title: `${project.title} | Alexander Y.`,
       description,
       type: "article",
@@ -74,7 +72,7 @@ export default async function ProjectRoute({ params }: RouteProps) {
     headline: project.title,
     description: projectShareDescription(project),
     image: og.url,
-    dateModified: SITE_LAST_UPDATED.toISOString(),
+    dateModified: project.lastModified,
     author: {
       "@type": "Person",
       name: "Alexander Yansons",
@@ -115,6 +113,7 @@ export default async function ProjectRoute({ params }: RouteProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([creativeWorkSchema, breadcrumbSchema]) }}
       />
       <ProjectPage project={project} previousProject={previous} nextProject={next} />
+      <ProjectCaseStudy project={project} />
     </>
   );
 }

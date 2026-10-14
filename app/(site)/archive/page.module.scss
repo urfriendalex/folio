@@ -1,18 +1,109 @@
-.page {
-  padding: calc(var(--header-height) + 2rem) 0 4rem;
+.index {
+  position: absolute;
+  left: var(--archive-edge-inline);
+  bottom: var(--archive-edge-bottom);
+  z-index: 6;
+  color: var(--navbar-ink);
+  mix-blend-mode: difference;
+  font-family: var(--font-body-stack);
+  font-size: 0.65rem;
+  line-height: 1.25;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+:global(html.js-enabled [data-archive-ready="false"]) .index {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.header h1 {
+.catalogue > summary {
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.catalogue > summary::-webkit-details-marker { display: none; }
+.catalogue > summary::marker { content: ""; }
+
+.catalogue summary:focus-visible:not(:where([data-input-modality="pointer"] *)),
+.entries a:focus-visible:not(:where([data-input-modality="pointer"] *)) {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
+.catalogueBody {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.5rem);
+  width: min(20rem, calc(100vw - 2 * var(--content-padding-inline)));
+  max-height: min(28rem, calc(100svh - var(--header-height) - 6rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.catalogueBody::-webkit-scrollbar { display: none; }
+
+.entries {
   margin: 0;
-  max-width: 12ch;
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 0.94;
-  letter-spacing: -0.05em;
+  padding: 0;
+  list-style: none;
+}
+
+.entries li { padding-block: 0.3rem; }
+
+.entries h2 {
+  margin: 0;
+  font: inherit;
+  font-weight: 400;
+}
+
+.entries a {
+  display: inline-block;
+  max-width: 100%;
+  color: inherit;
+  text-wrap: pretty;
+}
+
+// Detail remains available to assistive readers; the visual index stays names only.
+.entryDescription {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+:global(html:not(.js-enabled)) .index {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: min(45rem, calc(100% - 2 * var(--content-padding-inline)));
+  margin: calc(var(--header-height) + 2rem) auto 2rem;
+  color: var(--fg-color);
+  mix-blend-mode: normal;
+}
+
+:global(html:not(.js-enabled)) .catalogueBody {
+  position: static;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding-block: 0.75rem;
+}
+
+:global(html:not(.js-enabled)) .entryDescription {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0.35rem 0 0;
+  clip: auto;
+  white-space: normal;
+  font-size: 0.8rem;
+  color: var(--muted-color);
 }

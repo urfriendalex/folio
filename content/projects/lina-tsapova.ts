@@ -9,6 +9,7 @@ export const linaTsapovaProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Image-led Svelte portfolio with browser-native view transitions",
   year: "2026",
+  lastModified: "2026-10-14",
   role: "Solo Designer & Developer",
   technologies: ["Svelte", "View Transitions API", "JavaScript", "CSS"],
   shortDescription:
