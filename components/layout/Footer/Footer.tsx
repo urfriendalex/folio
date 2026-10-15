@@ -336,6 +336,10 @@ export function Footer() {
       return;
     }
 
+    /* Runs on every scroll frame (window + Lenis): touch the attribute only when the state flips,
+       so the fixed full-width wordmark is not style-invalidated ~120×/s while it stays put. */
+    let wordmarkActive = host.hasAttribute("data-footer-wordmark-active");
+
     const update = () => {
       // The fixed body resets native scroll and can emit intermediate resize/scroll events.
       // Keep the underlying page's reveal state until its scroll position is restored.
@@ -350,6 +354,11 @@ export function Footer() {
       const centerPastBottomEdge = centerY <= vh;
       const active = footerIntersectsViewport && centerPastBottomEdge;
 
+      if (active === wordmarkActive) {
+        return;
+      }
+
+      wordmarkActive = active;
       if (active) {
         host.setAttribute("data-footer-wordmark-active", "true");
       } else {

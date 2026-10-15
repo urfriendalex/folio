@@ -364,9 +364,11 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
           <defs>
             <filter
               id={filterId}
-              x="-8%"
+              /* Horizontal margin sized to the goo, not more: max blur (σ = 1 unit, ~3 units reach) fits in
+                 2% of the ~230–260-unit text box, and every extra % is filtered on each animation frame. */
+              x="-2%"
               y="-45%"
-              width="116%"
+              width="104%"
               height="190%"
               colorInterpolationFilters="sRGB"
             >
