@@ -6,6 +6,21 @@
   background: transparent;
 }
 
+.persistentDialog {
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+}
+
+.persistentDialog:not([open]) {
+  display: none;
+}
+
 /* Tinted dim layer; frosted-glass blur is provided by the shared gradient blur in Navbar. */
 .backdrop::before {
   content: "";

@@ -113,7 +113,9 @@ export default async function ProjectRoute({ params }: RouteProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([creativeWorkSchema, breadcrumbSchema]) }}
       />
       <ProjectPage project={project} previousProject={previous} nextProject={next} />
-      <ProjectCaseStudy project={project} />
+      {/* The overview is the single interactive presentation. Keep readable project
+          details available only when scripts cannot open it. */}
+      <noscript><ProjectCaseStudy project={project} /></noscript>
     </>
   );
 }

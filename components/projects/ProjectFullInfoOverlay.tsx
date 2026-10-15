@@ -10,6 +10,7 @@ import {
   formatProjectStack,
 } from "@/lib/projectOverlaySequence";
 import styles from "./ProjectFullInfoOverlay.module.scss";
+import { useProjectOverviewReveal } from "./useProjectOverviewReveal";
 
 /** About-style masked reveal, compressed for the denser project sheet. Keep in sync with `--project-overlay-step` in SCSS. */
 const PROJECT_OVERLAY_REVEAL_STEP_MS = 10;
@@ -56,13 +57,14 @@ function OverlayBulletList({
 }
 
 export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullInfoOverlayProps) {
+  const rootRef = useProjectOverviewReveal(contentVisible);
   const { total, get } = useMemo(() => buildProjectOverlayOffsets(project), [project]);
   const techLine = project.technologies.join(", ");
 
   const linkList = project.links && project.links.length > 0 ? project.links : [];
 
   return (
-    <div className={styles.root} data-content-visible={contentVisible}>
+    <div ref={rootRef} className={styles.root} data-content-visible={contentVisible}>
       <header className={styles.header}>
         <RevealLines
           as="h2"
@@ -76,7 +78,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
         />
       </header>
 
-      <div className={styles.bodyScroll} data-lenis-prevent="">
+      <div className={styles.bodyScroll} data-lenis-prevent="" data-project-reveal-scroll>
         <RevealLines
           as="p"
           className={`${styles.descriptor} ${styles.scrollDescriptor}`}
@@ -121,6 +123,209 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                 />
               </section>
             ) : null}
+            {project.client ? (
+              <section className={styles.extra} aria-label="Client">
+                <RevealLines
+                  as="p"
+                  className={`section-label ${styles.extraLabel}`}
+                  text="Client"
+                  measureLines={false}
+                  offset={get("clientL")}
+                  stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                  total={total}
+                  visible={contentVisible}
+                />
+                <RevealLines
+                  as="p"
+                  className={`${styles.extraBody} ${styles.proseDesktop}`}
+                  text={formatProjectClient(project.client)}
+                  offset={get("clientBody")}
+                  stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                  total={total}
+                  visible={contentVisible}
+                />
+              </section>
+            ) : null}
+            {project.collaboration ? (
+              <section className={styles.extra} aria-label="Collaboration">
+                <RevealLines
+                  as="p"
+                  className={`section-label ${styles.extraLabel}`}
+                  text="Collaboration"
+                  measureLines={false}
+                  offset={get("collabL")}
+                  stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                  total={total}
+                  visible={contentVisible}
+                />
+                <RevealLines
+                  as="p"
+                  className={`${styles.extraBody} ${styles.proseDesktop}`}
+                  text={formatProjectCollaboration(project.collaboration)}
+                  offset={get("collabBody")}
+                  stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                  total={total}
+                  visible={contentVisible}
+                />
+              </section>
+            ) : null}
+            {project.tags?.length ? (
+              <section className={styles.extra} aria-label="Tags">
+                <RevealLines
+                  as="p"
+                  className={`section-label ${styles.extraLabel}`}
+                  text="Tags"
+                  measureLines={false}
+                  offset={get("tagsL")}
+                  stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                  total={total}
+                  visible={contentVisible}
+                />
+                <div className={styles.tagPills}>
+                  {project.tags.map((tag, i) => (
+                    <span
+                      key={`${tag}-${i}`}
+                      className={styles.tagPill}
+                      data-project-reveal
+                      style={
+                        {
+                          "--tag-token-index": get(`tag${i}`),
+                        } as CSSProperties
+                      }
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          <div className={styles.sheetBody}>
+            <div className={styles.executionColumn}>
+              {project.roleSummary?.trim() ? (
+                <section className={styles.extra} aria-label="Role detail">
+                  <RevealLines
+                    as="p"
+                    className={`section-label ${styles.extraLabel}`}
+                    text="Summary"
+                    measureLines={false}
+                    offset={get("roleDetailL")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  <RevealLines
+                    as="p"
+                    className={`${styles.extraBody} ${styles.proseDesktop}`}
+                    text={project.roleSummary.trim()}
+                    offset={get("roleDetailV")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                </section>
+              ) : null}
+              {project.responsibilities?.length ? (
+                <section className={styles.extra} aria-label="Responsibilities">
+                  <RevealLines
+                    as="p"
+                    className={`section-label ${styles.extraLabel}`}
+                    text="Responsibilities"
+                    measureLines={false}
+                    offset={get("respL")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  <OverlayBulletList
+                    items={project.responsibilities}
+                    keyPrefix="resp"
+                    get={get}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                </section>
+              ) : null}
+              {project.stack ? (
+                <section className={styles.extra} aria-label="Stack">
+                  <RevealLines
+                    as="p"
+                    className={`section-label ${styles.extraLabel}`}
+                    text="Stack"
+                    measureLines={false}
+                    offset={get("stackL")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  <RevealLines
+                    as="p"
+                    className={`${styles.extraBody} ${styles.proseDesktop}`}
+                    text={formatProjectStack(project.stack)}
+                    offset={get("stackBody")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                </section>
+              ) : null}
+            </div>
+            <div className={styles.resultsColumn}>
+              {project.features?.length ? (
+                <section className={styles.extra} aria-label="Features">
+                  <RevealLines
+                    as="p"
+                    className={`section-label ${styles.extraLabel}`}
+                    text="Features"
+                    measureLines={false}
+                    offset={get("featL")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  <OverlayBulletList
+                    items={project.features}
+                    keyPrefix="feat"
+                    get={get}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                </section>
+              ) : null}
+              {project.impact ? (
+                <section className={styles.extra} aria-label="Impact">
+                  <RevealLines
+                    as="p"
+                    className={`section-label ${styles.extraLabel}`}
+                    text="Impact"
+                    measureLines={false}
+                    offset={get("impactL")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  <RevealLines
+                    as="p"
+                    className={`${styles.extraBody} ${styles.proseDesktop}`}
+                    text={project.impact.summary}
+                    offset={get("impactSum")}
+                    stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
+                    total={total}
+                    visible={contentVisible}
+                  />
+                  {project.impact.highlights?.length ? (
+                    <OverlayBulletList
+                      items={project.impact.highlights}
+                      keyPrefix="impactH"
+                      get={get}
+                      total={total}
+                      visible={contentVisible}
+                    />
+                  ) : null}
+                </section>
+              ) : null}
+            </div>
           </div>
 
           <aside className={styles.sheetAside} aria-label="Project meta">
@@ -201,6 +406,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                     key={`${link.url}-${link.label}`}
                     href={link.url}
                     className={styles.visitSiteLink}
+                    data-project-reveal
                     style={
                       {
                         "--link-token-index": get(`link${i}`),
@@ -215,212 +421,6 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
               </div>
             ) : null}
           </aside>
-
-          <div className={styles.sheetBody}>
-        {project.client ? (
-          <section className={`${styles.extra} ${styles.extraGridHalf}`} aria-label="Client">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Client"
-              measureLines={false}
-              offset={get("clientL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.proseDesktop}`}
-              text={formatProjectClient(project.client)}
-              offset={get("clientBody")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.roleSummary?.trim() ? (
-          <section className={`${styles.extra} ${styles.extraGridHalf}`} aria-label="Role detail">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Summary"
-              measureLines={false}
-              offset={get("roleDetailL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.proseDesktop}`}
-              text={project.roleSummary.trim()}
-              offset={get("roleDetailV")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.responsibilities?.length ? (
-          <section className={`${styles.extra} ${styles.extraGridFull}`} aria-label="Responsibilities">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Responsibilities"
-              measureLines={false}
-              offset={get("respL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <OverlayBulletList
-              items={project.responsibilities}
-              keyPrefix="resp"
-              get={get}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.collaboration ? (
-          <section className={`${styles.extra} ${styles.extraGridFull}`} aria-label="Collaboration">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Collaboration"
-              measureLines={false}
-              offset={get("collabL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.proseDesktop}`}
-              text={formatProjectCollaboration(project.collaboration)}
-              offset={get("collabBody")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.stack ? (
-          <section className={`${styles.extra} ${styles.extraGridHalf}`} aria-label="Stack">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Stack"
-              measureLines={false}
-              offset={get("stackL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.proseDesktop}`}
-              text={formatProjectStack(project.stack)}
-              offset={get("stackBody")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.features?.length ? (
-          <section className={`${styles.extra} ${styles.extraGridFull}`} aria-label="Features">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Features"
-              measureLines={false}
-              offset={get("featL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <OverlayBulletList
-              items={project.features}
-              keyPrefix="feat"
-              get={get}
-              total={total}
-              visible={contentVisible}
-            />
-          </section>
-        ) : null}
-
-        {project.impact ? (
-          <section className={`${styles.extra} ${styles.extraGridFull}`} aria-label="Impact">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Impact"
-              measureLines={false}
-              offset={get("impactL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <RevealLines
-              as="p"
-              className={`${styles.extraBody} ${styles.proseDesktop}`}
-              text={project.impact.summary}
-              offset={get("impactSum")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            {project.impact.highlights?.length ? (
-              <OverlayBulletList
-                items={project.impact.highlights}
-                keyPrefix="impactH"
-                get={get}
-                total={total}
-                visible={contentVisible}
-              />
-            ) : null}
-          </section>
-        ) : null}
-
-        {project.tags?.length ? (
-          <section className={`${styles.extra} ${styles.extraGridFull}`} aria-label="Tags">
-            <RevealLines
-              as="p"
-              className={`section-label ${styles.extraLabel}`}
-              text="Tags"
-              measureLines={false}
-              offset={get("tagsL")}
-              stepMs={PROJECT_OVERLAY_REVEAL_STEP_MS}
-              total={total}
-              visible={contentVisible}
-            />
-            <div className={styles.tagPills}>
-              {project.tags.map((tag, i) => (
-                <span
-                  key={`${tag}-${i}`}
-                  className={styles.tagPill}
-                  style={
-                    {
-                      "--tag-token-index": get(`tag${i}`),
-                    } as CSSProperties
-                  }
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-          </div>
         </div>
       </div>
     </div>

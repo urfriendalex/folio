@@ -37,15 +37,28 @@
 .catalogueBody {
   position: absolute;
   left: 0;
-  bottom: calc(100% + 0.5rem);
+  // Measure from the Index text, keeping the empty upper part of its 44px target out of the gap.
+  bottom: calc(1.25em + 0.125rem);
   width: min(20rem, calc(100vw - 2 * var(--content-padding-inline)));
   max-height: min(28rem, calc(100svh - var(--header-height) - 6rem));
   overflow-y: auto;
+  scroll-padding-block: 0.75rem;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  padding: 0.25rem 0.375rem;
+  margin-inline: -0.375rem;
+  mask-image: linear-gradient(
+    to bottom,
+    var(--index-mask-top, #000),
+    #000 0.75rem,
+    #000 calc(100% - 0.75rem),
+    var(--index-mask-bottom, #000)
+  );
 }
 
 .catalogueBody::-webkit-scrollbar { display: none; }
+.catalogueBody[data-scroll-above="true"] { --index-mask-top: transparent; }
+.catalogueBody[data-scroll-below="true"] { --index-mask-bottom: transparent; }
 
 .entries {
   margin: 0;
@@ -66,6 +79,7 @@
   max-width: 100%;
   color: inherit;
   text-wrap: pretty;
+  scroll-margin-block: 0.75rem;
 }
 
 // Detail remains available to assistive readers; the visual index stays names only.
@@ -95,6 +109,8 @@
   max-height: none;
   overflow: visible;
   padding-block: 0.75rem;
+  margin-inline: 0;
+  mask-image: none;
 }
 
 :global(html:not(.js-enabled)) .entryDescription {
