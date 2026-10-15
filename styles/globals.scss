@@ -624,7 +624,6 @@ html:has([data-archive-experience="true"]).is-overlay-open [data-app-navbar="tru
  */
 html [data-overlay-toolbar-slide="true"] {
   will-change: transform;
-  /* Match text reveals: the toolbar rises back into place with the site's soft ease-out. */
   transition: transform 620ms var(--ease-reveal);
 }
 
@@ -635,19 +634,34 @@ html.is-overlay-toolbar-fixed [data-overlay-toolbar-slide="true"] {
   left: 0;
   z-index: 520;
   pointer-events: none;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, var(--overlay-toolbar-rest-y, 0px), 0);
 }
 
 html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"] {
-  transform: translate3d(0, calc(100% + env(safe-area-inset-bottom, 0px) + 2rem), 0);
-  /* Exit stays direct, but remains visible above the opening overlay while it slides down. */
+  transform: translate3d(0, calc(var(--overlay-toolbar-rest-y, 0px) + var(--overlay-toolbar-exit-y, 100%)), 0);
   transition-duration: 560ms;
   transition-timing-function: var(--ease-move);
 }
 
+/* Return from the nearest edge after the sticky boundary. Keep opacity/filter off
+   the toolbar ancestor so each glass button can still sample the page behind it. */
+html [data-overlay-toolbar-slide="true"][data-overlay-toolbar-detached="true"] {
+  transition: transform 280ms var(--ease-out);
+}
+
+html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"][data-overlay-toolbar-detached="true"] {
+  transition-duration: 220ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html [data-overlay-toolbar-slide="true"] {
+  html [data-overlay-toolbar-slide="true"],
+  html [data-overlay-toolbar-slide="true"][data-overlay-toolbar-detached="true"] {
     transition-duration: 85ms;
+  }
+
+  html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"],
+  html.is-overlay-toolbar-out [data-overlay-toolbar-slide="true"][data-overlay-toolbar-detached="true"] {
+    transform: translate3d(0, var(--overlay-toolbar-rest-y, 0px), 0);
   }
 }
 
