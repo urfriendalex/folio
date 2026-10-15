@@ -329,8 +329,8 @@
   opacity: 1;
   filter: blur(0);
   transition-delay:
-    calc(var(--link-token-index, 0) * var(--project-overlay-step)),
-    calc(var(--link-token-index, 0) * var(--project-overlay-step)),
+    var(--project-reveal-delay, 0ms),
+    var(--project-reveal-delay, 0ms),
     0ms,
     0ms,
     0ms,
@@ -442,7 +442,7 @@
 .root[data-content-visible="true"] .tagPill {
   opacity: 1;
   filter: blur(0);
-  transition-delay: calc(var(--tag-token-index, 0) * var(--project-overlay-step));
+  transition-delay: var(--project-reveal-delay, 0ms);
 }
 
 .detailList {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArchiveCanvas } from "@/components/Archive/ArchiveCanvas";
 import { ArchiveIndexLink } from "@/components/Archive/ArchiveIndexLink";
+import { ArchiveIndexScroll } from "@/components/Archive/ArchiveIndexScroll";
 import { archiveEntries } from "@/content/archive/archive-data";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
@@ -61,7 +62,7 @@ export default function ArchiveRoute() {
             <summary>
               <span className="link-underline">Index</span>
             </summary>
-            <div className={styles.catalogueBody} data-lenis-prevent>
+            <ArchiveIndexScroll className={styles.catalogueBody}>
               <p className="sr-only">
                 A collection of interface experiments, motion stills, material studies,
                 and visual references by Alexander Yansons. Explore the canvas or open
@@ -82,7 +83,7 @@ export default function ArchiveRoute() {
                   </li>
                 ))}
               </ol>
-            </div>
+            </ArchiveIndexScroll>
           </details>
         </section>
       </ArchiveCanvas>

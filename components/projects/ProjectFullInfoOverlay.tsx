@@ -10,6 +10,7 @@ import {
   formatProjectStack,
 } from "@/lib/projectOverlaySequence";
 import styles from "./ProjectFullInfoOverlay.module.scss";
+import { useProjectOverviewReveal } from "./useProjectOverviewReveal";
 
 /** About-style masked reveal, compressed for the denser project sheet. Keep in sync with `--project-overlay-step` in SCSS. */
 const PROJECT_OVERLAY_REVEAL_STEP_MS = 10;
@@ -56,13 +57,14 @@ function OverlayBulletList({
 }
 
 export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullInfoOverlayProps) {
+  const rootRef = useProjectOverviewReveal(contentVisible);
   const { total, get } = useMemo(() => buildProjectOverlayOffsets(project), [project]);
   const techLine = project.technologies.join(", ");
 
   const linkList = project.links && project.links.length > 0 ? project.links : [];
 
   return (
-    <div className={styles.root} data-content-visible={contentVisible}>
+    <div ref={rootRef} className={styles.root} data-content-visible={contentVisible}>
       <header className={styles.header}>
         <RevealLines
           as="h2"
@@ -76,7 +78,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
         />
       </header>
 
-      <div className={styles.bodyScroll} data-lenis-prevent="">
+      <div className={styles.bodyScroll} data-lenis-prevent="" data-project-reveal-scroll>
         <RevealLines
           as="p"
           className={`${styles.descriptor} ${styles.scrollDescriptor}`}
@@ -201,6 +203,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                     key={`${link.url}-${link.label}`}
                     href={link.url}
                     className={styles.visitSiteLink}
+                    data-project-reveal
                     style={
                       {
                         "--link-token-index": get(`link${i}`),
@@ -407,6 +410,7 @@ export function ProjectFullInfoOverlay({ project, contentVisible }: ProjectFullI
                 <span
                   key={`${tag}-${i}`}
                   className={styles.tagPill}
+                  data-project-reveal
                   style={
                     {
                       "--tag-token-index": get(`tag${i}`),
