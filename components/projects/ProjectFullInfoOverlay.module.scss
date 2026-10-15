@@ -83,61 +83,33 @@
   }
 }
 
-/*
- * Desktop: intro (lead + overview) and body stack in column 1; meta aside in column 2 uses
- * `position: sticky` within `.bodyScroll` — that region must scroll when copy exceeds the viewport.
- * Mobile: single column — intro, then meta, then body (facts before long sections).
- */
+/* Independent desktop columns let shorter sections use space beside longer lists.
+   On mobile the wrappers flatten, preserving the established single-column sequence. */
 .sheetLayout {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto auto auto;
-  row-gap: clamp(1.35rem, 3.5vw, 2rem);
-  align-items: start;
-}
-
-.sheetIntro {
-  grid-column: 1;
-  grid-row: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(1.35rem, 3vw, 2.25rem);
+  gap: clamp(1.35rem, 3.5vw, 2rem);
+  align-items: stretch;
 }
 
-.sheetAside {
-  grid-column: 1;
-  grid-row: 2;
-  min-width: 0;
-  position: static;
+.sheetIntro,
+.sheetBody,
+.executionColumn,
+.resultsColumn {
+  display: contents;
 }
 
-.sheetBody {
-  grid-column: 1;
-  grid-row: 3;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(1.65rem, 3.5vw, 2.65rem);
-}
-
-@media (min-width: 60rem) {
-  .sheetBody {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem 1.1rem;
-    align-content: start;
-    align-items: start;
-  }
-
-  .extraGridFull {
-    grid-column: auto;
-  }
-
-  .sheetBody > :is([aria-label="Impact"], [aria-label="Tags"]) {
-    grid-column: 1 / -1;
-  }
-}
+.sheetLayout .lead { order: 1; }
+.sheetLayout [aria-label="Overview"] { order: 2; }
+.sheetAside { order: 3; min-width: 0; }
+.sheetLayout [aria-label="Client"] { order: 4; }
+.sheetLayout [aria-label="Role detail"] { order: 5; }
+.sheetLayout [aria-label="Responsibilities"] { order: 6; }
+.sheetLayout [aria-label="Collaboration"] { order: 7; }
+.sheetLayout [aria-label="Stack"] { order: 8; }
+.sheetLayout [aria-label="Features"] { order: 9; }
+.sheetLayout [aria-label="Impact"] { order: 10; }
+.sheetLayout [aria-label="Tags"] { order: 11; }
 
 .sheetAside .metaRow {
   grid-template-columns: 1fr;
@@ -145,73 +117,59 @@
 
 @media (min-width: 60rem) {
   .sheetLayout {
-    grid-template-columns: minmax(0, 1fr) minmax(11.5rem, min(22vw, 19rem));
-    grid-template-rows: auto auto;
-    column-gap: clamp(2rem, 3vw, 3rem);
-    row-gap: clamp(1.4rem, 2vw, 2rem);
-  }
-
-  .sheetIntro {
-    grid-column: 1;
-    grid-row: 1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.1rem;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(10.5rem, 0.6fr);
+    gap: clamp(1.5rem, 2.5vw, 2.5rem);
     align-items: start;
   }
 
-  .sheetBody {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .sheetAside {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    position: sticky;
-    /* Sticks within `.bodyScroll` for the full project sheet, not only beside the intro block. */
-    top: max(0.35rem, env(safe-area-inset-top, 0px));
-    align-self: start;
-  }
-}
-
-/* Wide screens use the extra space for shorter columns, rather than longer text lines. */
-@media (min-width: 90rem) {
-  .sheetLayout {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.75fr) minmax(10.5rem, 0.55fr);
-    grid-template-rows: auto;
-    column-gap: clamp(2rem, 2.5vw, 2.75rem);
+  .sheetIntro,
+  .sheetBody,
+  .executionColumn,
+  .resultsColumn {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1.35rem;
   }
 
   .sheetIntro {
     grid-column: 1;
-    grid-row: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
   }
 
   .sheetBody {
     grid-column: 2;
-    grid-row: 1;
-    gap: 0.9rem 1.5rem;
   }
 
   .sheetAside {
     grid-column: 3;
+    position: sticky;
+    top: max(0.35rem, env(safe-area-inset-top, 0px));
+    align-self: start;
+  }
+
+  .sheetIntro,
+  .sheetBody,
+  .sheetAside {
     grid-row: 1;
-  }
-
-  .extraGridFull {
-    grid-column: auto;
-  }
-
-  .sheetBody > :is([aria-label="Impact"], [aria-label="Tags"]) {
-    grid-column: 1 / -1;
+    order: initial;
   }
 
   .detailList {
     gap: 0.3rem;
+  }
+}
+
+@media (min-width: 75rem) {
+  .sheetLayout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.9fr) minmax(10.5rem, 0.55fr);
+  }
+
+  .sheetBody {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.4rem, 2vw, 2rem);
+    align-items: start;
   }
 }
 
@@ -537,10 +495,6 @@
   }
 
   .sheetLayout {
-    row-gap: clamp(1.2rem, 3.2vw, 1.75rem);
-  }
-
-  .sheetBody {
     gap: clamp(1.35rem, 3.5vw, 2rem);
   }
 
