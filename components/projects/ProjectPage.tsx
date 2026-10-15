@@ -22,7 +22,7 @@ import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { ExploreCueHost } from "@/components/ui/ExploreCue/ExploreCueHost";
 import { Overlay } from "@/components/ui/Overlay/Overlay";
-import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
+import { ProjectFullInfoOverlay } from "@/components/projects/ProjectFullInfoOverlay";
 import type { ProjectEntry } from "@/content/projects/types";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { PROJECT_STILL_IMAGE_SIZES } from "@/lib/projectMedia";
@@ -40,6 +40,7 @@ const TOOLBAR_UNDERLINE_BUFFER_MS = 120;
 const TOOLBAR_COPY_REVEAL_DELAY_MS = 80;
 /** Wait before pending chrome so instant prefetched navigations do not flash. */
 const NAV_PENDING_FEEDBACK_MS = 90;
+const PROJECT_OVERVIEW_EXIT_MS = 480;
 
 type ProjectNavDirection = "previous" | "next";
 
@@ -154,7 +155,6 @@ export function ProjectPage({
   previousProject,
   project,
 }: ProjectPageProps) {
-  const { openProjectFullInfo } = useOverlay();
   const pathname = usePathname();
   const router = useRouter();
   const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
@@ -167,6 +167,100 @@ export function ProjectPage({
     router.prefetch(`/projects/${previousProject.slug}`);
     router.prefetch(`/projects/${nextProject.slug}`);
   }, [nextProject.slug, previousProject.slug, router]);
+
+  const [overviewActive, setOverviewActive] = useState(false);
+  const [overviewVisible, setOverviewVisible] = useState(false);
+  const [overviewContentVisible, setOverviewContentVisible] = useState(false);
+  const overviewActiveRef = useRef(false);
+  const overviewHistoryRef = useRef(false);
+  const overviewTriggerRef = useRef<HTMLElement | null>(null);
+  const overviewCloseTimerRef = useRef<number | null>(null);
+  const overviewOpenFrameRef = useRef<number | null>(null);
+  const overviewContentFrameRef = useRef<number | null>(null);
+  const overviewRestoreFrameRef = useRef<number | null>(null);
+
+  const clearOverviewTimers = useCallback(() => {
+    if (overviewCloseTimerRef.current !== null) window.clearTimeout(overviewCloseTimerRef.current);
+    if (overviewOpenFrameRef.current !== null) window.cancelAnimationFrame(overviewOpenFrameRef.current);
+    if (overviewContentFrameRef.current !== null) window.cancelAnimationFrame(overviewContentFrameRef.current);
+    if (overviewRestoreFrameRef.current !== null) window.cancelAnimationFrame(overviewRestoreFrameRef.current);
+    overviewCloseTimerRef.current = null;
+    overviewOpenFrameRef.current = null;
+    overviewContentFrameRef.current = null;
+    overviewRestoreFrameRef.current = null;
+  }, []);
+
+  const performCloseOverview = useCallback(() => {
+    if (!overviewActiveRef.current || overviewCloseTimerRef.current !== null) return;
+    clearOverviewTimers();
+    const html = document.documentElement;
+    html.classList.remove("is-overlay-blur-pending");
+    html.classList.add("is-overlay-blur-closing");
+    setOverviewContentVisible(false);
+    setOverviewVisible(false);
+    overviewCloseTimerRef.current = window.setTimeout(() => {
+      overviewCloseTimerRef.current = null;
+      overviewActiveRef.current = false;
+      setOverviewActive(false);
+      html.classList.remove("is-overlay-blur-closing");
+      overviewRestoreFrameRef.current = window.requestAnimationFrame(() => {
+        overviewRestoreFrameRef.current = null;
+        if (overviewTriggerRef.current?.isConnected) {
+          overviewTriggerRef.current.focus({ preventScroll: true });
+        }
+      });
+    }, PROJECT_OVERVIEW_EXIT_MS);
+  }, [clearOverviewTimers]);
+
+  const closeOverview = useCallback(() => {
+    if (overviewHistoryRef.current) {
+      overviewHistoryRef.current = false;
+      window.history.back();
+      return;
+    }
+    performCloseOverview();
+  }, [performCloseOverview]);
+
+  const openOverview = useCallback(() => {
+    if (overviewActiveRef.current) return;
+    clearOverviewTimers();
+    overviewTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    overviewActiveRef.current = true;
+    document.documentElement.classList.add("is-overlay-blur-pending");
+    document.documentElement.classList.remove("is-overlay-blur-closing");
+    setOverviewActive(true);
+    setOverviewVisible(false);
+    setOverviewContentVisible(false);
+    const previousState = window.history.state;
+    const historyState = previousState && typeof previousState === "object" ? previousState : {};
+    window.history.pushState({ ...historyState, folioProjectOverview: true }, "", window.location.href);
+    overviewHistoryRef.current = true;
+    overviewOpenFrameRef.current = window.requestAnimationFrame(() => {
+      overviewOpenFrameRef.current = null;
+      setOverviewVisible(true);
+      overviewContentFrameRef.current = window.requestAnimationFrame(() => {
+        overviewContentFrameRef.current = null;
+        setOverviewContentVisible(true);
+      });
+    });
+  }, [clearOverviewTimers]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (!overviewActiveRef.current) return;
+      overviewHistoryRef.current = false;
+      performCloseOverview();
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [performCloseOverview]);
+
+  useEffect(() => () => {
+    clearOverviewTimers();
+    if (overviewActiveRef.current) {
+      document.documentElement.classList.remove("is-overlay-blur-pending", "is-overlay-blur-closing");
+    }
+  }, [clearOverviewTimers]);
 
   const [toolbarPinnedOpen, setToolbarPinnedOpen] = useState(false);
   const [toolbarHovered, setToolbarHovered] = useState(false);
@@ -1029,6 +1123,19 @@ export function ProjectPage({
           ? `Loading ${pendingProjectTitle}`
           : ""}
       </p>
+      <Overlay
+        keepMounted
+        active={overviewActive}
+        onClose={closeOverview}
+        title={project.title}
+        variant="immersive"
+        showTitle={false}
+        inlineMobileHeader
+        visible={overviewVisible}
+        contentVisible={overviewContentVisible}
+      >
+        <ProjectFullInfoOverlay project={project} contentVisible={overviewContentVisible} />
+      </Overlay>
       {mobileOverlayMedia ? (
         <Overlay
           closeLabel="back"
@@ -1362,7 +1469,9 @@ export function ProjectPage({
                       className={`link-underline ${styles.toolbarAction}`}
                       data-align="end"
                       data-underline-ready={overviewUnderlineReady ? "true" : undefined}
-                      onClick={() => openProjectFullInfo(project)}
+                      onClick={openOverview}
+                      aria-haspopup="dialog"
+                      aria-expanded={overviewActive}
                       tabIndex={toolbarLinesVisible ? 0 : -1}
                     >
                       <RevealLines

@@ -5,7 +5,12 @@ import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 import styles from "./page.module.scss";
 
-/** Entry motion is decorative; native details interactions stay immediate. */
+// Match ProjectsIndex's 0.28s / 0.04s / power2.out entrance rhythm.
+const ENTRY_DURATION_MS = 280;
+const ENTRY_STAGGER_MS = 40;
+const ENTRY_EASE = "cubic-bezier(0.333333, 1, 0.666667, 1)";
+
+/** Entry motion is decorative; keyboard disclosure interactions stay immediate. */
 export function FaqExperience({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,16 +22,22 @@ export function FaqExperience({ children }: { children: ReactNode }) {
     const root = rootRef.current;
     if (!root) return;
     const animations: Animation[] = [];
-    root.querySelectorAll<HTMLElement>("[data-faq-reveal]").forEach((element, index) => {
+    const visibleText = Array.from(root.querySelectorAll<HTMLElement>("[data-faq-reveal]"))
+      .filter((element) => {
+        const disclosure = element.closest("details");
+        // Browsers can return rectangles for descendants of a closed disclosure.
+        return (!disclosure || disclosure.open || element.closest("summary")) && element.getClientRects().length > 0;
+      });
+    visibleText.forEach((element, index) => {
       animations.push(element.animate(
-        [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "translateY(0)" }],
-        { duration: 280, delay: index * 45, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "backwards" },
+        [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "translateY(0)" }],
+        { duration: ENTRY_DURATION_MS, delay: index * ENTRY_STAGGER_MS, easing: ENTRY_EASE, fill: "backwards" },
       ));
     });
     root.querySelectorAll<HTMLElement>("[data-faq-rule]").forEach((element, index) => {
       animations.push(element.animate(
         [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-        { duration: 360, delay: 45 + index * 50, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "backwards" },
+        { duration: ENTRY_DURATION_MS, delay: (index + 1) * ENTRY_STAGGER_MS, easing: ENTRY_EASE, fill: "backwards" },
       ));
     });
     return () => animations.forEach((animation) => animation.cancel());
