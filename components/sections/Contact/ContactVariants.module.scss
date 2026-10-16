@@ -310,18 +310,9 @@
   }
 }
 
-/* The call is the primary action, but it only takes the accent when reached for; at rest it reads like its siblings. */
+/* Labels stay ink (blue text on the field is too low-contrast); hover only firms them up. */
 @media (hover: hover) and (pointer: fine) {
   .emailView .action:hover {
     text-shadow: 0 0 0.6px currentColor;
   }
-
-  .emailView .action[data-action="call"]:hover {
-    color: var(--contact-accent);
-  }
-}
-
-.emailView .action[data-action="call"]:focus-visible,
-.emailView .action[data-action="call"]:active {
-  color: var(--contact-accent);
 }

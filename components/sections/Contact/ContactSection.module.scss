@@ -1,6 +1,6 @@
 .section {
   position: relative;
-  /* Blue, not --signal-color: red read as an alarm on the landing page. Red stays for form errors. */
+  /* Glyph accent only; red read as an alarm here. Labels stay ink; red stays for Back and form errors. */
   --contact-accent: var(--taskbar-flag-blue);
   padding-bottom: var(--section-padding-y);
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
@@ -60,7 +60,7 @@
   border: 0;
   padding: 0.1rem 0;
   background: transparent;
-  color: var(--contact-accent);
+  color: var(--signal-color);
   font: inherit;
   font-size: 0.76rem;
   letter-spacing: 0.02em;
@@ -276,7 +276,7 @@
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--contact-accent);
+  color: var(--fg-color);
   font: inherit;
   font-size: 0.72rem;
   letter-spacing: var(--tracking-label-lg);
@@ -652,7 +652,7 @@
     border: 0;
     box-shadow: none;
     background: transparent;
-    color: var(--contact-accent);
+    color: var(--fg-color);
     font-family: var(--font-pixel-stack);
     font-size: clamp(0.84rem, 2.6vw, 0.98rem);
     font-weight: 400;

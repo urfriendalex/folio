@@ -11,8 +11,25 @@ const LINE_HEIGHT = 1.12;
 // Cells inside the label box stay clear; density returns over this many px.
 const CLEARING_FALLOFF = 22;
 const PRESS_LIFE = 0.7;
+// Directional mode: streaks thrown off the pointer, carrying on the way it moved after it stops.
+const STREAK_LIFE = 0.8;
+const STREAK_MAX = 16;
+const STREAK_MIN_SPEED = 90; // px/s
+const STREAK_TOP_SPEED = 520; // px/s
+const STREAK_FRICTION = 2.4; // 1/s
+const STREAK_CLEARING = 5; // px from the label's glyphs
+// Appended after the ramp so a bucket entry can address either: horizontal, falling, vertical, rising.
+const STROKES = ["-", "\\", "|", "/"];
+const GLYPHS = [...RAMP, ...STROKES];
 
 type Press = { x: number; y: number; t: number };
+type Streak = { x: number; y: number; vx: number; vy: number; t: number };
+
+function strokeIndex(vx: number, vy: number) {
+  const a = ((Math.atan2(vy, vx) % Math.PI) + Math.PI) % Math.PI; // screen space, folded to [0, π)
+  const slot = a < Math.PI / 8 || a >= (7 * Math.PI) / 8 ? 0 : a < (3 * Math.PI) / 8 ? 1 : a < (5 * Math.PI) / 8 ? 2 : 3;
+  return RAMP.length + slot;
+}
 
 function hash(column: number, row: number, tick: number) {
   const x = Math.sin(column * 127.1 + row * 311.7 + tick * 74.7) * 43758.5453;
@@ -45,6 +62,7 @@ export function BookingButtonAscii({
   accent = "--taskbar-flag-blue",
   clearance = "box",
   quietQuery,
+  directional = false,
 }: {
   className: string;
   /** Custom property for the hot glyphs near the pointer. */
@@ -53,6 +71,8 @@ export function BookingButtonAscii({
   /** While this media query matches (big touch-sized cells), the field stays a light texture:
       thinner ambient, a smaller hot spot, and no heavy glyphs. */
   quietQuery?: string;
+  /** Moving across the button throws — | / \ strokes that keep travelling the way the pointer went. */
+  directional?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -75,6 +95,8 @@ export function BookingButtonAscii({
     let room = new Float32Array(0);
     let heat = new Float32Array(0);
     let presses: Press[] = [];
+    let streaks: Streak[] = [];
+    let lastEmit = 0;
     let frame = 0;
     let visible = false;
     let lastTime = 0;
@@ -133,6 +155,35 @@ export function BookingButtonAscii({
             value += ring * (1 - age / PRESS_LIFE) * (0.2 + open * 0.5);
           }
 
+          // Each streak is a short capsule trailing behind its head; the strongest one sets the stroke.
+          let stroke = 0;
+          let strokeX = 0;
+          let strokeY = 0;
+          for (const streak of streaks) {
+            const life = 1 - (time - streak.t) / STREAK_LIFE;
+            const tailX = streak.x - streak.vx * 0.09;
+            const tailY = streak.y - streak.vy * 0.09;
+            const sx = streak.x - tailX;
+            const sy = streak.y - tailY;
+            const cx = x + cellWidth / 2;
+            const cy = y + cellHeight / 2;
+            const along = Math.max(0, Math.min(1, ((cx - tailX) * sx + (cy - tailY) * sy) / (sx * sx + sy * sy || 1)));
+            const ex = cx - (tailX + sx * along);
+            const ey = cy - (tailY + sy * along);
+            const s = life * Math.exp(-(ex * ex + ey * ey) / 42);
+            if (s > stroke) {
+              stroke = s;
+              strokeX = streak.vx;
+              strokeY = streak.vy;
+            }
+          }
+          // Strokes only keep off the glyphs themselves, not the wide ambient clearing: thin rows are all clearing.
+          if (stroke > 0) stroke *= Math.min(1, (open ** (1 / 1.4) * CLEARING_FALLOFF) / STREAK_CLEARING) * (quiet ? 0.7 : 1);
+          if (stroke > 0.18) {
+            buckets[stroke > 0.5 && !quiet ? 2 : 1].push(strokeIndex(strokeX, strokeY), x, y);
+            continue;
+          }
+
           const index = Math.max(0, Math.min(ceiling, Math.round(value * top)));
           if (!index) continue;
           const bucket = heat[i] > 0.32 && index > 3 ? 2 : index > 5 ? 1 : 0;
@@ -147,7 +198,7 @@ export function BookingButtonAscii({
         context.fillStyle = fills[b];
         context.globalAlpha = alphas[b];
         for (let j = 0; j < bucket.length; j += 3) {
-          context.fillText(RAMP[bucket[j]], bucket[j + 1], bucket[j + 2]);
+          context.fillText(GLYPHS[bucket[j]], bucket[j + 1], bucket[j + 2]);
         }
       });
       context.globalAlpha = 1;
@@ -158,9 +209,31 @@ export function BookingButtonAscii({
       lastTime = now;
       time += delta / 1000;
       const ease = 1 - Math.exp(-delta / 70);
+      const previousX = pointerX;
+      const previousY = pointerY;
       pointerX += (targetX - pointerX) * ease;
       pointerY += (targetY - pointerY) * ease;
       hover += (hoverTarget - hover) * ease;
+
+      if (directional) {
+        const seconds = delta / 1000;
+        const friction = Math.exp(-seconds * STREAK_FRICTION);
+        streaks = streaks.filter((streak) => time - streak.t < STREAK_LIFE);
+        for (const streak of streaks) {
+          streak.x += streak.vx * seconds;
+          streak.y += streak.vy * seconds;
+          streak.vx *= friction;
+          streak.vy *= friction;
+        }
+        const vx = (pointerX - previousX) / seconds;
+        const vy = (pointerY - previousY) / seconds;
+        const speed = Math.hypot(vx, vy);
+        if (hoverTarget && speed > STREAK_MIN_SPEED && time - lastEmit > 0.05 && streaks.length < STREAK_MAX) {
+          // Thrown ahead of the pointer, faster than it, so the stroke runs on after the hand stops.
+          const scale = Math.min(STREAK_TOP_SPEED, speed * 1.6) / speed;
+          streaks.push({ x: pointerX, y: pointerY, vx: vx * scale, vy: vy * scale, t: time });
+          lastEmit = time;
+        }      }
       draw(1 - Math.exp(-delta / 110));
       frame = window.requestAnimationFrame(tick);
     };
@@ -245,6 +318,11 @@ export function BookingButtonAscii({
       const rect = canvas.getBoundingClientRect();
       targetX = event.clientX - rect.left;
       targetY = event.clientY - rect.top;
+      // Entering would otherwise glide from wherever the pointer last was and throw a false streak.
+      if (directional && !hoverTarget) {
+        pointerX = targetX;
+        pointerY = targetY;
+      }
       hoverTarget = 1;
       if (reducedMotion.matches) {
         pointerX = targetX;
@@ -284,6 +362,7 @@ export function BookingButtonAscii({
         stop();
         time = 0;
         presses = [];
+        streaks = [];
         hover = hoverTarget;
         pointerX = targetX;
         pointerY = targetY;
@@ -340,7 +419,7 @@ export function BookingButtonAscii({
       button.removeEventListener("blur", onPointerLeave);
       button.removeEventListener("transitionend", onTransitionEnd);
     };
-  }, [accent, clearance, quietQuery]);
+  }, [accent, clearance, quietQuery, directional]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

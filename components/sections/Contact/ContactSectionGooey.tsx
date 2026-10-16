@@ -457,7 +457,7 @@ export function ContactSectionGooey({
                     style={{ "--contact-reveal-index": 2 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
                     <span className={variants.actionNum} aria-hidden="true">01</span>
                     <RevealLabel>Open mail app</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">↗</span>
@@ -471,7 +471,7 @@ export function ContactSectionGooey({
                     style={{ "--contact-reveal-index": 3 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
                     <span className={variants.actionNum} aria-hidden="true">02</span>
                     <RevealLabel>Book a call</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">→</span>
@@ -487,7 +487,7 @@ export function ContactSectionGooey({
                     onClick={() => openForm()}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
                     <span className={variants.actionNum} aria-hidden="true">03</span>
                     <RevealLabel>Send a message</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">→</span>
