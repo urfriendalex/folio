@@ -36,6 +36,26 @@ function hash(column: number, row: number, tick: number) {
   return x - Math.floor(x);
 }
 
+/** Union of the text nodes only: a range over the element would include full-width block wrappers. */
+function textBounds(element: Element, range: Range) {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!node.textContent?.trim()) continue;
+    range.selectNodeContents(node);
+    const box = range.getBoundingClientRect();
+    if (!box.width || !box.height) continue;
+    left = Math.min(left, box.left);
+    top = Math.min(top, box.top);
+    right = Math.max(right, box.right);
+    bottom = Math.max(bottom, box.bottom);
+  }
+  return left === Infinity ? new DOMRect() : new DOMRect(left, top, right - left, bottom - top);
+}
+
 /** Bounds of what the field has to stay clear of. "text" hugs the glyphs, so block-level labels
     (full-width spans) still leave the rest of the cell to the field; hidden children are skipped. */
 function clearingBoxes(host: HTMLElement, canvas: HTMLCanvasElement, clearance: "box" | "text") {
@@ -44,8 +64,7 @@ function clearingBoxes(host: HTMLElement, canvas: HTMLCanvasElement, clearance: 
   return Array.from(host.children)
     .filter((child) => child !== canvas && !(child instanceof SVGElement))
     .map((child) => {
-      if (range) range.selectNodeContents(child);
-      const box = range ? range.getBoundingClientRect() : child.getBoundingClientRect();
+      const box = range ? textBounds(child, range) : child.getBoundingClientRect();
       return {
         left: box.left - origin.left,
         right: box.right - origin.left,
@@ -179,7 +198,8 @@ export function BookingButtonAscii({
           }
           // Strokes only keep off the glyphs themselves, not the wide ambient clearing: thin rows are all clearing.
           if (stroke > 0) stroke *= Math.min(1, (open ** (1 / 1.4) * CLEARING_FALLOFF) / STREAK_CLEARING) * (quiet ? 0.7 : 1);
-          if (stroke > 0.18) {
+          // The hot spot stays the same blob as the footer's button; strokes only show where it has cooled.
+          if (stroke > 0.18 && heat[i] < 0.3) {
             buckets[stroke > 0.5 && !quiet ? 2 : 1].push(strokeIndex(strokeX, strokeY), x, y);
             continue;
           }

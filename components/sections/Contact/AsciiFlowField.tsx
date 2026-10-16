@@ -246,6 +246,11 @@ export function AsciiFlowField({
     /** Shared by mouse and touch: the stroke is the physical movement (client delta), drawn so it ends
         at the pointer's current spot on the canvas. */
     const track = (clientX: number, clientY: number) => {
+      // Action cells run their own glyph field; tracing underneath them too reads as a double trace.
+      if (document.elementFromPoint(clientX, clientY)?.closest("[data-action]")) {
+        last = null;
+        return;
+      }
       const now = performance.now();
       if (last) {
         const dt = Math.max(8, now - last.t);
