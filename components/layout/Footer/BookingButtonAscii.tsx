@@ -21,15 +21,14 @@ const STREAK_TOP_SPEED = 520; // px/s
 const STREAK_FRICTION = 2.4; // 1/s
 const STREAK_CLEARING = 5; // px from the label's glyphs
 // Appended after the ramp so a bucket entry can address either: horizontal, falling, vertical, rising.
+const STROKES = ["-", "\\", "|", "/"];
+const GLYPHS = [...RAMP, ...STROKES];
 // Glitch mode: the field and the cell's glyphs come and go in hero-style random-order steps.
 const GLITCH_IN_MS = 560;
 const GLITCH_OUT_MS = 220;
 /** The label is fully in by this share of the field's glitch-in; the texture keeps filling after. */
 const GLITCH_LABEL_SHARE = 0.55;
 const GLITCH_FIELD_SEED = 97;
-
-const STROKES = ["-", "\\", "|", "/"];
-const GLYPHS = [...RAMP, ...STROKES];
 
 type Press = { x: number; y: number; t: number };
 type Streak = { x: number; y: number; vx: number; vy: number; t: number };
@@ -136,7 +135,7 @@ export function BookingButtonAscii({
           element,
           at: Number(element.dataset.glitchAt),
           phase: Number(element.dataset.glitchPhase),
-          on: false,
+          on: element.hasAttribute("data-glitch-on"),
         }))
       : [];
     let presses: Press[] = [];
@@ -391,13 +390,6 @@ export function BookingButtonAscii({
       }
     };
 
-    /** Labels that slide in (line-mask reveals) end somewhere else than where they were measured. */
-    const onTransitionEnd = (event: TransitionEvent) => {
-      if (event.target === button || event.propertyName !== "transform") return;
-      measureClearing();
-      if (reducedMotion.matches) draw(1);
-    };
-
     const onPointerMove = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       targetX = event.clientX - rect.left;
@@ -483,7 +475,6 @@ export function BookingButtonAscii({
     button.addEventListener("pointerleave", onPointerLeave);
     button.addEventListener("focus", onFocus);
     button.addEventListener("blur", onPointerLeave);
-    button.addEventListener("transitionend", onTransitionEnd);
     resize();
     if (glitch) {
       glitchObserver.observe(button, { attributes: true, attributeFilter: ["data-visible"] });
@@ -508,7 +499,6 @@ export function BookingButtonAscii({
       button.removeEventListener("pointerleave", onPointerLeave);
       button.removeEventListener("focus", onFocus);
       button.removeEventListener("blur", onPointerLeave);
-      button.removeEventListener("transitionend", onTransitionEnd);
       glitchObserver.disconnect();
     };
   }, [accent, clearance, quietQuery, directional, glitch]);

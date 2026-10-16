@@ -320,9 +320,11 @@ export function AsciiFlowField({
       wake();
     };
 
-    /** A click anywhere in the section, down to the footer, sends a ring. Touch uses the press fill instead. */
+    /** A click anywhere in the section, down to the footer, sends a ring. Touch uses the press fill instead;
+        action cells answer with their own press ring. */
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
+      if (event.target instanceof Element && event.target.closest("[data-action]")) return;
       burst(event.clientX, event.clientY, 0.85);
     };
     // The section's bottom padding sits outside the field's host, so listen on the section itself.
