@@ -184,7 +184,7 @@
 }
 
 .filter:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -321,7 +321,7 @@
 }
 
 .row:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -626,12 +626,13 @@
     justify-self: start;
   }
 
+  /* Box hugs the label (even focus mark); the 2.5rem touch target lives on margin + `::before`. */
   .filterTrigger {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 0.38rem;
-    min-height: 2.5rem;
-    margin: 0;
+    margin: calc((2.5rem - 1lh) / 2) 0;
     padding: 0;
     border: 0;
     background: transparent;
@@ -646,12 +647,18 @@
     transition: transform 160ms var(--ease-out);
   }
 
+  .filterTrigger::before {
+    content: "";
+    position: absolute;
+    inset: calc((1lh - 2.5rem) / 2) -0.25rem;
+  }
+
   .filterTrigger:active {
     transform: scale(0.97);
   }
 
   .filterTrigger:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-    outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+    outline: var(--focus-ring);
     outline-offset: 3px;
   }
 
@@ -747,7 +754,7 @@
   }
 
   .filterOption:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-    outline: 2px solid color-mix(in srgb, var(--fg-color) 40%, transparent);
+    outline: var(--focus-ring);
     outline-offset: 2px;
   }
 

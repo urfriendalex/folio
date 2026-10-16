@@ -32,6 +32,10 @@
   --duration-draw: 820ms; /* stroke traces (frames, short rules) */
   --duration-draw-long: 1000ms; /* full-bleed rules */
 
+  /* Focus: one quiet keyboard mark everywhere (no heavy 2px boxes). */
+  --focus-ring: 1px dotted currentColor;
+  --focus-ring-offset: 3px;
+
   /* Stagger step between siblings (keep 30–110ms; longer feels slow) */
   --stagger-tight: 30ms; /* fast arrivals, dense lists */
   --stagger: 70ms; /* default cascade */
@@ -836,11 +840,28 @@ img {
   border: 0;
 }
 
+// Reveal policy: inside a restore window (lib/revealRestore.ts) anything revealing is content the visitor
+// already knows, so entrances resolve instantly. Scoped to reveal state attributes; the window is short.
+html.reveal-restore :is(
+    [data-visible],
+    [data-visible] *,
+    [data-visible]::before,
+    [data-visible]::after,
+    [data-line-visible],
+    [data-line-visible] *,
+    [data-line-visible]::before,
+    [data-line-visible]::after
+  ) {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
 // :where keeps the modality gate at zero specificity so component styles win.
+// Quiet, old-school dotted focus mark (keyboard only — see the input-modality bootstrap in app/layout).
 :focus-visible:not(:where([data-input-modality="pointer"] *)),
 :where(input, textarea, select, [contenteditable], [role="textbox"]):focus-visible {
-  outline: 2px solid var(--fg-color);
-  outline-offset: 3px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 // Reset browser outlines only for pointer-focused, non-editable controls.

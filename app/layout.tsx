@@ -60,14 +60,31 @@ const bootstrapScript = `
   const html = document.documentElement;
   html.classList.add("js-enabled");
 
+  // Reveal policy (lib/revealRestore.ts): reload / back-forward documents are restores — content at or
+  // above the landing position is already known, so its entrances are skipped.
+  try {
+    const nav = performance.getEntriesByType("navigation")[0];
+    if (nav && (nav.type === "reload" || nav.type === "back_forward")) {
+      html.classList.add("reveal-restore");
+    }
+  } catch (_error) {}
+
   // Track input before hydration, including programmatic dialog focus/restore.
+  // Start in pointer mode: focus rings appear only once someone actually navigates by keyboard,
+  // never for programmatic focus (dialog autofocus, focus restore) or non-navigation keys
+  // like Escape / Space / scrolling.
+  html.setAttribute("data-input-modality", "pointer");
   document.addEventListener("pointerdown", () => {
     html.setAttribute("data-input-modality", "pointer");
   }, { capture: true, passive: true });
+  const ARROW_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"];
   document.addEventListener("keydown", (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey ||
-        ["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
-    html.setAttribute("data-input-modality", "keyboard");
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const active = document.activeElement;
+    const focusIsOnControl = active && active !== document.body && active !== html;
+    if (event.key === "Tab" || (focusIsOnControl && ARROW_KEYS.includes(event.key))) {
+      html.setAttribute("data-input-modality", "keyboard");
+    }
   }, true);
 
   let theme = "light";
@@ -125,7 +142,9 @@ const bootstrapScript = `
       degradeContact;
   } catch (_error) {}
 
-  html.classList.toggle("reveals-enabled", !bypassReveals);
+  // Restores keep server-rendered content visible until hydration decides what is already "seen";
+  // RevealPolicyController enables reveals in the same pre-paint commit, so nothing on screen hides.
+  html.classList.toggle("reveals-enabled", !bypassReveals && !html.classList.contains("reveal-restore"));
   html.classList.toggle("reveals-bypassed", bypassReveals);
   html.classList.toggle("contact-degraded", degradeContact);
 })();

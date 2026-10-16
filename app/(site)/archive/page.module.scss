@@ -15,14 +15,23 @@
   pointer-events: none;
 }
 
+/* Label box hugs "Index" (even focus mark); the 44px target extends upward via `::before`,
+   keeping the text where it was (bottom-aligned to the archive edge). */
 .catalogue > summary {
+  position: relative;
   display: inline-flex;
   align-items: flex-end;
-  min-height: 2.75rem;
+  margin-top: calc(2.75rem - 1lh);
   cursor: pointer;
   list-style: none;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.catalogue > summary::before {
+  content: "";
+  position: absolute;
+  inset: calc(1lh - 2.75rem) -0.25rem 0;
 }
 
 .catalogue > summary::-webkit-details-marker { display: none; }
@@ -30,8 +39,8 @@
 
 .catalogue summary:focus-visible:not(:where([data-input-modality="pointer"] *)),
 .entries a:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 1px solid currentColor;
-  outline-offset: 4px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .catalogueBody {

@@ -33,7 +33,7 @@
 }
 
 .media:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .titleLink:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -183,7 +183,7 @@
 }
 
 .visit:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
