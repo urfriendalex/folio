@@ -6,10 +6,6 @@
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
 }
 
-:global([data-theme="dark"]) .section {
-  --contact-accent: color-mix(in srgb, var(--taskbar-flag-blue) 62%, white);
-}
-
 /* Matches `/#contact-form` URL when the gooey inline form is open (back / gesture closes UI). */
 .contactFormHashAnchor {
   position: absolute;
