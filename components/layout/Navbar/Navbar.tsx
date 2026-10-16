@@ -13,7 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
-import { useTimeZoneStatus } from "@/components/layout/Footer/TimeZoneStatus";
+import { LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
@@ -51,8 +51,8 @@ export function Navbar() {
   const closeMenuOnRouteChange = useEffectEvent(() => {
     setMenuOpen(false);
   });
-  const timeZoneStatus = useTimeZoneStatus();
-  const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
+  /* Per-second ticking is isolated in <LiveClock>; the navbar itself re-renders at most once a minute. */
+  const sameAsWarsaw = useTimeZoneInfo().offsetMinutes === 0;
   const { guardedPush } = useNavigationFlightLock(pathname);
 
   useEffect(() => {
@@ -333,16 +333,16 @@ export function Navbar() {
             <div className={styles.mobileFooterRow}>
               <div className={styles.mobileClockBlock}>
                 {sameAsWarsaw ? (
-                  <span className={styles.mobileClockMono}>{timeZoneStatus.warsawClockLine}</span>
+                  <LiveClock zone="warsaw" className={styles.mobileClockMono} />
                 ) : (
                   <>
                     <span className={styles.mobileClockLine}>
                       <span className={styles.mobileClockLabel}>Warsaw</span>
-                      <span className={styles.mobileClockValue}>{timeZoneStatus.warsawClockLine}</span>
+                      <LiveClock zone="warsaw" className={styles.mobileClockValue} />
                     </span>
                     <span className={styles.mobileClockLine}>
                       <span className={styles.mobileClockLabel}>Your time</span>
-                      <span className={styles.mobileClockValue}>{timeZoneStatus.visitorClockLine}</span>
+                      <LiveClock zone="visitor" className={styles.mobileClockValue} />
                     </span>
                   </>
                 )}
