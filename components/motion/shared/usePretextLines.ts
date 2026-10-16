@@ -96,7 +96,13 @@ export function usePretextLines(
       const font = cs.font;
       const width = pretextMaxWidthPx(contentWidthPx(el, cs), cs);
 
-      if (width <= 1 || !font) {
+      /* Hidden (e.g. a closed, `display:none` overlay): keep the last measured lines. Collapsing to fallback
+         lines here makes the next show re-wrap and re-key every token mid-reveal, so they snap in. */
+      if (width <= 1) {
+        return;
+      }
+
+      if (!font) {
         commitLines(fallbackLines(normalizedText));
         return;
       }

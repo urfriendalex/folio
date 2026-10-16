@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
+import { isAtOrAboveViewportBottom, isRevealRestoreWindow } from "@/lib/revealRestore";
 
 export type UseRevealOnViewOptions = {
   once?: boolean;
@@ -67,6 +68,16 @@ export function useRevealOnView<T extends HTMLElement>(
   );
 
   const [visible, setVisible] = useState(false);
+
+  /* Restore (reload / back-forward): decide before the first post-hydration paint. Otherwise content
+     already on screen (server-rendered, visible) would hide when reveals enable and pop back a beat later. */
+  const [restoredSeen, setRestoredSeen] = useState(false);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (node && isRevealRestoreWindow() && isAtOrAboveViewportBottom(node)) {
+      setRestoredSeen(true);
+    }
+  }, [ref]);
 
   useEffect(() => {
     if (options?.observerDisabled || reducedMotion || !revealMotionEnabled) {
@@ -137,6 +148,10 @@ export function useRevealOnView<T extends HTMLElement>(
 
     /* Scroll fallback must agree with the observer's rootMargin + threshold, or it reveals off-screen first. */
     const isNodeInViewport = () => {
+      if (isRevealRestoreWindow()) {
+        return isAtOrAboveViewportBottom(node);
+      }
+
       const rect = node.getBoundingClientRect();
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
       const margin = verticalRootMarginPx(rootMargin, viewportHeight);
@@ -201,5 +216,5 @@ export function useRevealOnView<T extends HTMLElement>(
     ref,
   ]);
 
-  return reducedMotion || !revealMotionEnabled || visible;
+  return reducedMotion || !revealMotionEnabled || visible || restoredSeen;
 }

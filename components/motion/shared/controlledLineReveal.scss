@@ -28,6 +28,13 @@
       var(--token-index, 0) * var(#{$step-var}, #{$step-fallback}) +
         var(--reveal-delay, 0ms)
     );
+
+    /* Safety net: a line re-wrap can insert fresh token spans after `data-visible` flipped. Without a
+       starting style they would appear fully shown (no "from" state); this lets them reveal instead. */
+    @starting-style {
+      opacity: 0;
+      transform: translate3d(0, 0.75em, 0);
+    }
   }
 }
 

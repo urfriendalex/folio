@@ -462,3 +462,11 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Reveal policy — in-site return to `/` (see lib/revealRestore.ts): the visitor has seen this cascade,
+   so it replays at 0.6× (stagger and durations). Keep in sync with HERO_RETURN_TEMPO in HeroSection.tsx. */
+:global(html.home-hero-return) .content {
+  --reveal-tempo: 0.6;
+  --reveal-line-opacity-ms: 276ms;
+  --reveal-line-transform-ms: 372ms;
+}

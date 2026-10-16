@@ -42,6 +42,14 @@ import styles from "./HeroSection.module.scss";
 const INTRO_REVEAL_STEP_MS = 44;
 const HEADING_REVEAL_STEP_MS = 62;
 const REVEAL_TRANSFORM_SETTLE_MS = 620;
+/** In-site return to `/` replays the cascade compressed (CSS: `html.home-hero-return` in HeroSection.module.scss). */
+const HERO_RETURN_TEMPO = 0.6;
+
+function heroTempo() {
+  return typeof document !== "undefined" && document.documentElement.classList.contains("home-hero-return")
+    ? HERO_RETURN_TEMPO
+    : 1;
+}
 
 const COARSE_POINTER_QUERY = "(hover: none)";
 
@@ -610,8 +618,31 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
+  /**
+   * Touch: the walker sits under the text, so it waits for the line cascade instead of appearing with
+   * line one — it starts once the last line is ~93% in (half its settle on `--ease-reveal`).
+   */
+  const [walkerIntroReady, setWalkerIntroReady] = useState(false);
+  const walkerIntroDelayMs =
+    Math.max(0, sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + Math.round(REVEAL_TRANSFORM_SETTLE_MS * 0.5);
+  const walkerWaitsForText = coarsePointer && !bypassHeroReplay;
+
+  useEffect(() => {
+    if (!walkerWaitsForText || !walkerRevealed || walkerIntroReady) {
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(
+      () => setWalkerIntroReady(true),
+      Math.round(walkerIntroDelayMs * heroTempo()),
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [walkerWaitsForText, walkerRevealed, walkerIntroReady, walkerIntroDelayMs]);
+
   /** Desktop hover and the mobile intro slot use the same randomized ASCII visibility reveal. */
-  const walkerActive = walkerRevealed && (coarsePointer || Boolean(hoverAccent));
+  const walkerActive =
+    walkerRevealed &&
+    (!walkerWaitsForText || walkerIntroReady) &&
+    (coarsePointer || Boolean(hoverAccent));
   const walkerRevealPlayedInPreloader =
     coarsePointer &&
     preloaderComplete &&
@@ -827,7 +858,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       hasCta
         ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
         : 0;
-    const revealCompleteMs = Math.max(introEndMs, headingEndMs, ctaEndMs);
+    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, ctaEndMs) * heroTempo());
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
@@ -879,7 +910,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     }
 
     const ctaPhaseStartMs = hasCta
-      ? (introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS
+      ? Math.round((introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS * heroTempo())
       : 0;
 
     const timeoutId = window.setTimeout(() => {
@@ -1185,7 +1216,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 visible={walkerActive}
                 scale={coarsePointer ? WALKER_COARSE_SCALE : 1}
                 anchorEnd={walkerParked}
-                randomVisibilityReveal={!walkerRevealPlayedInPreloader}
+                /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
+                randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
                   coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
                 }

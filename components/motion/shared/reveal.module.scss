@@ -78,7 +78,7 @@
       var(--ease-reveal);
   transition-delay: calc(
     (var(--reveal-total, 1) - var(--token-index, 0) - 1) *
-      var(--reveal-step-out, var(--reveal-step, 24ms))
+      var(--reveal-step-out, var(--reveal-step, 24ms)) * var(--reveal-tempo, 1)
   );
 }
 
@@ -95,7 +95,7 @@
   transition-duration:
     var(--reveal-line-opacity-ms, 460ms), var(--reveal-line-transform-ms, 620ms);
   transition-delay: calc(
-    var(--token-index, 0) * var(--reveal-step, 24ms) + var(--reveal-delay, 0ms)
+    var(--token-index, 0) * var(--reveal-step, 24ms) * var(--reveal-tempo, 1) + var(--reveal-delay, 0ms)
   );
 }
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useWorkCtaRevealAligned } from "@/lib/heroRevealTimeline";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
 import { useClientMounted } from "@/lib/useClientMounted";
+import { isAtOrAboveViewportBottom, isRevealRestoreWindow } from "@/lib/revealRestore";
 
 export type UseWorkRevealOnViewOptions = {
   once?: boolean;
@@ -33,6 +34,15 @@ export function useWorkRevealOnView<T extends HTMLElement>(
 
   const [hasIntersected, setHasIntersected] = useState(false);
 
+  /* Restore: resolve before the first post-hydration paint so peeking cards never hide-then-pop. */
+  const [restoredSeen, setRestoredSeen] = useState(false);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (node && isRevealRestoreWindow() && isAtOrAboveViewportBottom(node)) {
+      setRestoredSeen(true);
+    }
+  }, [ref]);
+
   const observerDisabled = options?.observerDisabled === true;
 
   useEffect(() => {
@@ -58,7 +68,16 @@ export function useWorkRevealOnView<T extends HTMLElement>(
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) {
+        if (!entry) {
+          return;
+        }
+
+        // Restore (reload / back-forward): cards the visitor landed on or scrolled past are already known.
+        const restoredAsSeen =
+          isRevealRestoreWindow() &&
+          entry.boundingClientRect.top < (entry.rootBounds?.bottom ?? window.innerHeight);
+
+        if (!entry.isIntersecting && !restoredAsSeen) {
           return;
         }
 
@@ -114,7 +133,8 @@ export function useWorkRevealOnView<T extends HTMLElement>(
     const destinationArrival = document.documentElement.classList.contains(
       "home-section-arrival-pending",
     );
-    const delayMs = destinationArrival ? 0 : ctaAligned ? options?.revealDelayMs ?? 0 : 480;
+    const delayMs =
+      destinationArrival || isRevealRestoreWindow() ? 0 : ctaAligned ? options?.revealDelayMs ?? 0 : 480;
 
     if (delayMs <= 0) {
       commit();
@@ -141,6 +161,10 @@ export function useWorkRevealOnView<T extends HTMLElement>(
    * SSR/hydration can't see the reveal policy yet; answering `true` there paints Work visible, then hides it
    * and replays the entrance. Hidden styles are gated on `html.reveals-enabled`, so `false` is safe pre-mount.
    */
+  if (restoredSeen) {
+    return true;
+  }
+
   if (!clientMounted) {
     return false;
   }
