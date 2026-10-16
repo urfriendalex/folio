@@ -183,7 +183,10 @@
     text-align: left;
     text-transform: uppercase;
     cursor: pointer;
-    transition: color var(--duration-fast) var(--ease-out);
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      text-shadow 180ms ease,
+      transform 140ms var(--ease-out);
   }
 
   .actions li + li .action {
@@ -193,16 +196,31 @@
   .actionNum {
     color: var(--muted-color);
     font-size: 0.62rem;
+    transition: color 180ms ease;
   }
 
   .actionMeta {
-    transition: translate var(--duration-fast) var(--ease-out);
+    color: var(--muted-color);
+    transition:
+      color 180ms ease,
+      translate var(--duration-fast) var(--ease-out);
   }
 
+  /* Same hover language as the footer's Schedule a call: blue glyphs heat under the pointer,
+     the label firms up, the quiet bits come up to ink, a slight press. */
   @media (hover: hover) and (pointer: fine) {
+    .action:hover .actionNum,
+    .action:hover .actionMeta {
+      color: var(--fg-color);
+    }
+
     .action:hover .actionMeta {
       translate: 0.35rem 0;
     }
+  }
+
+  .action:active {
+    transform: scale(0.985);
   }
 }
 
@@ -294,6 +312,10 @@
 
 /* The call is the primary action, but it only takes the accent when reached for; at rest it reads like its siblings. */
 @media (hover: hover) and (pointer: fine) {
+  .emailView .action:hover {
+    text-shadow: 0 0 0.6px currentColor;
+  }
+
   .emailView .action[data-action="call"]:hover {
     color: var(--contact-accent);
   }
