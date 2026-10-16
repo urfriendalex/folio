@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { hapticTick } from "@/lib/haptics";
 import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 
 // Light end of the hero ramp; denser glyphs only appear under heat or a press.
@@ -10,8 +11,6 @@ const LINE_HEIGHT = 1.12;
 // Cells inside the label box stay clear; density returns over this many px.
 const CLEARING_FALLOFF = 22;
 const PRESS_LIFE = 0.7;
-/** Resume the field this long after the last scroll event; motion under a moving page is imperceptible. */
-const SCROLL_IDLE_MS = 160;
 
 type Press = { x: number; y: number; t: number };
 
@@ -20,7 +19,37 @@ function hash(column: number, row: number, tick: number) {
   return x - Math.floor(x);
 }
 
-export function BookingButtonAscii({ className }: { className: string }) {
+/** Bounds of what the field has to stay clear of. "text" hugs the glyphs, so block-level labels
+    (full-width spans) still leave the rest of the cell to the field; hidden children are skipped. */
+function clearingBoxes(host: HTMLElement, canvas: HTMLCanvasElement, clearance: "box" | "text") {
+  const origin = canvas.getBoundingClientRect();
+  const range = clearance === "text" ? document.createRange() : null;
+  return Array.from(host.children)
+    .filter((child) => child !== canvas && !(child instanceof SVGElement))
+    .map((child) => {
+      if (range) range.selectNodeContents(child);
+      const box = range ? range.getBoundingClientRect() : child.getBoundingClientRect();
+      return {
+        left: box.left - origin.left,
+        right: box.right - origin.left,
+        top: box.top - origin.top,
+        bottom: box.bottom - origin.top,
+        empty: box.width === 0 || box.height === 0,
+      };
+    })
+    .filter((box) => !box.empty);
+}
+
+export function BookingButtonAscii({
+  className,
+  accent = "--taskbar-flag-blue",
+  clearance = "box",
+}: {
+  className: string;
+  /** Custom property for the hot glyphs near the pointer. */
+  accent?: string;
+  clearance?: "box" | "text";
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -43,8 +72,6 @@ export function BookingButtonAscii({ className }: { className: string }) {
     let presses: Press[] = [];
     let frame = 0;
     let visible = false;
-    let scrolling = false;
-    let scrollIdleTimer = 0;
     let lastTime = 0;
     let time = 0;
     let hover = 0;
@@ -128,7 +155,7 @@ export function BookingButtonAscii({ className }: { className: string }) {
     };
 
     const start = () => {
-      if (frame || !visible || scrolling || reducedMotion.matches || document.hidden) return;
+      if (frame || !visible || reducedMotion.matches || document.hidden) return;
       lastTime = 0;
       frame = window.requestAnimationFrame(tick);
     };
@@ -142,7 +169,7 @@ export function BookingButtonAscii({ className }: { className: string }) {
     const updateColors = () => {
       const styles = window.getComputedStyle(button);
       ink = styles.getPropertyValue("--fg-color").trim() || styles.color;
-      blue = styles.getPropertyValue("--taskbar-flag-blue").trim() || "#2446d6";
+      blue = styles.getPropertyValue(accent).trim() || "#2446d6";
       const family = styles.getPropertyValue("--font-mono-stack").trim() || "monospace";
       font = `400 ${FONT_SIZE}px ${family}`;
       draw(1);
@@ -166,16 +193,21 @@ export function BookingButtonAscii({ className }: { className: string }) {
       rows = Math.floor(height / cellHeight);
       originX = (width - columns * cellWidth) / 2;
       originY = (height - rows * cellHeight) / 2;
-
-      // Clearing around the label and meta so the field never sits under text.
-      const labels = Array.from(button.children)
-        .filter((child) => child !== canvas)
-        .map((child) => {
-          const box = child.getBoundingClientRect();
-          return { left: box.left - rect.left, right: box.right - rect.left, top: box.top - rect.top, bottom: box.bottom - rect.top };
-        });
       room = new Float32Array(columns * rows);
       heat = new Float32Array(columns * rows);
+      measureClearing();
+
+      if (!hoverTarget) {
+        pointerX = targetX = width / 2;
+        pointerY = targetY = height / 2;
+      }
+      draw(1);
+    };
+
+    /** Clearing around the label and meta so the field never sits under text. */
+    const measureClearing = () => {
+      if (!columns || !rows) return;
+      const labels = clearingBoxes(button, canvas, clearance);
       for (let row = 0; row < rows; row++) {
         for (let column = 0; column < columns; column++) {
           const cx = originX + (column + 0.5) * cellWidth;
@@ -189,12 +221,13 @@ export function BookingButtonAscii({ className }: { className: string }) {
           room[row * columns + column] = Math.min(1, nearest / CLEARING_FALLOFF) ** 1.4;
         }
       }
+    };
 
-      if (!hoverTarget) {
-        pointerX = targetX = width / 2;
-        pointerY = targetY = height / 2;
-      }
-      draw(1);
+    /** Labels that slide in (line-mask reveals) end somewhere else than where they were measured. */
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target === button || event.propertyName !== "transform") return;
+      measureClearing();
+      if (reducedMotion.matches) draw(1);
     };
 
     const onPointerMove = (event: PointerEvent) => {
@@ -211,6 +244,7 @@ export function BookingButtonAscii({ className }: { className: string }) {
     };
 
     const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === "touch") hapticTick();
       if (reducedMotion.matches) return;
       const rect = canvas.getBoundingClientRect();
       presses.push({ x: event.clientX - rect.left, y: event.clientY - rect.top, t: time });
@@ -253,19 +287,6 @@ export function BookingButtonAscii({ className }: { className: string }) {
       else start();
     };
 
-    /* Hold the field still while the page scrolls: per-cell fillText must not compete with scroll frames. */
-    const onScroll = () => {
-      if (!scrolling) {
-        scrolling = true;
-        stop();
-      }
-      window.clearTimeout(scrollIdleTimer);
-      scrollIdleTimer = window.setTimeout(() => {
-        scrolling = false;
-        start();
-      }, SCROLL_IDLE_MS);
-    };
-
     const resizeObserver = new ResizeObserver(resize);
     const themeObserver = new MutationObserver(updateColors);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
@@ -279,13 +300,13 @@ export function BookingButtonAscii({ className }: { className: string }) {
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
     document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("scroll", onScroll, { passive: true });
     button.addEventListener("pointerenter", onPointerMove);
     button.addEventListener("pointermove", onPointerMove);
     button.addEventListener("pointerdown", onPointerDown);
     button.addEventListener("pointerleave", onPointerLeave);
     button.addEventListener("focus", onFocus);
     button.addEventListener("blur", onPointerLeave);
+    button.addEventListener("transitionend", onTransitionEnd);
     resize();
     // Glyph widths and label boxes shift once the web fonts land.
     void document.fonts.ready.then(() => {
@@ -295,8 +316,6 @@ export function BookingButtonAscii({ className }: { className: string }) {
     return () => {
       disposed = true;
       stop();
-      window.clearTimeout(scrollIdleTimer);
-      window.removeEventListener("scroll", onScroll);
       resizeObserver.disconnect();
       themeObserver.disconnect();
       visibilityObserver.disconnect();
@@ -308,8 +327,9 @@ export function BookingButtonAscii({ className }: { className: string }) {
       button.removeEventListener("pointerleave", onPointerLeave);
       button.removeEventListener("focus", onFocus);
       button.removeEventListener("blur", onPointerLeave);
+      button.removeEventListener("transitionend", onTransitionEnd);
     };
-  }, []);
+  }, [accent, clearance]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

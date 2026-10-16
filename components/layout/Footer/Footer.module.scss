@@ -346,12 +346,15 @@
   justify-items: start;
 }
 
+/* Text-only control: the box hugs the label (even focus-mark spacing); `::before` restores the 0.85rem
+   tap margin above/below that used to be padding, and margin keeps the layout identical. */
 .columnControlBtn {
+  position: relative;
   appearance: none;
   border: 0;
-  margin: 0;
+  margin: 0.85rem 0;
   background: transparent;
-  padding: 0.85rem 0;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   width: fit-content;
@@ -367,13 +370,23 @@
 }
 
 .columnControlBtn:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid var(--fg-color);
-  outline-offset: 2px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.columnControlBtn::before {
+  content: "";
+  position: absolute;
+  inset: -0.85rem -0.25rem;
 }
 
 @media (min-width: 48.01rem) {
   .columnControlBtn {
-    padding: 0;
+    margin: 0;
+  }
+
+  .columnControlBtn::before {
+    inset: -0.25rem;
   }
 }
 
@@ -399,8 +412,8 @@
 }
 
 .inlineControlButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid var(--fg-color);
-  outline-offset: 2px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 @media (min-width: 48.01rem) {
@@ -1165,8 +1178,52 @@
   transition: none;
 }
 
+/* One-time entrance, driven by the same trigger as the top rule (`data-line-visible`): column blocks rise
+   in on a diagonal — (column + row) × stagger — while the rule draws, then the brand row. Instant during a
+   restore window (globals.scss) and absent without JS (`reveals-enabled` gate). */
+.editorialColSecondary {
+  --footer-col: 1;
+}
+
+.editorialColTertiary {
+  --footer-col: 2;
+}
+
+.editorialCol > :nth-child(2) {
+  --footer-row: 1;
+}
+
+.editorialCol > :nth-child(3) {
+  --footer-row: 2;
+}
+
+.editorialCol > :nth-child(n + 4) {
+  --footer-row: 3;
+}
+
+.brand {
+  --footer-col: 3;
+}
+
+:global(html.reveals-enabled) .minimalFooterCover :is(.editorialCol > *, .brand) {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-rise), 0);
+  transition:
+    opacity var(--duration-reveal-fade) ease,
+    transform var(--duration-reveal-move) var(--ease-reveal);
+  transition-delay: calc(
+    var(--duration-draw-long) * 0.12 + (var(--footer-col, 0) + var(--footer-row, 0)) * var(--stagger)
+  );
+}
+
+:global(html.reveals-enabled) .minimalFooterCover[data-line-visible="true"] :is(.editorialCol > *, .brand) {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .minimalFooterCover::before {
+  .minimalFooterCover::before,
+  .minimalFooterCover :is(.editorialCol > *, .brand) {
     transition: none;
   }
 }
@@ -1326,18 +1383,21 @@
     row-gap: 0.45rem;
   }
 
+  /* 44px touch target kept via margin + `::before`; the box itself hugs the label for an even focus mark. */
   .connectLink {
-    min-height: 2.75rem;
+    position: relative;
     display: inline-flex;
     align-items: center;
     width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
+    margin-block: calc((2.75rem - 1lh) / 2);
   }
 
-  .connectLink:global(.link-underline)::after,
-  .columnControlBtn:global(.link-underline)::after {
-    top: calc(50% + 0.55em);
+  .connectLink::before {
+    content: "";
+    position: absolute;
+    inset: calc((1lh - 2.75rem) / 2) -0.25rem;
   }
 
   .localeBlock + .localeBlock {
