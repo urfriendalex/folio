@@ -18,6 +18,7 @@ import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { BookingButtonAscii } from "./BookingButtonAscii";
+import { FooterEasterEgg } from "./FooterEasterEgg";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
@@ -235,6 +236,7 @@ function FooterWordmarkStrip({ theme }: { theme: Theme }) {
         <p ref={textRef} className={styles.wordmark} aria-label="Alexander Yansons">
           {FOOTER_WORDMARK_LINE}
         </p>
+        <FooterEasterEgg wordmarkRef={textRef} />
       </div>
     </div>
   );

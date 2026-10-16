@@ -1230,6 +1230,7 @@
 
 /* Portaled into `#footer-wordmark-underlay` (AppShell; viewport-fixed when active). Full viewport width — no page-shell insets. */
 .wordmarkReveal {
+  isolation: isolate;
   position: absolute;
   inset: 0;
   box-sizing: border-box;
