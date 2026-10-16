@@ -169,6 +169,69 @@ function resolveVariant(media: ProjectMediaSlot, isMobile: boolean): ProjectMedi
   return isMobile && media.mobile ? media.mobile : media.desktop;
 }
 
+/**
+ * Serializes `<video>` mounts so decoders spin up one at a time. Without it, scrolling toward a grid of
+ * 2K clips starts several demux/decode/texture-upload pipelines in the same frames as the reveal.
+ * Posters stay painted until each video's first frame lands, so the queue is invisible.
+ */
+type VideoMountJob = { grant: () => void };
+
+/** Fallback release if a video never reports `loadeddata` (slow network, decode error). */
+const VIDEO_MOUNT_RELEASE_TIMEOUT_MS = 1500;
+
+const videoMountQueue: VideoMountJob[] = [];
+let activeVideoMount: VideoMountJob | null = null;
+let activeVideoMountTimer = 0;
+
+function pumpVideoMountQueue() {
+  if (activeVideoMount) {
+    return;
+  }
+
+  const next = videoMountQueue.shift();
+  if (!next) {
+    return;
+  }
+
+  activeVideoMount = next;
+  activeVideoMountTimer = window.setTimeout(
+    () => releaseVideoMount(next),
+    VIDEO_MOUNT_RELEASE_TIMEOUT_MS,
+  );
+  next.grant();
+}
+
+function releaseVideoMount(job: VideoMountJob) {
+  const queuedIndex = videoMountQueue.indexOf(job);
+  if (queuedIndex !== -1) {
+    videoMountQueue.splice(queuedIndex, 1);
+    return;
+  }
+
+  if (activeVideoMount !== job) {
+    return;
+  }
+
+  window.clearTimeout(activeVideoMountTimer);
+  activeVideoMount = null;
+  // Let the finished video's first frame paint on its own before the next decoder starts.
+  window.requestAnimationFrame(pumpVideoMountQueue);
+}
+
+/** Returns an idempotent release; on-screen requests jump ahead of look-ahead (600px) prep. */
+function requestVideoMount(grant: () => void, priority: boolean) {
+  const job: VideoMountJob = { grant };
+
+  if (priority) {
+    videoMountQueue.unshift(job);
+  } else {
+    videoMountQueue.push(job);
+  }
+
+  pumpVideoMountQueue();
+  return () => releaseVideoMount(job);
+}
+
 const loadedProjectMediaSources = new Set<string>();
 
 function markProjectMediaSourceLoaded(...sources: Array<string | null | undefined>) {
@@ -228,7 +291,35 @@ function ProjectMediaInner({
     hasLoadedProjectMediaSource(activeAsset.poster)
   ));
   const [videoReady, setVideoReady] = useState(false);
-  const showVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasPreparedVideo || hasBeenVisible);
+  const wantsVideo = media.kind === "video" && !reducedMotion && (mountVideoEager || hasPreparedVideo || hasBeenVisible);
+  /* Hover/scroll previews must cut instantly — they bypass the decoder queue. */
+  const bypassVideoQueue = reveal === "instant";
+  const [videoSlotGranted, setVideoSlotGranted] = useState(false);
+  const releaseVideoSlotRef = useRef<(() => void) | null>(null);
+  const isInViewportRef = useRef(isInViewport);
+  const showVideo = wantsVideo && (bypassVideoQueue || videoSlotGranted);
+
+  useEffect(() => {
+    isInViewportRef.current = isInViewport;
+  }, [isInViewport]);
+
+  useEffect(() => {
+    if (!wantsVideo || bypassVideoQueue) {
+      return undefined;
+    }
+
+    const release = requestVideoMount(() => setVideoSlotGranted(true), isInViewportRef.current);
+    releaseVideoSlotRef.current = release;
+
+    return () => {
+      release();
+      releaseVideoSlotRef.current = null;
+    };
+  }, [bypassVideoQueue, wantsVideo]);
+
+  const releaseVideoSlot = useCallback(() => {
+    releaseVideoSlotRef.current?.();
+  }, []);
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
 
   useEffect(() => {
@@ -347,8 +438,10 @@ function ProjectMediaInner({
                     markVideoReady(event.currentTarget);
                   }}
                   onLoadedData={(event) => {
+                    releaseVideoSlot();
                     markVideoReady(event.currentTarget);
                   }}
+                  onError={releaseVideoSlot}
                 />
               </div>
             ) : null}

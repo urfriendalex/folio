@@ -19,6 +19,7 @@ import {
   readProjectLayout,
   writeProjectLayout,
 } from "@/lib/projectLayout";
+import { resolveEase } from "@/lib/motion";
 import { useRestoredScrollBypass } from "@/lib/restoredScroll";
 import { useWorkRevealOnView } from "@/lib/useWorkRevealOnView";
 import styles from "./WorkSection.module.scss";
@@ -168,7 +169,7 @@ export function WorkSection({ projects }: WorkSectionProps) {
         ],
         {
           duration: 420,
-          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+          easing: resolveEase("move"),
         },
       );
     });

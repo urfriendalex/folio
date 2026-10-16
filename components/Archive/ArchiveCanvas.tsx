@@ -243,35 +243,6 @@ export function ArchiveCanvas({ items, children }: ArchiveCanvasProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const navbar = document.querySelector<HTMLElement>("[data-app-navbar='true']");
-    const navbarFrost = document.querySelector<HTMLElement>("[data-app-navbar-frost='true']");
-    const host = viewportRef.current;
-    if (!navbar || !navbarFrost || !host) {
-      return;
-    }
-
-    const navbarHome = navbar.parentElement;
-    const navbarMarker = document.createComment("folio-navbar-home");
-    const frostHome = navbarFrost.parentElement;
-    const frostMarker = document.createComment("folio-navbar-frost-home");
-    navbarHome?.insertBefore(navbarMarker, navbar);
-    frostHome?.insertBefore(frostMarker, navbarFrost);
-    host.appendChild(navbarFrost);
-    host.appendChild(navbar);
-
-    return () => {
-      if (frostMarker.parentNode) {
-        frostMarker.parentNode.insertBefore(navbarFrost, frostMarker);
-        frostMarker.parentNode.removeChild(frostMarker);
-      }
-      if (navbarMarker.parentNode) {
-        navbarMarker.parentNode.insertBefore(navbar, navbarMarker);
-        navbarMarker.parentNode.removeChild(navbarMarker);
-      }
-    };
-  }, []);
-
   const hasMedia = (sceneLoadState?.loaded ?? 0) > 0;
   const isPreparing = sceneLoadState === null || (!hasMedia && sceneLoadState.active);
   const assetsStillLoading = sceneLoadState?.active === true;

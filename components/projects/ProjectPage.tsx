@@ -222,8 +222,31 @@ export function ProjectPage({
   }, [performCloseOverview]);
 
   const openOverview = useCallback(() => {
-    if (overviewActiveRef.current) return;
+    // Still fading out: a click here used to be dropped, which read as "the reveal didn't fire".
+    // Reverse the exit in place instead — content transitions back from wherever it is.
+    const closing = overviewActiveRef.current && overviewCloseTimerRef.current !== null;
+    if (overviewActiveRef.current && !closing) return;
     clearOverviewTimers();
+    if (closing) {
+      const html = document.documentElement;
+      html.classList.remove("is-overlay-blur-closing");
+      html.classList.add("is-overlay-blur-pending");
+      if (!overviewHistoryRef.current) {
+        const previousState = window.history.state;
+        const historyState = previousState && typeof previousState === "object" ? previousState : {};
+        window.history.pushState({ ...historyState, folioProjectOverview: true }, "", window.location.href);
+        overviewHistoryRef.current = true;
+      }
+      overviewOpenFrameRef.current = window.requestAnimationFrame(() => {
+        overviewOpenFrameRef.current = null;
+        setOverviewVisible(true);
+        overviewContentFrameRef.current = window.requestAnimationFrame(() => {
+          overviewContentFrameRef.current = null;
+          setOverviewContentVisible(true);
+        });
+      });
+      return;
+    }
     overviewTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     overviewActiveRef.current = true;
     document.documentElement.classList.add("is-overlay-blur-pending");

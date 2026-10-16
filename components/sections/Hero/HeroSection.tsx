@@ -27,6 +27,7 @@ import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOptionalHeroRevealTimeline } from "@/lib/heroRevealTimeline";
 import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
+import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import {
   getHomeHeroRevealDone,
   setHomeHeroRevealDone,
@@ -42,6 +43,14 @@ import styles from "./HeroSection.module.scss";
 const INTRO_REVEAL_STEP_MS = 44;
 const HEADING_REVEAL_STEP_MS = 62;
 const REVEAL_TRANSFORM_SETTLE_MS = 620;
+/** In-site return to `/` replays the cascade compressed (CSS: `html.home-hero-return` in HeroSection.module.scss). */
+const HERO_RETURN_TEMPO = 0.6;
+
+function heroTempo() {
+  return typeof document !== "undefined" && document.documentElement.classList.contains("home-hero-return")
+    ? HERO_RETURN_TEMPO
+    : 1;
+}
 
 const COARSE_POINTER_QUERY = "(hover: none)";
 
@@ -100,7 +109,6 @@ const TEXT_DISSOLVE_DELAY_VIEWPORT_FINE = 0.2;
 const TEXT_DISSOLVE_LEAD_VIEWPORT = 0.1;
 /** …and each line is gone after this much further scroll (share of the viewport). */
 const TEXT_DISSOLVE_RANGE_VIEWPORT = 0.26;
-const TEXT_DISSOLVE_STEPS = 64;
 const INTRO_DISSOLVE_SEED = 101;
 const HEADING_DISSOLVE_SEED = 211;
 const CTA_DISSOLVE_SEED = 307;
@@ -108,22 +116,8 @@ const CTA_DISSOLVE_SEED = 307;
 function dissolve(text: string, piece: number) {
   return text ? <DissolveText text={text} seed={INTRO_DISSOLVE_SEED + piece} /> : null;
 }
-/** Thresholds stop short of 1 so no glyph is still flickering at rest. */
-const TEXT_DISSOLVE_THRESHOLD_MAX = 0.9;
-/** Just above its threshold a glyph flickers on alternate steps for this much visibility (≈ five steps). */
-const TEXT_DISSOLVE_FLICKER_BAND = 0.08;
 /** Hover/focus on a live control glitches its glyphs back in (and out on leave) over this long. */
 const TEXT_RESTORE_MS = 320;
-
-function isGlyphShown(visibility: number, threshold: number, phase: number) {
-  if (visibility < threshold) {
-    return false;
-  }
-  if (visibility >= threshold + TEXT_DISSOLVE_FLICKER_BAND) {
-    return true;
-  }
-  return (Math.round(visibility * TEXT_DISSOLVE_STEPS) + phase) % 2 === 1;
-}
 
 /**
  * Splits text into glyph spans that drop out in the walker's random cell order as their line scrolls
@@ -141,7 +135,7 @@ const DissolveText = memo(function DissolveText({ text, seed }: { text: string; 
             <span
               key={index}
               className={styles.dissolveChar}
-              data-dissolve-at={(cellRevealHash01(index, seed) * TEXT_DISSOLVE_THRESHOLD_MAX).toFixed(3)}
+              data-dissolve-at={(cellRevealHash01(index, seed) * GLYPH_GLITCH_THRESHOLD_MAX).toFixed(3)}
               data-dissolve-phase={cellRevealHash01(index, seed + 1) < 0.5 ? 0 : 1}
             >
               {char}
@@ -610,8 +604,31 @@ export function HeroSection({ content }: HeroSectionProps) {
 
   const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
+  /**
+   * Touch: the walker sits under the text, so it waits for the line cascade instead of appearing with
+   * line one — it starts once the last line is ~93% in (half its settle on `--ease-reveal`).
+   */
+  const [walkerIntroReady, setWalkerIntroReady] = useState(false);
+  const walkerIntroDelayMs =
+    Math.max(0, sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + Math.round(REVEAL_TRANSFORM_SETTLE_MS * 0.5);
+  const walkerWaitsForText = coarsePointer && !bypassHeroReplay;
+
+  useEffect(() => {
+    if (!walkerWaitsForText || !walkerRevealed || walkerIntroReady) {
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(
+      () => setWalkerIntroReady(true),
+      Math.round(walkerIntroDelayMs * heroTempo()),
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [walkerWaitsForText, walkerRevealed, walkerIntroReady, walkerIntroDelayMs]);
+
   /** Desktop hover and the mobile intro slot use the same randomized ASCII visibility reveal. */
-  const walkerActive = walkerRevealed && (coarsePointer || Boolean(hoverAccent));
+  const walkerActive =
+    walkerRevealed &&
+    (!walkerWaitsForText || walkerIntroReady) &&
+    (coarsePointer || Boolean(hoverAccent));
   const walkerRevealPlayedInPreloader =
     coarsePointer &&
     preloaderComplete &&
@@ -689,7 +706,7 @@ export function HeroSection({ content }: HeroSectionProps) {
 
       for (let index = 0; index < lineStarts.length; index += 1) {
         const raw = 1 - Math.min(1, Math.max(0, (scrollY - lineStarts[index]) / range));
-        lineVisibility[index] = Math.round(raw * TEXT_DISSOLVE_STEPS) / TEXT_DISSOLVE_STEPS;
+        lineVisibility[index] = Math.round(raw * GLYPH_GLITCH_STEPS) / GLYPH_GLITCH_STEPS;
       }
 
       const step = lastFrame ? Math.min(1, (now - lastFrame) / TEXT_RESTORE_MS) : 0;
@@ -827,7 +844,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       hasCta
         ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
         : 0;
-    const revealCompleteMs = Math.max(introEndMs, headingEndMs, ctaEndMs);
+    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, ctaEndMs) * heroTempo());
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
@@ -879,7 +896,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     }
 
     const ctaPhaseStartMs = hasCta
-      ? (introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS
+      ? Math.round((introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS * heroTempo())
       : 0;
 
     const timeoutId = window.setTimeout(() => {
@@ -1185,7 +1202,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 visible={walkerActive}
                 scale={coarsePointer ? WALKER_COARSE_SCALE : 1}
                 anchorEnd={walkerParked}
-                randomVisibilityReveal={!walkerRevealPlayedInPreloader}
+                /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
+                randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
                   coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
                 }

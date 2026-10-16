@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
 import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { useRevealMotionEnabled } from "@/lib/revealPolicy";
+import { isAtOrAboveViewportBottom, isRevealRestoreWindow } from "@/lib/revealRestore";
 
 export type UseRevealOnViewOptions = {
   once?: boolean;
@@ -13,6 +14,32 @@ export type UseRevealOnViewOptions = {
   /** Skip observers when visibility is controlled by a parent. */
   observerDisabled?: boolean;
 };
+
+const DEFAULT_ROOT_MARGIN = "0px 0px -10% 0px";
+const DEFAULT_THRESHOLD = 0.2;
+
+/** Resolves one CSS rootMargin length (`px` or `%` of the viewport axis) to pixels. */
+function resolveMarginPx(value: string | undefined, axisPx: number) {
+  if (!value) {
+    return 0;
+  }
+  const amount = Number.parseFloat(value);
+  if (!Number.isFinite(amount)) {
+    return 0;
+  }
+  return value.trim().endsWith("%") ? (amount / 100) * axisPx : amount;
+}
+
+/** Top/bottom insets of an IntersectionObserver rootMargin, using CSS shorthand rules. */
+function verticalRootMarginPx(rootMargin: string, viewportHeight: number) {
+  const parts = rootMargin.trim().split(/\s+/);
+  const top = parts[0];
+  const bottom = parts[2] ?? top;
+  return {
+    top: resolveMarginPx(top, viewportHeight),
+    bottom: resolveMarginPx(bottom, viewportHeight),
+  };
+}
 
 function subscribeReducedMotion(onStoreChange: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -41,6 +68,16 @@ export function useRevealOnView<T extends HTMLElement>(
   );
 
   const [visible, setVisible] = useState(false);
+
+  /* Restore (reload / back-forward): decide before the first post-hydration paint. Otherwise content
+     already on screen (server-rendered, visible) would hide when reveals enable and pop back a beat later. */
+  const [restoredSeen, setRestoredSeen] = useState(false);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (node && isRevealRestoreWindow() && isAtOrAboveViewportBottom(node)) {
+      setRestoredSeen(true);
+    }
+  }, [ref]);
 
   useEffect(() => {
     if (options?.observerDisabled || reducedMotion || !revealMotionEnabled) {
@@ -106,10 +143,27 @@ export function useRevealOnView<T extends HTMLElement>(
       revealTimerId = window.setTimeout(finish, delayMs);
     };
 
+    const rootMargin = options?.rootMargin ?? DEFAULT_ROOT_MARGIN;
+    const threshold = options?.threshold ?? DEFAULT_THRESHOLD;
+
+    /* Scroll fallback must agree with the observer's rootMargin + threshold, or it reveals off-screen first. */
     const isNodeInViewport = () => {
+      if (isRevealRestoreWindow()) {
+        return isAtOrAboveViewportBottom(node);
+      }
+
       const rect = node.getBoundingClientRect();
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      return rect.bottom > 0 && rect.top < viewportHeight;
+      const margin = verticalRootMarginPx(rootMargin, viewportHeight);
+      const visibleTop = Math.max(rect.top, -margin.top);
+      const visibleBottom = Math.min(rect.bottom, viewportHeight + margin.bottom);
+      const visibleHeight = visibleBottom - visibleTop;
+
+      if (visibleHeight <= 0) {
+        return false;
+      }
+
+      return threshold <= 0 || rect.height <= 0 || visibleHeight / rect.height >= threshold;
     };
 
     function scheduleViewportCheck() {
@@ -134,10 +188,7 @@ export function useRevealOnView<T extends HTMLElement>(
 
         reveal();
       },
-      {
-        rootMargin: options?.rootMargin ?? "0px 0px -10% 0px",
-        threshold: options?.threshold ?? 0.2,
-      },
+      { rootMargin, threshold },
     );
 
     observer.observe(node);
@@ -165,5 +216,5 @@ export function useRevealOnView<T extends HTMLElement>(
     ref,
   ]);
 
-  return reducedMotion || !revealMotionEnabled || visible;
+  return reducedMotion || !revealMotionEnabled || visible || restoredSeen;
 }

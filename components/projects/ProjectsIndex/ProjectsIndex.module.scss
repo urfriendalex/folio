@@ -5,10 +5,6 @@
   --index-leave-ms: 100ms;
   --index-rule-ms: 1100ms;
   --index-rule-delay: calc(var(--index-stagger) * 1.5);
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-enter: cubic-bezier(0.33, 0, 0.2, 1);
-  --ease-rule: cubic-bezier(0.45, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --bleed: calc(-1 * var(--content-padding-inline));
   min-height: calc(100svh - var(--header-height));
   padding-block: 0 var(--page-pad-bottom);
@@ -133,8 +129,8 @@
     0 1px 2px rgb(0 0 0 / 0.06),
     0 0.65rem 1.5rem rgb(0 0 0 / 0.12);
   transition:
-    opacity 240ms cubic-bezier(0.23, 1, 0.32, 1),
-    filter 320ms cubic-bezier(0.23, 1, 0.32, 1);
+    opacity 240ms var(--ease-out),
+    filter 320ms var(--ease-out);
 
   @starting-style {
     opacity: 0;
@@ -176,7 +172,7 @@
   color: color-mix(in srgb, var(--fg-color) 38%, transparent);
   transition:
     color 160ms ease,
-    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    transform 160ms var(--ease-out);
 }
 
 .filter:active {
@@ -188,7 +184,7 @@
 }
 
 .filter:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -218,7 +214,7 @@
   color: color-mix(in srgb, var(--fg-color) 34%, transparent);
   transition:
     color 160ms ease,
-    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    transform 160ms var(--ease-out);
 }
 
 .viewButton:active {
@@ -318,14 +314,14 @@
   pointer-events: none;
   background: var(--line-color);
   clip-path: inset(0 0 0 0);
-  animation: indexRule var(--index-rule-ms) var(--ease-rule) both;
+  animation: indexRule var(--index-rule-ms) var(--ease-draw) both;
   animation-iteration-count: 1;
   animation-delay: calc(var(--index-rule-delay) + var(--item-index, 0) * var(--index-stagger));
   transition: background 160ms var(--ease-out);
 }
 
 .row:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -391,7 +387,7 @@
 }
 
 .staggerItem {
-  animation: indexEnterFade var(--index-enter-ms) var(--ease-enter) both;
+  animation: indexEnterFade var(--index-enter-ms) var(--ease-move) both;
   animation-iteration-count: 1;
   animation-delay: calc(var(--item-index, 0) * var(--index-stagger));
 }
@@ -399,7 +395,7 @@
 .row .identity,
 .row .descriptor,
 .row .year {
-  animation: indexEnter var(--index-enter-ms) var(--ease-enter) both;
+  animation: indexEnter var(--index-enter-ms) var(--ease-move) both;
   animation-iteration-count: 1;
   animation-delay: calc(var(--item-index, 0) * var(--index-stagger));
 }
@@ -540,7 +536,7 @@
   width: 100%;
   height: 100%;
   transform-origin: center center;
-  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 160ms var(--ease-out);
 }
 
 .previewLayer {
@@ -630,12 +626,13 @@
     justify-self: start;
   }
 
+  /* Box hugs the label (even focus mark); the 2.5rem touch target lives on margin + `::before`. */
   .filterTrigger {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 0.38rem;
-    min-height: 2.5rem;
-    margin: 0;
+    margin: calc((2.5rem - 1lh) / 2) 0;
     padding: 0;
     border: 0;
     background: transparent;
@@ -647,7 +644,13 @@
     line-height: 1.2;
     text-transform: uppercase;
     color: var(--fg-color);
-    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition: transform 160ms var(--ease-out);
+  }
+
+  .filterTrigger::before {
+    content: "";
+    position: absolute;
+    inset: calc((1lh - 2.5rem) / 2) -0.25rem;
   }
 
   .filterTrigger:active {
@@ -655,7 +658,7 @@
   }
 
   .filterTrigger:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-    outline: 2px solid color-mix(in srgb, var(--fg-color) 32%, transparent);
+    outline: var(--focus-ring);
     outline-offset: 3px;
   }
 
@@ -669,7 +672,7 @@
     width: 0.52rem;
     height: 0.52rem;
     flex-shrink: 0;
-    transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition: transform 180ms var(--ease-out);
   }
 
   .filterTrigger[data-open="true"] .filterPlus {
@@ -717,9 +720,9 @@
     text-transform: uppercase;
     color: color-mix(in srgb, var(--fg-color) 70%, transparent);
     transition:
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
-    animation: filterOptionIn 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      color 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+    animation: filterOptionIn 180ms var(--ease-out) both;
   }
 
   .filterOption:nth-child(1) {
@@ -751,7 +754,7 @@
   }
 
   .filterOption:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-    outline: 2px solid color-mix(in srgb, var(--fg-color) 40%, transparent);
+    outline: var(--focus-ring);
     outline-offset: 2px;
   }
 

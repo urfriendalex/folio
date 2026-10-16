@@ -42,8 +42,8 @@
   letter-spacing: var(--tracking-tight-sm);
 }
 
-.summary:focus-visible {
-  outline: 2px solid var(--signal-color);
+.summary:focus-visible:not(:where([data-input-modality="pointer"] *)) {
+  outline: var(--focus-ring);
   outline-offset: 5px;
 }
 

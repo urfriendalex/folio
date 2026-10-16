@@ -1,0 +1,63 @@
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: clamp(6.5rem, 17dvh, 8rem) minmax(0, 1fr);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  // White difference-blends against both the inverted strip and its wordmark.
+  // Empty parts of the board stay transparent; overlapping glyphs invert locally.
+  color: #fff;
+  mix-blend-mode: difference;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 180ms;
+
+  &[data-visible="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-inline: 2.75rem;
+  text-align: center;
+}
+
+.message {
+  margin: 0;
+  font-family: var(--font-pixel-square-stack);
+  font-size: clamp(1.15rem, 2.4vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.invitation {
+  margin: 0;
+  font-family: var(--font-pixel-stack);
+  font-size: clamp(0.6rem, 1.5vw, 0.75rem);
+  line-height: 1.6;
+  opacity: 0.65;
+}
+
+@media (max-width: 40rem) {
+  .scene {
+    // The fitted name is roughly 6vw tall. Keep the touch controls above it,
+    // while leaving the board itself free to blend with the footer.
+    padding-bottom: calc(7vw + 0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene { transition: none; }
+}

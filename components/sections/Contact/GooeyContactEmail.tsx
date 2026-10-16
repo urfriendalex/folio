@@ -2,6 +2,7 @@
 
 import gsap from "gsap";
 import {
+  type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
   useId,
@@ -10,6 +11,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { getLenis } from "@/lib/smoothScroll";
+import { hapticTick } from "@/lib/haptics";
 import baseStyles from "./ContactSection.module.scss";
 import gooeyStyles from "./ContactSectionGooey.module.scss";
 import { createGooeyContactTimeline } from "./gooeyContactTimeline";
@@ -44,6 +47,11 @@ function getMobileServerSnapshot() {
 
 const MOBILE_LOOP_REPEAT_DELAY = 1.75;
 
+/** Let the `.emailWord` entrance (760ms) settle before rasterizing the filter off-screen. */
+const PREWARM_AFTER_REVEAL_MS = 900;
+/** While the page is still scrolling, re-check this often instead of prewarming mid-scroll. */
+const PREWARM_SCROLL_RETRY_MS = 200;
+
 /** Shared baseline for both lines; viewBox height stays 20 so GSAP `y: ±5` stays proportional */
 const TEXT_BASELINE_Y = 15.5;
 
@@ -51,11 +59,19 @@ type GooeyContactEmailProps = {
   email: string;
   hoverPhrase: string;
   visible: boolean;
+  /** Plain click handler (e.g. copy). Modifier-clicks keep the native `mailto:` behaviour. */
+  onActivate?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
 };
+
 
 const FALLBACK_VIEWBOX = "0 0 100 20";
 
-export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactEmailProps) {
+export function GooeyContactEmail({
+  email,
+  hoverPhrase,
+  visible,
+  onActivate,
+}: GooeyContactEmailProps) {
   const itemRef = useRef<HTMLAnchorElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const textGroupRef = useRef<SVGGElement | null>(null);
@@ -75,7 +91,16 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
     getMobileServerSnapshot,
   );
 
-  /* viewBox not in deps: getBBox churn must not reset GSAP mid-hover */
+  const visibleRef = useRef(visible);
+  /** Set by the timeline effect; reacts to `visible` without rebuilding the timeline. */
+  const setTimelineVisibleRef = useRef<((nextVisible: boolean) => void) | null>(null);
+
+  useEffect(() => {
+    visibleRef.current = visible;
+    setTimelineVisibleRef.current?.(visible);
+  }, [visible]);
+
+  /* viewBox and `visible` not in deps: rebuilding mid-scroll/hover re-runs the filter prewarm and resets GSAP */
   useEffect(() => {
     if (prefersReducedMotion) {
       return;
@@ -114,6 +139,7 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
 
     let progressTween: gsap.core.Tween | null = null;
 
+
     if (isMobileViewport) {
       const duration = tl.duration();
       progressTween = gsap.to(tl, {
@@ -123,15 +149,106 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         repeat: -1,
         yoyo: true,
         repeatDelay: MOBILE_LOOP_REPEAT_DELAY,
-        paused: !visible,
+        paused: !visibleRef.current,
         onUpdate: () => {
           feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
           const p = tl.progress();
           (textsGroupEl as SVGGElement).style.filter = p > 0 && p < 1 ? filterUrl : "none";
         },
       });
+      /* Touch: a horizontal swipe on the card scrubs the goo morph (left → email, right → phrase); release
+         snaps to the nearer side. The first swipe hands control to the visitor and stops the auto-loop.
+         Vertical drags stay page scrolls (`touch-action: pan-y` on the area). */
+      const area = (el.closest("[data-gooey-area]") as HTMLElement | null) ?? el;
+      const groupEl = textsGroupEl as SVGGElement;
+      let userTookOver = false;
+      let drag: { x0: number; y0: number; p0: number; active: boolean; side: number } | null = null;
+      let snapTween: gsap.core.Tween | null = null;
+      let clearScrubFlag = 0;
+
+      const applyFilter = () => {
+        const p = tl.progress();
+        feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
+        groupEl.style.filter = p > 0.001 && p < 0.999 ? filterUrl : "none";
+      };
+      const onDown = (event: PointerEvent) => {
+        if (event.pointerType !== "touch") return;
+        drag = { x0: event.clientX, y0: event.clientY, p0: tl.progress(), active: false, side: tl.progress() >= 0.5 ? 1 : 0 };
+      };
+      const onMove = (event: PointerEvent) => {
+        if (!drag) return;
+        const dx = event.clientX - drag.x0;
+        const dy = event.clientY - drag.y0;
+        if (!drag.active) {
+          if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+            drag.active = true;
+            userTookOver = true;
+            progressTween?.pause();
+            snapTween?.kill();
+            area.dataset.gooeyScrubbing = "true";
+          } else if (Math.abs(dy) > 10) {
+            drag = null;
+            return;
+          } else {
+            return;
+          }
+        }
+        const p = Math.min(1, Math.max(0, drag.p0 - dx / Math.max(160, area.clientWidth * 0.6)));
+        const side = p >= 0.5 ? 1 : 0;
+        if (side !== drag.side) {
+          drag.side = side;
+          hapticTick();
+        }
+        tl.progress(p).pause();
+        applyFilter();
+      };
+      const onUp = () => {
+        if (!drag) return;
+        const wasActive = drag.active;
+        drag = null;
+        if (!wasActive) return;
+        const target = tl.progress() >= 0.5 ? 1 : 0;
+        snapTween = gsap.to(tl, { progress: target, duration: 0.35, ease: "power3.out", onUpdate: applyFilter });
+        // Swallow the click the browser may still fire after a swipe (it must not copy).
+        window.clearTimeout(clearScrubFlag);
+        clearScrubFlag = window.setTimeout(() => {
+          delete area.dataset.gooeyScrubbing;
+        }, 60);
+      };
+      const onClickCapture = (event: MouseEvent) => {
+        if (area.dataset.gooeyScrubbing) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+
+      area.addEventListener("pointerdown", onDown, { passive: true });
+      area.addEventListener("pointermove", onMove, { passive: true });
+      area.addEventListener("pointerup", onUp, { passive: true });
+      area.addEventListener("pointercancel", onUp, { passive: true });
+      area.addEventListener("click", onClickCapture, true);
+
+      setTimelineVisibleRef.current = (nextVisible) => {
+        if (!userTookOver) progressTween?.paused(!nextVisible);
+      };
+
+      return () => {
+        area.removeEventListener("pointerdown", onDown);
+        area.removeEventListener("pointermove", onMove);
+        area.removeEventListener("pointerup", onUp);
+        area.removeEventListener("pointercancel", onUp);
+        area.removeEventListener("click", onClickCapture, true);
+        window.clearTimeout(clearScrubFlag);
+        delete area.dataset.gooeyScrubbing;
+        snapTween?.kill();
+        setTimelineVisibleRef.current = null;
+        progressTween?.kill();
+        tl.kill();
+        groupEl.style.filter = "none";
+      };
     } else {
       let hoverActivated = false;
+      let prewarmed = false;
       let prewarmFrame = 0;
       let prewarmTimer = 0;
       let idleCallback = 0;
@@ -140,9 +257,16 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
 
       const prewarmFilter = () => {
         const svg = svgRef.current;
-        if (hoverActivated || !svg || !document.contains(el)) {
+        if (prewarmed || hoverActivated || !svg || !document.contains(el)) {
           return;
         }
+
+        if (getLenis()?.isScrolling) {
+          prewarmTimer = window.setTimeout(schedulePrewarmIdle, PREWARM_SCROLL_RETRY_MS);
+          return;
+        }
+
+        prewarmed = true;
 
         const rect = svg.getBoundingClientRect();
         const svgStyle = svg.getAttribute("style");
@@ -191,14 +315,39 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         });
       };
 
-      prewarmTimer = window.setTimeout(() => {
+      function schedulePrewarmIdle() {
+        prewarmTimer = 0;
         if ("requestIdleCallback" in window) {
-          idleCallback = window.requestIdleCallback(prewarmFilter, { timeout: 1500 });
+          idleCallback = window.requestIdleCallback(
+            () => {
+              idleCallback = 0;
+              prewarmFilter();
+            },
+            { timeout: 1500 },
+          );
           return;
         }
 
         prewarmFilter();
-      }, 250);
+      }
+
+      const cancelScheduledPrewarm = () => {
+        window.clearTimeout(prewarmTimer);
+        prewarmTimer = 0;
+        if (idleCallback) {
+          window.cancelIdleCallback(idleCallback);
+          idleCallback = 0;
+        }
+      };
+
+      /* Prewarm only once the banner is actually painted (ancestor opacity 0 skips raster) and its entrance has settled. */
+      setTimelineVisibleRef.current = (nextVisible) => {
+        cancelScheduledPrewarm();
+        if (nextVisible && !prewarmed) {
+          prewarmTimer = window.setTimeout(schedulePrewarmIdle, PREWARM_AFTER_REVEAL_MS);
+        }
+      };
+      setTimelineVisibleRef.current(visibleRef.current);
 
       const onEnter = () => {
         hoverActivated = false;
@@ -230,10 +379,8 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         el.removeEventListener("mouseenter", onEnter);
         el.removeEventListener("pointermove", onPointerMove);
         el.removeEventListener("mouseleave", onLeave);
-        window.clearTimeout(prewarmTimer);
-        if (idleCallback) {
-          window.cancelIdleCallback(idleCallback);
-        }
+        setTimelineVisibleRef.current = null;
+        cancelScheduledPrewarm();
         if (prewarmFrame) {
           window.cancelAnimationFrame(prewarmFrame);
         }
@@ -246,11 +393,12 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
     }
 
     return () => {
+      setTimelineVisibleRef.current = null;
       progressTween?.kill();
       tl.kill();
       (textsGroupEl as SVGGElement).style.filter = "none";
     };
-  }, [prefersReducedMotion, isMobileViewport, visible]);
+  }, [prefersReducedMotion, isMobileViewport]);
 
   /* Line 1 = phrase (default); line 2 = email (hover / loop phase 2) */
   const line1 = hoverPhrase.toUpperCase();
@@ -293,7 +441,7 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
       ro.disconnect();
       window.removeEventListener("resize", run);
     };
-  }, [layoutViewBoxFromContent, line1, line2, visible]);
+  }, [layoutViewBoxFromContent, line1, line2]);
 
   return (
     <span className={`${baseStyles.emailWord} ${gooeyStyles.gooeyEmailWord}`} data-visible={visible}>
@@ -301,7 +449,14 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         ref={itemRef}
         href={`mailto:${email}`}
         className={`${baseStyles.emailLink} ${gooeyStyles.gooeyItem} ${prefersReducedMotion ? gooeyStyles.gooeyItemReduced : ""}`}
-        aria-label={`${hoverPhrase}. Email ${email}`}
+        aria-label={onActivate ? `${hoverPhrase}. Copy email ${email}` : `${hoverPhrase}. Email ${email}`}
+        onClick={(event) => {
+          if (!onActivate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+          }
+          event.preventDefault();
+          onActivate(event);
+        }}
       >
         <svg
           ref={svgRef}
@@ -314,9 +469,11 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
           <defs>
             <filter
               id={filterId}
-              x="-8%"
+              /* Horizontal margin sized to the goo, not more: max blur (σ = 1 unit, ~3 units reach) fits in
+                 2% of the ~230–260-unit text box, and every extra % is filtered on each animation frame. */
+              x="-2%"
               y="-45%"
-              width="116%"
+              width="104%"
               height="190%"
               colorInterpolationFilters="sRGB"
             >
