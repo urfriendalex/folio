@@ -46,7 +46,7 @@
   height: 0.42rem;
   margin-right: 0.5rem;
   vertical-align: 0.05em;
-  background: var(--signal-color);
+  background: var(--contact-accent);
   /* Old-school "online" LED: hard on/off, no easing. */
   animation: statusBlink 1.6s steps(1, end) infinite;
 }
@@ -183,14 +183,11 @@
     text-align: left;
     text-transform: uppercase;
     cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
   }
 
   .actions li + li .action {
     border-left: 1px solid var(--line-color);
-  }
-
-  .emailView .action[data-action="call"] {
-    color: var(--signal-color);
   }
 
   .actionNum {
@@ -270,8 +267,7 @@
     gap: 0.35rem;
   }
 
-  /* One primary action: only the call keeps the signal colour. */
-  .emailView .action:not([data-action="call"]) {
+  .emailView .action {
     color: var(--fg-color);
   }
 
@@ -294,4 +290,16 @@
   .copyToast {
     animation: copyToastLife 1.4s steps(1, end) forwards;
   }
+}
+
+/* The call is the primary action, but it only takes the accent when reached for; at rest it reads like its siblings. */
+@media (hover: hover) and (pointer: fine) {
+  .emailView .action[data-action="call"]:hover {
+    color: var(--contact-accent);
+  }
+}
+
+.emailView .action[data-action="call"]:focus-visible,
+.emailView .action[data-action="call"]:active {
+  color: var(--contact-accent);
 }

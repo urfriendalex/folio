@@ -21,7 +21,7 @@ const RAIN_MAX = 22;
 const RAIN_LIFE_FRAMES = 22;
 
 // Glyph sets per orientation, light → heavy.
-// Every weight keeps its direction; heavier strokes come from alpha + the signal colour at speed.
+// Every weight keeps its direction; heavier strokes come from alpha + the accent colour at speed.
 const HORIZONTAL = ["-", "-", "=", "="];
 const VERTICAL = ["¦", "|", "|", "|"];
 const RISING = ["/", "/", "/", "/"];
@@ -75,7 +75,7 @@ export function AsciiFlowField({
     let rain: { x: number; y: number; vy: number; life: number }[] = [];
     let lastScrollY = window.scrollY;
     let ink = "#111";
-    let signal = "#f00";
+    let signal = "#2446d6";
     let font = `${FONT_SIZE}px monospace`;
     /** Viewport layer for click rings, so they aren't cut off at the section edge. Mounted only while one is alive. */
     const overlay = document.createElement("canvas");
@@ -87,7 +87,7 @@ export function AsciiFlowField({
     const readStyle = () => {
       const styles = getComputedStyle(host);
       ink = styles.getPropertyValue("--fg-color").trim() || styles.color;
-      signal = styles.getPropertyValue("--signal-color").trim() || "#ff0000";
+      signal = styles.getPropertyValue("--contact-accent").trim() || "#2446d6";
       font = `${FONT_SIZE}px ${styles.getPropertyValue("--font-mono-stack").trim() || "monospace"}`;
     };
 
@@ -219,7 +219,7 @@ export function AsciiFlowField({
       }
       rings = rings.filter((ring) => time - ring.t < RING_LIFE_S);
       for (const drop of rain) {
-        // Kept under the signal threshold: rain stays ink, red is reserved for real gestures.
+        // Kept under the signal threshold: rain stays ink, the accent is reserved for real gestures.
         stamp(drop.x, drop.y, 0, Math.sign(drop.vy) * 0.36);
         drop.y += drop.vy * (delta / 16.7);
         drop.life -= 1;
