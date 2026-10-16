@@ -446,18 +446,6 @@ export function ContactSectionGooey({
                 />
               </div>
 
-              <p
-                className={variants.hint}
-                data-visible={emailVisible}
-                style={{ "--contact-reveal-index": 1 } as CSSProperties}
-              >
-                <span className={styles.revealLine}>
-                  <span className={styles.revealLineText}>
-                    Click the line to copy
-                  </span>
-                </span>
-              </p>
-
               <ul className={variants.actions}>
                 <li>
                   {/* The banner above already copies; this is the other half: open a draft. */}
