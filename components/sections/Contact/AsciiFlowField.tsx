@@ -315,17 +315,13 @@ export function AsciiFlowField({
       wake();
     };
 
-    /** A click among the content sends a ring. Touch uses the press fill instead. The filler
-        below the last action (the section is viewport-tall) stays inert. */
+    /** A click anywhere in the section, down to the footer, sends a ring. Touch uses the press fill instead. */
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
-      let floor = -Infinity;
-      for (const action of host.querySelectorAll("[data-action]")) {
-        floor = Math.max(floor, action.getBoundingClientRect().bottom);
-      }
-      if (floor > -Infinity && event.clientY > floor) return;
       burst(event.clientX, event.clientY, 0.85);
     };
+    // The section's bottom padding sits outside the field's host, so listen on the section itself.
+    const clickArea = host.closest("section") ?? host;
 
     const visibility = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting);
@@ -343,7 +339,7 @@ export function AsciiFlowField({
     host.addEventListener("touchstart", onTouchStart, { passive: true });
     host.addEventListener("touchmove", onTouchMove, { passive: true });
     host.addEventListener("touchend", onTouchEnd, { passive: true });
-    host.addEventListener("pointerdown", onPointerDown, { passive: true });
+    clickArea.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
     if (handleRef) handleRef.current = { burst };
 
@@ -358,7 +354,7 @@ export function AsciiFlowField({
       host.removeEventListener("touchstart", onTouchStart);
       host.removeEventListener("touchmove", onTouchMove);
       host.removeEventListener("touchend", onTouchEnd);
-      host.removeEventListener("pointerdown", onPointerDown);
+      clickArea.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("scroll", onScroll);
       if (handleRef) handleRef.current = null;
     };

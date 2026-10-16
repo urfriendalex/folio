@@ -44,11 +44,15 @@ export function BookingButtonAscii({
   className,
   accent = "--taskbar-flag-blue",
   clearance = "box",
+  quietQuery,
 }: {
   className: string;
   /** Custom property for the hot glyphs near the pointer. */
   accent?: string;
   clearance?: "box" | "text";
+  /** While this media query matches (big touch-sized cells), the field stays a light texture:
+      thinner ambient, a smaller hot spot, and no heavy glyphs. */
+  quietQuery?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -59,6 +63,7 @@ export function BookingButtonAscii({
     if (!canvas || !button || !context) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const quietMedia = quietQuery ? window.matchMedia(quietQuery) : null;
     let width = 0;
     let height = 0;
     let columns = 0;
@@ -93,6 +98,12 @@ export function BookingButtonAscii({
       presses = presses.filter((press) => time - press.t < PRESS_LIFE);
       const tick = Math.floor(time * 5);
       for (const bucket of buckets) bucket.length = 0;
+      const quiet = quietMedia?.matches ?? false;
+      const ambientGain = quiet ? 0.6 : 1;
+      const heatGain = quiet ? 0.5 : 1;
+      const heatSpread = quiet ? 1100 : 2600;
+      // Quiet tops out at "+": no x/o/a/#/% blobs on a card the size of a thumb.
+      const ceiling = quiet ? RAMP.indexOf("+") : top;
 
       for (let row = 0; row < rows; row++) {
         for (let column = 0; column < columns; column++) {
@@ -106,14 +117,14 @@ export function BookingButtonAscii({
             0.5 +
             0.32 * Math.sin(time * 1.1 + column * 0.11 - row * 0.62) +
             0.18 * Math.sin(time * 0.7 - column * 0.05 + row * 0.9);
-          let value = open * (0.1 + wave * 0.24);
-          if (open > 0.5 && hash(column, row, tick) > 0.988) value += 0.16;
+          let value = open * (0.1 + wave * 0.24) * ambientGain;
+          if (open > 0.5 && hash(column, row, tick) > (quiet ? 0.996 : 0.988)) value += 0.16;
 
           const dx = x + cellWidth / 2 - pointerX;
           const dy = y + cellHeight / 2 - pointerY;
-          const target = hover * Math.exp(-(dx * dx + dy * dy) / 2600);
+          const target = hover * Math.exp(-(dx * dx + dy * dy) / heatSpread);
           heat[i] += (target - heat[i]) * ease;
-          value += heat[i] * (0.18 + open * 0.42);
+          value += heat[i] * (0.18 + open * 0.42) * heatGain;
 
           for (const press of presses) {
             const age = time - press.t;
@@ -122,7 +133,7 @@ export function BookingButtonAscii({
             value += ring * (1 - age / PRESS_LIFE) * (0.2 + open * 0.5);
           }
 
-          const index = Math.max(0, Math.min(top, Math.round(value * top)));
+          const index = Math.max(0, Math.min(ceiling, Math.round(value * top)));
           if (!index) continue;
           const bucket = heat[i] > 0.32 && index > 3 ? 2 : index > 5 ? 1 : 0;
           buckets[bucket].push(index, x, y);
@@ -329,7 +340,7 @@ export function BookingButtonAscii({
       button.removeEventListener("blur", onPointerLeave);
       button.removeEventListener("transitionend", onTransitionEnd);
     };
-  }, [accent, clearance]);
+  }, [accent, clearance, quietQuery]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

@@ -753,16 +753,10 @@
     }
   }
 
+  /* Hover is the glyph field heating under the pointer; the fill stays put, only the hairline firms up. */
   @media (hover: hover) and (pointer: fine) {
     .contactChannelButton:hover:not(:disabled) {
       --cell-stroke: color-mix(in srgb, var(--fg-color) 22%, transparent);
-      --cell-fill:
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--overlay-default-surface-top) 92%, var(--fg-color)),
-          color-mix(in srgb, var(--overlay-default-surface-bottom) 94%, var(--fg-color))
-        ),
-        color-mix(in srgb, var(--overlay-default-surface-base) 92%, var(--fg-color));
     }
   }
 

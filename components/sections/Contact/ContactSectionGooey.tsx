@@ -49,6 +49,8 @@ type ContactView = "email" | "form";
 /** Email stack exits on `--duration-exit`; swap to the form right after, with no dead pause. */
 const EMAIL_TRANSITION_MS = DURATION_MS.exit + 20;
 const FORM_EXIT_MS = DURATION_MS.exit + 20;
+/** Bento breakpoint (ContactVariants.module.scss): the cells become large cards, so their glyph field goes quiet. */
+const COMPACT_CELLS_QUERY = "(max-width: 48rem)";
 
 /** Inline form open — distinct from `#contact` (email/actions) so back closes the form, not history. */
 const CONTACT_FORM_ELEMENT_ID = "contact-form";
@@ -467,7 +469,7 @@ export function ContactSectionGooey({
                     style={{ "--contact-reveal-index": 2 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" />
+                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
                     <span className={variants.actionNum} aria-hidden="true">01</span>
                     <RevealLabel>Open mail app</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">↗</span>
@@ -481,7 +483,7 @@ export function ContactSectionGooey({
                     style={{ "--contact-reveal-index": 3 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--signal-color" clearance="text" />
+                    <BookingButtonAscii className={variants.wipe} accent="--signal-color" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
                     <span className={variants.actionNum} aria-hidden="true">02</span>
                     <RevealLabel>Book a call</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">→</span>
@@ -497,7 +499,7 @@ export function ContactSectionGooey({
                     onClick={() => openForm()}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" />
+                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" quietQuery={COMPACT_CELLS_QUERY} />
                     <span className={variants.actionNum} aria-hidden="true">03</span>
                     <RevealLabel>Send a message</RevealLabel>
                     <span className={variants.actionMeta} aria-hidden="true">→</span>
