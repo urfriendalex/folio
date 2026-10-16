@@ -22,6 +22,8 @@ import { DURATION_MS } from "@/lib/motion";
 import { scrollElementIntoView } from "@/lib/smoothScroll";
 import { LiveClock } from "@/components/layout/Footer/TimeZoneStatus";
 import { BookingButtonAscii } from "@/components/layout/Footer/BookingButtonAscii";
+import { cellRevealHash01 } from "@/components/Preloader/ascii";
+import { GLYPH_GLITCH_THRESHOLD_MAX } from "@/lib/glyphGlitch";
 import { AsciiFlowField, type AsciiFieldHandle } from "./AsciiFlowField";
 import { copyText } from "./contactCopy";
 import { CopyToast, type CopyToastState } from "./CopyToast";
@@ -99,10 +101,25 @@ function ContactCellFrame() {
   );
 }
 
-function RevealLabel({ children }: { children: string }) {
+/** Cell text split into glyphs that the cell's field glitches on and off (see `BookingButtonAscii`'s `glitch`).
+    The cell carries the accessible name, so the glyphs are hidden from assistive tech. */
+function GlitchText({ text, seed, className }: { text: string; seed: number; className: string }) {
   return (
-    <span className={styles.revealLine}>
-      <span className={styles.revealLineText}>{children}</span>
+    <span className={className} aria-hidden="true">
+      {Array.from(text, (char, index) =>
+        char === " " ? (
+          " "
+        ) : (
+          <span
+            key={index}
+            className={styles.glitchChar}
+            data-glitch-at={(cellRevealHash01(index, seed) * GLYPH_GLITCH_THRESHOLD_MAX).toFixed(3)}
+            data-glitch-phase={cellRevealHash01(index, seed + 1) < 0.5 ? 0 : 1}
+          >
+            {char}
+          </span>
+        ),
+      )}
     </span>
   );
 }
@@ -453,28 +470,30 @@ export function ContactSectionGooey({
                     href={`mailto:${content.email}`}
                     className={`${styles.contactChannelButton} ${variants.action}`}
                     data-action="mail"
+                    aria-label="Open mail app"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 2 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
-                    <span className={variants.actionNum} aria-hidden="true">01</span>
-                    <RevealLabel>Open mail app</RevealLabel>
-                    <span className={variants.actionMeta} aria-hidden="true">↗</span>
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={variants.actionNum} text="01" seed={11} />
+                    <GlitchText className={styles.glitchLabel} text="Open mail app" seed={14} />
+                    <GlitchText className={variants.actionMeta} text="↗" seed={16} />
                   </a>
                 </li>
                 <li>
                   <CalBookingTrigger
                     className={`${styles.contactChannelButton} ${variants.action}`}
                     data-action="call"
+                    aria-label="Book a call"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 3 } as CSSProperties}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
-                    <span className={variants.actionNum} aria-hidden="true">02</span>
-                    <RevealLabel>Book a call</RevealLabel>
-                    <span className={variants.actionMeta} aria-hidden="true">→</span>
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={variants.actionNum} text="02" seed={23} />
+                    <GlitchText className={styles.glitchLabel} text="Book a call" seed={26} />
+                    <GlitchText className={variants.actionMeta} text="→" seed={28} />
                   </CalBookingTrigger>
                 </li>
                 <li>
@@ -482,15 +501,16 @@ export function ContactSectionGooey({
                     type="button"
                     className={`${styles.contactChannelButton} ${variants.action}`}
                     data-action="brief"
+                    aria-label="Send a message"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 4 } as CSSProperties}
                     onClick={() => openForm()}
                   >
                     <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional />
-                    <span className={variants.actionNum} aria-hidden="true">03</span>
-                    <RevealLabel>Send a message</RevealLabel>
-                    <span className={variants.actionMeta} aria-hidden="true">→</span>
+                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={variants.actionNum} text="03" seed={37} />
+                    <GlitchText className={styles.glitchLabel} text="Send a message" seed={40} />
+                    <GlitchText className={variants.actionMeta} text="→" seed={42} />
                   </button>
                 </li>
               </ul>

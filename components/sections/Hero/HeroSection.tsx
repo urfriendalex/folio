@@ -27,6 +27,7 @@ import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOptionalHeroRevealTimeline } from "@/lib/heroRevealTimeline";
 import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
+import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import {
   getHomeHeroRevealDone,
   setHomeHeroRevealDone,
@@ -108,7 +109,6 @@ const TEXT_DISSOLVE_DELAY_VIEWPORT_FINE = 0.2;
 const TEXT_DISSOLVE_LEAD_VIEWPORT = 0.1;
 /** …and each line is gone after this much further scroll (share of the viewport). */
 const TEXT_DISSOLVE_RANGE_VIEWPORT = 0.26;
-const TEXT_DISSOLVE_STEPS = 64;
 const INTRO_DISSOLVE_SEED = 101;
 const HEADING_DISSOLVE_SEED = 211;
 const CTA_DISSOLVE_SEED = 307;
@@ -116,22 +116,8 @@ const CTA_DISSOLVE_SEED = 307;
 function dissolve(text: string, piece: number) {
   return text ? <DissolveText text={text} seed={INTRO_DISSOLVE_SEED + piece} /> : null;
 }
-/** Thresholds stop short of 1 so no glyph is still flickering at rest. */
-const TEXT_DISSOLVE_THRESHOLD_MAX = 0.9;
-/** Just above its threshold a glyph flickers on alternate steps for this much visibility (≈ five steps). */
-const TEXT_DISSOLVE_FLICKER_BAND = 0.08;
 /** Hover/focus on a live control glitches its glyphs back in (and out on leave) over this long. */
 const TEXT_RESTORE_MS = 320;
-
-function isGlyphShown(visibility: number, threshold: number, phase: number) {
-  if (visibility < threshold) {
-    return false;
-  }
-  if (visibility >= threshold + TEXT_DISSOLVE_FLICKER_BAND) {
-    return true;
-  }
-  return (Math.round(visibility * TEXT_DISSOLVE_STEPS) + phase) % 2 === 1;
-}
 
 /**
  * Splits text into glyph spans that drop out in the walker's random cell order as their line scrolls
@@ -149,7 +135,7 @@ const DissolveText = memo(function DissolveText({ text, seed }: { text: string; 
             <span
               key={index}
               className={styles.dissolveChar}
-              data-dissolve-at={(cellRevealHash01(index, seed) * TEXT_DISSOLVE_THRESHOLD_MAX).toFixed(3)}
+              data-dissolve-at={(cellRevealHash01(index, seed) * GLYPH_GLITCH_THRESHOLD_MAX).toFixed(3)}
               data-dissolve-phase={cellRevealHash01(index, seed + 1) < 0.5 ? 0 : 1}
             >
               {char}
@@ -720,7 +706,7 @@ export function HeroSection({ content }: HeroSectionProps) {
 
       for (let index = 0; index < lineStarts.length; index += 1) {
         const raw = 1 - Math.min(1, Math.max(0, (scrollY - lineStarts[index]) / range));
-        lineVisibility[index] = Math.round(raw * TEXT_DISSOLVE_STEPS) / TEXT_DISSOLVE_STEPS;
+        lineVisibility[index] = Math.round(raw * GLYPH_GLITCH_STEPS) / GLYPH_GLITCH_STEPS;
       }
 
       const step = lastFrame ? Math.min(1, (now - lastFrame) / TEXT_RESTORE_MS) : 0;

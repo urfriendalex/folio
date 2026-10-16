@@ -325,6 +325,20 @@
   transition-delay: calc(var(--cell-delay) + var(--line-delay, 0ms));
 }
 
+/* Action cells glitch in glyph by glyph, like the hero: strictly on or off, never half-faded or moving.
+   Hiding via `color` keeps the layout (and the field's clearing) where the text will land. */
+.glitchLabel {
+  display: block;
+}
+
+.glitchChar:not([data-glitch-on]) {
+  color: transparent;
+}
+
+:global(html:not(.reveals-enabled)) .glitchChar {
+  color: inherit;
+}
+
 /* Drawn frame + fill layer exist only for the mobile bento cells. */
 .cellFrame {
   display: none;

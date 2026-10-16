@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { cellRevealHash01 } from "@/components/Preloader/ascii";
+import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import { hapticTick } from "@/lib/haptics";
 import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 
@@ -19,6 +21,13 @@ const STREAK_TOP_SPEED = 520; // px/s
 const STREAK_FRICTION = 2.4; // 1/s
 const STREAK_CLEARING = 5; // px from the label's glyphs
 // Appended after the ramp so a bucket entry can address either: horizontal, falling, vertical, rising.
+// Glitch mode: the field and the cell's glyphs come and go in hero-style random-order steps.
+const GLITCH_IN_MS = 560;
+const GLITCH_OUT_MS = 220;
+/** The label is fully in by this share of the field's glitch-in; the texture keeps filling after. */
+const GLITCH_LABEL_SHARE = 0.55;
+const GLITCH_FIELD_SEED = 97;
+
 const STROKES = ["-", "\\", "|", "/"];
 const GLYPHS = [...RAMP, ...STROKES];
 
@@ -82,6 +91,7 @@ export function BookingButtonAscii({
   clearance = "box",
   quietQuery,
   directional = false,
+  glitch = false,
 }: {
   className: string;
   /** Custom property for the hot glyphs near the pointer. */
@@ -92,6 +102,9 @@ export function BookingButtonAscii({
   quietQuery?: string;
   /** Moving across the button throws — | / \ strokes that keep travelling the way the pointer went. */
   directional?: boolean;
+  /** Follow the parent's `data-visible`: glitch the field and its `[data-glitch-at]` glyphs in and out.
+      The glitch-in waits for the canvas's computed `transition-delay` (the cell's slot in the cascade). */
+  glitch?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -113,6 +126,19 @@ export function BookingButtonAscii({
     let originY = 0;
     let room = new Float32Array(0);
     let heat = new Float32Array(0);
+    let glitchAt = new Float32Array(0);
+    let shown = glitch ? 0 : 1;
+    let shownTarget = shown;
+    let glitchStartsAt = 0;
+    let fieldVisibility = shown;
+    const glyphs = glitch
+      ? Array.from(button.querySelectorAll<HTMLElement>("[data-glitch-at]"), (element) => ({
+          element,
+          at: Number(element.dataset.glitchAt),
+          phase: Number(element.dataset.glitchPhase),
+          on: false,
+        }))
+      : [];
     let presses: Press[] = [];
     let streaks: Streak[] = [];
     let lastEmit = 0;
@@ -165,6 +191,7 @@ export function BookingButtonAscii({
           const dy = y + cellHeight / 2 - pointerY;
           const target = hover * Math.exp(-(dx * dx + dy * dy) / heatSpread);
           heat[i] += (target - heat[i]) * ease;
+          if (fieldVisibility < 1 && !isGlyphShown(fieldVisibility, glitchAt[i], i & 1)) continue;
           value += heat[i] * (0.18 + open * 0.42) * heatGain;
 
           for (const press of presses) {
@@ -234,6 +261,11 @@ export function BookingButtonAscii({
       pointerX += (targetX - pointerX) * ease;
       pointerY += (targetY - pointerY) * ease;
       hover += (hoverTarget - hover) * ease;
+      if (shown !== shownTarget && now >= glitchStartsAt) {
+        const step = delta / (shownTarget ? GLITCH_IN_MS : GLITCH_OUT_MS);
+        shown = shownTarget ? Math.min(1, shown + step) : Math.max(0, shown - step);
+        applyGlitch();
+      }
 
       if (directional) {
         const seconds = delta / 1000;
@@ -253,9 +285,37 @@ export function BookingButtonAscii({
           const scale = Math.min(STREAK_TOP_SPEED, speed * 1.6) / speed;
           streaks.push({ x: pointerX, y: pointerY, vx: vx * scale, vy: vy * scale, t: time });
           lastEmit = time;
-        }      }
+        }
+      }
       draw(1 - Math.exp(-delta / 110));
       frame = window.requestAnimationFrame(tick);
+    };
+
+    /** One clock for the cell: the label lands first, the texture keeps filling in behind it. */
+    function applyGlitch() {
+      const stepped = Math.round(shown * GLYPH_GLITCH_STEPS) / GLYPH_GLITCH_STEPS;
+      fieldVisibility = stepped;
+      const label = shownTarget ? Math.min(1, stepped / GLITCH_LABEL_SHARE) : stepped;
+      const labelStepped = Math.round(label * GLYPH_GLITCH_STEPS) / GLYPH_GLITCH_STEPS;
+      for (const glyph of glyphs) {
+        const on = isGlyphShown(labelStepped, glyph.at, glyph.phase);
+        if (on === glyph.on) continue;
+        glyph.on = on;
+        glyph.element.toggleAttribute("data-glitch-on", on);
+      }
+    }
+
+    const syncGlitch = () => {
+      const next = button.dataset.visible === "false" ? 0 : 1;
+      if (next === shownTarget) return;
+      shownTarget = next;
+      const delay = next ? parseFloat(window.getComputedStyle(canvas).transitionDelay) * 1000 || 0 : 0;
+      glitchStartsAt = performance.now() + delay;
+      if (reducedMotion.matches) {
+        shown = next;
+        applyGlitch();
+        draw(1);
+      }
     };
 
     const start = () => {
@@ -299,6 +359,10 @@ export function BookingButtonAscii({
       originY = (height - rows * cellHeight) / 2;
       room = new Float32Array(columns * rows);
       heat = new Float32Array(columns * rows);
+      glitchAt = new Float32Array(columns * rows);
+      for (let i = 0; i < glitchAt.length; i++) {
+        glitchAt[i] = cellRevealHash01(i, GLITCH_FIELD_SEED) * GLYPH_GLITCH_THRESHOLD_MAX;
+      }
       measureClearing();
 
       if (!hoverTarget) {
@@ -380,6 +444,8 @@ export function BookingButtonAscii({
     const onMotionChange = () => {
       if (reducedMotion.matches) {
         stop();
+        shown = shownTarget;
+        applyGlitch();
         time = 0;
         presses = [];
         streaks = [];
@@ -398,6 +464,7 @@ export function BookingButtonAscii({
     };
 
     const resizeObserver = new ResizeObserver(resize);
+    const glitchObserver = new MutationObserver(syncGlitch);
     const themeObserver = new MutationObserver(updateColors);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
@@ -418,6 +485,10 @@ export function BookingButtonAscii({
     button.addEventListener("blur", onPointerLeave);
     button.addEventListener("transitionend", onTransitionEnd);
     resize();
+    if (glitch) {
+      glitchObserver.observe(button, { attributes: true, attributeFilter: ["data-visible"] });
+      syncGlitch();
+    }
     // Glyph widths and label boxes shift once the web fonts land.
     void document.fonts.ready.then(() => {
       if (!disposed) resize();
@@ -438,8 +509,9 @@ export function BookingButtonAscii({
       button.removeEventListener("focus", onFocus);
       button.removeEventListener("blur", onPointerLeave);
       button.removeEventListener("transitionend", onTransitionEnd);
+      glitchObserver.disconnect();
     };
-  }, [accent, clearance, quietQuery, directional]);
+  }, [accent, clearance, quietQuery, directional, glitch]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }
