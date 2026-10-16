@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type FormEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { flushSync } from "react-dom";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
@@ -16,9 +17,16 @@ import {
   type HomeContactFormOpenOptions,
 } from "@/lib/homeContactForm";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
+import { hapticTick } from "@/lib/haptics";
 import { DURATION_MS } from "@/lib/motion";
 import { scrollElementIntoView } from "@/lib/smoothScroll";
+import { LiveClock } from "@/components/layout/Footer/TimeZoneStatus";
+import { BookingButtonAscii } from "@/components/layout/Footer/BookingButtonAscii";
+import { AsciiFlowField, type AsciiFieldHandle } from "./AsciiFlowField";
+import { copyText } from "./contactCopy";
+import { CopyToast, type CopyToastState } from "./CopyToast";
 import { GooeyContactEmail } from "./GooeyContactEmail";
+import variants from "./ContactVariants.module.scss";
 import workSectionStyles from "../Work/WorkSection.module.scss";
 import styles from "./ContactSection.module.scss";
 
@@ -40,7 +48,7 @@ type ContactView = "email" | "form";
 
 /** Email stack exits on `--duration-exit`; swap to the form right after, with no dead pause. */
 const EMAIL_TRANSITION_MS = DURATION_MS.exit + 20;
-const FORM_EXIT_MS = 420;
+const FORM_EXIT_MS = DURATION_MS.exit + 20;
 
 /** Inline form open — distinct from `#contact` (email/actions) so back closes the form, not history. */
 const CONTACT_FORM_ELEMENT_ID = "contact-form";
@@ -79,34 +87,12 @@ function stripContactFormHashIfPresent(): void {
   window.history.replaceState(window.history.state, "", url.toString());
 }
 
-/** Mobile bento hairline, traced on reveal. Perimeter is measured so the stroke draws at a true pace. */
+/** Mobile bento hairline, traced on reveal. A fixed pathLength means the dash is in units of 100 at
+    any size, so the trace never waits on a measurement. */
 function ContactCellFrame() {
-  const rectRef = useRef<SVGRectElement | null>(null);
-
-  useLayoutEffect(() => {
-    const rect = rectRef.current;
-    const svg = rect?.ownerSVGElement;
-    if (!rect || !svg) {
-      return;
-    }
-
-    const measure = () => {
-      const length = rect.getTotalLength();
-      if (length > 0) {
-        svg.style.setProperty("--frame-length", `${Math.ceil(length) + 1}`);
-      }
-    };
-
-    measure();
-    /* Hidden on desktop (display: none) — re-measures when the mobile layout shows it. */
-    const resizeObserver = new ResizeObserver(measure);
-    resizeObserver.observe(svg);
-    return () => resizeObserver.disconnect();
-  }, []);
-
   return (
     <svg className={styles.cellFrame} aria-hidden focusable="false">
-      <rect ref={rectRef} width="100%" height="100%" rx="16" />
+      <rect width="100%" height="100%" rx="16" pathLength={100} />
     </svg>
   );
 }
@@ -133,6 +119,9 @@ export function ContactSectionGooey({
     threshold: 0.1,
   });
   const [view, setView] = useState<ContactView>("email");
+  const [toast, setToast] = useState<CopyToastState>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const trailRef = useRef<AsciiFieldHandle | null>(null);
   const [emailVisible, setEmailVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -215,6 +204,9 @@ export function ContactSectionGooey({
       }
 
       setEmailVisible(false);
+      // Scroll while the email stack leaves. The section's top doesn't move when its content swaps,
+      // so the form lands centered with no second correction.
+      scrollElementIntoView(sectionRef.current);
 
       switchTimerRef.current = window.setTimeout(() => {
         setView("form");
@@ -226,7 +218,6 @@ export function ContactSectionGooey({
         frameRef.current = window.requestAnimationFrame(() => {
           setFormVisible(true);
           frameRef.current = null;
-          scrollElementIntoView(sectionRef.current);
         });
       }, EMAIL_TRANSITION_MS);
     },
@@ -249,6 +240,7 @@ export function ContactSectionGooey({
     setFormError(null);
     setFormSuccess(false);
     setFormVisible(false);
+    scrollElementIntoView(sectionRef.current);
 
     switchTimerRef.current = window.setTimeout(() => {
       setView("email");
@@ -347,6 +339,43 @@ export function ContactSectionGooey({
     }
   };
 
+  /** Copy the address with old-school feedback (goo morph + Win98 tooltip); mail app if copying is blocked. */
+  const handleCopy = async (event: ReactMouseEvent<HTMLElement>) => {
+    const target = event.currentTarget;
+    const keyboard = event.detail === 0;
+    const pointX = keyboard ? 0 : event.clientX;
+    const pointY = keyboard ? 0 : event.clientY;
+    hapticTick();
+    const copied = await copyText(content.email);
+    if (!copied) {
+      window.location.href = `mailto:${content.email}`;
+      return;
+    }
+
+    // Tooltip is positioned inside the variant container (the positioned box that also hosts the trail field).
+    const host = target.closest<HTMLElement>("[data-variant]") ?? sectionRef.current;
+    if (!host) return;
+    const box = host.getBoundingClientRect();
+    const anchor = target.getBoundingClientRect();
+    const x = keyboard ? anchor.left + anchor.width / 2 : pointX;
+    const y = keyboard ? anchor.top + anchor.height / 2 : pointY;
+
+    trailRef.current?.burst(x, y, 1.4);
+    setToast({ x: x - box.left, y: y - box.top, key: Date.now() });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      toastTimerRef.current = null;
+      setToast(null);
+    }, 1400);
+  };
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
   return (
     <section
       ref={sectionRef}
@@ -361,39 +390,123 @@ export function ContactSectionGooey({
       />
       <div className={styles.stage}>
         {view === "email" ? (
-          <div className={styles.emailView} data-visible={emailVisible}>
+          /* Contact: centered gooey + direction-aware ink. Flow glyphs follow the pointer (or a dragging
+             finger) inside the content block; clicks/taps anywhere send a ripple; action cells take a
+             glyph wipe from the edge you enter and drain toward the edge you leave. */
+          <div className={`${styles.emailView} ${variants.emailView}`} data-visible={emailVisible} data-variant="flow">
             <div className={styles.mobileSectionTitle}>
               <h2 className={workSectionStyles.title}>Contact Me</h2>
             </div>
-            <CalBookingTrigger
-              className={`link-underline ${styles.contactChannelButton}`}
-              data-visible={emailVisible}
-              style={{ "--contact-reveal-index": 0 } as CSSProperties}
-            >
-              <ContactCellFrame />
-              <RevealLabel>Schedule a call</RevealLabel>
-            </CalBookingTrigger>
 
-            <div
-              ref={revealAnchorRef}
-              className={styles.contactGooeyCard}
-              data-visible={emailVisible}
-              style={{ "--contact-reveal-index": 1 } as CSSProperties}
-            >
-              <ContactCellFrame />
-              <GooeyContactEmail email={content.email} hoverPhrase={hoverPhrase} visible={emailVisible} />
+            <AsciiFlowField className={variants.field} handleRef={trailRef} />
+
+            <div className={variants.block}>
+              <p
+                className={variants.status}
+                data-visible={emailVisible}
+                style={{ "--contact-reveal-index": 0 } as CSSProperties}
+              >
+                <span className={styles.revealLine}>
+                  <span className={styles.revealLineText}>
+                    <span className={variants.statusLed} aria-hidden="true" />
+                    Open to new projects
+                  </span>
+                </span>
+                <span className={`${styles.revealLine} ${variants.statusResponse}`}>
+                  <span className={styles.revealLineText}>{content.responseTime.replace(/\.$/, "")}</span>
+                </span>
+                <span className={styles.revealLine}>
+                  <span className={styles.revealLineText}>
+                    Warsaw <LiveClock zone="warsaw" format="time" className={variants.statusClock} />
+                  </span>
+                </span>
+              </p>
+
+              {/* The whole card copies (not just the glyphs); the inner link keeps keyboard access and
+                  modifier-click → mail app. Touch swipes on the card scrub the goo instead (GooeyContactEmail). */}
+              <div
+                ref={revealAnchorRef}
+                className={`${styles.contactGooeyCard} ${variants.gooCard}`}
+                data-visible={emailVisible}
+                data-gooey-area=""
+                style={{ "--contact-reveal-index": 1 } as CSSProperties}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("a")) return;
+                  void handleCopy(event);
+                }}
+              >
+                <ContactCellFrame />
+                <GooeyContactEmail
+                  email={content.email}
+                  hoverPhrase={hoverPhrase}
+                  visible={emailVisible}
+                  onActivate={handleCopy}
+                />
+              </div>
+
+              <p
+                className={variants.hint}
+                data-visible={emailVisible}
+                style={{ "--contact-reveal-index": 1 } as CSSProperties}
+              >
+                <span className={styles.revealLine}>
+                  <span className={styles.revealLineText}>
+                    Click the line to copy
+                  </span>
+                </span>
+              </p>
+
+              <ul className={variants.actions}>
+                <li>
+                  {/* The banner above already copies; this is the other half: open a draft. */}
+                  <a
+                    href={`mailto:${content.email}`}
+                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    data-action="mail"
+                    data-visible={emailVisible}
+                    style={{ "--contact-reveal-index": 2 } as CSSProperties}
+                  >
+                    <ContactCellFrame />
+                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" />
+                    <span className={variants.actionNum} aria-hidden="true">01</span>
+                    <RevealLabel>Open mail app</RevealLabel>
+                    <span className={variants.actionMeta} aria-hidden="true">↗</span>
+                  </a>
+                </li>
+                <li>
+                  <CalBookingTrigger
+                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    data-action="call"
+                    data-visible={emailVisible}
+                    style={{ "--contact-reveal-index": 3 } as CSSProperties}
+                  >
+                    <ContactCellFrame />
+                    <BookingButtonAscii className={variants.wipe} accent="--signal-color" clearance="text" />
+                    <span className={variants.actionNum} aria-hidden="true">02</span>
+                    <RevealLabel>Book a call</RevealLabel>
+                    <span className={variants.actionMeta} aria-hidden="true">→</span>
+                  </CalBookingTrigger>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    data-action="brief"
+                    data-visible={emailVisible}
+                    style={{ "--contact-reveal-index": 4 } as CSSProperties}
+                    onClick={() => openForm()}
+                  >
+                    <ContactCellFrame />
+                    <BookingButtonAscii className={variants.wipe} accent="--fg-color" clearance="text" />
+                    <span className={variants.actionNum} aria-hidden="true">03</span>
+                    <RevealLabel>Send a message</RevealLabel>
+                    <span className={variants.actionMeta} aria-hidden="true">→</span>
+                  </button>
+                </li>
+              </ul>
             </div>
 
-            <button
-              type="button"
-              className={`link-underline ${styles.contactChannelButton}`}
-              data-visible={emailVisible}
-              style={{ "--contact-reveal-index": 2 } as CSSProperties}
-              onClick={() => openForm()}
-            >
-              <ContactCellFrame />
-              <RevealLabel>Open contact form</RevealLabel>
-            </button>
+            <CopyToast toast={toast} />
           </div>
         ) : null}
 
@@ -442,7 +555,7 @@ export function ContactSectionGooey({
                     className={`link-underline ${styles.submitButton}`}
                     disabled={formSubmitting}
                   >
-                    {formSubmitting ? "Sending…" : "Submit"}
+                    {formSubmitting ? "Sending…" : "Send"}
                   </button>
                 </div>
 

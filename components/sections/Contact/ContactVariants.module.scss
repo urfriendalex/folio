@@ -1,0 +1,306 @@
+/* Contact section (default layout). Base reveal / bento chrome lives in ContactSection.module.scss;
+   this adds the layout, the flow field, the directional cells and the copy tooltip. */
+
+.emailView {
+  position: relative;
+}
+
+/* —— Flow field: spans the section (ripples anywhere); strokes are zoned to `.block` in JS —— */
+
+.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.block {
+  position: relative;
+  z-index: 1;
+}
+
+.gooCard {
+  cursor: pointer;
+}
+
+/* —— Status + hint —— */
+
+.status,
+.hint {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.6rem;
+  font-family: var(--font-pixel-stack);
+  font-size: 0.64rem;
+  letter-spacing: var(--tracking-label-sm);
+  text-transform: uppercase;
+  color: var(--muted-color);
+  --line-delay: 0ms;
+}
+
+.statusLed {
+  display: inline-block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.5rem;
+  vertical-align: 0.05em;
+  background: var(--signal-color);
+  /* Old-school "online" LED: hard on/off, no easing. */
+  animation: statusBlink 1.6s steps(1, end) infinite;
+}
+
+@keyframes statusBlink {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  71%,
+  100% {
+    opacity: 0.25;
+  }
+}
+
+.statusClock {
+  font-variant-numeric: tabular-nums;
+}
+
+/* —— Action cells (ambient glyph field around the label, see BookingButtonAscii.tsx) —— */
+
+.actions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wipe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.action > :not(canvas, svg) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Win98 tooltip at the pointer (footer taskbar chrome tokens). */
+.copyToast {
+  position: absolute;
+  z-index: 5;
+  translate: 0.75rem 1rem;
+  padding: 0.22rem 0.45rem;
+  border: 2px solid;
+  border-color: var(--win-menu-border-light) var(--win-menu-border-dark) var(--win-menu-border-dark)
+    var(--win-menu-border-light);
+  background: var(--win-menu-face);
+  color: var(--win-menu-ink);
+  font-family: var(--font-system-95-stack);
+  font-size: 0.74rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.25);
+  pointer-events: none;
+  /* Win9x tooltips pop, then fade — no slide. */
+  animation:
+    copyToastLife 1.4s steps(1, end) forwards,
+    copyToastFade 1.4s linear forwards;
+}
+
+@keyframes copyToastLife {
+  0% {
+    visibility: visible;
+  }
+  100% {
+    visibility: hidden;
+  }
+}
+
+@keyframes copyToastFade {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* —— Desktop: centered block —— */
+
+@media (min-width: 48.01rem) {
+  .block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--contact-email-gap);
+    width: 100%;
+  }
+
+  .status {
+    width: min(64rem, 100%);
+    justify-content: space-between;
+  }
+
+  .gooCard {
+    width: 100%;
+  }
+
+  .hint {
+    justify-content: center;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(64rem, 100%);
+    margin-top: clamp(1rem, 3vw, 2rem);
+    border-top: 1px solid var(--line-color);
+    border-bottom: 1px solid var(--line-color);
+  }
+
+  /* Cells stretch to the tallest one (a label can wrap), so dividers and wipes span the full row. */
+  .actions li {
+    display: flex;
+  }
+
+  .emailView .action {
+    /* Positioned so each cell's wipe canvas stays inside its own cell. */
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+    padding: 1.15rem 1rem;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+    color: var(--fg-color);
+    font-family: var(--font-pixel-stack);
+    font-size: 0.78rem;
+    letter-spacing: var(--tracking-label-lg);
+    text-align: left;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .actions li + li .action {
+    border-left: 1px solid var(--line-color);
+  }
+
+  .emailView .action[data-action="call"] {
+    color: var(--signal-color);
+  }
+
+  .actionNum {
+    color: var(--muted-color);
+    font-size: 0.62rem;
+  }
+
+  .actionMeta {
+    transition: translate var(--duration-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .action:hover .actionMeta {
+      translate: 0.35rem 0;
+    }
+  }
+}
+
+/* —— Mobile: bento (identity first, one primary action, two halves) —— */
+
+@media (max-width: 48rem) {
+  .hint {
+    display: none;
+  }
+
+  /* The bento cards are opaque glass, so on mobile the field draws over them (non-interactive). */
+  .field {
+    z-index: 3;
+  }
+
+  .block,
+  .actions,
+  .actions li {
+    display: contents;
+  }
+
+  /* Doubled class: must beat the base `.emailView` flex column regardless of stylesheet order. */
+  .emailView.emailView {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.8fr);
+    grid-template-areas:
+      "title title"
+      "status status"
+      "goo goo"
+      "call call"
+      "copy brief";
+  }
+
+  .status {
+    grid-area: status;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.58rem;
+  }
+
+  /* Doubled: must beat the shared `.revealLine { display: block }`. */
+  .statusResponse.statusResponse {
+    display: none;
+  }
+
+  .gooCard {
+    grid-area: goo;
+    /* Horizontal swipes scrub the goo; vertical ones still scroll the page. */
+    touch-action: pan-y;
+  }
+
+  .action[data-action="call"] {
+    grid-area: call;
+  }
+
+  .action[data-action="mail"] {
+    grid-area: copy;
+  }
+
+  .action[data-action="brief"] {
+    grid-area: brief;
+  }
+
+  .emailView .action {
+    gap: 0.35rem;
+  }
+
+  /* One primary action: only the call keeps the signal colour. */
+  .emailView .action:not([data-action="call"]) {
+    color: var(--fg-color);
+  }
+
+  /* The 01–03 index reads the desktop row; the bento reorders it, so it would read 02, 01, 03. */
+  .actionNum,
+  .actionMeta {
+    display: none;
+  }
+
+  .wipe {
+    border-radius: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusLed {
+    animation: none;
+  }
+
+  .copyToast {
+    animation: copyToastLife 1.4s steps(1, end) forwards;
+  }
+}

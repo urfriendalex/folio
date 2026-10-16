@@ -2,6 +2,7 @@
 
 import gsap from "gsap";
 import {
+  type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
   useId,
@@ -11,6 +12,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { getLenis } from "@/lib/smoothScroll";
+import { hapticTick } from "@/lib/haptics";
 import baseStyles from "./ContactSection.module.scss";
 import gooeyStyles from "./ContactSectionGooey.module.scss";
 import { createGooeyContactTimeline } from "./gooeyContactTimeline";
@@ -57,11 +59,19 @@ type GooeyContactEmailProps = {
   email: string;
   hoverPhrase: string;
   visible: boolean;
+  /** Plain click handler (e.g. copy). Modifier-clicks keep the native `mailto:` behaviour. */
+  onActivate?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
 };
+
 
 const FALLBACK_VIEWBOX = "0 0 100 20";
 
-export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactEmailProps) {
+export function GooeyContactEmail({
+  email,
+  hoverPhrase,
+  visible,
+  onActivate,
+}: GooeyContactEmailProps) {
   const itemRef = useRef<HTMLAnchorElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const textGroupRef = useRef<SVGGElement | null>(null);
@@ -129,6 +139,7 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
 
     let progressTween: gsap.core.Tween | null = null;
 
+
     if (isMobileViewport) {
       const duration = tl.duration();
       progressTween = gsap.to(tl, {
@@ -145,8 +156,95 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
           (textsGroupEl as SVGGElement).style.filter = p > 0 && p < 1 ? filterUrl : "none";
         },
       });
+      /* Touch: a horizontal swipe on the card scrubs the goo morph (left → email, right → phrase); release
+         snaps to the nearer side. The first swipe hands control to the visitor and stops the auto-loop.
+         Vertical drags stay page scrolls (`touch-action: pan-y` on the area). */
+      const area = (el.closest("[data-gooey-area]") as HTMLElement | null) ?? el;
+      const groupEl = textsGroupEl as SVGGElement;
+      let userTookOver = false;
+      let drag: { x0: number; y0: number; p0: number; active: boolean; side: number } | null = null;
+      let snapTween: gsap.core.Tween | null = null;
+      let clearScrubFlag = 0;
+
+      const applyFilter = () => {
+        const p = tl.progress();
+        feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
+        groupEl.style.filter = p > 0.001 && p < 0.999 ? filterUrl : "none";
+      };
+      const onDown = (event: PointerEvent) => {
+        if (event.pointerType !== "touch") return;
+        drag = { x0: event.clientX, y0: event.clientY, p0: tl.progress(), active: false, side: tl.progress() >= 0.5 ? 1 : 0 };
+      };
+      const onMove = (event: PointerEvent) => {
+        if (!drag) return;
+        const dx = event.clientX - drag.x0;
+        const dy = event.clientY - drag.y0;
+        if (!drag.active) {
+          if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+            drag.active = true;
+            userTookOver = true;
+            progressTween?.pause();
+            snapTween?.kill();
+            area.dataset.gooeyScrubbing = "true";
+          } else if (Math.abs(dy) > 10) {
+            drag = null;
+            return;
+          } else {
+            return;
+          }
+        }
+        const p = Math.min(1, Math.max(0, drag.p0 - dx / Math.max(160, area.clientWidth * 0.6)));
+        const side = p >= 0.5 ? 1 : 0;
+        if (side !== drag.side) {
+          drag.side = side;
+          hapticTick();
+        }
+        tl.progress(p).pause();
+        applyFilter();
+      };
+      const onUp = () => {
+        if (!drag) return;
+        const wasActive = drag.active;
+        drag = null;
+        if (!wasActive) return;
+        const target = tl.progress() >= 0.5 ? 1 : 0;
+        snapTween = gsap.to(tl, { progress: target, duration: 0.35, ease: "power3.out", onUpdate: applyFilter });
+        // Swallow the click the browser may still fire after a swipe (it must not copy).
+        window.clearTimeout(clearScrubFlag);
+        clearScrubFlag = window.setTimeout(() => {
+          delete area.dataset.gooeyScrubbing;
+        }, 60);
+      };
+      const onClickCapture = (event: MouseEvent) => {
+        if (area.dataset.gooeyScrubbing) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+
+      area.addEventListener("pointerdown", onDown, { passive: true });
+      area.addEventListener("pointermove", onMove, { passive: true });
+      area.addEventListener("pointerup", onUp, { passive: true });
+      area.addEventListener("pointercancel", onUp, { passive: true });
+      area.addEventListener("click", onClickCapture, true);
+
       setTimelineVisibleRef.current = (nextVisible) => {
-        progressTween?.paused(!nextVisible);
+        if (!userTookOver) progressTween?.paused(!nextVisible);
+      };
+
+      return () => {
+        area.removeEventListener("pointerdown", onDown);
+        area.removeEventListener("pointermove", onMove);
+        area.removeEventListener("pointerup", onUp);
+        area.removeEventListener("pointercancel", onUp);
+        area.removeEventListener("click", onClickCapture, true);
+        window.clearTimeout(clearScrubFlag);
+        delete area.dataset.gooeyScrubbing;
+        snapTween?.kill();
+        setTimelineVisibleRef.current = null;
+        progressTween?.kill();
+        tl.kill();
+        groupEl.style.filter = "none";
       };
     } else {
       let hoverActivated = false;
@@ -351,7 +449,14 @@ export function GooeyContactEmail({ email, hoverPhrase, visible }: GooeyContactE
         ref={itemRef}
         href={`mailto:${email}`}
         className={`${baseStyles.emailLink} ${gooeyStyles.gooeyItem} ${prefersReducedMotion ? gooeyStyles.gooeyItemReduced : ""}`}
-        aria-label={`${hoverPhrase}. Email ${email}`}
+        aria-label={onActivate ? `${hoverPhrase}. Copy email ${email}` : `${hoverPhrase}. Email ${email}`}
+        onClick={(event) => {
+          if (!onActivate || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+          }
+          event.preventDefault();
+          onActivate(event);
+        }}
       >
         <svg
           ref={svgRef}

@@ -113,7 +113,8 @@
   --contact-exit-ease: var(--ease-out);
   /* Mobile bento: hairline frame is traced like a pen stroke. */
   --contact-frame-draw-ms: var(--duration-draw);
-  --contact-frame-ease: var(--ease-draw);
+  /* Ease-out, not the draw curve: that one starts slowly, which reads as the pen stalling. */
+  --contact-frame-ease: var(--ease-out);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -360,19 +361,24 @@
   align-items: stretch;
   gap: clamp(1.5rem, 4vw, 3.5rem);
   padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  /* A light blur only: blurring the whole form (and each field inside it) drops frames. */
   opacity: 0;
-  filter: blur(16px);
-  transform: translate3d(0, 1rem, 0);
+  filter: blur(4px);
+  transform: translate3d(0, 0.75rem, 0);
   transition:
-    opacity 360ms ease,
-    filter 620ms var(--ease-reveal),
-    transform 620ms var(--ease-reveal);
+    opacity var(--duration-exit) var(--ease-out),
+    filter var(--duration-exit) var(--ease-out),
+    transform var(--duration-exit) var(--ease-out);
 }
 
 .formView[data-visible="true"] {
   opacity: 1;
   filter: blur(0);
   transform: translate3d(0, 0, 0);
+  transition:
+    opacity 360ms ease,
+    filter 420ms var(--ease-reveal),
+    transform 620ms var(--ease-reveal);
 }
 
 .form {
@@ -395,12 +401,14 @@
   gap: clamp(0.5rem, 2vw, 1rem);
 }
 
+/* Same heading as the "Schedule a call" overlay (CalBookingOverlayContent `.title`) and "Contact Me". */
 .formTitle {
   min-width: 0;
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.35rem);
-  line-height: 0.96;
-  letter-spacing: -0.08em;
+  font-family: var(--font-body-stack);
+  font-size: clamp(1.55rem, 3.2vw, 2.8rem);
+  font-weight: 600;
+  line-height: 0.92;
   white-space: nowrap;
 }
 
@@ -448,11 +456,9 @@
 .formActions,
 .formStatus {
   opacity: 0;
-  filter: blur(10px);
   transform: translate3d(-1rem, 0, 0);
   transition:
     opacity 360ms ease,
-    filter 520ms var(--ease-reveal),
     transform 620ms var(--ease-reveal);
   transition-delay: var(--field-delay);
 }
@@ -464,7 +470,6 @@
 .formView[data-visible="true"] .formActions,
 .formView[data-visible="true"] .formStatus {
   opacity: 1;
-  filter: blur(0);
   transform: translate3d(0, 0, 0);
 }
 
@@ -544,7 +549,7 @@
 
 @media (max-width: 48rem) {
   .formTitle {
-    font-size: clamp(1.5rem, 7.6vw, 3.35rem);
+    font-size: clamp(1.3rem, 6.4vw, 2rem);
   }
 
   /*
@@ -591,15 +596,40 @@
       transform var(--contact-reveal-transform-ms) var(--contact-reveal-ease);
   }
 
-  .emailView {
+  .section .emailView {
     --contact-reveal-offset: 1;
-    --contact-reveal-step: var(--stagger-loose);
+    /* The field answers the scroll immediately, so the frames are a short beat
+       under it, not a second entrance. 410ms trace, 110ms between cells. */
+    --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
+    --contact-frame-stagger: var(--stagger-loose);
+    --contact-reveal-step: var(--contact-frame-stagger);
     flex: 1;
     min-height: 0;
     align-items: stretch;
     justify-content: flex-start;
     gap: clamp(0.45rem, 1.8vw, 0.65rem);
     padding-block: 0;
+  }
+
+  :global(html.home-section-arrival-reveal) .section .emailView {
+    --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
+    --contact-reveal-step: var(--contact-frame-stagger);
+  }
+
+  /* Indexes follow the desktop row (copy, call, brief). On the bento that would
+     trace the bottom-left cell before the call sitting above it, so the pen
+     follows the stack instead: email, then the call, then both halves together. */
+  .emailView .contactGooeyCard {
+    --cell-delay: 0ms;
+  }
+
+  .emailView .contactChannelButton[data-action="call"] {
+    --cell-delay: var(--contact-frame-stagger);
+  }
+
+  .emailView .contactChannelButton[data-action="mail"],
+  .emailView .contactChannelButton[data-action="brief"] {
+    --cell-delay: calc(var(--contact-frame-stagger) * 2);
   }
 
   /* Hairline frame + glass fill — enter/exit on the shared `--contact-reveal-*` cascade */
@@ -696,9 +726,9 @@
     fill: none;
     stroke: var(--cell-stroke-ink);
     stroke-width: 1px;
-    /* `--frame-length` is the measured perimeter (ContactCellFrame); large fallback keeps it hidden until then. */
-    stroke-dasharray: var(--frame-length, 100000);
-    stroke-dashoffset: var(--frame-length, 100000);
+    /* `pathLength="100"` on the rect (ContactCellFrame): one full perimeter is 100. */
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
     /* Exit: un-trace quickly; ink colour only returns after the stroke is gone (no flash). */
     transition:
       stroke-dashoffset var(--contact-exit-ms) var(--contact-exit-ease),
