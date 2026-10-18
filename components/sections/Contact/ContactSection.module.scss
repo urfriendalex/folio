@@ -134,15 +134,8 @@
   align-self: stretch;
   width: 100%;
   max-width: 100%;
-  /* Desktop line mask: clip vertically (generous sideways) while the email slides up, then release it
-     once the entrance ends so the gooey hover swap (±5 viewBox units) can overflow freely. */
-  clip-path: inset(0 -20%);
-  transition: clip-path 0ms linear;
-}
-
-.contactGooeyCard[data-visible="true"] {
-  clip-path: inset(-100% -20%);
-  transition-delay: calc(var(--cell-delay) + var(--contact-reveal-transform-ms));
+  /* The inner word owns the entrance; let the gooey morph overflow without a second animated mask. */
+  overflow: visible;
 }
 
 .emailLink {
@@ -169,15 +162,27 @@
   white-space: nowrap;
   overflow-x: visible;
   overflow-y: visible;
-  /* Desktop: same line mask as the button labels (slides up inside `.contactGooeyCard`'s clip), no blur. */
-  transform: translate3d(0, 100%, 0);
-  transition: transform var(--contact-exit-ms) var(--contact-exit-ease);
+  /* One bounded text layer on every viewport. Clear the small blur early, then let
+     scale settle; `none` releases both effects at rest without persistent will-change. */
+  opacity: 0;
+  filter: blur(4px);
+  transform: scale(0.965);
+  transform-origin: center;
+  transition:
+    opacity var(--contact-exit-ms) var(--contact-exit-ease),
+    filter var(--contact-exit-ms) var(--contact-exit-ease),
+    transform var(--contact-exit-ms) var(--contact-exit-ease);
 }
 
 .emailWord[data-visible="true"] {
-  transform: translate3d(0, 0, 0);
-  transition-duration: var(--contact-reveal-transform-ms);
-  transition-timing-function: var(--contact-reveal-ease);
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition-duration:
+    var(--contact-reveal-opacity-ms),
+    var(--duration-base),
+    var(--contact-reveal-transform-ms);
+  transition-timing-function: var(--ease-out), var(--ease-out), var(--contact-reveal-ease);
   transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
 
@@ -800,28 +805,9 @@
     pointer-events: none;
   }
 
-  /* The panel contains the reveal, without clipping the interactive goo. */
-  .contactGooeyCard,
-  .contactGooeyCard[data-visible="true"] {
-    clip-path: none;
-  }
-
   .emailWord {
     flex-shrink: 0;
     font-size: clamp(2.4rem, 12vw, 5.2rem);
-    opacity: 0;
-    transform: translate3d(0, var(--contact-reveal-rise), 0);
-    transition:
-      opacity var(--contact-exit-ms) var(--contact-exit-ease),
-      transform var(--contact-exit-ms) var(--contact-exit-ease);
-  }
-
-  .emailWord[data-visible="true"] {
-    opacity: 1;
-    transition:
-      opacity var(--contact-reveal-opacity-ms) ease,
-      transform var(--contact-reveal-transform-ms) var(--contact-reveal-ease);
-    transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
   }
 
   .form {
@@ -845,10 +831,6 @@
   transform: none;
   pointer-events: auto;
   transition: none;
-}
-
-:global(html:not(.reveals-enabled)) .contactGooeyCard {
-  clip-path: none;
 }
 
 :global(html:not(.reveals-enabled)) .cellFrame rect {
