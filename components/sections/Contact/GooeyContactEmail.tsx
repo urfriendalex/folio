@@ -45,8 +45,6 @@ function getMobileServerSnapshot() {
   return false;
 }
 
-const MOBILE_LOOP_REPEAT_DELAY = 1.75;
-
 /** Let the `.emailWord` entrance (760ms) settle before rasterizing the filter off-screen. */
 const PREWARM_AFTER_REVEAL_MS = 900;
 /** While the page is still scrolling, re-check this often instead of prewarming mid-scroll. */
@@ -137,31 +135,11 @@ export function GooeyContactEmail({
       clearFilterOnEnd: !isMobileViewport,
     });
 
-    let progressTween: gsap.core.Tween | null = null;
-
-
     if (isMobileViewport) {
-      const duration = tl.duration();
-      progressTween = gsap.to(tl, {
-        progress: 1,
-        duration,
-        ease: "none",
-        repeat: -1,
-        yoyo: true,
-        repeatDelay: MOBILE_LOOP_REPEAT_DELAY,
-        paused: !visibleRef.current,
-        onUpdate: () => {
-          feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
-          const p = tl.progress();
-          (textsGroupEl as SVGGElement).style.filter = p > 0 && p < 1 ? filterUrl : "none";
-        },
-      });
-      /* Touch: a horizontal swipe on the card scrubs the goo morph (left → email, right → phrase); release
-         snaps to the nearer side. The first swipe hands control to the visitor and stops the auto-loop.
-         Vertical drags stay page scrolls (`touch-action: pan-y` on the area). */
+      // Mobile rests on the address. Only a horizontal swipe drives the morph;
+      // the visitor can read and copy it without waiting for a looping animation.
       const area = (el.closest("[data-gooey-area]") as HTMLElement | null) ?? el;
       const groupEl = textsGroupEl as SVGGElement;
-      let userTookOver = false;
       let drag: { x0: number; y0: number; p0: number; active: boolean; side: number } | null = null;
       let snapTween: gsap.core.Tween | null = null;
       let clearScrubFlag = 0;
@@ -182,8 +160,6 @@ export function GooeyContactEmail({
         if (!drag.active) {
           if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
             drag.active = true;
-            userTookOver = true;
-            progressTween?.pause();
             snapTween?.kill();
             area.dataset.gooeyScrubbing = "true";
           } else if (Math.abs(dy) > 10) {
@@ -229,7 +205,11 @@ export function GooeyContactEmail({
       area.addEventListener("click", onClickCapture, true);
 
       setTimelineVisibleRef.current = (nextVisible) => {
-        if (!userTookOver) progressTween?.paused(!nextVisible);
+        if (!nextVisible) {
+          snapTween?.kill();
+          tl.progress(0).pause();
+          applyFilter();
+        }
       };
 
       return () => {
@@ -242,8 +222,7 @@ export function GooeyContactEmail({
         delete area.dataset.gooeyScrubbing;
         snapTween?.kill();
         setTimelineVisibleRef.current = null;
-        progressTween?.kill();
-        tl.kill();
+        tl.revert();
         groupEl.style.filter = "none";
       };
     } else {
@@ -386,23 +365,21 @@ export function GooeyContactEmail({
         }
         restoreSvgPrewarm?.();
         restoreGroupPrewarm?.();
-        progressTween?.kill();
-        tl.kill();
+        tl.revert();
         (textsGroupEl as SVGGElement).style.filter = "none";
       };
     }
 
     return () => {
       setTimelineVisibleRef.current = null;
-      progressTween?.kill();
-      tl.kill();
+      tl.revert();
       (textsGroupEl as SVGGElement).style.filter = "none";
     };
   }, [prefersReducedMotion, isMobileViewport]);
 
-  /* Line 1 = phrase (default); line 2 = email (hover / loop phase 2) */
-  const line1 = hoverPhrase.toUpperCase();
-  const line2 = email.toUpperCase();
+  /* Desktop leads with the invitation; mobile keeps the useful address readable at rest. */
+  const line1 = (isMobileViewport ? email : hoverPhrase).toUpperCase();
+  const line2 = (isMobileViewport ? hoverPhrase : email).toUpperCase();
 
   const layoutViewBoxFromContent = useCallback(() => {
     const g = textGroupRef.current;

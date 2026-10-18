@@ -10,6 +10,11 @@ import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 const RAMP = " .`,:;-~=+*xoa#%&@";
 const FONT_SIZE = 9;
 const LINE_HEIGHT = 1.12;
+// Unequal runs and pauses keep the two underline rhythms from reading as a repeated border.
+const UNDERLINE_PATTERNS = [
+  "-----  -     ---   -------    --      ----  -   ",
+  "--     ------   -    ----      --  --------    ",
+];
 // Cells inside the label box stay clear; density returns over this many px.
 const CLEARING_FALLOFF = 22;
 const PRESS_LIFE = 0.7;
@@ -44,44 +49,47 @@ function hash(column: number, row: number, tick: number) {
   return x - Math.floor(x);
 }
 
-/** Union of the text nodes only: a range over the element would include full-width block wrappers. */
-function textBounds(element: Element, range: Range) {
-  let left = Infinity;
-  let top = Infinity;
-  let right = -Infinity;
-  let bottom = -Infinity;
+/** Measure each rendered line separately so the field follows a wrapped label's silhouette. */
+function textLineBounds(element: Element, range: Range) {
+  const lines: { left: number; top: number; right: number; bottom: number }[] = [];
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (!node.textContent?.trim()) continue;
     range.selectNodeContents(node);
-    const box = range.getBoundingClientRect();
-    if (!box.width || !box.height) continue;
-    left = Math.min(left, box.left);
-    top = Math.min(top, box.top);
-    right = Math.max(right, box.right);
-    bottom = Math.max(bottom, box.bottom);
+    for (const rect of Array.from(range.getClientRects())) {
+      if (!rect.width || !rect.height) continue;
+      const line = lines.find((box) =>
+        Math.abs((box.top + box.bottom) - (rect.top + rect.bottom)) <
+        Math.min(box.bottom - box.top, rect.height),
+      );
+      if (line) {
+        line.left = Math.min(line.left, rect.left);
+        line.top = Math.min(line.top, rect.top);
+        line.right = Math.max(line.right, rect.right);
+        line.bottom = Math.max(line.bottom, rect.bottom);
+      } else {
+        lines.push({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+      }
+    }
   }
-  return left === Infinity ? new DOMRect() : new DOMRect(left, top, right - left, bottom - top);
+  return lines.map((box) => new DOMRect(box.left, box.top, box.right - box.left, box.bottom - box.top));
 }
 
-/** Bounds of what the field has to stay clear of. "text" hugs the glyphs, so block-level labels
-    (full-width spans) still leave the rest of the cell to the field; hidden children are skipped. */
+/** Text clearance follows individual lines, leaving the space beside shorter lines available to the field. */
 function clearingBoxes(host: HTMLElement, canvas: HTMLCanvasElement, clearance: "box" | "text") {
   const origin = canvas.getBoundingClientRect();
   const range = clearance === "text" ? document.createRange() : null;
   return Array.from(host.children)
     .filter((child) => child !== canvas && !(child instanceof SVGElement))
-    .map((child) => {
-      const box = range ? textBounds(child, range) : child.getBoundingClientRect();
-      return {
+    .flatMap((child) => {
+      const boxes = range ? textLineBounds(child, range) : [child.getBoundingClientRect()];
+      return boxes.filter((box) => box.width > 0 && box.height > 0).map((box) => ({
         left: box.left - origin.left,
         right: box.right - origin.left,
         top: box.top - origin.top,
         bottom: box.bottom - origin.top,
-        empty: box.width === 0 || box.height === 0,
-      };
-    })
-    .filter((box) => !box.empty);
+      }));
+    });
 }
 
 export function BookingButtonAscii({
@@ -154,6 +162,9 @@ export function BookingButtonAscii({
     let ink = "#222";
     let blue = "#2446d6";
     let font = `400 ${FONT_SIZE}px monospace`;
+    let underline = false;
+    let underlineVariant = 0;
+    let underlineSpeed = 10;
     const buckets: number[][] = [[], [], []]; // faint, ink, blue
     const top = RAMP.length - 1;
 
@@ -162,6 +173,29 @@ export function BookingButtonAscii({
       context.font = font;
       context.textBaseline = "top";
       presses = presses.filter((press) => time - press.t < PRESS_LIFE);
+      // A single travelling dash row uses the same clock, reveal, visibility and
+      // pointer feedback as the full field. CSS selects it for the mobile links.
+      if (underline) {
+        const pattern = UNDERLINE_PATTERNS[underlineVariant];
+        const period = cellWidth * pattern.length;
+        const offset = period ? ((time * underlineSpeed) % period + period) % period : 0;
+        const y = height - cellHeight;
+        context.fillStyle = ink;
+        for (let column = -pattern.length; column < columns + pattern.length; column++) {
+          const phase = ((column % pattern.length) + pattern.length) % pattern.length;
+          if (pattern[phase] === " ") continue;
+          const cell = columns ? ((column % columns) + columns) % columns : 0;
+          if (fieldVisibility < 1 && !isGlyphShown(fieldVisibility, glitchAt[cell] ?? 0, cell & 1)) continue;
+          const x = originX + column * cellWidth + offset;
+          const proximity = hover * Math.exp(-((x - pointerX) ** 2) / 1600);
+          const wave = 0.5 + 0.5 * Math.sin(time * 1.1 + column * 0.3);
+          const weight = 0.7 + hash(phase, underlineVariant + 17, 0) * 0.3;
+          context.globalAlpha = (0.3 + wave * 0.12 + proximity * 0.25) * weight;
+          context.fillText("-", x, y);
+        }
+        context.globalAlpha = 1;
+        return;
+      }
       const tick = Math.floor(time * 5);
       for (const bucket of buckets) bucket.length = 0;
       const quiet = quietMedia?.matches ?? false;
@@ -331,6 +365,9 @@ export function BookingButtonAscii({
 
     const updateColors = () => {
       const styles = window.getComputedStyle(button);
+      underline = styles.getPropertyValue("--ascii-underline").trim() === "1";
+      underlineVariant = styles.getPropertyValue("--ascii-underline-variant").trim() === "1" ? 1 : 0;
+      underlineSpeed = underlineVariant ? -6 : 9;
       ink = styles.getPropertyValue("--fg-color").trim() || styles.color;
       blue = styles.getPropertyValue(accent).trim() || "#2446d6";
       const family = styles.getPropertyValue("--font-mono-stack").trim() || "monospace";
@@ -455,9 +492,21 @@ export function BookingButtonAscii({
       else start();
     };
 
+    // A route can mount these cells while Home is hidden and the mobile menu still
+    // locks scrolling. Recheck after the arrival classes change, rather than relying
+    // on the observer's initial intersection from that temporary layout.
+    const onRootStateChange = () => {
+      updateColors();
+      const rect = button.getBoundingClientRect();
+      visible = rect.bottom > 0 && rect.top < window.innerHeight && rect.width > 0;
+      stop();
+      if (glitch) syncGlitch();
+      start();
+    };
+
     const resizeObserver = new ResizeObserver(resize);
     const glitchObserver = new MutationObserver(syncGlitch);
-    const themeObserver = new MutationObserver(updateColors);
+    const themeObserver = new MutationObserver(onRootStateChange);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible) start();
@@ -465,7 +514,7 @@ export function BookingButtonAscii({
     });
     let disposed = false;
     resizeObserver.observe(canvas);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
     document.addEventListener("visibilitychange", onVisibilityChange);

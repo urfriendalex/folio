@@ -32,7 +32,10 @@ import variants from "./ContactVariants.module.scss";
 import workSectionStyles from "../Work/WorkSection.module.scss";
 import styles from "./ContactSection.module.scss";
 
+export type ContactLayout = "type" | "bento" | "rows" | "asymmetric";
+
 type ContactSectionGooeyProps = {
+  layout?: ContactLayout;
   content: {
     email: string;
     location: string;
@@ -51,7 +54,7 @@ type ContactView = "email" | "form";
 /** Email stack exits on `--duration-exit`; swap to the form right after, with no dead pause. */
 const EMAIL_TRANSITION_MS = DURATION_MS.exit + 20;
 const FORM_EXIT_MS = DURATION_MS.exit + 20;
-/** Bento breakpoint (ContactVariants.module.scss): the cells become large cards, so their glyph field goes quiet. */
+/** Mobile actions use a quieter glyph field than the desktop row. */
 const COMPACT_CELLS_QUERY = "(max-width: 48rem)";
 
 /** Inline form open — distinct from `#contact` (email/actions) so back closes the form, not history. */
@@ -127,6 +130,7 @@ function GlitchText({ text, seed, className }: { text: string; seed: number; cla
 export function ContactSectionGooey({
   content,
   hoverPhrase = "Let's work together",
+  layout = "asymmetric",
 }: ContactSectionGooeyProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const switchTimerRef = useRef<number | null>(null);
@@ -412,7 +416,7 @@ export function ContactSectionGooey({
           /* Contact: centered gooey + direction-aware ink. Flow glyphs follow the pointer (or a dragging
              finger) inside the content block; clicks/taps anywhere send a ripple; action cells take a
              glyph wipe from the edge you enter and drain toward the edge you leave. */
-          <div className={`${styles.emailView} ${variants.emailView}`} data-visible={emailVisible} data-variant="flow">
+          <div className={`${styles.emailView} ${variants.emailView}`} data-visible={emailVisible} data-variant="flow" data-layout={layout}>
             <div className={styles.mobileSectionTitle}>
               <h2 className={workSectionStyles.title}>Contact Me</h2>
             </div>

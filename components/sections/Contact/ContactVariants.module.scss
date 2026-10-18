@@ -226,7 +226,7 @@
   }
 }
 
-/* —— Mobile: bento (identity first, one primary action, two halves) —— */
+/* —— Mobile: one gooey text slot above an asymmetric action grid —— */
 
 @media (max-width: 48rem) {
   /* The bento cards are opaque glass, so on mobile the field draws over them (non-interactive). */
@@ -244,20 +244,23 @@
   .emailView.emailView {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.8fr);
+    grid-template-rows: auto auto minmax(10rem, 1fr) 6rem 6rem 1.5rem;
     grid-template-areas:
       "title title"
       "status status"
       "goo goo"
-      "call call"
-      "copy brief";
+      "call copy"
+      "call brief"
+      ". .";
   }
 
   .status {
     grid-area: status;
     justify-content: space-between;
     gap: 0.25rem 0.75rem;
-    font-size: 0.58rem;
+    font-size: 0.63rem;
+    color: color-mix(in srgb, var(--fg-color) 72%, var(--bg-color));
+    margin-bottom: 0.4rem;
   }
 
   /* Doubled: must beat the shared `.revealLine { display: block }`. */
@@ -265,10 +268,19 @@
     display: none;
   }
 
-  .gooCard {
+  .emailView .gooCard {
     grid-area: goo;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
     /* Horizontal swipes scrub the goo; vertical ones still scroll the page. */
     touch-action: pan-y;
+  }
+
+  .emailView .gooCard::before,
+  .emailView .gooCard > svg {
+    display: none;
   }
 
   .action[data-action="call"] {
@@ -284,11 +296,58 @@
   }
 
   .emailView .action {
-    gap: 0.35rem;
+    flex: none;
+    min-height: 0;
+    min-width: 0;
+    padding: 1rem;
+    color: var(--fg-color);
+    font-size: clamp(0.72rem, 2.8vw, 0.84rem);
+    letter-spacing: var(--tracking-label-sm);
   }
 
-  .emailView .action {
-    color: var(--fg-color);
+  .emailView .action[data-action="call"] {
+    --contact-cell-radius: 0.75rem;
+    border-radius: var(--contact-cell-radius);
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 1.4rem;
+    font-size: clamp(0.95rem, 4.7vw, 1.2rem);
+    letter-spacing: var(--tracking-label-lg);
+    text-align: left;
+  }
+
+  .emailView .action:not([data-action="call"]) {
+    border-radius: 0;
+    --ascii-underline: 1;
+    border-bottom: 0;
+    align-items: flex-start;
+    text-align: left;
+    font-size: 0.86rem;
+    color: color-mix(in srgb, var(--fg-color) 78%, var(--bg-color));
+  }
+
+  .action:not([data-action="call"])::before,
+  .action:not([data-action="call"]) > svg {
+    display: none;
+  }
+
+  .emailView .action:not([data-action="call"]) .wipe {
+    display: block;
+    opacity: 0.8;
+  }
+
+  .emailView .action[data-action="brief"] {
+    --ascii-underline-variant: 1;
+  }
+
+  .emailView .action[data-action="brief"] .wipe {
+    left: 12%;
+    width: 82%;
+  }
+
+  .action:focus-visible {
+    outline: 2px solid var(--fg-color);
+    outline-offset: 3px;
   }
 
   /* The 01–03 index reads the desktop row; the bento reorders it, so it would read 02, 01, 03. */
@@ -298,7 +357,8 @@
   }
 
   .wipe {
-    border-radius: 1rem;
+    border-radius: inherit;
+    opacity: 0.45;
   }
 }
 
@@ -316,5 +376,104 @@
 @media (hover: hover) and (pointer: fine) {
   .emailView .action:hover {
     text-shadow: 0 0 0.6px currentColor;
+  }
+}
+
+/* Reviewable mobile directions. All four keep the same desktop layout and gooey text slot. */
+@media (max-width: 48rem) {
+  .emailView.emailView[data-layout="type"] {
+    grid-template-rows: auto auto minmax(10rem, 1fr) 5rem 3.5rem 1.5rem;
+    grid-template-areas:
+      "title title"
+      "status status"
+      "goo goo"
+      "call call"
+      "copy brief"
+      ". .";
+  }
+
+  .emailView[data-layout="type"] .action[data-action="call"] {
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    font-size: 0.86rem;
+    text-align: center;
+  }
+
+  .emailView.emailView[data-layout="bento"] {
+    grid-template-rows: auto auto minmax(10rem, 1fr) 6rem 6.5rem 1rem;
+    grid-template-areas:
+      "title title"
+      "status status"
+      "goo goo"
+      "call call"
+      "copy brief"
+      ". .";
+  }
+
+  .emailView[data-layout="bento"] .gooCard {
+    padding: 1.25rem 0.75rem;
+    border-radius: 1rem;
+  }
+
+  .emailView[data-layout="bento"] .gooCard::before,
+  .emailView[data-layout="bento"] .gooCard > svg,
+  .emailView[data-layout="bento"] .action:not([data-action="call"])::before,
+  .emailView[data-layout="bento"] .action:not([data-action="call"]) > svg {
+    display: block;
+  }
+
+  .emailView[data-layout="bento"] .action {
+    --ascii-underline: 0;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    font-size: 0.86rem;
+    text-align: center;
+  }
+
+  .emailView[data-layout="bento"] .action:not([data-action="call"]) {
+    border-radius: 1rem;
+  }
+
+  .emailView[data-layout="bento"] .action .wipe {
+    left: 0;
+    width: 100%;
+    opacity: 0.3;
+  }
+
+  .emailView.emailView[data-layout="rows"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(8rem, 1fr) repeat(3, clamp(4rem, 10svh, 5.5rem)) 1rem;
+    grid-template-areas: "title" "status" "goo" "copy" "call" "brief" ".";
+  }
+
+  .emailView[data-layout="rows"] .action {
+    --ascii-underline: 1;
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: stretch;
+    padding: 1rem 0.5rem;
+    border-radius: 0;
+    font-size: 0.86rem;
+    letter-spacing: var(--tracking-label-sm);
+    text-align: left;
+  }
+
+  .emailView[data-layout="rows"] .action::before,
+  .emailView[data-layout="rows"] .action > svg {
+    display: none;
+  }
+
+  .emailView[data-layout="rows"] .actionNum,
+  .emailView[data-layout="rows"] .actionMeta {
+    display: block;
+    color: var(--muted-color);
+    font-size: 0.65rem;
+  }
+
+  .emailView[data-layout="rows"] .action .wipe {
+    opacity: 0.8;
   }
 }

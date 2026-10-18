@@ -183,8 +183,15 @@ export function scrollToTarget(target: ScrollTarget | null | undefined, options:
   const lenis = getLenis();
 
   if (lenis && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    lenis.scrollTo(target, {
-      offset: typeof target === "number" ? clearancePx : -clearancePx,
+    const element = resolveTargetElement(target);
+    const isContact = element?.id === "contact" || element?.id === "contact-form";
+    // Lenis also reads scroll-margin-top from element targets. Use a document coordinate
+    // for mobile contact so its CSS anchor margin and our navbar clearance aren't added twice.
+    const destination = isContact && element
+      ? Math.max(0, window.scrollY + element.getBoundingClientRect().top - clearancePx)
+      : target;
+    lenis.scrollTo(destination, {
+      offset: isContact ? 0 : typeof target === "number" ? clearancePx : -clearancePx,
       immediate: options.immediate ?? false,
       lock: options.lock ?? false,
       force: options.force ?? false,
