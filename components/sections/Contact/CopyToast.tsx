@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "./ContactVariants.module.scss";
+import styles from "./ContactLayout.module.scss";
 
 export type CopyToastState = { x: number; y: number; key: number } | null;
 

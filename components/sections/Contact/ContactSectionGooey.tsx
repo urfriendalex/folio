@@ -28,14 +28,11 @@ import { AsciiFlowField, type AsciiFieldHandle } from "./AsciiFlowField";
 import { copyText } from "./contactCopy";
 import { CopyToast, type CopyToastState } from "./CopyToast";
 import { GooeyContactEmail } from "./GooeyContactEmail";
-import variants from "./ContactVariants.module.scss";
+import layoutStyles from "./ContactLayout.module.scss";
 import workSectionStyles from "../Work/WorkSection.module.scss";
 import styles from "./ContactSection.module.scss";
 
-export type ContactLayout = "type" | "bento" | "rows" | "asymmetric";
-
 type ContactSectionGooeyProps = {
-  layout?: ContactLayout;
   content: {
     email: string;
     location: string;
@@ -94,16 +91,6 @@ function stripContactFormHashIfPresent(): void {
   window.history.replaceState(window.history.state, "", url.toString());
 }
 
-/** Mobile bento hairline, traced on reveal. A fixed pathLength means the dash is in units of 100 at
-    any size, so the trace never waits on a measurement. */
-function ContactCellFrame() {
-  return (
-    <svg className={styles.cellFrame} aria-hidden focusable="false">
-      <rect width="100%" height="100%" rx="16" pathLength={100} />
-    </svg>
-  );
-}
-
 /** Cell text split into glyphs that the cell's field glitches on and off (see `BookingButtonAscii`'s `glitch`).
     The cell carries the accessible name, so the glyphs are hidden from assistive tech. */
 function GlitchText({ text, seed, className }: { text: string; seed: number; className: string }) {
@@ -130,7 +117,6 @@ function GlitchText({ text, seed, className }: { text: string; seed: number; cla
 export function ContactSectionGooey({
   content,
   hoverPhrase = "Let's work together",
-  layout = "asymmetric",
 }: ContactSectionGooeyProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const switchTimerRef = useRef<number | null>(null);
@@ -375,8 +361,8 @@ export function ContactSectionGooey({
       return;
     }
 
-    // Tooltip is positioned inside the variant container (the positioned box that also hosts the trail field).
-    const host = target.closest<HTMLElement>("[data-variant]") ?? sectionRef.current;
+    // Tooltip is positioned inside the contact container (the positioned box that also hosts the trail field).
+    const host = target.closest<HTMLElement>("[data-contact-content]") ?? sectionRef.current;
     if (!host) return;
     const box = host.getBoundingClientRect();
     const anchor = target.getBoundingClientRect();
@@ -413,40 +399,39 @@ export function ContactSectionGooey({
       />
       <div className={styles.stage}>
         {view === "email" ? (
-          /* Contact: centered gooey + direction-aware ink. Flow glyphs follow the pointer (or a dragging
+          /* Contact: gooey email + direction-aware ink. Flow glyphs follow the pointer (or a dragging
              finger) inside the content block; clicks/taps anywhere send a ripple; action cells take a
              glyph wipe from the edge you enter and drain toward the edge you leave. */
           <div
             ref={revealAnchorRef}
-            className={`${styles.emailView} ${variants.emailView}`}
+            className={`${styles.emailView} ${layoutStyles.emailView}`}
             data-visible={emailVisible}
-            data-variant="flow"
-            data-layout={layout}
+            data-contact-content=""
           >
             <div className={styles.mobileSectionTitle}>
               <h2 className={workSectionStyles.title}>Contact Me</h2>
             </div>
 
-            <AsciiFlowField className={variants.field} handleRef={trailRef} />
+            <AsciiFlowField className={layoutStyles.field} handleRef={trailRef} />
 
-            <div className={variants.block}>
+            <div className={layoutStyles.block}>
               <p
-                className={`${styles.contactStatus} ${variants.status}`}
+                className={`${styles.contactStatus} ${layoutStyles.status}`}
                 data-visible={emailVisible}
                 style={{ "--contact-reveal-index": 0 } as CSSProperties}
               >
                 <span className={styles.revealLine}>
                   <span className={styles.revealLineText}>
-                    <span className={variants.statusLed} aria-hidden="true" />
+                    <span className={layoutStyles.statusLed} aria-hidden="true" />
                     Open to new projects
                   </span>
                 </span>
-                <span className={`${styles.revealLine} ${variants.statusResponse}`}>
+                <span className={`${styles.revealLine} ${layoutStyles.statusResponse}`}>
                   <span className={styles.revealLineText}>{content.responseTime.replace(/\.$/, "")}</span>
                 </span>
                 <span className={styles.revealLine}>
                   <span className={styles.revealLineText}>
-                    Warsaw <LiveClock zone="warsaw" format="time" className={variants.statusClock} />
+                    Warsaw <LiveClock zone="warsaw" format="time" className={layoutStyles.statusClock} />
                   </span>
                 </span>
               </p>
@@ -454,7 +439,7 @@ export function ContactSectionGooey({
               {/* The whole card copies (not just the glyphs); the inner link keeps keyboard access and
                   modifier-click → mail app. Touch swipes on the card scrub the goo instead (GooeyContactEmail). */}
               <div
-                className={`${styles.contactGooeyCard} ${variants.gooCard}`}
+                className={`${styles.contactGooeyCard} ${layoutStyles.gooCard}`}
                 data-visible={emailVisible}
                 data-gooey-area=""
                 style={{ "--contact-reveal-index": 1 } as CSSProperties}
@@ -463,7 +448,6 @@ export function ContactSectionGooey({
                   void handleCopy(event);
                 }}
               >
-                <ContactCellFrame />
                 <GooeyContactEmail
                   email={content.email}
                   hoverPhrase={hoverPhrase}
@@ -472,54 +456,51 @@ export function ContactSectionGooey({
                 />
               </div>
 
-              <ul className={variants.actions}>
+              <ul className={layoutStyles.actions}>
                 <li>
                   {/* The banner above already copies; this is the other half: open a draft. */}
                   <a
                     href={`mailto:${content.email}`}
-                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    className={`${styles.contactChannelButton} ${layoutStyles.action}`}
                     data-action="mail"
                     aria-label="Open mail app"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 2 } as CSSProperties}
                   >
-                    <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
-                    <GlitchText className={variants.actionNum} text="01" seed={11} />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={layoutStyles.actionNum} text="01" seed={11} />
                     <GlitchText className={styles.glitchLabel} text="Open mail app" seed={14} />
-                    <GlitchText className={variants.actionMeta} text="↗" seed={16} />
+                    <GlitchText className={layoutStyles.actionMeta} text="↗" seed={16} />
                   </a>
                 </li>
                 <li>
                   <CalBookingTrigger
-                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    className={`${styles.contactChannelButton} ${layoutStyles.action}`}
                     data-action="call"
                     aria-label="Book a call"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 3 } as CSSProperties}
                   >
-                    <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
-                    <GlitchText className={variants.actionNum} text="02" seed={23} />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={layoutStyles.actionNum} text="02" seed={23} />
                     <GlitchText className={styles.glitchLabel} text="Book a call" seed={26} />
-                    <GlitchText className={variants.actionMeta} text="→" seed={28} />
+                    <GlitchText className={layoutStyles.actionMeta} text="→" seed={28} />
                   </CalBookingTrigger>
                 </li>
                 <li>
                   <button
                     type="button"
-                    className={`${styles.contactChannelButton} ${variants.action}`}
+                    className={`${styles.contactChannelButton} ${layoutStyles.action}`}
                     data-action="brief"
                     aria-label="Send a message"
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 4 } as CSSProperties}
                     onClick={() => openForm()}
                   >
-                    <ContactCellFrame />
-                    <BookingButtonAscii className={variants.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
-                    <GlitchText className={variants.actionNum} text="03" seed={37} />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <GlitchText className={layoutStyles.actionNum} text="03" seed={37} />
                     <GlitchText className={styles.glitchLabel} text="Send a message" seed={40} />
-                    <GlitchText className={variants.actionMeta} text="→" seed={42} />
+                    <GlitchText className={layoutStyles.actionMeta} text="→" seed={42} />
                   </button>
                 </li>
               </ul>

@@ -113,10 +113,6 @@
   --contact-reveal-ease: var(--ease-reveal);
   --contact-exit-ms: var(--duration-exit);
   --contact-exit-ease: var(--ease-out);
-  /* Mobile bento: hairline frame is traced like a pen stroke. */
-  --contact-frame-draw-ms: var(--duration-draw);
-  /* Ease-out, not the draw curve: that one starts slowly, which reads as the pen stalling. */
-  --contact-frame-ease: var(--ease-out);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,8 +125,10 @@
   box-sizing: border-box;
 }
 
-/* Wraps gooey email — desktop: full row width so inner `width:100%` gooey layout resolves; mobile adds shell */
+/* Full-width wrapper for the gooey email. */
 .contactGooeyCard {
+  position: relative;
+  isolation: isolate;
   align-self: stretch;
   width: 100%;
   max-width: 100%;
@@ -348,16 +346,10 @@
   color: inherit;
 }
 
-/* Drawn mobile frames. */
-.cellFrame {
-  display: none;
-}
-
 :global(html.home-section-arrival-reveal) .section .emailView {
   --contact-reveal-step: var(--stagger);
   --contact-reveal-opacity-ms: var(--duration-exit);
   --contact-reveal-transform-ms: calc(var(--duration-base) + 40ms);
-  --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
 }
 
 /* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
@@ -365,9 +357,7 @@
 :global(html:not(.reveals-enabled)) .contactChannelButton,
 :global(html:not(.reveals-enabled)) .contactGooeyCard,
 :global(html:not(.reveals-enabled)) .mobileSectionTitle,
-:global(html:not(.reveals-enabled)) .revealLineText,
-:global(html:not(.reveals-enabled)) .contactChannelButton::before,
-:global(html:not(.reveals-enabled)) .contactGooeyCard::before {
+:global(html:not(.reveals-enabled)) .revealLineText {
   opacity: 1;
   filter: none;
   transform: none;
@@ -626,9 +616,7 @@
   .section .emailView {
     --contact-reveal-offset: 1;
     /* Start with the title, then status, email and actions in reading order. */
-    --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
-    --contact-frame-stagger: var(--stagger);
-    --contact-reveal-step: var(--contact-frame-stagger);
+    --contact-reveal-step: var(--stagger);
     flex: 1 0 auto;
     min-height: inherit;
     align-items: stretch;
@@ -637,34 +625,10 @@
     padding-block: 0;
   }
 
-  :global(html.home-section-arrival-reveal) .section .emailView {
-    --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
-    --contact-reveal-step: var(--contact-frame-stagger);
-  }
-
-  .emailView .contactChannelButton[data-action="call"] {
-    --cell-delay: calc(var(--contact-reveal-step) * 3);
-  }
-
-  .emailView .contactChannelButton[data-action="mail"] {
-    --cell-delay: calc(var(--contact-reveal-step) * 4);
-  }
-
-  .emailView .contactChannelButton[data-action="brief"] {
-    --cell-delay: calc(var(--contact-reveal-step) * 5);
-  }
-
-  /* Stacked rows retain their desktop mail → call → message order. */
-  .emailView[data-layout="rows"] .contactChannelButton[data-action="mail"] {
-    --cell-delay: calc(var(--contact-reveal-step) * 3);
-  }
-
-  .emailView[data-layout="rows"] .contactChannelButton[data-action="call"] {
-    --cell-delay: calc(var(--contact-reveal-step) * 4);
-  }
-
-  /* Hairline frame + glass fill — enter/exit on the shared `--contact-reveal-*` cascade */
+  /* Mobile action rows share the section cascade and press feedback. */
   .contactChannelButton {
+    position: relative;
+    isolation: isolate;
     flex: 1 1 0;
     min-height: 0;
     width: 100%;
@@ -674,10 +638,9 @@
     justify-content: center;
     align-items: center;
     gap: 0;
-    /* +1px replaces the old border so the drawn frame sits exactly where it was. */
-    padding: calc(clamp(0.75rem, 2.5vw, 1.1rem) + 1px) calc(clamp(1rem, 3vw, 1.15rem) + 1px);
+    padding: 1rem 0.5rem;
     overflow: hidden;
-    border-radius: 1rem;
+    border-radius: 0;
     border: 0;
     box-shadow: none;
     background: transparent;
@@ -701,96 +664,6 @@
     transition-timing-function: ease, var(--ease-out);
   }
 
-  /* —— Bento cell chrome: fill layer (::before) + traced hairline frame (svg) —— */
-  .contactChannelButton,
-  .contactGooeyCard {
-    /* Stroke traces in "wet ink" (stronger) and dries to the resting hairline once the fill lands. */
-    --cell-stroke-ink: color-mix(in srgb, var(--fg-color) 34%, transparent);
-    --cell-stroke: color-mix(in srgb, var(--fg-color) 12%, transparent);
-    --cell-fill:
-      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
-      var(--overlay-default-surface-base);
-    position: relative;
-    isolation: isolate;
-    /* Text and its ASCII/frame start together on the same cascade beat. */
-    --line-delay: 0ms;
-    --email-delay: 0ms;
-  }
-
-  .contactChannelButton::before,
-  .contactGooeyCard::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: var(--cell-fill);
-    opacity: 0;
-    transition: opacity var(--contact-exit-ms) ease;
-    pointer-events: none;
-  }
-
-  .contactChannelButton[data-visible="true"]::before,
-  .contactGooeyCard[data-visible="true"]::before {
-    opacity: 1;
-    transition-duration: var(--contact-reveal-opacity-ms);
-    transition-delay: calc(var(--cell-delay) + var(--contact-frame-draw-ms) * 0.35);
-  }
-
-  .cellFrame {
-    display: block;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .cellFrame rect {
-    x: 0.5px;
-    y: 0.5px;
-    width: calc(100% - 1px);
-    height: calc(100% - 1px);
-    rx: calc(var(--contact-cell-radius, 1rem) - 0.5px);
-    fill: none;
-    stroke: var(--cell-stroke-ink);
-    stroke-width: 1px;
-    /* `pathLength="100"` on the rect (ContactCellFrame): one full perimeter is 100. */
-    stroke-dasharray: 100 100;
-    stroke-dashoffset: 100;
-    /* Exit: un-trace quickly; ink colour only returns after the stroke is gone (no flash). */
-    transition:
-      stroke-dashoffset var(--contact-exit-ms) var(--contact-exit-ease),
-      stroke 0ms linear var(--contact-exit-ms);
-  }
-
-  [data-visible="true"] > .cellFrame rect {
-    stroke: var(--cell-stroke);
-    stroke-dashoffset: 0;
-    transition:
-      stroke-dashoffset var(--contact-frame-draw-ms) var(--contact-frame-ease) var(--cell-delay),
-      stroke var(--contact-reveal-opacity-ms) ease
-        calc(var(--cell-delay) + var(--contact-frame-draw-ms) * 0.85);
-  }
-
-  /* Hover recolours immediately once revealed. */
-  @media (hover: hover) and (pointer: fine) {
-    .contactChannelButton[data-visible="true"]:hover > .cellFrame rect {
-      transition:
-        stroke-dashoffset 0ms,
-        stroke var(--duration-fast) var(--ease-out);
-    }
-  }
-
-  /* Hover is the glyph field heating under the pointer; the fill stays put, only the hairline firms up. */
-  @media (hover: hover) and (pointer: fine) {
-    .contactChannelButton:hover:not(:disabled) {
-      --cell-stroke: color-mix(in srgb, var(--fg-color) 22%, transparent);
-    }
-  }
-
   /* The email is the single expressive mobile panel; actions below stay compact. */
   .contactGooeyCard {
     flex: 0 0 auto;
@@ -803,7 +676,7 @@
     margin-bottom: 0.5rem;
     padding: 1.25rem 0.75rem;
     overflow: visible;
-    border-radius: 1rem;
+    border-radius: 0;
     border: 0;
     box-shadow: none;
     background: transparent;
@@ -841,22 +714,13 @@
   transition: none;
 }
 
-:global(html:not(.reveals-enabled)) .cellFrame rect {
-  stroke: var(--cell-stroke);
-  stroke-dashoffset: 0;
-  transition: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .formView,
   .emailWord,
   .mobileSectionTitle,
   .contactChannelButton,
   .contactGooeyCard,
-  .contactChannelButton::before,
-  .contactGooeyCard::before,
   .revealLineText,
-  .cellFrame rect,
   .formBackScreen,
   .field::after,
   .field span,
