@@ -162,10 +162,10 @@
   white-space: nowrap;
   overflow-x: visible;
   overflow-y: visible;
-  /* One bounded text layer on every viewport. Clear the small blur early, then let
-     scale settle; `none` releases both effects at rest without persistent will-change. */
+  /* One bounded text layer on every viewport. Let the blur resolve visibly as
+     scale settles; `none` releases both effects at rest without persistent will-change. */
   opacity: 0;
-  filter: blur(4px);
+  filter: blur(10px);
   transform: scale(0.965);
   transform-origin: center;
   transition:
@@ -180,9 +180,12 @@
   transform: none;
   transition-duration:
     var(--contact-reveal-opacity-ms),
-    var(--duration-base),
-    var(--contact-reveal-transform-ms);
-  transition-timing-function: var(--ease-out), var(--ease-out), var(--contact-reveal-ease);
+    640ms,
+    760ms;
+  transition-timing-function:
+    var(--ease-out),
+    cubic-bezier(0.22, 0.61, 0.36, 1),
+    cubic-bezier(0.22, 0.61, 0.36, 1);
   transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
 
@@ -298,6 +301,7 @@
 }
 
 /* Per-cell start time on the shared cascade; children offset from it. */
+.contactStatus,
 .contactChannelButton,
 .contactGooeyCard {
   --cell-delay: calc(
@@ -350,7 +354,7 @@
 }
 
 :global(html.home-section-arrival-reveal) .section .emailView {
-  --contact-reveal-step: var(--stagger-tight);
+  --contact-reveal-step: var(--stagger);
   --contact-reveal-opacity-ms: var(--duration-exit);
   --contact-reveal-transform-ms: calc(var(--duration-base) + 40ms);
   --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
@@ -621,10 +625,9 @@
 
   .section .emailView {
     --contact-reveal-offset: 1;
-    /* The field answers the scroll immediately, so the frames are a short beat
-       under it, not a second entrance. 410ms trace, 110ms between cells. */
+    /* Start with the title, then status, email and actions in reading order. */
     --contact-frame-draw-ms: calc(var(--duration-draw) / 2);
-    --contact-frame-stagger: var(--stagger-loose);
+    --contact-frame-stagger: var(--stagger);
     --contact-reveal-step: var(--contact-frame-stagger);
     flex: 1 0 auto;
     min-height: inherit;
@@ -639,20 +642,25 @@
     --contact-reveal-step: var(--contact-frame-stagger);
   }
 
-  /* Indexes follow the desktop row (copy, call, brief). On the bento that would
-     trace the bottom-left cell before the call sitting above it, so the pen
-     follows the stack instead: email, then the call, then both halves together. */
-  .emailView .contactGooeyCard {
-    --cell-delay: 0ms;
-  }
-
   .emailView .contactChannelButton[data-action="call"] {
-    --cell-delay: var(--contact-frame-stagger);
+    --cell-delay: calc(var(--contact-reveal-step) * 3);
   }
 
-  .emailView .contactChannelButton[data-action="mail"],
+  .emailView .contactChannelButton[data-action="mail"] {
+    --cell-delay: calc(var(--contact-reveal-step) * 4);
+  }
+
   .emailView .contactChannelButton[data-action="brief"] {
-    --cell-delay: calc(var(--contact-frame-stagger) * 2);
+    --cell-delay: calc(var(--contact-reveal-step) * 5);
+  }
+
+  /* Stacked rows retain their desktop mail → call → message order. */
+  .emailView[data-layout="rows"] .contactChannelButton[data-action="mail"] {
+    --cell-delay: calc(var(--contact-reveal-step) * 3);
+  }
+
+  .emailView[data-layout="rows"] .contactChannelButton[data-action="call"] {
+    --cell-delay: calc(var(--contact-reveal-step) * 4);
   }
 
   /* Hairline frame + glass fill — enter/exit on the shared `--contact-reveal-*` cascade */
@@ -704,9 +712,9 @@
       var(--overlay-default-surface-base);
     position: relative;
     isolation: isolate;
-    /* Content follows the pen: label + email start once the stroke is underway. */
-    --line-delay: 200ms;
-    --email-delay: 220ms;
+    /* Text and its ASCII/frame start together on the same cascade beat. */
+    --line-delay: 0ms;
+    --email-delay: 0ms;
   }
 
   .contactChannelButton::before,

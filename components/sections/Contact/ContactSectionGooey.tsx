@@ -135,7 +135,7 @@ export function ContactSectionGooey({
   const sectionRef = useRef<HTMLElement | null>(null);
   const switchTimerRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
-  /* Anchor on the email card, not the 100svh section: the section top enters long before the content does. */
+  /* Start the cascade when the heading enters, before the email and actions below it. */
   const revealAnchorRef = useRef<HTMLDivElement | null>(null);
   const sectionVisible = useRevealOnView(revealAnchorRef, {
     rootMargin: "0px 0px -4% 0px",
@@ -416,7 +416,13 @@ export function ContactSectionGooey({
           /* Contact: centered gooey + direction-aware ink. Flow glyphs follow the pointer (or a dragging
              finger) inside the content block; clicks/taps anywhere send a ripple; action cells take a
              glyph wipe from the edge you enter and drain toward the edge you leave. */
-          <div className={`${styles.emailView} ${variants.emailView}`} data-visible={emailVisible} data-variant="flow" data-layout={layout}>
+          <div
+            ref={revealAnchorRef}
+            className={`${styles.emailView} ${variants.emailView}`}
+            data-visible={emailVisible}
+            data-variant="flow"
+            data-layout={layout}
+          >
             <div className={styles.mobileSectionTitle}>
               <h2 className={workSectionStyles.title}>Contact Me</h2>
             </div>
@@ -425,7 +431,7 @@ export function ContactSectionGooey({
 
             <div className={variants.block}>
               <p
-                className={variants.status}
+                className={`${styles.contactStatus} ${variants.status}`}
                 data-visible={emailVisible}
                 style={{ "--contact-reveal-index": 0 } as CSSProperties}
               >
@@ -448,7 +454,6 @@ export function ContactSectionGooey({
               {/* The whole card copies (not just the glyphs); the inner link keeps keyboard access and
                   modifier-click → mail app. Touch swipes on the card scrub the goo instead (GooeyContactEmail). */}
               <div
-                ref={revealAnchorRef}
                 className={`${styles.contactGooeyCard} ${variants.gooCard}`}
                 data-visible={emailVisible}
                 data-gooey-area=""
