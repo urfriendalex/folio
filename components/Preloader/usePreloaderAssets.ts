@@ -17,7 +17,7 @@ const IGNORED_INITIATORS = new Set([
 ]);
 
 const IGNORED_NAME_PATTERN =
-  /(?:^|\/)(?:_vercel\/(?:insights|speed-insights)|vitals|favicon|apple-touch-icon)|\/ascii\//i;
+  /(?:^|\/)(?:_vercel\/(?:insights|speed-insights)|vitals|favicon|apple-touch-icon)|\/ascii\/|googletagmanager\.com|google-analytics\.com|cloudflareinsights\.com/i;
 
 const PENDING_BYTES_BY_INITIATOR: Record<string, number> = {
   css: 12_288,
