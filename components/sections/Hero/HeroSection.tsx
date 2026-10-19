@@ -111,6 +111,7 @@ const TEXT_DISSOLVE_LEAD_VIEWPORT = 0.1;
 const TEXT_DISSOLVE_RANGE_VIEWPORT = 0.26;
 const INTRO_DISSOLVE_SEED = 101;
 const HEADING_DISSOLVE_SEED = 211;
+const DESCRIPTION_DISSOLVE_SEED = 263;
 const CTA_DISSOLVE_SEED = 307;
 
 function dissolve(text: string, piece: number) {
@@ -189,6 +190,7 @@ type HeroContent = {
   name: string;
   position: string;
   statement: string;
+  description?: string;
   ctaLine?: string;
 };
 
@@ -199,6 +201,8 @@ type HeroSectionProps = {
 export function HeroSection({ content }: HeroSectionProps) {
   const introRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLParagraphElement>(null);
   const contentRevealGateRef = useRef<HTMLDivElement>(null);
   const stuffAnchorRef = useRef<HTMLSpanElement | null>(null);
@@ -242,12 +246,37 @@ export function HeroSection({ content }: HeroSectionProps) {
     getServerCoarsePointerSnapshot,
   );
 
-  /** Parked walker hugs the grid selector's glyph rail, so it anchors by its right edge. */
+  /** Compact layouts show the walker without requiring a hover. */
   const walkerParked = useSyncExternalStore(
     subscribeWalkerParked,
     getWalkerParkedSnapshot,
     getServerWalkerParkedSnapshot,
   );
+  const touchLayout = coarsePointer || walkerParked;
+
+  /** Keep the ASCII's right edge on Archive's rail after fonts and viewport changes. */
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const archive = document.querySelector<HTMLElement>('nav a[href="/archive"]');
+    if (!stage || !archive) return;
+    let disposed = false;
+    const align = () => {
+      if (disposed || archive.getClientRects().length === 0) return;
+      stage.style.setProperty("--hero-ascii-rail-right", `${Math.max(0, stage.getBoundingClientRect().right - archive.getBoundingClientRect().right)}px`);
+    };
+    align();
+    const observer = new ResizeObserver(align);
+    observer.observe(stage);
+    observer.observe(archive);
+    window.addEventListener("resize", align);
+    void document.fonts.ready.then(align);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      window.removeEventListener("resize", align);
+      stage.style.removeProperty("--hero-ascii-rail-right");
+    };
+  }, []);
 
   /** Fine pointers: hover only (no focus / no click-to-hold). Coarse: tap toggle. */
   const gagActive = coarsePointer ? stuffGagMobileActive : stuffGagHover;
@@ -594,6 +623,9 @@ export function HeroSection({ content }: HeroSectionProps) {
   const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true, {
     preserveNaturalWrappingMedia: "(max-width: 48rem)",
   });
+  const descriptionText = content.description ?? "";
+  const descriptionLines = usePretextLines(descriptionText, descriptionRef, "pre-wrap", Boolean(descriptionText));
+  const descriptionLineCount = descriptionText ? descriptionLines.length : 0;
 
   const ctaTextUpper = useMemo(
     () => content.ctaLine?.trim().toUpperCase() ?? "",
@@ -602,7 +634,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const hasCta = ctaTextUpper.length > 0;
   const ctaLines = useMemo(() => (hasCta ? [ctaTextUpper] : []), [hasCta, ctaTextUpper]);
 
-  const sequenceTotal = introLines.length + headingLines.length + ctaLines.length;
+  const sequenceTotal = introLines.length + headingLines.length + descriptionLineCount + ctaLines.length;
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
   /**
    * Touch: the walker sits under the text, so it waits for the line cascade instead of appearing with
@@ -611,7 +643,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const [walkerIntroReady, setWalkerIntroReady] = useState(false);
   const walkerIntroDelayMs =
     Math.max(0, sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + Math.round(REVEAL_TRANSFORM_SETTLE_MS * 0.5);
-  const walkerWaitsForText = coarsePointer && !bypassHeroReplay;
+  const walkerWaitsForText = touchLayout && !bypassHeroReplay;
 
   useEffect(() => {
     if (!walkerWaitsForText || !walkerRevealed || walkerIntroReady) {
@@ -628,7 +660,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const walkerActive =
     walkerRevealed &&
     (!walkerWaitsForText || walkerIntroReady) &&
-    (coarsePointer || Boolean(hoverAccent));
+    (touchLayout || Boolean(hoverAccent));
   const walkerRevealPlayedInPreloader =
     coarsePointer &&
     preloaderComplete &&
@@ -804,7 +836,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       ro.disconnect();
       glyphs.forEach((glyph) => glyph.el.removeAttribute("data-dissolve-off"));
     };
-  }, [headingLines]);
+  }, [headingLines, descriptionLines]);
 
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
@@ -840,11 +872,14 @@ export function HeroSection({ content }: HeroSectionProps) {
       (headingLines.length > 0
         ? (introLines.length + headingLines.length - 1) * HEADING_REVEAL_STEP_MS
         : 0) + REVEAL_TRANSFORM_SETTLE_MS;
+    const descriptionEndMs = descriptionLineCount > 0
+      ? (introLines.length + headingLines.length + descriptionLineCount - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
+      : 0;
     const ctaEndMs =
       hasCta
         ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
         : 0;
-    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, ctaEndMs) * heroTempo());
+    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, descriptionEndMs, ctaEndMs) * heroTempo());
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
@@ -858,6 +893,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   }, [
     bypassHeroReplay,
     ctaLines.length,
+    descriptionLineCount,
     hasCta,
     headingLines.length,
     introLines.length,
@@ -896,7 +932,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     }
 
     const ctaPhaseStartMs = hasCta
-      ? Math.round((introLines.length + headingLines.length) * HEADING_REVEAL_STEP_MS * heroTempo())
+      ? Math.round((introLines.length + headingLines.length + descriptionLineCount) * HEADING_REVEAL_STEP_MS * heroTempo())
       : 0;
 
     const timeoutId = window.setTimeout(() => {
@@ -913,6 +949,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     preloaderComplete,
     heroContentRevealVisible,
     hasCta,
+    descriptionLineCount,
     headingLines.length,
     introLines.length,
   ]);
@@ -1026,7 +1063,8 @@ export function HeroSection({ content }: HeroSectionProps) {
             </span>
           </span>
           <br className={styles.introMobileBreak} aria-hidden="true" />
-          {dissolve(beforeCreative, 2)}
+          <span className={styles.introDesktopSpace}> </span>
+          {dissolve(beforeCreative.trimStart(), 2)}
           <span
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
             data-dissolve-control=""
@@ -1128,6 +1166,9 @@ export function HeroSection({ content }: HeroSectionProps) {
       </a>
     );
   }, []);
+  const renderDescriptionToken = useCallback((token: string, tokenIndex: number) => (
+    <DissolveText text={token} seed={DESCRIPTION_DISSOLVE_SEED + tokenIndex * 8} />
+  ), []);
 
   return (
     <section
@@ -1137,7 +1178,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       onPointerLeave={handleHeroPointerLeave}
     >
       <div className={`page-shell ${styles.inner}`}>
-        <div className={styles.stage}>
+        <div ref={stageRef} className={styles.stage}>
           <div ref={contentRevealGateRef} className={styles.content}>
             <RevealLines
               elementRef={introRef}
@@ -1165,6 +1206,21 @@ export function HeroSection({ content }: HeroSectionProps) {
               immediate={bypassHeroReplay}
               visible={bypassHeroReplay ? true : heroContentRevealVisible}
             />
+            {descriptionText ? (
+              <RevealLines
+                elementRef={descriptionRef}
+                as="p"
+                className={styles.description}
+                text={descriptionText}
+                lines={descriptionLines}
+                offset={introLines.length + headingLines.length}
+                total={sequenceTotal}
+                stepMs={HEADING_REVEAL_STEP_MS}
+                renderToken={renderDescriptionToken}
+                immediate={bypassHeroReplay}
+                visible={bypassHeroReplay ? true : heroContentRevealVisible}
+              />
+            ) : null}
             {hasCta ? (
               <RevealLines
                 elementRef={ctaRef}
@@ -1173,7 +1229,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 text={ctaTextUpper}
                 lines={ctaLines}
                 measureLines={false}
-                offset={introLines.length + headingLines.length}
+                offset={introLines.length + headingLines.length + descriptionLineCount}
                 total={sequenceTotal}
                 stepMs={HEADING_REVEAL_STEP_MS}
                 renderToken={renderCtaToken}
@@ -1200,8 +1256,8 @@ export function HeroSection({ content }: HeroSectionProps) {
                 lazy={false}
                 paused={!walkerActive}
                 visible={walkerActive}
-                scale={coarsePointer ? WALKER_COARSE_SCALE : 1}
-                anchorEnd={walkerParked}
+                scale={touchLayout ? WALKER_COARSE_SCALE : 1}
+                anchorEnd
                 /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
