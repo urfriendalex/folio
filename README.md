@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Home hero
+
+The home-page copy lives in `content/hero.ts`. `HomeHero` supplies its service
+and availability details, responsive layout, and red glyph CTA. Both hero contact
+links scroll to the contact section; the form opens only from Send a message.
+
+The complete hero exploration is preserved on
+[`features/codex/hero-role-studies`](https://github.com/urfriendalex/folio/tree/features/codex/hero-role-studies).
+On that branch, run `pnpm dev --port 3010` and open
+`/hero-study/explore?option=2`. Study pages and comparison images are excluded
+from the production branch.
+
 ## Project Asset Optimization
 
 Run `pnpm optimize:projects` to losslessly optimize all checked-in project PNGs

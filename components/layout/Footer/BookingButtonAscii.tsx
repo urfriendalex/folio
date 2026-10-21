@@ -99,6 +99,7 @@ export function BookingButtonAscii({
   quietQuery,
   directional = false,
   glitch = false,
+  touchOrbit = false,
 }: {
   className: string;
   /** Custom property for the hot glyphs near the pointer. */
@@ -112,6 +113,8 @@ export function BookingButtonAscii({
   /** Follow the parent's `data-visible`: glitch the field and its `[data-glitch-at]` glyphs in and out.
       The glitch-in waits for the canvas's computed `transition-delay` (the cell's slot in the cascade). */
   glitch?: boolean;
+  /** On mobile/touch, move a virtual pointer around the field's edge while visible. */
+  touchOrbit?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -123,6 +126,9 @@ export function BookingButtonAscii({
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const quietMedia = quietQuery ? window.matchMedia(quietQuery) : null;
+    const orbitMedia = touchOrbit ? window.matchMedia("(max-width: 48rem), (hover: none) and (pointer: coarse)") : null;
+    let pointerInside = false;
+    let keyboardFocused = false;
     let width = 0;
     let height = 0;
     let columns = 0;
@@ -289,6 +295,17 @@ export function BookingButtonAscii({
       lastTime = now;
       time += delta / 1000;
       const ease = 1 - Math.exp(-delta / 70);
+      if (orbitMedia?.matches && !pointerInside && !keyboardFocused) {
+        // The existing heat and directional strokes follow this virtual pointer too.
+        // Easing rounds the corners while keeping the activity near the perimeter.
+        const inset = 5;
+        const w = Math.max(1, width - inset * 2);
+        const h = Math.max(1, height - inset * 2);
+        const distance = (time * 80) % (2 * (w + h));
+        targetX = inset + (distance < w ? distance : distance < w + h ? w : distance < 2 * w + h ? 2 * w + h - distance : 0);
+        targetY = inset + (distance < w ? 0 : distance < w + h ? distance - w : distance < 2 * w + h ? h : 2 * (w + h) - distance);
+        hoverTarget = 1;
+      }
       const previousX = pointerX;
       const previousY = pointerY;
       pointerX += (targetX - pointerX) * ease;
@@ -428,6 +445,7 @@ export function BookingButtonAscii({
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      pointerInside = event.pointerType === "mouse";
       const rect = canvas.getBoundingClientRect();
       targetX = event.clientX - rect.left;
       targetY = event.clientY - rect.top;
@@ -453,7 +471,8 @@ export function BookingButtonAscii({
     };
 
     const onPointerLeave = () => {
-      hoverTarget = button.matches(KEYBOARD_FOCUS_SELECTOR) ? 1 : 0;
+      pointerInside = false;
+      hoverTarget = keyboardFocused || orbitMedia?.matches ? 1 : 0;
       if (reducedMotion.matches) {
         hover = hoverTarget;
         draw(1);
@@ -461,6 +480,7 @@ export function BookingButtonAscii({
     };
 
     const onFocus = () => {
+      keyboardFocused = button.matches(KEYBOARD_FOCUS_SELECTOR);
       targetX = pointerX = width / 2;
       targetY = pointerY = height / 2;
       hoverTarget = 1;
@@ -468,6 +488,11 @@ export function BookingButtonAscii({
         hover = 1;
         draw(1);
       }
+    };
+
+    const onBlur = () => {
+      keyboardFocused = false;
+      onPointerLeave();
     };
 
     const onMotionChange = () => {
@@ -517,13 +542,14 @@ export function BookingButtonAscii({
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
+    orbitMedia?.addEventListener("change", onPointerLeave);
     document.addEventListener("visibilitychange", onVisibilityChange);
     button.addEventListener("pointerenter", onPointerMove);
     button.addEventListener("pointermove", onPointerMove);
     button.addEventListener("pointerdown", onPointerDown);
     button.addEventListener("pointerleave", onPointerLeave);
     button.addEventListener("focus", onFocus);
-    button.addEventListener("blur", onPointerLeave);
+    button.addEventListener("blur", onBlur);
     resize();
     if (glitch) {
       glitchObserver.observe(button, { attributes: true, attributeFilter: ["data-visible"] });
@@ -541,16 +567,17 @@ export function BookingButtonAscii({
       themeObserver.disconnect();
       visibilityObserver.disconnect();
       reducedMotion.removeEventListener("change", onMotionChange);
+      orbitMedia?.removeEventListener("change", onPointerLeave);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       button.removeEventListener("pointerenter", onPointerMove);
       button.removeEventListener("pointermove", onPointerMove);
       button.removeEventListener("pointerdown", onPointerDown);
       button.removeEventListener("pointerleave", onPointerLeave);
       button.removeEventListener("focus", onFocus);
-      button.removeEventListener("blur", onPointerLeave);
+      button.removeEventListener("blur", onBlur);
       glitchObserver.disconnect();
     };
-  }, [accent, clearance, quietQuery, directional, glitch]);
+  }, [accent, clearance, quietQuery, directional, glitch, touchOrbit]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

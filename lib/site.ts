@@ -7,7 +7,7 @@ export const SITE_URL = "https://yansons.online";
  * each ProjectEntry.lastModified so unrelated case studies keep their dates.
  */
 export const PAGE_LAST_MODIFIED = {
-  home: "2026-10-14",
+  home: "2026-10-22",
   projects: "2026-10-14",
   archive: "2026-10-14",
   faq: "2026-10-14",

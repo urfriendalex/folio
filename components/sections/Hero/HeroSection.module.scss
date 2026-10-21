@@ -1,4 +1,4 @@
-/* Option 2: lower editorial copy, large ASCII on the Archive rail. */
+/* Shared hero typography, reveal, and ASCII interaction primitives. */
 .section {
   --hero-walker-web-color: #0000ee;
   --hero-walker-creative-color: var(--signal-color);
@@ -291,3 +291,15 @@
   --reveal-line-opacity-ms: 276ms;
   --reveal-line-transform-ms: 372ms;
 }
+
+/* Expand the compact ASCII into a background; keep a neutral keyboard focus ring. */
+.visualPanel[data-interactive="true"] { pointer-events: auto; }
+.asciiToggle {
+  position: absolute; inset: 0; width: 100%; height: 100%; padding: 0;
+  border: 0; background: transparent; color: var(--muted-color); cursor: pointer;
+  &:hover { color: var(--fg-color); }
+  &:focus-visible:not(:where([data-input-modality="pointer"] *)) { outline: 1px dashed var(--taskbar-flag-blue); outline-offset: 5px; }
+}
+
+.headingMobileBreak { display: none; }
+@media (max-width: 48rem) { .headingMobileBreak { display: initial; } }

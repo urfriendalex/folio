@@ -2,7 +2,7 @@ import { contactContent } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { HOME_RECENT_PROJECT_COUNT, projects } from "@/content/projects";
 import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectionGooey";
-import { HeroSection } from "@/components/sections/Hero/HeroSection";
+import { HomeHero } from "@/components/sections/Hero/HomeHero";
 import { WorkSection } from "@/components/sections/Work/WorkSection";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE } from "@/lib/metadata";
@@ -78,7 +78,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <HeroRevealTimelineProvider>
-        <HeroSection content={heroContent} />
+        <HomeHero />
         <WorkSection projects={projects.slice(0, HOME_RECENT_PROJECT_COUNT)} />
       </HeroRevealTimelineProvider>
       <ContactSectionGooey

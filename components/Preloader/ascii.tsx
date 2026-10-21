@@ -92,6 +92,10 @@ interface ASCIIAnimationProps {
   revealActive?: boolean;
   /** Add a touch-only dither ripple by temporarily masking source glyphs in the text frame. */
   touchWave?: boolean;
+  /** Repeat a contained text frame using the same animation clock and visibility mask. */
+  repeatCount?: number;
+  repeatStepCh?: number;
+  repeatStepEm?: number;
 }
 
 export const ASCII_VISIBILITY_REVEAL_DURATION_MS = 935;
@@ -544,6 +548,9 @@ export default function ASCIIAnimation({
   transparentCanvasBackground = false,
   revealActive = true,
   touchWave = false,
+  repeatCount = 1,
+  repeatStepCh = 46,
+  repeatStepEm = 1.5,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
   const [colorFrames, setColorFrames] = useState<Uint8Array[]>([]);
@@ -1357,9 +1364,12 @@ export default function ASCIIAnimation({
           className={preClassName}
           style={fillParent ? sharedStyleFill : sharedStyleContain}
         />
-      ) : (
+      ) : Array.from({ length: fillParent ? 1 : Math.max(1, Math.floor(repeatCount)) }, (_, tile) => (
         <pre
-          ref={preRef}
+          key={tile}
+          ref={tile === 0 ? preRef : undefined}
+          data-ascii-tile={tile}
+          aria-hidden={tile > 0 ? true : undefined}
           className={preClassName}
           style={
             fillParent
@@ -1383,6 +1393,7 @@ export default function ASCIIAnimation({
                 }
               : {
                   ...sharedStyleContain,
+                  transform: `${sharedStyleContain.transform}${tile ? ` translate(${tile * repeatStepCh}ch, ${tile * repeatStepEm}em)` : ""}`,
                   ...(gradient
                     ? {
                         background: gradient,
@@ -1398,7 +1409,7 @@ export default function ASCIIAnimation({
         >
           {touchWaveText}
         </pre>
-      )}
+      ))}
     </div>
   );
 }
