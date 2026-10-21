@@ -45,8 +45,8 @@ function getMobileServerSnapshot() {
   return false;
 }
 
-/** Let the `.emailWord` entrance (760ms) settle before rasterizing the filter off-screen. */
-const PREWARM_AFTER_REVEAL_MS = 900;
+/** Let the 1100ms entrance blur settle before rasterizing the SVG morph filter. */
+const PREWARM_AFTER_REVEAL_MS = 1400;
 /** While the page is still scrolling, re-check this often instead of prewarming mid-scroll. */
 const PREWARM_SCROLL_RETRY_MS = 200;
 
@@ -146,7 +146,6 @@ export function GooeyContactEmail({
 
       const applyFilter = () => {
         const p = tl.progress();
-        feBlur.setAttribute("stdDeviation", String(primitiveValues.stdDeviation));
         groupEl.style.filter = p > 0.001 && p < 0.999 ? filterUrl : "none";
       };
       const onDown = (event: PointerEvent) => {
@@ -397,26 +396,24 @@ export function GooeyContactEmail({
   }, []);
 
   useLayoutEffect(() => {
+    let frame = 0;
+    let disposed = false;
     const run = () => {
-      requestAnimationFrame(() => {
+      if (disposed || frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
         layoutViewBoxFromContent();
-        requestAnimationFrame(layoutViewBoxFromContent);
       });
     };
 
     void document.fonts.ready.then(run);
     run();
 
-    const svg = svgRef.current;
-    const ro = new ResizeObserver(run);
-    if (svg) {
-      ro.observe(svg);
-    }
-    window.addEventListener("resize", run);
-
+    // Text uses a fixed font size in SVG coordinates. Resizing scales the viewBox,
+    // so only changed text or loaded fonts need another bounding-box measurement.
     return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", run);
+      disposed = true;
+      cancelAnimationFrame(frame);
     };
   }, [layoutViewBoxFromContent, line1, line2]);
 

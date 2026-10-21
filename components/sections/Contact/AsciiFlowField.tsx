@@ -330,7 +330,10 @@ export function AsciiFlowField({
     // The section's bottom padding sits outside the field's host, so listen on the section itself.
     const clickArea = host.closest("section") ?? host;
 
-    const visibility = new IntersectionObserver(([entry]) => {
+    const visibility = new IntersectionObserver((entries) => {
+      // A cross-route jump can queue offscreen and onscreen entries in one delivery.
+      // The newest entry describes where the section is after the destination scroll.
+      const entry = entries[entries.length - 1];
       visible = Boolean(entry?.isIntersecting);
       if (visible) wake();
     });

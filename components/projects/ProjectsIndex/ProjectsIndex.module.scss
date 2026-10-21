@@ -108,8 +108,6 @@
 
 .filterPanel {
   --filter-panel-pad: 0.35rem;
-  --filter-panel-radius: 1.25rem;
-  --filter-option-radius: 0.9rem;
 
   position: fixed;
   z-index: 410;
@@ -119,8 +117,7 @@
   min-width: 11.75rem;
   padding: var(--filter-panel-pad);
   overflow: hidden;
-  border-radius: var(--filter-panel-radius);
-  corner-shape: squircle;
+  border-radius: 0;
   background: color-mix(in srgb, var(--bg-color) 58%, transparent);
   -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
@@ -708,8 +705,7 @@
     margin: 0;
     padding: 0 0.75rem;
     border: 0;
-    border-radius: var(--filter-option-radius);
-    corner-shape: squircle;
+    border-radius: 0;
     background: transparent;
     cursor: pointer;
     font-family: var(--font-pixel-stack);

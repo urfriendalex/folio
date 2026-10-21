@@ -163,7 +163,7 @@
   /* One bounded text layer on every viewport. Let the blur resolve visibly as
      scale settles; `none` releases both effects at rest without persistent will-change. */
   opacity: 0;
-  filter: blur(10px);
+  filter: blur(24px);
   transform: scale(0.965);
   transform-origin: center;
   transition:
@@ -178,11 +178,11 @@
   transform: none;
   transition-duration:
     var(--contact-reveal-opacity-ms),
-    640ms,
-    760ms;
+    1100ms,
+    1000ms;
   transition-timing-function:
     var(--ease-out),
-    cubic-bezier(0.22, 0.61, 0.36, 1),
+    cubic-bezier(0.25, 0.1, 0.25, 1),
     cubic-bezier(0.22, 0.61, 0.36, 1);
   transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
