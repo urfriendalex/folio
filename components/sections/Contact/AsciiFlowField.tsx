@@ -17,7 +17,7 @@ const BRUSH_RADIUS = 1.1; // cells
 const STROKE_GAIN = 0.45;
 const RING_LIFE_S = 0.9;
 /** Touch "rain": streaks spawned by scroll, travelling with the content; capped so it never floods. */
-const RAIN_MAX = 22;
+const RAIN_MAX = 16;
 const RAIN_LIFE_FRAMES = 22;
 
 // Glyph sets per orientation, light → heavy.
@@ -76,6 +76,7 @@ export function AsciiFlowField({
     let lastScrollY = window.scrollY;
     let ink = "#111";
     let signal = "#2446d6";
+    let red = "#d82828";
     let font = `${FONT_SIZE}px monospace`;
     /** Viewport layer for click rings, so they aren't cut off at the section edge. Mounted only while one is alive. */
     const overlay = document.createElement("canvas");
@@ -88,6 +89,7 @@ export function AsciiFlowField({
       const styles = getComputedStyle(host);
       ink = styles.getPropertyValue("--fg-color").trim() || styles.color;
       signal = styles.getPropertyValue("--contact-accent").trim() || "#2446d6";
+      red = styles.getPropertyValue("--taskbar-flag-red").trim() || "#d82828";
       font = `${FONT_SIZE}px ${styles.getPropertyValue("--font-mono-stack").trim() || "monospace"}`;
     };
 
@@ -141,8 +143,11 @@ export function AsciiFlowField({
           const y = row * CELL + CELL / 2;
           if (weight < 0.08) continue;
           live = true;
-          context.globalAlpha = Math.min(0.6, 0.15 + weight * 0.55);
-          context.fillStyle = weight > 0.85 ? signal : ink;
+          // Sparse, dim accents keep fast scrolling from becoming a blue wash.
+          const accent = (col * 17 + row * 31) % 41;
+          const colored = weight > 0.65 && accent < 2;
+          context.globalAlpha = Math.min(0.3, 0.06 + weight * 0.24) * (colored ? 0.65 : 1);
+          context.fillStyle = colored ? (accent === 0 ? signal : red) : ink;
           context.fillText(glyphFor(vx[i], vy[i], weight), x, y);
         }
       }
@@ -219,7 +224,7 @@ export function AsciiFlowField({
       }
       rings = rings.filter((ring) => time - ring.t < RING_LIFE_S);
       for (const drop of rain) {
-        // Kept under the signal threshold: rain stays ink, the accent is reserved for real gestures.
+        // Mostly ink, with occasional muted red or blue where streaks overlap.
         stamp(drop.x, drop.y, 0, Math.sign(drop.vy) * 0.36);
         drop.y += drop.vy * (delta / 16.7);
         drop.life -= 1;
@@ -308,7 +313,7 @@ export function AsciiFlowField({
       const top = Math.max(0, -rect.top);
       const bottom = Math.min(rect.height, window.innerHeight - rect.top);
       if (bottom <= top) return;
-      const count = Math.min(3, Math.round(Math.abs(dy) / 18) + 1);
+      const count = Math.min(3, Math.round(Math.abs(dy) / 30) + 1);
       for (let i = 0; i < count && rain.length < RAIN_MAX; i += 1) {
         rain.push({
           x: Math.random() * rect.width,

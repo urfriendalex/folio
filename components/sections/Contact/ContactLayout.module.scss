@@ -4,13 +4,16 @@
   position: relative;
 }
 
-/* —— Flow field: spans the section (ripples anywhere); strokes are zoned to `.block` in JS —— */
+/* Extend through the section's bottom padding and above the heading; fade the outer edges. */
 
 .field {
   position: absolute;
-  inset: 0;
+  top: -6rem;
+  bottom: calc(-1 * var(--section-padding-y) - 2rem);
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 8rem + var(--section-padding-y));
+  mask-image: linear-gradient(to bottom, transparent, #000 5rem, #000 calc(100% - 3rem), transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -207,7 +210,7 @@
       translate var(--duration-fast) var(--ease-out);
   }
 
-  /* Same hover language as the footer's Schedule a call: blue glyphs heat under the pointer,
+  /* Glyphs heat in each action's accent under the pointer,
      the label firms up, the quiet bits come up to ink, a slight press. */
   @media (hover: hover) and (pointer: fine) {
     .action:hover .actionNum,
