@@ -2,6 +2,8 @@
 
 import {
   Fragment,
+  createContext,
+  useContext,
   type ReactNode,
   memo,
   useCallback,
@@ -91,6 +93,16 @@ function getServerWalkerParkedSnapshot(): boolean {
   return false;
 }
 
+const MOBILE_HERO_QUERY = "(max-width: 48rem)";
+function subscribeMobileHero(onChange: () => void) {
+  const media = window.matchMedia(MOBILE_HERO_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+function getMobileHeroSnapshot() {
+  return window.matchMedia(MOBILE_HERO_QUERY).matches;
+}
+
 /** Matches the phrases in `heroContent.position`. */
 const INDEPENDENT_DEVELOPER_PHRASE = "Independent Developer";
 const CREATIVE_TECHNOLOGIST_PHRASE = "Creative Technologist";
@@ -148,9 +160,15 @@ const DissolveText = memo(function DissolveText({ text, seed }: { text: string; 
   );
 });
 
-/** Additional hero details participate in the same line-by-line scroll dissolve. */
-export function HeroDetailText({ text, seed }: { text: string; seed: number }) {
-  return <span data-dissolve-line=""><DissolveText text={text} seed={seed} /></span>;
+const HeroDetailRevealContext = createContext({ offset: 0, total: 1, visible: true, immediate: true });
+
+/** Additional hero lines share the entrance clock and the scroll dissolve. */
+export function HeroDetailText({ text, seed, revealIndex }: { text: string; seed: number; revealIndex: number }) {
+  const reveal = useContext(HeroDetailRevealContext);
+  return <RevealLines as="span" className={styles.detailLine} text={text} measureLines={false}
+    offset={reveal.offset + revealIndex} total={reveal.total} stepMs={HEADING_REVEAL_STEP_MS}
+    visible={reveal.visible} immediate={reveal.immediate}
+    renderToken={(token) => <DissolveText text={token} seed={seed} />} />;
 }
 
 function renderHeadingCopy(text: string, seed: number, mobileBreakBefore?: string) {
@@ -215,11 +233,12 @@ type HeroSectionProps = {
   ctaClassName?: string;
   ctaAdornment?: ReactNode;
   supportingContent?: ReactNode;
+  supportingLineCount?: number;
   mobileHeadingBreakBefore?: string;
   asciiInteraction?: { expanded: boolean; onToggle: () => void };
 };
 
-export function HeroSection({ content, introClassName, ctaClassName, ctaAdornment, supportingContent, mobileHeadingBreakBefore, asciiInteraction }: HeroSectionProps) {
+export function HeroSection({ content, introClassName, ctaClassName, ctaAdornment, supportingContent, supportingLineCount = 0, mobileHeadingBreakBefore, asciiInteraction }: HeroSectionProps) {
   const introRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const descriptionRef = useRef<HTMLParagraphElement>(null);
@@ -276,6 +295,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     getServerWalkerParkedSnapshot,
   );
   const touchLayout = coarsePointer || walkerParked;
+  const mobileLayout = useSyncExternalStore(subscribeMobileHero, getMobileHeroSnapshot, getServerCoarsePointerSnapshot);
 
   /** Keep the ASCII's right edge on Archive's rail after fonts and viewport changes. */
   useLayoutEffect(() => {
@@ -358,6 +378,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     const observer = new ResizeObserver(measure);
     observer.observe(stage);
     observer.observe(drawing);
+    if (contentRevealGateRef.current) observer.observe(contentRevealGateRef.current);
     const frameStyleObserver = new MutationObserver(measure);
     const watchFrame = () => {
       const frame = drawing.querySelector("pre");
@@ -719,12 +740,17 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     });
   }, []);
 
-  /** Keep the intro string identical on the server and client; the mobile break is CSS-controlled. */
   const introText = content.position;
-  const introLines = useMemo(() => [introText], [introText]);
-  // Let mobile use identical SSR/client line tokens; measuring into per-line wrappers can move words at hydration.
-  const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true, {
-    preserveNaturalWrappingMedia: "(max-width: 48rem)",
+  const introSource = mobileLayout ? introText.replace(" & Creative Technologist", "\n& Creative Technologist") : introText;
+  const introLines = usePretextLines(introSource, introRef, "pre-wrap", true, {
+    preserveNaturalWrappingMedia: MOBILE_HERO_QUERY,
+  });
+  const headingText = mobileLayout && mobileHeadingBreakBefore
+    ? content.statement.replace(` ${mobileHeadingBreakBefore}`, `\n${mobileHeadingBreakBefore}`)
+    : content.statement;
+  // Mobile keeps explicit phrase breaks; desktop still measures its real wrapped lines.
+  const headingLines = usePretextLines(headingText, headingRef, "pre-wrap", true, {
+    preserveNaturalWrappingMedia: MOBILE_HERO_QUERY,
   });
   const descriptionText = content.description ?? "";
   const descriptionLines = usePretextLines(descriptionText, descriptionRef, "pre-wrap", Boolean(descriptionText));
@@ -737,10 +763,17 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
   const hasCta = ctaTextUpper.length > 0;
   const ctaLines = useMemo(() => (hasCta ? [ctaTextUpper] : []), [hasCta, ctaTextUpper]);
 
-  const sequenceTotal = introLines.length + headingLines.length + descriptionLineCount + ctaLines.length;
+  const supportingOffset = introLines.length + headingLines.length + descriptionLineCount + ctaLines.length;
+  const sequenceTotal = supportingOffset + supportingLineCount;
+  const detailReveal = useMemo(() => ({
+    offset: supportingOffset,
+    total: sequenceTotal,
+    visible: bypassHeroReplay || heroContentRevealVisible,
+    immediate: bypassHeroReplay,
+  }), [supportingOffset, sequenceTotal, bypassHeroReplay, heroContentRevealVisible]);
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
   /**
-   * Touch: the walker sits under the text, so it waits for the line cascade instead of appearing with
+   * Touch: the walker sits alongside the details, so it waits for the line cascade instead of appearing with
    * line one — it starts once the last line is ~93% in (half its settle on `--ease-reveal`).
    */
   const [walkerIntroReady, setWalkerIntroReady] = useState(false);
@@ -938,7 +971,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
       ro.disconnect();
       glyphs.forEach((glyph) => glyph.el.removeAttribute("data-dissolve-off"));
     };
-  }, [headingLines, descriptionLines, supportingContent]);
+  }, [introLines, headingLines, descriptionLines, supportingContent]);
 
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
@@ -977,11 +1010,11 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     const descriptionEndMs = descriptionLineCount > 0
       ? (introLines.length + headingLines.length + descriptionLineCount - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
       : 0;
-    const ctaEndMs =
-      hasCta
+    const lastLineEndMs =
+      sequenceTotal > 0
         ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
         : 0;
-    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, descriptionEndMs, ctaEndMs) * heroTempo());
+    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, descriptionEndMs, lastLineEndMs) * heroTempo());
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
@@ -1003,7 +1036,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     sequenceTotal,
   ]);
 
-  /** Publish CTA stagger phase to {@link HeroRevealTimelineProvider} for Work reveals. */
+  /** Hand off to Work as the hero's details enter, overlapping their settling motion. */
   useLayoutEffect(() => {
     if (!setHeroCtaAligned) {
       return undefined;
@@ -1033,8 +1066,9 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
       return () => setHeroCtaAligned(false);
     }
 
+    // Let peeking projects enter with the first detail value, overlapping the last hero lines.
     const ctaPhaseStartMs = hasCta
-      ? Math.round((introLines.length + headingLines.length + descriptionLineCount) * HEADING_REVEAL_STEP_MS * heroTempo())
+      ? Math.round((supportingOffset - ctaLines.length + Math.min(2, supportingLineCount)) * HEADING_REVEAL_STEP_MS * heroTempo())
       : 0;
 
     const timeoutId = window.setTimeout(() => {
@@ -1054,6 +1088,9 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     descriptionLineCount,
     headingLines.length,
     introLines.length,
+    supportingOffset,
+    supportingLineCount,
+    ctaLines.length,
   ]);
 
   useEffect(() => {
@@ -1303,7 +1340,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
               elementRef={headingRef}
               as="h1"
               className={styles.heading}
-              text={content.statement}
+              text={headingText}
               lines={headingLines}
               offset={introLines.length}
               total={sequenceTotal}
@@ -1343,7 +1380,9 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
                 visible={bypassHeroReplay ? true : heroContentRevealVisible}
               />
             ) : null}
-            {supportingContent}
+            <HeroDetailRevealContext.Provider value={detailReveal}>
+              {supportingContent}
+            </HeroDetailRevealContext.Provider>
           </div>
 
           <div

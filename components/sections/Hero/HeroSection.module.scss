@@ -303,3 +303,5 @@
 
 .headingMobileBreak { display: none; }
 @media (max-width: 48rem) { .headingMobileBreak { display: initial; } }
+
+.detailLine { --reveal-line-gap: 0; }

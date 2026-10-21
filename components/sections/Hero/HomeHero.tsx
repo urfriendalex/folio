@@ -9,16 +9,16 @@ import styles from "./HomeHero.module.scss";
 const details = (
   <dl className={styles.facts}>
     <div data-dissolve-block="">
-      <dt><HeroDetailText text="Focus" seed={401} /></dt>
-      <dd><HeroDetailText text="Websites & e-commerce" seed={409} /><br /><HeroDetailText text="Code-driven motion" seed={419} /><br /><HeroDetailText text="Generative imagery & video" seed={431} /></dd>
+      <dt><HeroDetailText text="Focus" seed={401} revealIndex={0} /></dt>
+      <dd><HeroDetailText text="Websites & e-commerce" seed={409} revealIndex={1} /><HeroDetailText text="Code-driven motion" seed={419} revealIndex={2} /><HeroDetailText text="Generative imagery & video" seed={431} revealIndex={3} /></dd>
     </div>
     <div data-dissolve-block="">
-      <dt><HeroDetailText text="Based" seed={443} /></dt>
-      <dd><HeroDetailText text="Warsaw, Poland" seed={449} /></dd>
+      <dt><HeroDetailText text="Based" seed={443} revealIndex={4} /></dt>
+      <dd><HeroDetailText text="Warsaw, Poland" seed={449} revealIndex={5} /></dd>
     </div>
     <div className={styles.contactBlock} data-dissolve-block="">
-      <dt><a className={styles.contactLink} href="#contact" aria-label="Availability: open to new projects. Go to contact."><HeroDetailText text="Availability" seed={457} /></a></dt>
-      <dd><HeroDetailText text="Open to new projects" seed={463} /></dd>
+      <dt><a className={styles.contactLink} href="#contact" aria-label="Availability: open to new projects. Go to contact."><HeroDetailText text="Availability" seed={457} revealIndex={6} /></a></dt>
+      <dd><HeroDetailText text="Open to new projects" seed={463} revealIndex={7} /></dd>
     </div>
   </dl>
 );
@@ -44,6 +44,7 @@ export function HomeHero() {
         ctaClassName={styles.cta}
         ctaAdornment={<BookingButtonAscii className={styles.ctaAscii} accent="--signal-color" clearance="box" directional glitch touchOrbit />}
         supportingContent={details}
+        supportingLineCount={8}
         asciiInteraction={{ expanded, onToggle: () => setExpanded((value) => !value) }}
       />
     </div>
