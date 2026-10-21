@@ -1,6 +1,6 @@
 .section {
   position: relative;
-  /* Glyph accent only; red read as an alarm here. Labels stay ink; red stays for Back and form errors. */
+  /* The status stays blue; each action supplies its own glyph accent. */
   --contact-accent: var(--taskbar-flag-blue);
   padding-bottom: var(--section-padding-y);
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
@@ -582,12 +582,12 @@
     display: none !important;
   }
 
-  /* Keep a complete contact screen beneath the navigation; spare height belongs to the layout, not the buttons. */
+  /* Use the largest viewport so browser toolbar changes cannot resize the contact layout. */
   .section:not(.sectionFormOpen) .stage {
     display: flex;
     flex-direction: column;
     min-height: calc(100svh - var(--header-height) - 1rem);
-    min-height: calc(100dvh - var(--header-height) - 1rem);
+    min-height: calc(100lvh - var(--header-height) - 1rem);
   }
 
   /* Inside `.emailView` — horizontal inset comes from parent; unmounts with email stack */

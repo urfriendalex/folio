@@ -5,6 +5,6 @@ export const heroContent = {
   statement:
     "I build websites\nand other cool stuff.",
   description: "E-commerce, portfolios, and product UI for brands, studios, and product teams.",
-  /** Shown under the headline (all caps in UI). Hero opens the home contact form (same as "Open contact form"). */
+  /** Shown under the headline (all caps in UI). Links to the contact section. */
   ctaLine: "Let's build something together ↗",
 };
