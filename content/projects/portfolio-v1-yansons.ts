@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const portfolioV1YansonsProject: ProjectEntry = {
   slug: "portfolio-v1-yansons",
-  orderIndex: 5,
+  orderIndex: 6,
   title: "AY FOLIO V1",
   cardDescriptor: "WEB DEV PORTFOLIO",
   category: "portfolio",

@@ -20,8 +20,10 @@ import { pastelMuseProject } from "./pastel-muse";
 import { portfolioV1YansonsProject } from "./portfolio-v1-yansons";
 import { projectMediaOrderIndexBySlug } from "./project-media-order";
 import { studioIskraProject } from "./studio-iskra";
+import { y2kWarsawProject } from "./y2k-warsaw";
 
 const projectEntries = [
+  y2kWarsawProject,
   lumanoProject,
   monNomBakeryProject,
   linaTsapovaProject,

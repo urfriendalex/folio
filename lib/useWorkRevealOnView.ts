@@ -39,6 +39,8 @@ export function useWorkRevealOnView<T extends HTMLElement>(
   useLayoutEffect(() => {
     const node = ref.current;
     if (node && isRevealRestoreWindow() && isAtOrAboveViewportBottom(node)) {
+      // Ref is only available after commit; this has to land before the first paint.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM measurement, not derived state
       setRestoredSeen(true);
     }
   }, [ref]);
