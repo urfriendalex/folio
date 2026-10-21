@@ -26,21 +26,14 @@ export const curatedProjectMedia = {
         }
       },
       {
-        "kind": "image",
-        "alt": "Y2K WARSAW homepage",
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile scroll from the homepage through new arrivals, a product, and the cart",
+        "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-02.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Y2K WARSAW new arrivals collection",
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-03.png",
-          "width": 1956,
-          "height": 1048
+          "src": "/projects/y2k-warsaw/media-06.mp4",
+          "poster": "/projects/y2k-warsaw/media-06-poster.png",
+          "width": 780,
+          "height": 1680
         }
       },
       {
@@ -54,56 +47,9 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "Y2K WARSAW cart",
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-05.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
-        "kind": "video",
-        "alt": "Y2K WARSAW mobile scroll from the homepage through new arrivals, a product, and the cart",
-        "loop": true,
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-06.mp4",
-          "poster": "/projects/y2k-warsaw/media-06-poster.png",
-          "width": 780,
-          "height": 1680
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Y2K WARSAW mobile homepage",
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-07.png",
-          "width": 780,
-          "height": 1680
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Y2K WARSAW mobile new arrivals",
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-08.png",
-          "width": 780,
-          "height": 1680
-        }
-      },
-      {
-        "kind": "image",
         "alt": "Y2K WARSAW mobile product page",
         "desktop": {
           "src": "/projects/y2k-warsaw/media-09.png",
-          "width": 780,
-          "height": 1680
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Y2K WARSAW mobile cart",
-        "desktop": {
-          "src": "/projects/y2k-warsaw/media-10.png",
           "width": 780,
           "height": 1680
         }
