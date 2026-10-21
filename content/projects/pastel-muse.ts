@@ -9,7 +9,7 @@ export const pastelMuseProject: ProjectEntry = {
   category: "event",
   descriptor: "Photo-day experience website series",
   year: "2026",
-  lastModified: "2026-10-22",
+  lastModified: "2026-10-23",
   role: "Design + Frontend",
   technologies: ["Next.js", "GSAP", "SCSS"],
   shortDescription:

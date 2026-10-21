@@ -218,6 +218,35 @@ export const curatedProjectMedia = {
     },
     "media": [
       {
+        "kind": "image",
+        "alt": "Pastel Muse landing",
+        "desktop": {
+          "src": "/projects/pastel-muse/media-05.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Pastel Muse desktop landing, style grid, and results",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/pastel-muse/media-04.mp4",
+          "poster": "/projects/pastel-muse/media-04-poster.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Pastel Muse results gallery",
+        "desktop": {
+          "src": "/projects/pastel-muse/media-06.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
         "kind": "video",
         "alt": "Pastel Muse mobile intro",
         "loop": true,
@@ -230,53 +259,13 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Pastel Muse mobile scroll",
+        "alt": "Pastel Muse mobile landing and results",
         "loop": true,
         "desktop": {
           "src": "/projects/pastel-muse/media-02.mp4",
           "poster": "/projects/pastel-muse/media-02-poster.png",
           "width": 780,
-          "height": 1678
-        }
-      },
-      {
-        "kind": "video",
-        "alt": "Pastel Muse mobile tabs",
-        "loop": true,
-        "desktop": {
-          "src": "/projects/pastel-muse/media-03.mp4",
-          "poster": "/projects/pastel-muse/media-03-poster.png",
-          "width": 780,
-          "height": 1682
-        }
-      },
-      {
-        "kind": "video",
-        "alt": "Pastel Muse desktop scroll",
-        "loop": true,
-        "desktop": {
-          "src": "/projects/pastel-muse/media-04.mp4",
-          "poster": "/projects/pastel-muse/media-04-poster.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Pastel Muse photo-day landing",
-        "desktop": {
-          "src": "/projects/pastel-muse/media-05.png",
-          "width": 1955,
-          "height": 1047
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Pastel Muse event details",
-        "desktop": {
-          "src": "/projects/pastel-muse/media-06.png",
-          "width": 1955,
-          "height": 1047
+          "height": 1680
         }
       },
       {
@@ -289,8 +278,17 @@ export const curatedProjectMedia = {
         }
       },
       {
+        "kind": "image",
+        "alt": "Blooming Diva photo-day experience",
+        "desktop": {
+          "src": "/projects/pastel-muse/media-10.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
         "kind": "video",
-        "alt": "Pastel Muse desktop tabs",
+        "alt": "Blooming Diva desktop grid switcher and image zoom",
         "loop": true,
         "desktop": {
           "src": "/projects/pastel-muse/media-08.mp4",
@@ -301,7 +299,27 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Pastel Muse user flow",
+        "alt": "Blooming Diva mobile grid switcher and image zoom",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/pastel-muse/media-03.mp4",
+          "poster": "/projects/pastel-muse/media-03-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Wild Grace landing",
+        "desktop": {
+          "src": "/projects/pastel-muse/media-11.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Wild Grace desktop grid switcher and image zoom",
         "loop": true,
         "desktop": {
           "src": "/projects/pastel-muse/media-09.mp4",
@@ -312,20 +330,22 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "image",
-        "alt": "Blooming Diva photo-day experience",
+        "alt": "Wild Grace picnic experience",
         "desktop": {
-          "src": "/projects/pastel-muse/media-10.png",
+          "src": "/projects/pastel-muse/media-12.png",
           "width": 1956,
           "height": 1048
         }
       },
       {
-        "kind": "image",
-        "alt": "Wild Grace summer photo-day experience",
+        "kind": "video",
+        "alt": "Wild Grace mobile grid switcher and image zoom",
+        "loop": true,
         "desktop": {
-          "src": "/projects/pastel-muse/media-11.png",
-          "width": 1956,
-          "height": 1048
+          "src": "/projects/pastel-muse/media-13.mp4",
+          "poster": "/projects/pastel-muse/media-13-poster.png",
+          "width": 780,
+          "height": 1680
         }
       }
     ]
