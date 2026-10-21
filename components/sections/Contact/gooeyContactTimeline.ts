@@ -9,7 +9,7 @@ export function createGooeyContactTimeline(args: {
   text2: SVGTextElement | Element;
   feBlur: SVGFEGaussianBlurElement;
   primitiveValues: { stdDeviation: number };
-  /** When false (mobile loop), omit onComplete/onReverseComplete like an infinitely playing tl */
+  /** Mobile scrubbing manages filter cleanup as it seeks the timeline. */
   clearFilterOnEnd: boolean;
 }) {
   const { textsGroupEl, text1, text2, feBlur, primitiveValues, clearFilterOnEnd } = args;

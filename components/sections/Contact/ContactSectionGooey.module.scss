@@ -80,3 +80,11 @@
     transition: opacity 160ms ease-out;
   }
 }
+
+/* Keep the mobile word sized to its compact panel, independently of the desktop banner. */
+@media (max-width: 48rem) {
+  .gooeyEmailWord,
+  .gooeyEmailWord .gooeyItem {
+    min-height: clamp(3rem, 12vw, 4.5rem);
+  }
+}

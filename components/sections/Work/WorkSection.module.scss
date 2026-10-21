@@ -171,7 +171,7 @@
   column-gap: clamp(1rem, 2.4vw, 1.5rem);
   row-gap: clamp(1.35rem, 3vw, 1.85rem);
   align-items: start;
-  transition: grid-template-columns 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: grid-template-columns 320ms var(--ease-reveal);
 }
 
 .grid[data-view="stack"] {

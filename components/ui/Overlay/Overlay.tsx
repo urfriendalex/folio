@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { lockBodyScroll, unlockBodyScroll } from "@/lib/scrollLock";
+import { isBodyScrollLocked, lockBodyScroll, onBodyScrollLock, unlockBodyScroll } from "@/lib/scrollLock";
 import styles from "./Overlay.module.scss";
 
 const TOOLBAR_EXIT_ARM_MS = 40;
@@ -13,6 +13,8 @@ let toolbarExitTimer: number | null = null;
 let toolbarReleaseTimer: number | null = null;
 let toolbarTransitionTarget: HTMLElement | null = null;
 let toolbarTransitionEnd: ((event: TransitionEvent) => void) | null = null;
+let toolbarPlaceholder: HTMLDivElement | null = null;
+let toolbarUnlockCleanup: (() => void) | null = null;
 
 function clearToolbarExitTimer() {
   if (toolbarExitTimer === null) {
@@ -24,6 +26,8 @@ function clearToolbarExitTimer() {
 }
 
 function clearToolbarRelease() {
+  toolbarUnlockCleanup?.();
+  toolbarUnlockCleanup = null;
   if (toolbarReleaseTimer !== null) {
     window.clearTimeout(toolbarReleaseTimer);
     toolbarReleaseTimer = null;
@@ -38,16 +42,65 @@ function clearToolbarRelease() {
 }
 
 function releaseToolbar() {
+  // A fixed body changes sticky's containing block. Return to flow only after scroll restoration.
+  if (isBodyScrollLocked()) {
+    clearToolbarRelease();
+    toolbarUnlockCleanup = onBodyScrollLock({ afterUnlock: releaseToolbar });
+    return;
+  }
   clearToolbarRelease();
+  const toolbar = document.querySelector<HTMLElement>(TOOLBAR_SELECTOR);
+  if (toolbar) toolbar.style.transition = "none";
   document.documentElement.classList.remove("is-overlay-toolbar-fixed");
+  toolbar?.style.removeProperty("--overlay-toolbar-rest-y");
+  toolbar?.style.removeProperty("--overlay-toolbar-exit-y");
+  toolbar?.removeAttribute("data-overlay-toolbar-detached");
+  toolbarPlaceholder?.remove();
+  toolbarPlaceholder = null;
+  if (toolbar) {
+    toolbar.getBoundingClientRect();
+    toolbar.style.removeProperty("transition");
+  }
 }
 
 function pinToolbar() {
   const html = document.documentElement;
   clearToolbarExitTimer();
   clearToolbarRelease();
+  const toolbar = document.querySelector<HTMLElement>(TOOLBAR_SELECTOR);
+  let originalRect: DOMRect | null = null;
+  if (toolbar && toolbarPlaceholder?.parentElement !== toolbar.parentElement) {
+    originalRect = toolbar.getBoundingClientRect();
+    toolbar.style.transition = "none";
+    toolbar.style.setProperty("--overlay-toolbar-rest-y", "0px");
+    toolbarPlaceholder?.remove();
+    toolbarPlaceholder = document.createElement("div");
+    toolbarPlaceholder.setAttribute("aria-hidden", "true");
+    toolbarPlaceholder.dataset.overlayToolbarPlaceholder = "true";
+    // Preserve the page's geometry through the fixed pose and return animation.
+    toolbarPlaceholder.style.height = `${originalRect.height}px`;
+    toolbar.before(toolbarPlaceholder);
+  }
   html.classList.add("is-overlay-toolbar-fixed");
   html.classList.remove("is-overlay-toolbar-out");
+  if (originalRect && toolbar) {
+    // Use the browser's actual fixed box, including fractional layout pixels.
+    // A viewport-height calculation leaves a tiny transform at rest that snaps on release.
+    const fixedRect = toolbar.getBoundingClientRect();
+    const restOffset = originalRect.top - fixedRect.top;
+    const detached = Math.abs(restOffset) >= 2;
+    toolbar.dataset.overlayToolbarDetached = String(detached);
+    toolbar.style.setProperty("--overlay-toolbar-rest-y", `${restOffset}px`);
+    const distanceAbove = Math.max(16, originalRect.bottom + 32);
+    const distanceBelow = Math.max(16, window.innerHeight - originalRect.top + 32);
+    const exitOffset = detached
+      ? (distanceAbove < distanceBelow ? -distanceAbove : distanceBelow)
+      : window.innerHeight - originalRect.top + 32;
+    toolbar.style.setProperty("--overlay-toolbar-exit-y", `${exitOffset}px`);
+    // Establish the matching fixed pose before enabling interruptible transitions.
+    toolbar.getBoundingClientRect();
+    toolbar.style.removeProperty("transition");
+  }
 }
 
 function slideToolbarOut() {
@@ -61,6 +114,8 @@ function slideToolbarOut() {
 function slideToolbarIn() {
   const html = document.documentElement;
   clearToolbarExitTimer();
+  // The return already finished; keep its unlock handoff rather than restarting it on unmount.
+  if (toolbarUnlockCleanup) return;
   clearToolbarRelease();
 
   if (!html.classList.contains("is-overlay-toolbar-fixed")) {
@@ -145,9 +200,10 @@ export function Overlay({
     }
 
     const html = document.documentElement;
+    // Capture the visible sticky pose before fixing body changes its containing block.
+    pinToolbar();
     lockBodyScroll();
     html.classList.add("is-overlay-open");
-    pinToolbar();
 
     return () => {
       /* Drop overflow lock first: while `is-overlay-open` is on, `overflow: hidden` on `html` makes

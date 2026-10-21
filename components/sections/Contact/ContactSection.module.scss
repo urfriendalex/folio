@@ -1,5 +1,7 @@
 .section {
   position: relative;
+  /* Glyph accent only; red read as an alarm here. Labels stay ink; red stays for Back and form errors. */
+  --contact-accent: var(--taskbar-flag-blue);
   padding-bottom: var(--section-padding-y);
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
 }
@@ -69,7 +71,7 @@
   pointer-events: none;
   transition:
     opacity 320ms ease,
-    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1),
+    transform 480ms var(--ease-reveal),
     color 220ms ease;
   transition-delay: 180ms;
 }
@@ -102,6 +104,15 @@
 
 .emailView {
   --contact-email-gap: clamp(0.9rem, 1.5vw, 1rem);
+  /* One cascade top → bottom on the global motion tokens. Exit is faster, undelayed, ease-out. */
+  --contact-reveal-step: var(--stagger);
+  --contact-reveal-offset: 0;
+  --contact-reveal-rise: var(--reveal-rise);
+  --contact-reveal-opacity-ms: var(--duration-reveal-fade);
+  --contact-reveal-transform-ms: var(--duration-reveal-move);
+  --contact-reveal-ease: var(--ease-reveal);
+  --contact-exit-ms: var(--duration-exit);
+  --contact-exit-ease: var(--ease-out);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -114,11 +125,15 @@
   box-sizing: border-box;
 }
 
-/* Wraps gooey email — desktop: full row width so inner `width:100%` gooey layout resolves; mobile adds shell */
+/* Full-width wrapper for the gooey email. */
 .contactGooeyCard {
+  position: relative;
+  isolation: isolate;
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+  /* The inner word owns the entrance; let the gooey morph overflow without a second animated mask. */
+  overflow: visible;
 }
 
 .emailLink {
@@ -145,19 +160,31 @@
   white-space: nowrap;
   overflow-x: visible;
   overflow-y: visible;
+  /* One bounded text layer on every viewport. Let the blur resolve visibly as
+     scale settles; `none` releases both effects at rest without persistent will-change. */
   opacity: 0;
-  filter: blur(18px);
-  transform: translate3d(0, -1rem, 0);
+  filter: blur(24px);
+  transform: scale(0.965);
+  transform-origin: center;
   transition:
-    opacity 360ms ease,
-    filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    opacity var(--contact-exit-ms) var(--contact-exit-ease),
+    filter var(--contact-exit-ms) var(--contact-exit-ease),
+    transform var(--contact-exit-ms) var(--contact-exit-ease);
 }
 
 .emailWord[data-visible="true"] {
   opacity: 1;
-  filter: blur(0);
-  transform: translate3d(0, 0, 0);
+  filter: none;
+  transform: none;
+  transition-duration:
+    var(--contact-reveal-opacity-ms),
+    1100ms,
+    1000ms;
+  transition-timing-function:
+    var(--ease-out),
+    cubic-bezier(0.25, 0.1, 0.25, 1),
+    cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition-delay: calc(var(--cell-delay, 0ms) + var(--email-delay, 0ms));
 }
 
 .emailText {
@@ -255,7 +282,7 @@
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--signal-color);
+  color: var(--fg-color);
   font: inherit;
   font-size: 0.72rem;
   letter-spacing: var(--tracking-label-lg);
@@ -264,39 +291,73 @@
   text-decoration: none;
   text-transform: uppercase;
   cursor: pointer;
-  opacity: 0;
-  transform: translate3d(0, 0.6rem, 0);
   pointer-events: none;
-  transition:
-    opacity 320ms ease,
-    transform 480ms cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
 .contactChannelButton[data-visible="true"] {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
   pointer-events: auto;
-  transition-delay: 180ms;
 }
 
-.contactChannelButton[data-visible="false"] {
-  transition-delay: 0ms;
+/* Per-cell start time on the shared cascade; children offset from it. */
+.contactStatus,
+.contactChannelButton,
+.contactGooeyCard {
+  --cell-delay: calc(
+    (var(--contact-reveal-index, 0) + var(--contact-reveal-offset)) * var(--contact-reveal-step)
+  );
 }
 
-:global(html.home-section-arrival-reveal) .section .emailWord,
-:global(html.home-section-arrival-reveal) .section .contactGooeyCard {
-  transition-duration: 240ms, 320ms, 320ms;
+/* Button label: line-mask reveal (text slides up inside its own clip) — no blur, no box motion. */
+.revealLine {
+  display: block;
+  overflow: hidden;
 }
 
-:global(html.home-section-arrival-reveal) .section .contactChannelButton {
-  transition-duration: 220ms, 300ms;
-  transition-delay: 40ms;
+@supports (overflow: clip) {
+  .revealLine {
+    overflow: clip;
+  }
+}
+
+.revealLineText {
+  display: block;
+  transform: translate3d(0, 110%, 0);
+  transition: transform var(--contact-exit-ms) var(--contact-exit-ease);
+}
+
+[data-visible="true"] > .revealLine .revealLineText {
+  transform: translate3d(0, 0, 0);
+  transition-duration: var(--contact-reveal-transform-ms);
+  transition-timing-function: var(--contact-reveal-ease);
+  transition-delay: calc(var(--cell-delay) + var(--line-delay, 0ms));
+}
+
+/* Action cells glitch in glyph by glyph, like the hero: strictly on or off, never half-faded or moving.
+   Hiding via `color` keeps the layout (and the field's clearing) where the text will land. */
+.glitchLabel {
+  display: block;
+}
+
+.glitchChar:not([data-glitch-on]) {
+  color: transparent;
+}
+
+:global(html:not(.reveals-enabled)) .glitchChar {
+  color: inherit;
+}
+
+:global(html.home-section-arrival-reveal) .section .emailView {
+  --contact-reveal-step: var(--stagger);
+  --contact-reveal-opacity-ms: var(--duration-exit);
+  --contact-reveal-transform-ms: calc(var(--duration-base) + 40ms);
 }
 
 /* Reveals are progressive enhancement: slow connections and direct section navigation stay usable before hydration. */
 :global(html:not(.reveals-enabled)) .emailWord,
 :global(html:not(.reveals-enabled)) .contactChannelButton,
-:global(html:not(.reveals-enabled)) .contactGooeyCard {
+:global(html:not(.reveals-enabled)) .contactGooeyCard,
+:global(html:not(.reveals-enabled)) .mobileSectionTitle,
+:global(html:not(.reveals-enabled)) .revealLineText {
   opacity: 1;
   filter: none;
   transform: none;
@@ -315,19 +376,24 @@
   align-items: stretch;
   gap: clamp(1.5rem, 4vw, 3.5rem);
   padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  /* A light blur only: blurring the whole form (and each field inside it) drops frames. */
   opacity: 0;
-  filter: blur(16px);
-  transform: translate3d(0, 1rem, 0);
+  filter: blur(4px);
+  transform: translate3d(0, 0.75rem, 0);
   transition:
-    opacity 360ms ease,
-    filter 620ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    opacity var(--duration-exit) var(--ease-out),
+    filter var(--duration-exit) var(--ease-out),
+    transform var(--duration-exit) var(--ease-out);
 }
 
 .formView[data-visible="true"] {
   opacity: 1;
   filter: blur(0);
   transform: translate3d(0, 0, 0);
+  transition:
+    opacity 360ms ease,
+    filter 420ms var(--ease-reveal),
+    transform 620ms var(--ease-reveal);
 }
 
 .form {
@@ -350,12 +416,14 @@
   gap: clamp(0.5rem, 2vw, 1rem);
 }
 
+/* Same heading as the "Schedule a call" overlay (CalBookingOverlayContent `.title`) and "Contact Me". */
 .formTitle {
   min-width: 0;
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.35rem);
-  line-height: 0.96;
-  letter-spacing: -0.08em;
+  font-family: var(--font-body-stack);
+  font-size: clamp(1.55rem, 3.2vw, 2.8rem);
+  font-weight: 600;
+  line-height: 0.92;
   white-space: nowrap;
 }
 
@@ -389,7 +457,7 @@
   background: color-mix(in srgb, var(--fg-color) 85%, transparent);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 720ms cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition: transform 720ms var(--ease-reveal);
   transition-delay: calc(var(--field-delay) + 80ms);
 }
 
@@ -403,12 +471,10 @@
 .formActions,
 .formStatus {
   opacity: 0;
-  filter: blur(10px);
   transform: translate3d(-1rem, 0, 0);
   transition:
     opacity 360ms ease,
-    filter 520ms cubic-bezier(0.2, 0.88, 0.24, 1),
-    transform 620ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    transform 620ms var(--ease-reveal);
   transition-delay: var(--field-delay);
 }
 
@@ -419,7 +485,6 @@
 .formView[data-visible="true"] .formActions,
 .formView[data-visible="true"] .formStatus {
   opacity: 1;
-  filter: blur(0);
   transform: translate3d(0, 0, 0);
 }
 
@@ -499,7 +564,7 @@
 
 @media (max-width: 48rem) {
   .formTitle {
-    font-size: clamp(1.5rem, 7.6vw, 3.35rem);
+    font-size: clamp(1.3rem, 6.4vw, 2rem);
   }
 
   /*
@@ -517,33 +582,53 @@
     display: none !important;
   }
 
-  /* Email view: fill viewport; stage becomes a column flex root */
+  /* Keep a complete contact screen beneath the navigation; spare height belongs to the layout, not the buttons. */
   .section:not(.sectionFormOpen) .stage {
     display: flex;
     flex-direction: column;
-    min-height: calc(100svh - var(--header-height) - 0.5rem);
+    min-height: calc(100svh - var(--header-height) - 1rem);
+    min-height: calc(100dvh - var(--header-height) - 1rem);
   }
 
   /* Inside `.emailView` — horizontal inset comes from parent; unmounts with email stack */
   .mobileSectionTitle {
+    grid-area: title;
     display: block;
     flex: 0 0 auto;
     width: 100%;
     padding: 0.2rem 0 clamp(0.5rem, 2.2vw, 0.85rem);
     box-sizing: border-box;
+    opacity: 0;
+    transform: translate3d(0, var(--contact-reveal-rise), 0);
+    transition:
+      opacity var(--contact-exit-ms) var(--contact-exit-ease),
+      transform var(--contact-exit-ms) var(--contact-exit-ease);
   }
 
-  .emailView {
-    flex: 1;
-    min-height: 0;
+  .emailView[data-visible="true"] .mobileSectionTitle {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity var(--contact-reveal-opacity-ms) ease,
+      transform var(--contact-reveal-transform-ms) var(--contact-reveal-ease);
+  }
+
+  .section .emailView {
+    --contact-reveal-offset: 1;
+    /* Start with the title, then status, email and actions in reading order. */
+    --contact-reveal-step: var(--stagger);
+    flex: 1 0 auto;
+    min-height: inherit;
     align-items: stretch;
     justify-content: flex-start;
     gap: clamp(0.45rem, 1.8vw, 0.65rem);
     padding-block: 0;
   }
 
-  /* Hairline frame + glass fill — enter/exit aligned with `.emailWord` (opacity 360ms, blur/move 760ms) */
+  /* Mobile action rows share the section cascade and press feedback. */
   .contactChannelButton {
+    position: relative;
+    isolation: isolate;
     flex: 1 1 0;
     min-height: 0;
     width: 100%;
@@ -553,15 +638,13 @@
     justify-content: center;
     align-items: center;
     gap: 0;
-    padding: clamp(0.75rem, 2.5vw, 1.1rem) clamp(1rem, 3vw, 1.15rem);
+    padding: 1rem 0.5rem;
     overflow: hidden;
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+    border-radius: 0;
+    border: 0;
     box-shadow: none;
-    background:
-      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
-      var(--overlay-default-surface-base);
-    color: var(--signal-color);
+    background: transparent;
+    color: var(--fg-color);
     font-family: var(--font-pixel-stack);
     font-size: clamp(0.84rem, 2.6vw, 0.98rem);
     font-weight: 400;
@@ -569,76 +652,38 @@
     line-height: 1.35;
     text-transform: uppercase;
     text-align: center;
-    opacity: 0;
-    filter: blur(18px);
-    transform: translate3d(0, -1rem, 0);
+    /* Release springs back (slow, physical); press-in below is immediate. */
     transition:
-      opacity 360ms ease,
-      filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
-      background 200ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms ease;
-  }
-
-  .contactChannelButton[data-visible="true"] {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0);
+      color var(--duration-fast) ease,
+      transform var(--duration-release) var(--ease-spring-press);
   }
 
   .contactChannelButton[data-visible="true"]:active:not(:disabled) {
-    transform: translate3d(0, 0, 0) scale(0.985);
-    filter: blur(0);
+    transform: scale(0.97);
+    transition-duration: var(--duration-fast), var(--duration-press);
+    transition-timing-function: ease, var(--ease-out);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .contactChannelButton:hover:not(:disabled) {
-      border-color: color-mix(in srgb, var(--fg-color) 22%, transparent);
-      box-shadow: none;
-      background:
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--overlay-default-surface-top) 92%, var(--fg-color)),
-          color-mix(in srgb, var(--overlay-default-surface-bottom) 94%, var(--fg-color))
-        ),
-        color-mix(in srgb, var(--overlay-default-surface-base) 92%, var(--fg-color));
-    }
-  }
-
-  /* Middle bento cell — shell exits with gooey (no empty bordered frame during switch) */
+  /* The email is the single expressive mobile panel; actions below stay compact. */
   .contactGooeyCard {
-    flex: 1 1 0;
-    min-height: 0;
+    flex: 0 0 auto;
+    min-height: clamp(10rem, 45vw, 13rem);
+    flex-direction: column;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(0.65rem, 2.2vw, 1rem);
+    margin-bottom: 0.5rem;
+    padding: 1.25rem 0.75rem;
     overflow: visible;
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+    border-radius: 0;
+    border: 0;
     box-shadow: none;
-    background:
-      linear-gradient(180deg, var(--overlay-default-surface-top), var(--overlay-default-surface-bottom)),
-      var(--overlay-default-surface-base);
-    transition:
-      opacity 360ms ease,
-      filter 760ms cubic-bezier(0.2, 0.88, 0.24, 1),
-      transform 760ms cubic-bezier(0.2, 0.88, 0.24, 1);
+    background: transparent;
   }
 
   .contactGooeyCard[data-visible="false"] {
-    opacity: 0;
-    filter: blur(18px);
-    transform: translate3d(0, -1rem, 0);
     pointer-events: none;
-  }
-
-  .contactGooeyCard[data-visible="true"] {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0);
   }
 
   .emailWord {
@@ -672,8 +717,10 @@
 @media (prefers-reduced-motion: reduce) {
   .formView,
   .emailWord,
+  .mobileSectionTitle,
   .contactChannelButton,
   .contactGooeyCard,
+  .revealLineText,
   .formBackScreen,
   .field::after,
   .field span,

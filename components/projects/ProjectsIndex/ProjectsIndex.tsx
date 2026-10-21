@@ -31,6 +31,7 @@ import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
 import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
+import { resolveEase } from "@/lib/motion";
 import { getLenis, scrollToTop } from "@/lib/smoothScroll";
 import styles from "./ProjectsIndex.module.scss";
 
@@ -401,7 +402,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
         ],
         {
           duration: 420,
-          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+          easing: resolveEase("move"),
         },
       );
     });

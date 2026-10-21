@@ -13,17 +13,20 @@ import {
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
+import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
 import { BookingButtonAscii } from "./BookingButtonAscii";
+import { FooterEasterEgg } from "./FooterEasterEgg";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
 import { heroContent } from "@/content/hero";
 import { ROOT_THEME_ATTRIBUTE, syncBrowserChromeTheme, type ThemeName } from "@/lib/browserChrome";
 import { wordmarkFontSizePxForWidth } from "@/lib/footerWordmarkFitPretext";
+import { isBodyScrollLocked } from "@/lib/scrollLock";
 import { replayPreloader } from "@/lib/preloaderReplay";
 import { clearLocationHash, getLenis, scrollToTop } from "@/lib/smoothScroll";
-import { formatZoneMeta, useTimeZoneStatus } from "./TimeZoneStatus";
+import { formatZoneMeta, LiveClock, useTimeZoneInfo } from "./TimeZoneStatus";
 import styles from "./Footer.module.scss";
 
 function waitForAnimationFrame() {
@@ -66,15 +69,6 @@ const QUICK_LINKS: QuickLink[] = [
 
 const MOBILE_QUERY = "(max-width: 48rem)";
 
-function formatLocalTimeWithShortZone(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-    timeZoneName: "short",
-  }).format(date);
-}
 
 function subscribeToDocumentAttribute(attributeName: string, onStoreChange: () => void) {
   if (typeof document === "undefined") {
@@ -242,6 +236,7 @@ function FooterWordmarkStrip({ theme }: { theme: Theme }) {
         <p ref={textRef} className={styles.wordmark} aria-label="Alexander Yansons">
           {FOOTER_WORDMARK_LINE}
         </p>
+        <FooterEasterEgg wordmarkRef={textRef} />
       </div>
     </div>
   );
@@ -254,7 +249,9 @@ export function Footer() {
     getFooterModeSnapshot,
     getServerFooterModeSnapshot,
   );
-  const timeZoneStatus = useTimeZoneStatus();
+  /* Minute-level zone info; the seconds tick lives in <LiveClock> leaves so the footer never re-renders per second. */
+  const timeZoneInfo = useTimeZoneInfo();
+  const visitorZoneLabel = timeZoneInfo.visitorTimeZone ?? "…";
   const { openAbout } = useOverlay();
   const [menuOpen, setMenuOpen] = useState(false);
   const [displayMenuOpen, setDisplayMenuOpen] = useState(false);
@@ -274,16 +271,17 @@ export function Footer() {
   const toolbarModeButtonRef = useRef<HTMLButtonElement | null>(null);
   const minimalModeButtonRef = useRef<HTMLButtonElement | null>(null);
   const year = new Date().getFullYear();
-  const localClock =
-    timeZoneStatus.visitorTimeZone !== "Resolving local timezone..."
-      ? formatLocalTimeWithShortZone(new Date(), timeZoneStatus.visitorTimeZone)
-      : "…";
-
   /** Same offset as Warsaw — avoid repeating local vs studio clocks. */
-  const sameAsWarsaw = timeZoneStatus.offsetMinutes === 0;
+  const sameAsWarsaw = timeZoneInfo.offsetMinutes === 0;
 
   /** Mobile always uses the editorial “minimal” layout; no toolbar chrome. */
   const minimalFooter = isMobileViewport || footerMode === "minimal";
+  /* Rule draws once it is well above the bottom edge (not as a sliver at the fold). Cover only mounts in minimal mode, so re-observe on switch. */
+  const footerLineVisible = useRevealOnView(minimalFooterCoverRef, {
+    rootMargin: "0px 0px -18% 0px",
+    threshold: 0,
+    observerDisabled: !minimalFooter,
+  });
   /** Desktop + toolbar: only the taskbar (editorial + wordmark hidden). */
   const desktopToolbar = !isMobileViewport && footerMode === "toolbar";
   const showDisplayModeToggle = footerMode === "minimal" && !isMobileViewport;
@@ -328,7 +326,17 @@ export function Footer() {
       return;
     }
 
+    /* Runs on every scroll frame (window + Lenis): touch the attribute only when the state flips,
+       so the fixed full-width wordmark is not style-invalidated ~120×/s while it stays put. */
+    let wordmarkActive = host.hasAttribute("data-footer-wordmark-active");
+
     const update = () => {
+      // The fixed body resets native scroll and can emit intermediate resize/scroll events.
+      // Keep the underlying page's reveal state until its scroll position is restored.
+      if (isBodyScrollLocked()) {
+        return;
+      }
+
       const rect = footer.getBoundingClientRect();
       const vh = window.innerHeight;
       const centerY = rect.top + rect.height * 0.5;
@@ -336,6 +344,11 @@ export function Footer() {
       const centerPastBottomEdge = centerY <= vh;
       const active = footerIntersectsViewport && centerPastBottomEdge;
 
+      if (active === wordmarkActive) {
+        return;
+      }
+
+      wordmarkActive = active;
       if (active) {
         host.setAttribute("data-footer-wordmark-active", "true");
       } else {
@@ -643,7 +656,11 @@ export function Footer() {
     >
       {minimalFooter && (
         <>
-          <div ref={minimalFooterCoverRef} className={styles.minimalFooterCover}>
+          <div
+            ref={minimalFooterCoverRef}
+            className={styles.minimalFooterCover}
+            data-line-visible={footerLineVisible}
+          >
             <div className={`page-shell ${styles.inner}`}>
               <div className={styles.editorial}>
                 <div className={`${styles.editorialCol} ${styles.editorialColPrimary}`}>
@@ -696,21 +713,21 @@ export function Footer() {
                     {sameAsWarsaw ? (
                       <div className={styles.localeBlock}>
                         <span className={styles.localeLabel}>Time</span>
-                        <span className={styles.localeValue}>{localClock}</span>
+                        <LiveClock zone="visitor" className={styles.localeValue} />
                         <p className={styles.localeMeta}>
-                          {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
+                          {formatZoneMeta(visitorZoneLabel, timeZoneInfo.offsetLabel)}
                         </p>
                       </div>
                     ) : (
                       <>
                         <div className={styles.localeBlock}>
                           <span className={styles.localeLabel}>Your time</span>
-                          <span className={styles.localeValue}>{localClock}</span>
-                          <p className={styles.localeMeta}>{timeZoneStatus.offsetLabel}</p>
+                          <LiveClock zone="visitor" className={styles.localeValue} />
+                          <p className={styles.localeMeta}>{timeZoneInfo.offsetLabel}</p>
                         </div>
                         <div className={styles.localeBlock}>
                           <span className={styles.localeLabel}>Warsaw</span>
-                          <span className={styles.localeValue}>{timeZoneStatus.warsawShortClock}</span>
+                          <LiveClock zone="warsaw" className={styles.localeValue} />
                         </div>
                       </>
                     )}
@@ -853,31 +870,33 @@ export function Footer() {
                 <div
                   className={styles.clockTray}
                   tabIndex={0}
-                  aria-label={`Warsaw time ${timeZoneStatus.warsawDateTime}. Your local time ${timeZoneStatus.visitorDateTime}${timeZoneStatus.offsetLabel ? `. ${timeZoneStatus.offsetLabel}` : ""}.`}
+                  aria-label={`Warsaw and your local time${timeZoneInfo.offsetLabel ? `. ${timeZoneInfo.offsetLabel}` : ""}.`}
                 >
-                  <span className={styles.clockValue}>{`${timeZoneStatus.warsawTime} WAW`}</span>
+                  <LiveClock zone="warsaw" className={styles.clockValue} />
                   <div className={styles.clockTooltip} role="tooltip">
                     <div className={styles.winMenuPanel}>
                       {sameAsWarsaw ? (
                         <>
-                          <p className={styles.winMenuTooltipPrimary}>{timeZoneStatus.warsawDateTime}</p>
+                          <p className={styles.winMenuTooltipPrimary}>
+                            <LiveClock zone="warsaw" format="dateTime" />
+                          </p>
                           <p className={styles.winMenuTooltipMeta}>
-                            {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
+                            {formatZoneMeta(visitorZoneLabel, timeZoneInfo.offsetLabel)}
                           </p>
                         </>
                       ) : (
                         <>
                           <div className={styles.winMenuRow}>
                             <span className={styles.winMenuRowLabel}>Warsaw</span>
-                            <span className={styles.winMenuRowValue}>{timeZoneStatus.warsawDateTime}</span>
+                            <LiveClock zone="warsaw" format="dateTime" className={styles.winMenuRowValue} />
                           </div>
                           <div className={styles.winMenuSeparator} aria-hidden="true" />
                           <div className={styles.winMenuRow}>
                             <span className={styles.winMenuRowLabel}>Your time</span>
-                            <span className={styles.winMenuRowValue}>{timeZoneStatus.visitorDateTime}</span>
+                            <LiveClock zone="visitor" format="dateTime" className={styles.winMenuRowValue} />
                           </div>
                           <p className={styles.winMenuTooltipMeta}>
-                            {formatZoneMeta(timeZoneStatus.visitorTimeZone, timeZoneStatus.offsetLabel)}
+                            {formatZoneMeta(visitorZoneLabel, timeZoneInfo.offsetLabel)}
                           </p>
                         </>
                       )}

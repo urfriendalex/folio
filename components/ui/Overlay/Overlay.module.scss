@@ -30,7 +30,7 @@
   pointer-events: none;
   background: var(--overlay-default-backdrop);
   opacity: 0;
-  transition: opacity 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 420ms var(--ease-reveal);
 }
 
 .backdrop[data-visible="true"]::before {
@@ -73,8 +73,8 @@
   transform: scale(1.01);
   isolation: isolate;
   transition:
-    opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity 360ms var(--ease-reveal),
+    transform 420ms var(--ease-reveal);
 }
 
 .surface[data-variant="immersive"] {
@@ -116,7 +116,7 @@
   pointer-events: none;
   background: var(--overlay-immersive-backdrop);
   opacity: 0;
-  transition: opacity 780ms cubic-bezier(0.22, 0.9, 0.2, 1);
+  transition: opacity 780ms var(--ease-reveal);
 }
 
 .surface[data-variant="immersive"][data-visible="true"]::after {
@@ -125,7 +125,7 @@
 
 .surface[data-variant="immersive"][data-visible="false"]::after {
   opacity: 0;
-  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+  transition: opacity 480ms var(--ease-reveal);
 }
 
 .surface[data-visible="true"] {
@@ -142,7 +142,7 @@
 
 .surface[data-variant="immersive"][data-visible="false"] {
   opacity: 0;
-  transition: opacity 480ms cubic-bezier(0.2, 0.85, 0.35, 1);
+  transition: opacity 480ms var(--ease-reveal);
 }
 
 .atmosphere {
@@ -201,16 +201,25 @@
 
 /* Use the exact Navbar `.inner` row so logo and overlay action share one visual center. */
 .closeButton[data-variant="immersive"] {
-  top: 0.1rem;
+  /* The label box hugs the text (so the dotted focus mark sits evenly around "Close"); it is centered on
+     the Navbar row, and `::before` keeps the full header-row click/tap target. */
+  --close-row-height: calc(var(--header-height) - 0.2rem);
+  top: calc(0.1rem + var(--close-row-height) / 2);
   right: max(var(--content-padding-inline), 0.8rem);
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  height: calc(var(--header-height) - 0.2rem);
   min-height: 0;
   padding-block: 0;
   color: var(--overlay-fg);
   line-height: 1;
+  transform: translateY(-50%);
+}
+
+.closeButton[data-variant="immersive"]::before {
+  content: "";
+  position: absolute;
+  inset: calc((1lh - var(--close-row-height)) / 2) -0.75rem;
 }
 
 .closeButton:hover,
@@ -303,7 +312,7 @@
 
   .surface[data-variant="immersive"][data-inline-mobile-header="true"]
     .closeButton[data-variant="immersive"] {
-    height: var(--project-inline-header-height);
+    --close-row-height: var(--project-inline-header-height);
   }
 }
 

@@ -1,0 +1,154 @@
+/* Isolated art-direction studies; homepage styles and behavior are untouched. */
+:global(html:has([data-hero-study])) {
+  --bg-color: #f7f6f2;
+  --fg-color: #101010;
+  --muted-color: rgb(16 16 16 / 0.55);
+  --line-color: rgb(16 16 16 / 0.12);
+  --walker-color: #101010;
+  color-scheme: light;
+}
+:global(body:has([data-hero-study]) [data-app-footer]) { display: none; }
+:global(body:has([data-hero-study]) nextjs-portal) { display: none; }
+.study { color: var(--fg-color); background: var(--bg-color); }
+.mobileBreak { display: none; }
+.desktopSpace { display: inline; }
+.hero {
+  position: relative;
+  margin: 0 var(--content-padding-inline);
+  min-height: 735px;
+  display: flex;
+  align-items: center;
+  padding: 100px 0 80px;
+}
+
+.copy { max-width: 800px; width: 68%; }
+.intro { margin: 0 0 20px; color: var(--muted-color); font-size: 18px; line-height: 1.4; }
+.heading { margin: 0; font-size: 46px; font-weight: 400; line-height: 1.12; letter-spacing: -0.045em; }
+.details { margin-top: 30px; max-width: 650px; }
+.description { margin: 0; font-size: 23px; line-height: 1.4; letter-spacing: -0.02em; }
+.label { margin: 0 0 6px; color: var(--muted-color); font-size: 18px; line-height: 1.4; }
+.location { margin-top: 30px; }
+.cta { margin: 40px 0 0; font-family: var(--font-pixel-square-stack); font-size: 15px; line-height: 1.5; letter-spacing: 0.06em; }
+.cta a { color: inherit; text-decoration: none; }
+.cta a:hover { color: var(--signal-color); }
+.visual { position: absolute; right: 3%; top: 330px; width: 180px; height: 240px; }
+.walkerShell { position: relative; width: 100%; height: 100%; }
+.walker { position: absolute; top: 50%; left: 50%; white-space: pre; margin: 0; font-family: var(--font-mono-stack); font-size: 20px; line-height: 1.02; letter-spacing: 0; font-kerning: none; font-variant-ligatures: none; }
+.study[data-hero-study="2"] {
+  .heading { font-size: 68px; }
+  .copy { max-width: 950px; width: 75%; }
+  .hero { min-height: 715px; }
+  .visual { top: 370px; width: 150px; height: 200px; }
+}
+.study[data-hero-study="3"] {
+  .hero { align-items: flex-end; min-height: 755px; padding-bottom: 85px; }
+  .visual { top: auto; bottom: 85px; height: 190px; width: 145px; }
+}
+.study[data-hero-study="4"] {
+  .hero { min-height: 755px; }
+  .copy { max-width: 850px; }
+  .details { max-width: 620px; margin-top: 40px; }
+  .description { font-size: 21px; }
+  .visual { top: 410px; height: 190px; width: 145px; }
+}
+/* Desktop studies deliberately vary the weight of the live ASCII figure. */
+@media (min-width: 64rem) {
+  .copy { width: 58%; max-width: 740px; }
+  .details { max-width: 600px; }
+  .visual { width: 34%; height: 550px; top: 80px; right: 1%; }
+
+  .study[data-hero-study="2"] {
+    .copy { width: 59%; max-width: 820px; }
+    .details { max-width: 590px; }
+    .visual { width: 40%; height: 630px; top: 28px; right: -1%; }
+  }
+
+  .study[data-hero-study="3"] {
+    .copy { width: 48%; max-width: 630px; }
+    .heading { font-size: 42px; }
+    .description { font-size: 21px; }
+    .details { max-width: 540px; }
+    .visual { width: 49%; height: 690px; top: 12px; bottom: auto; right: -1%; }
+  }
+
+  .study[data-hero-study="4"] {
+    .copy { width: 54%; max-width: 720px; }
+    .details { max-width: 560px; }
+    .visual { width: 33%; height: 510px; top: 110px; right: 5%; }
+  }
+}
+@media (max-width: 48rem) {
+  .hero { min-height: 730px; display: block; padding: 290px 0 0; margin-inline: 20px; }
+  .copy { width: 100%; max-width: none; }
+  .intro { font-size: 14px; margin-bottom: 16px; max-width: 30ch; }
+  .heading { font-size: 28px; line-height: 1.12; letter-spacing: -0.04em; }
+  .details { margin-top: 24px; max-width: 100%; }
+  .description { font-size: 17px; line-height: 1.4; }
+  .cta { font-size: 11px; margin-top: 30px; letter-spacing: 0.04em; }
+  .visual { right: 0; top: auto; bottom: 30px; width: 80px; height: 130px; }
+  .label { font-size: 15px; margin-bottom: 3px; }
+  .study[data-hero-study="2"] {
+    .hero { padding-top: 230px; min-height: 690px; }
+    .copy { width: 100%; }
+    .heading { font-size: 34px; }
+    .visual { top: auto; bottom: 75px; height: 115px; width: 72px; }
+    .cta { margin-top: 65px; max-width: 265px; }
+  }
+  .study[data-hero-study="3"] {
+    .hero { padding-top: 405px; padding-bottom: 0; min-height: 790px; }
+    .visual { bottom: 38px; height: 110px; width: 70px; }
+    .cta { margin-top: 70px; max-width: 265px; }
+  }
+  .study[data-hero-study="4"] {
+    .hero { padding-top: 215px; min-height: 780px; }
+    .description { font-size: 17px; }
+    .details { margin-top: 35px; }
+    .location { margin-top: 30px; }
+    .visual { top: auto; bottom: 105px; height: 110px; width: 70px; }
+    .cta { margin-top: 35px; }
+  }
+}
+
+/* Latest exploration: viewport-aware project peek and a shared Archive rail. */
+@media (min-width: 64rem) {
+  .study[data-hero-study] {
+    .hero { min-height: calc(100svh - var(--header-height) - 80px); align-items: flex-end; padding: 80px 0 75px; }
+    .visual { right: var(--ascii-rail-right); top: auto; bottom: 55px; width: 36%; height: 570px; pointer-events: none; }
+  }
+  .study[data-hero-study="2"] {
+    .hero { padding-bottom: 60px; }
+    .visual { width: 40%; height: 630px; bottom: 35px; }
+  }
+  .study[data-hero-study="3"] {
+    .hero { padding-bottom: 45px; }
+    .visual { width: 46%; height: 680px; bottom: 15px; }
+  }
+  .study[data-hero-study="4"] {
+    .hero { padding-bottom: 65px; }
+    .visual { width: 36%; height: 560px; bottom: 50px; }
+  }
+}
+@media (max-width: 48rem) {
+  .mobileBreak { display: block; }
+  .desktopSpace { display: none; }
+  .study[data-hero-study] {
+    .hero { display: flex; align-items: flex-end; min-height: calc(100svh - var(--header-height) - 88px); padding: 0 0 165px; }
+    .intro { max-width: none; }
+    .visual { top: auto; bottom: 24px; right: 0; height: 120px; width: 76px; }
+  }
+  .study[data-hero-study="2"] {
+    .hero { padding-bottom: 165px; }
+    .cta { margin-top: 35px; max-width: none; }
+  }
+  .study[data-hero-study="3"] {
+    .hero { padding-bottom: 145px; }
+    .cta { margin-top: 35px; max-width: none; }
+  }
+  .study[data-hero-study="4"] {
+    .hero { padding-bottom: 115px; }
+    .details { margin-top: 26px; }
+    .location { margin-top: 22px; }
+    .visual { bottom: 12px; height: 100px; width: 65px; }
+    .cta { margin-top: 26px; }
+  }
+}

@@ -14,7 +14,7 @@
   pointer-events: none;
   transition-property: --cue-grow;
   transition-duration: 420ms;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-timing-function: var(--ease-out);
 }
 
 .frost {
@@ -63,7 +63,7 @@
   transform: translate3d(0, 0.75em, 0);
   transition-property: opacity, transform;
   transition-duration: 280ms, 620ms;
-  transition-timing-function: ease, cubic-bezier(0.2, 0.88, 0.24, 1);
+  transition-timing-function: ease, var(--ease-reveal);
 }
 
 @media (hover: hover) and (pointer: fine) {
