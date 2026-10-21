@@ -62,22 +62,19 @@ export const projectMediaOrderIndexBySlug: Partial<
     "media-04.mp4": 2,
   },
   /**
-   * Photo Day series, one chapter per site: landing, browsing, then mobile.
-   * Blooming Diva and Wild Grace continue into the grid switcher and zoom.
+   * Photo Day series. Motion leads each chapter. New stills that sat between
+   * clips were removed; the kept registration and Blooming Diva landing stills stay.
    */
   "pastel-muse": {
     "media-05.png": 1,
     "media-04.mp4": 2,
-    "media-06.png": 3,
-    "media-01.mp4": 4,
-    "media-02.mp4": 5,
-    "media-07.png": 6,
-    "media-10.png": 7,
-    "media-08.mp4": 8,
-    "media-03.mp4": 9,
-    "media-11.png": 10,
-    "media-09.mp4": 11,
-    "media-12.png": 12,
-    "media-13.mp4": 13,
+    "media-01.mp4": 3,
+    "media-02.mp4": 4,
+    "media-07.png": 5,
+    "media-10.png": 6,
+    "media-08.mp4": 7,
+    "media-03.mp4": 8,
+    "media-09.mp4": 9,
+    "media-13.mp4": 10,
   },
 };

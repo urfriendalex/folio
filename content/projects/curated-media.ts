@@ -238,15 +238,6 @@ export const curatedProjectMedia = {
         }
       },
       {
-        "kind": "image",
-        "alt": "Pastel Muse results gallery",
-        "desktop": {
-          "src": "/projects/pastel-muse/media-06.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
         "kind": "video",
         "alt": "Pastel Muse mobile intro",
         "loop": true,
@@ -309,30 +300,12 @@ export const curatedProjectMedia = {
         }
       },
       {
-        "kind": "image",
-        "alt": "Wild Grace landing",
-        "desktop": {
-          "src": "/projects/pastel-muse/media-11.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
         "kind": "video",
         "alt": "Wild Grace desktop grid switcher and image zoom",
         "loop": true,
         "desktop": {
           "src": "/projects/pastel-muse/media-09.mp4",
           "poster": "/projects/pastel-muse/media-09-poster.png",
-          "width": 1956,
-          "height": 1048
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Wild Grace picnic experience",
-        "desktop": {
-          "src": "/projects/pastel-muse/media-12.png",
           "width": 1956,
           "height": 1048
         }
