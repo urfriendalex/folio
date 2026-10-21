@@ -4,6 +4,112 @@ type ProjectCuratedMedia = Pick<ProjectEntry, "thumbnail" | "media">;
 
 /** Checked-in captures that are edited directly and must not be overwritten by the media generator. */
 export const curatedProjectMedia = {
+  "y2k-warsaw": {
+    "thumbnail": {
+      "desktop": {
+        "poster": "/projects/y2k-warsaw/thumbnail.png",
+        "video": "/projects/y2k-warsaw/thumbnail.mp4",
+        "width": 1956,
+        "height": 1048
+      }
+    },
+    "media": [
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW desktop scroll from the homepage through new arrivals, a product, and the cart",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-01.mp4",
+          "poster": "/projects/y2k-warsaw/media-01-poster.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW homepage",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-02.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW new arrivals collection",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-03.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW product page",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-04.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW cart",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-05.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile scroll from the homepage through new arrivals, a product, and the cart",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-06.mp4",
+          "poster": "/projects/y2k-warsaw/media-06-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW mobile homepage",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-07.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW mobile new arrivals",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-08.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW mobile product page",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-09.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "image",
+        "alt": "Y2K WARSAW mobile cart",
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-10.png",
+          "width": 780,
+          "height": 1680
+        }
+      }
+    ]
+  },
   "lumano": {
     "thumbnail": {
       "desktop": {

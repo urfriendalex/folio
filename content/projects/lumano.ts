@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const lumanoProject: ProjectEntry = {
   slug: "lumano",
-  orderIndex: 0,
+  orderIndex: 1,
   title: "LUMANO",
   cardDescriptor: "E-COMMERCE STORE",
   category: "ecommerce",
