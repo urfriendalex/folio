@@ -17,7 +17,7 @@ export const fullCourseStudioProject: ProjectEntry = {
   description:
     "A custom site for Full Course Studio, a Warsaw practice for marketing, content, websites, and ordering for cafés, bakeries, and restaurants. Launched 20 October 2026.",
   overview:
-    "The page opens on an ASCII figure and the line \"Creative and marketing for the restaurant business.\" Services, two published projects, the studio, and contact follow on the same page. A six-dot control on the figure opens colour, detail, size, pause, and next form. Dark mode remaps the atmosphere gradients. The footer switches English, Polish, and Russian. Search and answer-engine files on the live site include a canonical URL, hreflang, JSON-LD, a sitemap, robots.txt, and llms.txt.",
+    "The page opens on an ASCII figure and the line \"Creative and marketing for the restaurant business.\" Services, two published projects, the studio, and contact follow on the same page. A six-dot control on the figure opens colour, detail, size, pause, and next form. Dark mode remaps the atmosphere gradients. The footer wordmark is a canvas: a pointer over it scatters the glyphs, and a press changes the pose. A tap does the same on a phone. The footer also switches English, Polish, and Russian. Search and answer-engine files on the live site include a canonical URL, hreflang, JSON-LD, a sitemap, robots.txt, and llms.txt.",
   roleSummary: "Design and development of the studio site.",
   responsibilities: [
     "Design and frontend build",
@@ -48,6 +48,7 @@ export const fullCourseStudioProject: ProjectEntry = {
     "Hover on navigation, service rows, arrow links, and a liquid button",
     "Optional dark mode with a separate atmosphere palette",
     "Drifting gradients on the contact stage",
+    "Footer wordmark that scatters under the pointer and changes pose on press",
     "English, Polish, and Russian",
     "Short motion pieces for ads, content, and websites",
     "Canonical URL, hreflang, JSON-LD, sitemap, robots.txt, and llms.txt",
