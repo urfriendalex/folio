@@ -39,7 +39,7 @@ function scrollToTopImmediate() {
 
 function scrollToHomeSectionById(
   sectionId: string,
-  options?: { onComplete?: () => void; updateHash?: boolean },
+  options?: { onComplete?: () => void; updateHash?: boolean; immediate?: boolean },
 ) {
   let attempts = 0;
   const maxAttempts = 90;
@@ -47,12 +47,19 @@ function scrollToHomeSectionById(
   const tryScroll = () => {
     const el = document.getElementById(sectionId);
 
+    // The first-visit preloader may outlast the target lookup budget.
+    // Keep the page covered until it unlocks, then position the destination before revealing it.
+    if (document.documentElement.classList.contains("is-loading")) {
+      requestAnimationFrame(tryScroll);
+      return;
+    }
+
     if (el && !shouldPauseSmoothScroll(document.documentElement)) {
       if (options?.updateHash) {
         window.history.replaceState(window.history.state, "", `/#${sectionId}`);
       }
 
-      scrollElementIntoView(el, { force: true, immediate: options?.updateHash ?? false });
+      scrollElementIntoView(el, { force: true, immediate: options?.immediate ?? options?.updateHash ?? false });
       window.dispatchEvent(new CustomEvent("folio:home-section-arrive", { detail: { id: sectionId } }));
 
       options?.onComplete?.();
@@ -292,6 +299,7 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     const shouldRespectInitialHash = isInitialNavigation && !isReloadNavigation();
 
     if (pathname !== "/") {
+      document.documentElement.classList.remove("home-section-initial-pending");
       if (pendingHomeSectionIdRef.current !== null) {
         pendingHomeSectionIdRef.current = null;
         clearHomeSectionArrivalClasses();
@@ -367,7 +375,10 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       }
 
       historyScrollRestorePendingRef.current = false;
-      scrollToHomeSectionById(id);
+      scrollToHomeSectionById(id, {
+        immediate: isInitialNavigation,
+        onComplete: () => document.documentElement.classList.remove("home-section-initial-pending"),
+      });
       return;
     }
 

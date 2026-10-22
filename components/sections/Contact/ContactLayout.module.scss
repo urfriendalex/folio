@@ -243,7 +243,7 @@
   .emailView.emailView {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(8rem, 1fr) repeat(3, clamp(4rem, 10svh, 5.5rem)) 1rem;
+    grid-template-rows: auto auto minmax(8rem, 1fr) repeat(3, clamp(4rem, 10svh, 5.5rem)) 2.5rem;
     grid-template-areas: "title" "status" "goo" "copy" "call" "brief" ".";
   }
 
