@@ -65,31 +65,35 @@
   .hero {
     --hero-mobile-ascii-inline: 1;
     :global([data-hero-stage]) {
-      min-height: calc(100svh - var(--header-height) - 140px);
-      align-items: center; padding-block: 24px;
+      min-height: calc(100svh - var(--header-height) - 96px);
+      align-items: center; padding-block: 36px;
     }
     :global([data-hero-content]) {
       width: 100%; max-width: none;
       h1 { font-size: 1.875rem; line-height: 1.12; }
-      > p:nth-of-type(2) { font-size: 1rem; max-width: 100%; }
+      > p:nth-of-type(2) {
+        font-size: clamp(0.6875rem, 3.5vw, 0.875rem); line-height: 1.5;
+        max-width: 100%; margin-top: 32px;
+      }
+      > p:nth-of-type(3) { margin-top: 32px; }
     }
     .role { font-size: 0.8125rem; line-height: 1.4; margin-bottom: 12px; }
     .facts {
-      grid-template-columns: 1fr; gap: 1rem; font-size: 0.8125rem;
+      grid-template-columns: 1fr; gap: 1.25rem; margin-top: 32px; font-size: 0.8125rem;
       dt { font-size: 0.6875rem; }
       > div:not(:first-child) { width: calc(100% - 112px); }
     }
-    :global([data-hero-visual]) { > div, button { width: 100px; height: 145px; bottom: var(--hero-mobile-ascii-bottom, 24px); right: var(--hero-mobile-ascii-right, 0px); } }
+    :global([data-hero-visual]) { > div, button { width: 100px; height: 145px; bottom: calc(var(--hero-mobile-ascii-bottom, 48px) - 24px); right: var(--hero-mobile-ascii-right, 0px); } }
     &[data-ascii-expanded="true"] :global([data-hero-visual]) button { inset: 0; width: 100%; height: 100%; }
   }
 }
 @media (max-width: 48rem) and (max-height: 740px) {
   .hero {
-    :global([data-hero-stage]) { padding-block: 12px; }
+    :global([data-hero-stage]) { padding-block: 24px; }
     :global([data-hero-content]) > p:nth-of-type(2),
     :global([data-hero-content]) > p:nth-of-type(3),
-    .facts { margin-top: 14px; }
-    .facts { gap: 12px; }
+    .facts { margin-top: 24px; }
+    .facts { gap: 16px; }
   }
 }
 @media (prefers-reduced-motion: reduce) {
