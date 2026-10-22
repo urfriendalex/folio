@@ -346,18 +346,12 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
       const stageBounds = stage.getBoundingClientRect();
       const stagePageTop = stageBounds.top + window.scrollY;
       const frameScale = frame ? Math.abs(new DOMMatrixReadOnly(getComputedStyle(frame).transform).a) : 1;
-      if (mobile && getComputedStyle(stage).getPropertyValue("--hero-mobile-ascii-inline").trim() === "1") {
-        const copy = contentRevealGateRef.current;
-        if (copy) {
-          // Align the visible artwork with Availability, including on touch-scaled renderers.
-          const frameHeight = frame ? frame.offsetHeight * frameScale : height;
-          const inset = (height - frameHeight) / 2;
-          const availability = copy.querySelector<HTMLElement>("[data-hero-availability] dt");
-          const bottom = availability
-            ? stageBounds.bottom - availability.getBoundingClientRect().top - frameHeight - inset
-            : stageBounds.bottom - copy.getBoundingClientRect().bottom - inset - 1;
-          stage.style.setProperty("--hero-mobile-ascii-bottom", `${bottom}px`);
-        }
+      const mobileBottomGap = parseFloat(getComputedStyle(stage).getPropertyValue("--hero-mobile-ascii-bottom-gap"));
+      if (mobile && Number.isFinite(mobileBottomGap)) {
+        // Anchor the visible artwork to the hero bottom, independent of the text height.
+        const frameHeight = frame ? frame.offsetHeight * frameScale : height;
+        const inset = (height - frameHeight) / 2;
+        stage.style.setProperty("--hero-mobile-ascii-bottom", `${mobileBottomGap - inset}px`);
       }
       if (mobile && frame) {
         const selector = document.querySelector<HTMLElement>('[aria-label="Project grid layout"] [data-layout="regular"] [data-variant]');

@@ -16,7 +16,7 @@ const details = (
       <dt><HeroDetailText text="Based" seed={443} revealIndex={4} /></dt>
       <dd><HeroDetailText text="Warsaw, Poland" seed={449} revealIndex={5} /></dd>
     </div>
-    <div className={styles.contactBlock} data-dissolve-block="" data-hero-availability="">
+    <div className={styles.contactBlock} data-dissolve-block="">
       <dt><a className={styles.contactLink} href="#contact" aria-label="Availability: open to new projects. Go to contact."><HeroDetailText text="Availability" seed={457} revealIndex={6} /></a></dt>
       <dd><HeroDetailText text="Open to new projects" seed={463} revealIndex={7} /></dd>
     </div>

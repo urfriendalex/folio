@@ -67,7 +67,7 @@
 }
 @media (max-width: 48rem) {
   .hero {
-    --hero-mobile-ascii-inline: 1;
+    --hero-mobile-ascii-bottom-gap: 24px;
     :global([data-hero-stage]) {
       min-height: calc(100svh - var(--header-height) - 72px);
       align-items: center; padding-block: 36px 108px;
