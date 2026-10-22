@@ -329,12 +329,22 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     const drawing = stage?.querySelector<HTMLElement>("[data-hero-visual] > div");
     if (!stage || !drawing) return;
     const measure = () => {
+      const mobile = window.innerWidth <= 768;
+      const frame = drawing.querySelector("pre");
+      if (mobile && frame?.offsetWidth && frame.offsetHeight) {
+        const glyphs = Array.from(document.querySelectorAll<HTMLElement>('[aria-label="Project grid layout"] [data-variant]'))
+          .map((glyph) => glyph.getBoundingClientRect()).filter((rect) => rect.width > 0);
+        if (glyphs.length) {
+          const span = Math.max(...glyphs.map((rect) => rect.right)) - Math.min(...glyphs.map((rect) => rect.left));
+          const width = span / (touchLayout ? WALKER_COARSE_SCALE : 1);
+          stage.style.setProperty("--hero-mobile-ascii-width", `${width}px`);
+          stage.style.setProperty("--hero-mobile-ascii-height", `${width * frame.offsetHeight / frame.offsetWidth}px`);
+        }
+      }
       const height = drawing.offsetHeight;
       if (!height) return;
-      const mobile = window.innerWidth <= 768;
       const stageBounds = stage.getBoundingClientRect();
       const stagePageTop = stageBounds.top + window.scrollY;
-      const frame = drawing.querySelector("pre");
       const frameScale = frame ? Math.abs(new DOMMatrixReadOnly(getComputedStyle(frame).transform).a) : 1;
       if (mobile && getComputedStyle(stage).getPropertyValue("--hero-mobile-ascii-inline").trim() === "1") {
         const copy = contentRevealGateRef.current;
@@ -389,6 +399,8 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
     const observer = new ResizeObserver(measure);
     observer.observe(stage);
     observer.observe(drawing);
+    const projectSelector = document.querySelector('[aria-label="Project grid layout"]');
+    if (projectSelector) observer.observe(projectSelector);
     if (contentRevealGateRef.current) observer.observe(contentRevealGateRef.current);
     const frameStyleObserver = new MutationObserver(measure);
     const watchFrame = () => {
