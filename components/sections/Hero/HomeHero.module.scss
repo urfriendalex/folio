@@ -66,7 +66,7 @@
     --hero-mobile-ascii-inline: 1;
     :global([data-hero-stage]) {
       min-height: calc(100svh - var(--header-height) - 96px);
-      align-items: center; padding-block: 36px;
+      align-items: center; padding-block: 36px 84px;
     }
     :global([data-hero-content]) {
       width: 100%; max-width: none;
@@ -89,7 +89,7 @@
 }
 @media (max-width: 48rem) and (max-height: 740px) {
   .hero {
-    :global([data-hero-stage]) { padding-block: 24px; }
+    :global([data-hero-stage]) { padding-block: 24px 72px; }
     :global([data-hero-content]) > p:nth-of-type(2),
     :global([data-hero-content]) > p:nth-of-type(3),
     .facts { margin-top: 24px; }
