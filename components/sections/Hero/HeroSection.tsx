@@ -352,6 +352,13 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
           const right = stageBounds.right - selector.getBoundingClientRect().right - (drawing.offsetWidth - frameWidth) / 2;
           stage.style.setProperty("--hero-mobile-ascii-right", `${right}px`);
         }
+      } else if (frame) {
+        const archive = document.querySelector<HTMLElement>('nav a[href="/archive"]');
+        if (archive && archive.getClientRects().length > 0) {
+          const frameWidth = frame.offsetWidth * frameScale;
+          const right = stageBounds.right - archive.getBoundingClientRect().right - (drawing.offsetWidth - frameWidth) / 2;
+          stage.style.setProperty("--hero-compact-ascii-right", `${right}px`);
+        }
       }
       const aspect = frame?.offsetHeight ? frame.offsetWidth / frame.offsetHeight : 0.55;
       const expandedHeight = window.innerHeight * 1.08;
