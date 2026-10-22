@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getProjectSiblings, projects } from "@/content/projects";
-import { projectShareDescription, projectShareOgImage, SITE_NAME } from "@/lib/metadata";
+import { projectPageTitle, projectShareDescription, projectShareOgImage, SITE_NAME } from "@/lib/metadata";
 import { SITE_URL } from "@/lib/site";
+import { breadcrumbEntity, jsonLd, PERSON_ID, WEBSITE_ID } from "@/lib/structuredData";
 import { ProjectCaseStudy } from "@/components/projects/ProjectCaseStudy";
 import { ProjectPage } from "@/components/projects/ProjectPage";
 
@@ -28,23 +29,30 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const description = projectShareDescription(project);
   const og = projectShareOgImage(project);
 
+  const title = projectPageTitle(project);
+  const shareTitle = `${title} · ${SITE_NAME}`;
+
   return {
-    title: `${project.title} | Alexander Y.`,
+    title,
     description,
+    keywords: project.tags ?? project.technologies,
     alternates: {
       canonical,
     },
     openGraph: {
       siteName: SITE_NAME,
-      title: `${project.title} | Alexander Y.`,
+      title: shareTitle,
       description,
       type: "article",
+      modifiedTime: project.lastModified,
+      authors: [SITE_URL],
+      tags: project.tags ?? project.technologies,
       url: `${SITE_URL}${canonical}`,
       images: [og],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${project.title} | Alexander Y.`,
+      title: shareTitle,
       description,
       images: [og.url],
     },
@@ -63,54 +71,49 @@ export default async function ProjectRoute({ params }: RouteProps) {
   const pageUrl = `${SITE_URL}/projects/${project.slug}`;
   const og = projectShareOgImage(project);
 
+  const liveSite = project.links?.[0]?.url;
   const creativeWorkSchema = {
-    "@context": "https://schema.org",
     "@type": "CreativeWork",
     "@id": `${pageUrl}#project`,
     name: project.title,
+    alternativeHeadline: project.descriptor,
     url: pageUrl,
-    headline: project.title,
+    mainEntityOfPage: pageUrl,
+    headline: projectPageTitle(project),
     description: projectShareDescription(project),
-    image: og.url,
-    dateModified: project.lastModified,
-    author: {
-      "@type": "Person",
-      name: "Alexander Yansons",
-      url: SITE_URL,
+    abstract: project.overview ?? project.description,
+    genre: project.cardDescriptor,
+    inLanguage: "en",
+    image: {
+      "@type": "ImageObject",
+      url: og.url,
+      width: og.width,
+      height: og.height,
+      caption: og.alt,
     },
-    keywords: project.technologies.join(", "),
+    dateCreated: project.year.slice(0, 4),
+    dateModified: project.lastModified,
+    author: { "@id": PERSON_ID },
+    creator: { "@id": PERSON_ID },
+    isPartOf: { "@id": WEBSITE_ID },
+    ...(project.client && project.client.name !== "Personal"
+      ? { sourceOrganization: { "@type": "Organization", name: project.client.name } }
+      : {}),
+    ...(liveSite ? { sameAs: liveSite } : {}),
+    keywords: (project.tags ?? project.technologies).join(", "),
+    about: project.technologies.map((name) => ({ "@type": "Thing", name })),
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: SITE_URL,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Work",
-        item: `${SITE_URL}/projects`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: project.title,
-        item: pageUrl,
-      },
-    ],
-  };
+  const breadcrumbSchema = breadcrumbEntity([
+    { name: "Work", path: "/projects" },
+    { name: project.title, path: `/projects/${project.slug}` },
+  ]);
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([creativeWorkSchema, breadcrumbSchema]) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(creativeWorkSchema, breadcrumbSchema) }}
       />
       <ProjectPage project={project} previousProject={previous} nextProject={next} />
       {/* The overview is the single interactive presentation. Keep readable project

@@ -5,6 +5,7 @@ import { ArchiveIndexScroll } from "@/components/Archive/ArchiveIndexScroll";
 import { archiveEntries } from "@/content/archive/archive-data";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
+import { breadcrumbEntity, jsonLd, PERSON_ID, WEBSITE_ID } from "@/lib/structuredData";
 import styles from "./page.module.scss";
 
 const archiveDescription = clampMetaDescription(
@@ -12,7 +13,7 @@ const archiveDescription = clampMetaDescription(
 );
 
 export const metadata: Metadata = {
-  title: "Archive · Alexander Yansons",
+  title: "Archive — Experiments & Visual Studies",
   description: archiveDescription,
   alternates: {
     canonical: "/archive",
@@ -36,21 +37,40 @@ export const metadata: Metadata = {
 export default function ArchiveRoute() {
   const pageUrl = `${SITE_URL}/archive`;
   const collectionSchema = {
-    "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${pageUrl}#archive`,
     name: "Archive · Alexander Yansons",
     url: pageUrl,
     description: archiveDescription,
-    isPartOf: { "@id": `${SITE_URL}/#website` },
+    inLanguage: "en",
+    isPartOf: { "@id": WEBSITE_ID },
+    author: { "@id": PERSON_ID },
     dateModified: PAGE_LAST_MODIFIED.archive,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: archiveEntries.length,
+      itemListElement: archiveEntries.map((entry, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": entry.kind === "video" ? "MediaObject" : "ImageObject",
+          name: entry.title,
+          description: entry.note,
+          contentUrl: `${SITE_URL}${entry.image}`,
+          dateCreated: entry.year,
+          creator: { "@id": PERSON_ID },
+        },
+      })),
+    },
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(collectionSchema, breadcrumbEntity([{ name: "Archive", path: "/archive" }])),
+        }}
       />
       <ArchiveCanvas items={archiveEntries}>
         <section className={styles.index} aria-labelledby="archive-heading" data-archive-index="true">

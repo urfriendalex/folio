@@ -73,6 +73,15 @@ export function clampMetaDescription(text: string, max = META_DESC_MAX): string 
   return `${head.trim()}…`;
 }
 
+function titleCase(text: string): string {
+  return text.toLowerCase().replace(/(^|[\s/])([a-z])/g, (_match, lead: string, char: string) => `${lead}${char.toUpperCase()}`);
+}
+
+/** Search title for a case study, e.g. "LUMANO — E-commerce Store Case Study"; the layout template appends the name. */
+export function projectPageTitle(project: ProjectEntry): string {
+  return `${project.title} — ${titleCase(project.cardDescriptor)} Case Study`;
+}
+
 /** Meta description for project pages: short copy first, then overview, body, or descriptor. */
 export function projectShareDescription(project: ProjectEntry): string {
   const raw =
