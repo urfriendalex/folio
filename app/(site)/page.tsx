@@ -7,9 +7,18 @@ import { WorkSection } from "@/components/sections/Work/WorkSection";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE } from "@/lib/metadata";
 import { HeroRevealTimelineProvider } from "@/lib/heroRevealTimeline";
+import {
+  jsonLd,
+  organizationEntity,
+  PERSON_ID,
+  personEntity,
+  WEBSITE_ID,
+  websiteEntity,
+} from "@/lib/structuredData";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  title: { absolute: SITE_TITLE },
   alternates: {
     canonical: "/",
   },
@@ -30,52 +39,43 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  const personSchema = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: heroContent.name,
-    jobTitle: heroContent.position,
-    email: contactContent.email,
+  const profilePageSchema = {
+    "@type": "ProfilePage",
+    "@id": `${SITE_URL}/#profile`,
     url: SITE_URL,
-    sameAs: [
-      contactContent.github,
-      contactContent.linkedin,
-      contactContent.instagram,
-      contactContent.threads,
-    ].filter(Boolean),
-  };
-
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": `${SITE_URL}/#organization`,
-    name: heroContent.name,
-    url: SITE_URL,
-    logo: `${SITE_URL}/favicons/dark/apple-touch-icon.png`,
-    email: contactContent.email,
-    sameAs: personSchema.sameAs,
+    name: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    inLanguage: "en",
+    isPartOf: { "@id": WEBSITE_ID },
+    mainEntity: { "@id": PERSON_ID },
+    about: { "@id": PERSON_ID },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}${SITE_OG_IMAGE.url}`,
+      width: SITE_OG_IMAGE.width,
+      height: SITE_OG_IMAGE.height,
+    },
     dateModified: PAGE_LAST_MODIFIED.home,
+    hasPart: projects.slice(0, HOME_RECENT_PROJECT_COUNT).map((project) => ({
+      "@type": "CreativeWork",
+      "@id": `${SITE_URL}/projects/${project.slug}#project`,
+      name: project.title,
+      url: `${SITE_URL}/projects/${project.slug}`,
+    })),
   };
 
-  const websiteSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "@id": `${SITE_URL}/#website`,
-    url: SITE_URL,
-    name: "Alexander Yansons",
-    description:
-      "Portfolio of Alexander Yansons — custom websites, e-commerce, portfolios, and product interfaces for brands and teams.",
-    publisher: { "@id": `${SITE_URL}/#organization` },
-    dateModified: PAGE_LAST_MODIFIED.home,
-  };
-
-  const structuredData = [personSchema, organizationSchema, websiteSchema];
+  const structuredData = jsonLd(
+    profilePageSchema,
+    personEntity(),
+    websiteEntity(PAGE_LAST_MODIFIED.home),
+    organizationEntity(),
+  );
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: structuredData }}
       />
       <HeroRevealTimelineProvider>
         <HeroSection content={heroContent} />

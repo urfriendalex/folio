@@ -3,17 +3,18 @@ import { ProjectsIndex } from "@/components/projects/ProjectsIndex/ProjectsIndex
 import { parseProjectFilter, projects } from "@/content/projects";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
+import { breadcrumbEntity, jsonLd, PERSON_ID, WEBSITE_ID } from "@/lib/structuredData";
 
 type ProjectsIndexRouteProps = {
   searchParams: Promise<{ type?: string | string[] }>;
 };
 
 const projectsDescription = clampMetaDescription(
-  "Selected websites, product UI, and editorial work by Alexander Yansons — a full index of recent projects.",
+  "Case studies by Alexander Yansons: Shopify e-commerce stores, film and photo portfolios, Next.js websites, and enterprise product UI built from Warsaw.",
 );
 
 export const metadata: Metadata = {
-  title: "Work · Alexander Yansons",
+  title: "Work — Websites, E-commerce & Product UI Case Studies",
   description: projectsDescription,
   alternates: {
     canonical: "/projects",
@@ -39,13 +40,14 @@ export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndex
   const initialFilter = parseProjectFilter(params.type);
   const pageUrl = `${SITE_URL}/projects`;
   const collectionSchema = {
-    "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${pageUrl}#work`,
     name: "Work · Alexander Yansons",
     url: pageUrl,
     description: projectsDescription,
-    isPartOf: { "@id": `${SITE_URL}/#website` },
+    inLanguage: "en",
+    isPartOf: { "@id": WEBSITE_ID },
+    author: { "@id": PERSON_ID },
     dateModified: PAGE_LAST_MODIFIED.projects,
     mainEntity: {
       "@type": "ItemList",
@@ -55,6 +57,7 @@ export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndex
         position: index + 1,
         url: `${SITE_URL}/projects/${project.slug}`,
         name: project.title,
+        description: project.descriptor,
       })),
     },
   };
@@ -63,7 +66,9 @@ export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndex
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(collectionSchema, breadcrumbEntity([{ name: "Work", path: "/projects" }])),
+        }}
       />
       <ProjectsIndex projects={projects} initialFilter={initialFilter} />
     </>

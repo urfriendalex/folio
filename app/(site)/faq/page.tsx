@@ -4,19 +4,20 @@ import { FaqExperience } from "./FaqExperience";
 import { contactContent } from "@/content/contact";
 import { SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
+import { breadcrumbEntity, jsonLd, PERSON_ID, WEBSITE_ID } from "@/lib/structuredData";
 import { faqContent } from "./content";
 import styles from "./page.module.scss";
 
-const title = "FAQ · Alexander Yansons";
+const title = "FAQ — Working With a Freelance Web Developer in Warsaw";
 const description =
-  "Working with Alexander Yansons: project types, getting in touch, and remote collaboration from Warsaw.";
+  "Working with Alexander Yansons: project types, Shopify and Next.js work, how to get in touch, reply times, and remote collaboration from Warsaw, Poland.";
 
 export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/faq" },
   openGraph: {
-    title,
+    title: `${title} · ${SITE_NAME}`,
     description,
     siteName: SITE_NAME,
     type: "website",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title,
+    title: `${title} · ${SITE_NAME}`,
     description,
     images: [SITE_OG_IMAGE.url],
   },
@@ -33,13 +34,14 @@ export const metadata: Metadata = {
 
 export default function FaqPage() {
   const schema = {
-    "@context": "https://schema.org",
     "@type": "FAQPage",
     "@id": `${SITE_URL}/faq#faq`,
     url: `${SITE_URL}/faq`,
-    name: title,
+    name: `${title} · ${SITE_NAME}`,
+    inLanguage: "en",
     dateModified: PAGE_LAST_MODIFIED.faq,
-    isPartOf: { "@id": `${SITE_URL}/#website` },
+    isPartOf: { "@id": WEBSITE_ID },
+    about: { "@id": PERSON_ID },
     mainEntity: faqContent.map(({ question, answer }) => ({
       "@type": "Question",
       name: question,
@@ -51,7 +53,7 @@ export default function FaqPage() {
     <FaqExperience>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(schema, breadcrumbEntity([{ name: "FAQ", path: "/faq" }])) }}
       />
       <div className={styles.content} data-faq-content>
         <h1 className={styles.title} data-faq-reveal>Frequently asked questions</h1>

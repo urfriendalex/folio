@@ -9,7 +9,7 @@ export const dianaMilkanovaProject: ProjectEntry = {
   category: "ecommerce",
   descriptor: "Independent fashion e-commerce",
   year: "2021",
-  lastModified: "2026-10-14",
+  lastModified: "2026-10-22",
   role: "Frontend Developer",
   technologies: ["Shopify", "Liquid", "HTML", "CSS", "JavaScript"],
   shortDescription:
