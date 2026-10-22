@@ -8,6 +8,9 @@
   }
   :global([data-hero-content]) {
     position: relative; z-index: 1; width: 72%; max-width: 990px;
+    // Empty layout space must not intercept the ASCII button behind the copy.
+    pointer-events: none;
+    > :not(dl) { pointer-events: auto; }
     h1 { font-size: clamp(2.125rem, 3.15vw, 2.875rem); line-height: 1.15; letter-spacing: -0.035em; max-width: 100%; }
     > p:nth-of-type(2) { font-size: 1.125rem; line-height: 1.5; max-width: 38ch; margin-top: 26px; }
     > p:nth-of-type(3) { margin-top: 26px; > span { overflow: visible; } }
@@ -54,7 +57,8 @@
 .facts {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem;
   margin: 26px 0 0; font-size: 0.9375rem; line-height: 1.5;
-  div { min-width: 0; }
+  pointer-events: none;
+  div { min-width: 0; pointer-events: auto; }
   dt { font-size: 0.78125rem; color: color-mix(in srgb, var(--fg-color) 72%, var(--bg-color)); }
   dd { margin: 6px 0 0; }
 }
