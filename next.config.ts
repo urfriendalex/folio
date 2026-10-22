@@ -33,6 +33,13 @@ const nextConfig: NextConfig = {
         headers: SECURITY_HEADERS,
       },
       {
+        // The *.vercel.app aliases serve the same production build; keep them out of the
+        // index so only https://yansons.online is eligible (canonical tags point there too).
+        source: "/:path*",
+        has: [{ type: "host", value: "(?<host>.*)\\.vercel\\.app" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
         source: "/ascii/:path*",
         headers: [{ key: "Cache-Control", value: GENERATED_ASSET_CACHE }],
       },

@@ -12,7 +12,7 @@
 
 ## Week 1: after this deploys (manual, ~20 min)
 
-1. **Vercel → Project → Settings → Domains**: make sure `www.yansons.online` redirects to `yansons.online` with **308 Permanent** (not 307).
+1. **Vercel → Domains**: `www.yansons.online` → `yansons.online` is already **308** ✅. `folio-indol-sigma.vercel.app` also serves Production; it now sends `X-Robots-Tag: noindex`. Optionally set it to redirect (308) to `yansons.online` via **Edit** as well.
 2. **Search Console → Sitemaps**: submit `https://yansons.online/sitemap.xml`. Google currently knows only 7 of 14 URLs.
 3. **Search Console → Pages → Crawled – currently not indexed**: open the row and note the URL. Run **URL inspection → Request indexing** on it, and on `/`, `/projects`, `/faq` and the three newest case studies.
 4. **Page with redirect**: open the row and confirm the examples are `http://`, `www.` or `/archive/` variants. They are expected to stay in this bucket, and no fix validation is needed. If any *other* URL appears, report it.
