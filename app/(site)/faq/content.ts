@@ -9,6 +9,12 @@ export const faqContent = [
       "I work on marketing sites, portfolios, e-commerce, and product UI — anything where structure, UX, and performance matter. Briefs range from brand-led launches to more technical dashboards and internal tools.",
   },
   {
+    id: "seo",
+    question: "Is SEO included?",
+    answer:
+      "Yes. Every site launches SEO-ready: page titles and descriptions, a clean structure, structured data, a sitemap, fast load times, and Google Search Console set up with the site submitted for indexing. Anything beyond that technical SEO groundwork, such as keyword research, SEO copy, Google Business Profile setup, ongoing optimisation, or AI-search (GEO) visibility, can be added as a separate service.",
+  },
+  {
     id: "contact",
     question: "How should I get in touch for a new project?",
     answer:
