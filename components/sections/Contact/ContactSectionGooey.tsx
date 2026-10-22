@@ -178,6 +178,24 @@ export function ContactSectionGooey({
     }
   }, []);
 
+  useEffect(() => {
+    if (view !== "form") return;
+    // Let the newly mounted form paint hidden before starting its CSS transitions.
+    // A single frame can merge both states before paint, skipping the entrance.
+    let frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        setFormVisible(true);
+        frameRef.current = null;
+      });
+      frameRef.current = frame;
+    });
+    frameRef.current = frame;
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (frameRef.current === frame) frameRef.current = null;
+    };
+  }, [view]);
+
   const openForm = useCallback(
     (opts?: HomeContactFormOpenOptions) => {
       const instant = opts?.instant === true;
@@ -205,10 +223,6 @@ export function ContactSectionGooey({
         if (pushContactFormHistoryEntry()) {
           contactFormHistorySealRef.current = true;
         }
-        frameRef.current = window.requestAnimationFrame(() => {
-          setFormVisible(true);
-          frameRef.current = null;
-        });
         return;
       }
 
@@ -224,10 +238,6 @@ export function ContactSectionGooey({
         if (pushContactFormHistoryEntry()) {
           contactFormHistorySealRef.current = true;
         }
-        frameRef.current = window.requestAnimationFrame(() => {
-          setFormVisible(true);
-          frameRef.current = null;
-        });
       }, EMAIL_TRANSITION_MS);
     },
     [view, clearScheduledMotion],
