@@ -1415,6 +1415,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
                 anchorEnd={!asciiInteraction}
                 repeatCount={asciiInteraction ? asciiTileCount : 1}
                 repeatStepCh={asciiTileStepCh}
+                repeatStepEm={0}
                 /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
