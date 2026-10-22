@@ -339,9 +339,13 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
       if (mobile && getComputedStyle(stage).getPropertyValue("--hero-mobile-ascii-inline").trim() === "1") {
         const copy = contentRevealGateRef.current;
         if (copy) {
-          // Align the visible frame, accounting for the empty space inside its touch target.
-          const inset = frame ? (height - frame.offsetHeight * frameScale) / 2 : 0;
-          const bottom = stageBounds.bottom - copy.getBoundingClientRect().bottom - inset - 1;
+          // Align the visible artwork with Availability, including on touch-scaled renderers.
+          const frameHeight = frame ? frame.offsetHeight * frameScale : height;
+          const inset = (height - frameHeight) / 2;
+          const availability = copy.querySelector<HTMLElement>("[data-hero-availability] dt");
+          const bottom = availability
+            ? stageBounds.bottom - availability.getBoundingClientRect().top - frameHeight - inset
+            : stageBounds.bottom - copy.getBoundingClientRect().bottom - inset - 1;
           stage.style.setProperty("--hero-mobile-ascii-bottom", `${bottom}px`);
         }
       }

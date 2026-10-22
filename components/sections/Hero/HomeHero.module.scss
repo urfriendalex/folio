@@ -69,8 +69,8 @@
   .hero {
     --hero-mobile-ascii-inline: 1;
     :global([data-hero-stage]) {
-      min-height: calc(100svh - var(--header-height) - 96px);
-      align-items: center; padding-block: 36px 84px;
+      min-height: calc(100svh - var(--header-height) - 72px);
+      align-items: center; padding-block: 36px 108px;
     }
     :global([data-hero-content]) {
       width: 100%; max-width: none;
@@ -91,13 +91,13 @@
       > div { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; gap: 8px; }
       > div:not(:first-child) { width: calc(100% - 90px); }
     }
-    :global([data-hero-visual]) { > div, button { width: 80px; height: 116px; bottom: calc(var(--hero-mobile-ascii-bottom, 48px) - 56px); right: var(--hero-mobile-ascii-right, 0px); } }
+    :global([data-hero-visual]) { > div, button { width: 80px; height: 116px; bottom: var(--hero-mobile-ascii-bottom, 48px); right: var(--hero-mobile-ascii-right, 0px); } }
     &[data-ascii-expanded="true"] :global([data-hero-visual]) button { inset: 0; width: 100%; height: 100%; }
   }
 }
 @media (max-width: 48rem) and (max-height: 740px) {
   .hero {
-    :global([data-hero-stage]) { padding-block: 24px 72px; }
+    :global([data-hero-stage]) { padding-block: 24px 96px; }
     :global([data-hero-content]) > p:nth-of-type(2),
     :global([data-hero-content]) > p:nth-of-type(3),
     .facts { margin-top: 24px; }
