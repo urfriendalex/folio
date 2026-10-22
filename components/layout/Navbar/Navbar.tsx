@@ -205,7 +205,7 @@ export function Navbar() {
               clearLocationHash();
               scrollToHeroSection();
             } else {
-              guardedPush("/", { scroll: false });
+              guardedPush("/", { scroll: true });
             }
           });
         },
@@ -222,7 +222,7 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    guardedPush("/", { scroll: false });
+    guardedPush("/", { scroll: true });
   };
 
   const handleMobileNavLinkClick = () => {
@@ -233,7 +233,6 @@ export function Navbar() {
     <NextLink
       href="/"
       prefetch={false}
-      scroll={false}
       className={styles.logo}
       aria-label="Alexander Yansons"
       onClick={handleLogoClick}

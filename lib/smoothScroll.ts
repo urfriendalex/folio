@@ -223,13 +223,8 @@ export function clearLocationHash() {
 }
 
 export function scrollToHeroSection() {
-  const el = document.getElementById("hero");
-
-  if (el) {
-    scrollElementIntoView(el);
-  } else {
-    scrollToTop();
-  }
+  // The hero starts below the navbar; its element offset is not the top of Home.
+  scrollToTop();
 }
 
 /** After browser / Next restores scroll position, Lenis can be out of sync — snap immediately. */
