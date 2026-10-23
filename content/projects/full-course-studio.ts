@@ -9,7 +9,7 @@ export const fullCourseStudioProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Custom site for a Warsaw restaurant studio",
   year: "2026",
-  lastModified: "2026-10-22",
+  lastModified: "2026-10-23",
   role: "Design + Development",
   technologies: ["Next.js", "React", "GSAP", "Lenis", "Tailwind CSS"],
   shortDescription:
@@ -63,6 +63,6 @@ export const fullCourseStudioProject: ProjectEntry = {
     ],
   },
   tags: ["Next.js", "GSAP", "Lenis", "Tailwind CSS", "ASCII", "Motion"],
-  links: [{ label: "Live site", url: "https://fullcourse.studio" }],
+  links: [{ label: "Live Site", url: "https://fullcourse.studio" }],
   ...generatedProjectMedia["full-course-studio"],
 };
