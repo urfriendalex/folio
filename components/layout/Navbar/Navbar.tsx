@@ -341,6 +341,7 @@ export function Navbar() {
             <a
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.navLink}`}
+              aria-busy={(pendingHref !== null && pendingHref === getAnchor(pathname, "contact")) || undefined}
               onClick={handleContactClick}
             >
               Contact

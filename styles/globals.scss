@@ -786,10 +786,41 @@ img {
   transform: scale3d(1, 1, 1);
 }
 
+/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): the underline
+   draws in from the left and leaves to the right on a loop. Same 120ms grace as the page dim, so
+   prefetched routes that swap instantly never flash it. */
+.link-underline[aria-busy="true"]::after {
+  animation: link-underline-loading 1.15s var(--ease-out) 120ms infinite both;
+}
+
+@keyframes link-underline-loading {
+  0% {
+    transform-origin: 0% 50%;
+    transform: scale3d(0, 1, 1);
+  }
+  50% {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+  50.01% {
+    transform-origin: 100% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+  100% {
+    transform-origin: 100% 50%;
+    transform: scale3d(0, 1, 1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link-underline::after,
   .text-link::after {
     transition: none;
+  }
+
+  .link-underline[aria-busy="true"]::after {
+    animation: none;
+    transform: scale3d(1, 1, 1);
   }
 
   .link-underline:hover::after,

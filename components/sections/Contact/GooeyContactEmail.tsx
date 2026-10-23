@@ -98,6 +98,15 @@ export function GooeyContactEmail({
     setTimelineVisibleRef.current?.(visible);
   }, [visible]);
 
+  /* Declared before the timeline effect so its cleanup runs first on unmount. */
+  const unmountingRef = useRef(false);
+  useEffect(() => {
+    unmountingRef.current = false;
+    return () => {
+      unmountingRef.current = true;
+    };
+  }, []);
+
   /* viewBox and `visible` not in deps: rebuilding mid-scroll/hover re-runs the filter prewarm and resets GSAP */
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -221,8 +230,7 @@ export function GooeyContactEmail({
         delete area.dataset.gooeyScrubbing;
         snapTween?.kill();
         setTimelineVisibleRef.current = null;
-        tl.revert();
-        groupEl.style.filter = "none";
+        disposeTimeline();
       };
     } else {
       let hoverActivated = false;
@@ -364,16 +372,26 @@ export function GooeyContactEmail({
         }
         restoreSvgPrewarm?.();
         restoreGroupPrewarm?.();
-        tl.revert();
-        (textsGroupEl as SVGGElement).style.filter = "none";
+        disposeTimeline();
       };
     }
 
     return () => {
       setTimelineVisibleRef.current = null;
+      disposeTimeline();
+    };
+
+    /* Reverting measures the SVG text (getBBox). On unmount — usually a route change, while the next
+       page's styles are all dirty — that forces a full style pass for nodes about to be discarded,
+       so just stop the timeline. A deps re-run still reverts to restore the live elements. */
+    function disposeTimeline() {
+      if (unmountingRef.current) {
+        tl.kill();
+        return;
+      }
       tl.revert();
       (textsGroupEl as SVGGElement).style.filter = "none";
-    };
+    }
   }, [prefersReducedMotion, isMobileViewport]);
 
   /* Desktop leads with the invitation; mobile keeps the useful address readable at rest. */

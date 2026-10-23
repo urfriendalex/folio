@@ -11,12 +11,12 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { CalBookingTrigger } from "@/components/booking/CalBookingTrigger";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import packageJson from "../../../package.json";
 import ASCIIAnimation from "@/components/Preloader/ascii";
+import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { BookingButtonAscii } from "./BookingButtonAscii";
 import { FooterEasterEgg } from "./FooterEasterEgg";
 import { contactContent, formatCopyrightLine } from "@/content/contact";
@@ -736,9 +736,9 @@ export function Footer() {
                     </div>
                   </div>
                   <div className={styles.columnControls}>
-                    <Link href="/faq" className={`link-underline ${styles.columnControlBtn}`}>
+                    <IntentPrefetchLink href="/faq" className={`link-underline ${styles.columnControlBtn}`}>
                       FAQ
-                    </Link>
+                    </IntentPrefetchLink>
                     <button
                       type="button"
                       className={`link-underline ${styles.columnControlBtn}`}
@@ -838,9 +838,9 @@ export function Footer() {
                 <span className={styles.taskbarGroove} aria-hidden="true" />
 
                 <div className={styles.quickLaunch} aria-label="Quick links">
-                  <Link href="/faq" className={styles.quickLaunchBtn} title="Frequently asked questions">
+                  <IntentPrefetchLink href="/faq" className={styles.quickLaunchBtn} title="Frequently asked questions">
                     FAQ
-                  </Link>
+                  </IntentPrefetchLink>
                   {QUICK_LINKS.map((link) => (
                     <a
                       key={link.label}
