@@ -1,5 +1,4 @@
 import { contactContent } from "@/content/contact";
-import { heroContent } from "@/content/hero";
 import { HOME_RECENT_PROJECT_COUNT, projects } from "@/content/projects";
 import { ContactSectionGooey } from "@/components/sections/Contact/ContactSectionGooey";
 import { HomeHero } from "@/components/sections/Hero/HomeHero";
