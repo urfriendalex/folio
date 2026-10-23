@@ -14,6 +14,25 @@ function pathnameFromHref(href: string) {
   return pathname;
 }
 
+export const ROUTE_PENDING_CLASS = "route-pending";
+const ROUTE_PENDING_TIMEOUT_MS = 10000;
+let routePendingTimeout = 0;
+
+/** Marks `<html>` while a pushed route is loading; `RouteTransition` clears it once the new path commits. */
+export function setRoutePending(pending: boolean) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  window.clearTimeout(routePendingTimeout);
+  document.documentElement.classList.toggle(ROUTE_PENDING_CLASS, pending);
+
+  if (pending) {
+    /* Safety net: an aborted or failed navigation must not leave the page dimmed. */
+    routePendingTimeout = window.setTimeout(() => setRoutePending(false), ROUTE_PENDING_TIMEOUT_MS);
+  }
+}
+
 /**
  * Route transition helper. It exposes pending state for chrome, but it does not
  * lock navigation: background route/media loading must not prevent the next user action.
@@ -28,6 +47,7 @@ export function useNavigationFlightLock(pathname: string | null) {
         return false;
       }
 
+      setRoutePending(true);
       startTransition(() => {
         router.push(href, options);
       });

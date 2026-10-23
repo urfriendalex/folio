@@ -17,7 +17,7 @@ import { LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneS
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
-import { lockBodyScroll, onBodyScrollLock, unlockBodyScroll } from "@/lib/scrollLock";
+import { lockBodyScroll, onBodyScrollLock, skipNextScrollRestore, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 import { NavbarWordmark } from "./NavbarWordmark";
@@ -229,6 +229,27 @@ export function Navbar() {
     setMenuOpen(false);
   };
 
+  /* Cross-route menu links keep the overlay up while the next page loads; the pathname effect closes it
+     once the new route has committed, so the fade reveals the destination instead of the old page. */
+  const handleMobileRouteLinkClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    const href = event.currentTarget.getAttribute("href");
+    if (
+      !href ||
+      href === pathname ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      setMenuOpen(false);
+      return;
+    }
+
+    /* The body lock would otherwise restore the old page's scroll offset onto the new one. */
+    skipNextScrollRestore();
+  };
+
   const logoLink = (
     <NextLink
       href="/"
@@ -308,7 +329,7 @@ export function Navbar() {
                 href="/projects"
                 className={`link-underline ${styles.mobileNavLink}`}
                 style={{ "--item-index": 1 } as CSSProperties}
-                onClick={handleMobileNavLinkClick}
+                onClick={handleMobileRouteLinkClick}
               >
                 Work
               </IntentPrefetchLink>
@@ -316,7 +337,7 @@ export function Navbar() {
                 href="/archive"
                 className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}
                 style={{ "--item-index": 2 } as CSSProperties}
-                onClick={() => setMenuOpen(false)}
+                onClick={handleMobileRouteLinkClick}
               >
                 Archive
               </IntentPrefetchLink>

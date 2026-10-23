@@ -135,8 +135,12 @@
   }
 }
 
+/* Dark: light rows (active/hovered) bleed through a thin tint and wash out the labels, so the
+   glass carries more of the page colour and a stronger blur — still frosted, but text stays legible. */
 :global([data-theme="dark"]) .filterPanel {
-  background: color-mix(in srgb, var(--bg-color) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-glass-lg)) saturate(100%) brightness(0.6);
+  backdrop-filter: blur(var(--blur-glass-lg)) saturate(100%) brightness(0.6);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--fg-color) 14%, transparent),
     0 1px 2px rgb(0 0 0 / 0.18),
@@ -747,6 +751,14 @@
 
   .filterOption[data-active="true"] {
     color: var(--taskbar-flag-red);
+  }
+
+  :global([data-theme="dark"]) .filterOption {
+    color: color-mix(in srgb, var(--fg-color) 82%, transparent);
+  }
+
+  :global([data-theme="dark"]) .filterOption[data-active="true"] {
+    color: color-mix(in srgb, var(--taskbar-flag-red) 78%, #fff);
   }
 
   .filterOption:focus-visible:not(:where([data-input-modality="pointer"] *)) {

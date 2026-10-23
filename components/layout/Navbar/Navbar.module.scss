@@ -604,6 +604,28 @@
     transition-delay: calc(120ms + var(--item-index, 0) * 90ms);
   }
 
+  /* Route loading behind the open menu: the tapped link holds, its siblings recede. */
+  .mobileNav:has(.mobileNavLink[aria-busy="true"]) .mobileNavLink:not([aria-busy="true"]) {
+    opacity: 0.24;
+    transition-delay: 0ms;
+  }
+
+  .mobileNavLink[aria-busy="true"] {
+    animation: mobileNavPending 900ms ease-in-out 180ms infinite alternate;
+  }
+
+  @keyframes mobileNavPending {
+    to {
+      opacity: 0.55;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobileNavLink[aria-busy="true"] {
+      animation: none;
+    }
+  }
+
   .mobileNavLink.archiveNavLink {
     letter-spacing: 0.04em;
   }

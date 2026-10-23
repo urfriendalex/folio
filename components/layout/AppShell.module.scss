@@ -53,6 +53,27 @@
   background: var(--bg-color);
 }
 
+/* In-app navigation: once a push has been waiting a beat, quietly dim the outgoing page so the tap
+   reads as acknowledged; fast (prefetched) routes swap before the delay and never dim. Opacity only —
+   a transform/filter here would re-parent the fixed UI inside `main`. */
+:global(html.route-pending) .main {
+  opacity: 0.45;
+  transition: opacity 220ms var(--ease-out) 120ms;
+}
+
+:global(html.route-entering:not(.home-section-arrival-pending):not(.home-section-arrival-reveal)) .main {
+  animation: route-enter 240ms var(--ease-out) both;
+}
+
+@keyframes route-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Cross-route Work/Contact links mount Home at the top before its target exists.
    Hold only that incoming Home paint until the immediate destination scroll is positioned. */
 :global(html.home-section-arrival-pending) .main:has(#work) {
@@ -74,6 +95,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   :global(html.home-section-arrival-reveal) .main:has(#work) {
+    animation: none;
+  }
+
+  :global(html.route-pending) .main {
+    opacity: 1;
+  }
+
+  :global(html.route-entering) .main {
     animation: none;
   }
 }
