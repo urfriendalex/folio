@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const pastelMuseProject: ProjectEntry = {
   slug: "pastel-muse",
-  orderIndex: 3,
+  orderIndex: 5,
   title: "PHOTO DAY EXPERIENCE",
   cardDescriptor: "WEBSITES SERIES",
   category: "event",
