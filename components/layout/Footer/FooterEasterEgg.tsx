@@ -7,7 +7,12 @@ import styles from "./FooterEasterEgg.module.scss";
 
 const EFFORT_THRESHOLD = 2400;
 const MIN_PUSH_MS = 3200;
-const REVERSE_DISTANCE = 1400;
+/** No push for this long before the reveal latches = the visitor gave up: roll the strip back down. */
+const IDLE_RELEASE_MS = 320;
+/* Rising follows the push on a softer spring so stepped wheel/touch input glides; retracting is
+   firmer so letting go reads as a clean roll down. Both stay near critical damping (no bounce). */
+const RISE_SPRING = { stiffness: 90, damping: 19 };
+const RETRACT_SPRING = { stiffness: 140, damping: 24 };
 
 export function FooterEasterEgg({ wordmarkRef }: {
   wordmarkRef: RefObject<HTMLParagraphElement | null>;
@@ -61,12 +66,20 @@ export function FooterEasterEgg({ wordmarkRef }: {
       const elapsed = Math.min(now - lastFrame, 40);
       lastFrame = now;
       if (!latched && !retracting && target > 0) {
-        const idle = now - lastPush > 180;
-        effort = Math.max(0, effort - elapsed * (idle ? 0.9 : 0.32));
-        target = Math.min(effort / EFFORT_THRESHOLD, Math.max(0, (lastPush - firstPush) / MIN_PUSH_MS), 0.94);
+        if (now - lastPush > IDLE_RELEASE_MS) {
+          // Stopped pushing (or it was a single scroll): roll back down instead of lingering.
+          retracting = true;
+          effort = 0;
+          firstPush = 0;
+          target = 0;
+        } else {
+          effort = Math.max(0, effort - elapsed * 0.32);
+          target = Math.min(effort / EFFORT_THRESHOLD, Math.max(0, (lastPush - firstPush) / MIN_PUSH_MS), 0.94);
+        }
       }
       const dt = elapsed / 1000;
-      velocity += ((target - extension) * 150 - velocity * 24) * dt;
+      const spring = retracting ? RETRACT_SPRING : RISE_SPRING;
+      velocity += ((target - extension) * spring.stiffness - velocity * spring.damping) * dt;
       extension += velocity * dt;
       paint();
       if (Math.abs(target - extension) > 0.0005 || Math.abs(velocity) > 0.001 || (!latched && effort > 0)) {
@@ -96,14 +109,9 @@ export function FooterEasterEgg({ wordmarkRef }: {
     const push = (delta: number) => {
       if (isBodyScrollLocked() || document.hidden) { close(); return false; }
       if (delta < 0 && (extension > 0.002 || target > 0)) {
-        // Reverse the same surface before releasing the gesture back to the page.
-        latched = false;
-        retracting = true;
-        setRevealed(false);
-        target = Math.max(0, target - Math.min(-delta, 160) / REVERSE_DISTANCE);
-        effort = 0;
-        firstPush = 0;
-        schedule();
+        // One scroll back rolls the whole strip down ("scroll back, or play a game"); the page only
+        // takes the gesture over once the strip is down.
+        close();
         return true;
       }
       if (delta <= 0 || !atEnd()) return false;
