@@ -123,6 +123,9 @@
 @media (max-width: 48rem), (hover: none) and (pointer: coarse) {
   .hero .cta {
     .ctaAscii { opacity: 1; }
-    [data-hero-cta-label] > span[aria-hidden="true"] { transform: translateX(0); }
+    [data-hero-cta-label] > span[aria-hidden="true"] { transform: translateX(calc(-1 * var(--cta-label-inset))); }
+    &[data-ascii-active], &:focus-visible {
+      [data-hero-cta-label] > span[aria-hidden="true"] { transform: translateX(0); }
+    }
   }
 }

@@ -133,8 +133,8 @@ export function BookingButtonAscii({
     let entranceTimer = 0;
     let entranceScheduled = false;
     let burstElapsed = -1;
-    const sweepMs = 1000;
-    const fadeMs = 280;
+    const sweepMs = 2400;
+    const fadeMs = 420;
     const bounded = () => touchOrbit === "once" && !!orbitMedia?.matches;
     const interacting = () => pointerInside || keyboardFocused;
     const burstActive = () => burstElapsed >= 0 && burstElapsed < sweepMs + fadeMs;
@@ -186,6 +186,12 @@ export function BookingButtonAscii({
     const top = RAMP.length - 1;
 
     const draw = (ease: number) => {
+      // Keep the mobile label inset only while its surrounding field is present.
+      // Desktop continues to use its existing hover/focus CSS.
+      const active = bounded() && (interacting() || (burstActive() && burstElapsed < sweepMs));
+      if (button.hasAttribute("data-ascii-active") !== active) {
+        button.toggleAttribute("data-ascii-active", active);
+      }
       context.clearRect(0, 0, width, height);
       if (!fieldAlpha() || (bounded() && reducedMotion.matches)) return;
       context.font = font;
@@ -631,6 +637,7 @@ export function BookingButtonAscii({
 
     return () => {
       disposed = true;
+      button.removeAttribute("data-ascii-active");
       window.clearTimeout(entranceTimer);
       entranceObserver.disconnect();
       stop();
