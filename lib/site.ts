@@ -8,7 +8,7 @@ export const SITE_URL = "https://yansons.online";
  */
 export const PAGE_LAST_MODIFIED = {
   home: "2026-10-22",
-  projects: "2026-10-14",
-  archive: "2026-10-14",
-  faq: "2026-10-14",
+  projects: "2026-10-22",
+  archive: "2026-10-22",
+  faq: "2026-10-22",
 } as const;

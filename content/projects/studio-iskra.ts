@@ -9,7 +9,7 @@ export const studioIskraProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Warsaw photo studio website",
   year: "2025",
-  lastModified: "2026-10-14",
+  lastModified: "2026-10-22",
   role: "Solo Designer & Developer",
   technologies: ["Framer", "React", "JavaScript", "CSS"],
   shortDescription:

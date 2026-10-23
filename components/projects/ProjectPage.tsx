@@ -1395,20 +1395,25 @@ export function ProjectPage({
         data-expanded={toolbarExpanded}
       >
         <div className={styles.toolbarTrack}>
-          <button
-            type="button"
+          <a
+            href={`/projects/${previousProject.slug}`}
+            aria-label={`Previous project: ${previousProject.title}`}
             data-pending={
               showNavPending && pendingDirection === "previous"
                 ? "true"
                 : undefined
             }
             className={`${styles.navButton} ${styles.previousButton}`}
-            onClick={() => {
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+                return;
+              }
+              event.preventDefault();
               goToSibling("previous");
             }}
           >
             Previous
-          </button>
+          </a>
 
           <div
             className={styles.toolbarCore}
@@ -1514,18 +1519,23 @@ export function ProjectPage({
             </section>
           </div>
 
-          <button
-            type="button"
+          <a
+            href={`/projects/${nextProject.slug}`}
+            aria-label={`Next project: ${nextProject.title}`}
             data-pending={
               showNavPending && pendingDirection === "next" ? "true" : undefined
             }
             className={`${styles.navButton} ${styles.nextButton}`}
-            onClick={() => {
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+                return;
+              }
+              event.preventDefault();
               goToSibling("next");
             }}
           >
             Next
-          </button>
+          </a>
         </div>
       </div>
     </article>
