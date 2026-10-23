@@ -30,6 +30,7 @@ import { gsap, registerGsapScrollTrigger, scheduleScrollTriggerRefresh, ScrollTr
 import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
 import { resolveEase } from "@/lib/motion";
 import { getLenis, scrollToTop } from "@/lib/smoothScroll";
@@ -260,6 +261,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   );
   const isMobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, reducedMotionServerSnapshot);
   const hasMounted = useClientMounted();
+  const preloaderComplete = usePreloaderComplete();
+  /* The CSS entrance waits for hydration and the preloader: on a hard load it used to run under the
+     preloader and, on mobile, restart when the layout settled after hydration (text flashing in,
+     snapping away, then replaying). Client navigations are ready on the first render. */
+  const enterReady = hasMounted && preloaderComplete;
 
   useEffect(() => {
     const html = document.documentElement;
@@ -1551,6 +1557,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-work-index="true"
       data-crossfade={layoutEpoch > 0 ? "true" : undefined}
       data-entered={entered ? "true" : undefined}
+      data-enter-ready={enterReady ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
       data-list-layout={isList ? "true" : undefined}
       data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}

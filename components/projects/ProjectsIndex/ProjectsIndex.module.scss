@@ -446,6 +446,21 @@
   transform: none;
 }
 
+/* Hold the entrance (hidden, no animation) until hydrated and the preloader is done, so it plays once,
+   in view. Only when JS reveals are on — no-JS and restored (back/forward) loads show the list as is. */
+:global(html.reveals-enabled) .page:not([data-enter-ready="true"]) .staggerItem,
+:global(html.reveals-enabled) .page:not([data-enter-ready="true"]) .row .identity,
+:global(html.reveals-enabled) .page:not([data-enter-ready="true"]) .row .descriptor,
+:global(html.reveals-enabled) .page:not([data-enter-ready="true"]) .row .year {
+  animation: none;
+  opacity: 0;
+}
+
+:global(html.reveals-enabled) .page:not([data-enter-ready="true"]) .row::before {
+  animation: none;
+  clip-path: inset(0 100% 0 0);
+}
+
 .page[data-entered="true"] .staggerItem,
 .page[data-entered="true"] .row .identity,
 .page[data-entered="true"] .row .descriptor,
