@@ -1297,7 +1297,7 @@
 .brandTagline,
 .brandCopyright {
   font-size: var(--footer-brand-meta-font-size);
-  line-height: 1.3;
+  line-height: var(--type-leading-label);
   white-space: nowrap;
 }
 

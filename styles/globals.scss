@@ -1,3 +1,5 @@
+@use "typography";
+
 @property --cue-grow {
   syntax: "<number>";
   inherits: true;
@@ -75,7 +77,7 @@
   --content-padding-inline: clamp(0.75rem, 2.4vw, 2rem);
   /* Minimal footer: fixed wordmark strip height = `padding-bottom` on minimal `<footer>` */
   --footer-wordmark-strip-height: clamp(10rem, 28vh, 17.5rem);
-  --footer-brand-meta-font-size: clamp(0.65rem, 1.5vw, 0.82rem);
+  --footer-brand-meta-font-size: var(--type-legal-size);
   --radius-xl: 1rem;
   --radius-lg: 0.8rem;
   --radius-sm: 999px;

@@ -1,10 +1,9 @@
 export const heroContent = {
   name: "Alexander Yansons",
   position: "Independent Developer & Creative Technologist",
-  /** First line is the plain read. “stuff” still wires the headline gag. */
-  statement:
-    "I build websites\nand other cool stuff.",
-  description: "E-commerce, portfolios, and product UI for brands, studios, and product teams.",
-  /** Shown under the headline (all caps in UI). Hero opens the home contact form (same as "Open contact form"). */
-  ctaLine: "Let's build something together ↗",
+  /** “stuff” wires the interactive headline; mobile phrasing is handled by the hero. */
+  statement: "I build websites and other cool stuff.",
+  description: "You work directly with me, from the first idea to launch.",
+  /** Shown under the headline (all caps in UI). Links to the contact section. */
+  ctaLine: "Let's make it happen ↗",
 };

@@ -19,9 +19,10 @@
 
 .title {
   margin: 0;
-  font-size: clamp(1.02rem, 1.2vw, 1.12rem);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-size: var(--type-section-size);
+  line-height: var(--type-leading-title);
+  font-weight: var(--type-weight-medium);
+  letter-spacing: var(--type-tracking-tight);
 }
 
 .title[data-mode="lines"] {
@@ -47,8 +48,8 @@
   align-items: baseline;
   gap: 0.38em;
   padding-bottom: 0.18em;
-  /* Always under `.title` (min 1.02rem) so the section label stays on top. */
-  font-size: clamp(0.84rem, 1vw, 0.94rem);
+  /* Secondary links stay below the section-heading tier. */
+  font-size: var(--type-ui-size);
   font-weight: 400;
   letter-spacing: -0.018em;
   color: var(--muted-color);

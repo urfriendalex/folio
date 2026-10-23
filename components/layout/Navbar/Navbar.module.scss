@@ -371,7 +371,7 @@
 }
 
 .navLink {
-  font-size: 0.82rem;
+  font-size: var(--type-control-size);
 }
 
 .archiveNavLink {
@@ -646,7 +646,7 @@
   }
 
   .mobileFooterLink {
-    font-size: 0.82rem;
+    font-size: var(--type-control-size);
     line-height: 1;
   }
 
@@ -675,7 +675,7 @@
     grid-template-columns: minmax(4.25rem, auto) minmax(0, 1fr);
     gap: 0.35rem 0.65rem;
     align-items: baseline;
-    font-size: 0.82rem;
+    font-size: var(--type-control-size);
     line-height: 1.25;
   }
 

@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "pnpm generate:archive-manifest",
     "dev": "next dev",
-    "prebuild": "pnpm generate:archive-manifest",
+    "prebuild": "pnpm check:typography && pnpm generate:archive-manifest",
     "build": "next build",
     "prepare": "node scripts/setup-git-hooks.mjs",
     "verify:generated": "node scripts/verify-generated-assets.mjs",
@@ -15,7 +15,9 @@
     "optimize:archive": "node scripts/optimize-archive-images.mjs && pnpm generate:archive-manifest",
     "optimize:projects": "node scripts/optimize-project-assets.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:typography": "node scripts/check-typography.mjs",
+    "audit:typography": "node scripts/typography-inventory.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.4",

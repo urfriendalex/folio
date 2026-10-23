@@ -23,8 +23,8 @@
 .title {
   margin: 0 0 1.75rem;
   color: var(--muted-color);
-  font-family: var(--font-mono-stack);
-  font-size: 0.7rem;
+  font-family: var(--font-pixel-stack);
+  font-size: var(--type-caption-size);
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0.06em;
@@ -66,7 +66,7 @@
 
 .question {
   margin: 0;
-  font-size: clamp(1.1rem, 2.3vw, 1.45rem);
+  font-size: var(--type-question-size);
   font-weight: 500;
   line-height: 1.35;
   letter-spacing: -0.025em;
@@ -93,20 +93,20 @@
 .detail[open]:not([data-faq-expanded="false"]) .toggle::after { display: none; }
 
 .answerText {
-  max-width: 39rem;
+  max-width: var(--type-reading-measure);
   margin: 1rem 2rem 0 0;
-  font-size: 0.95rem;
-  line-height: 1.8;
-  color: var(--muted-color);
+  font-size: var(--type-body-size);
+  line-height: var(--type-leading-reading);
+  color: var(--type-reading-color);
   text-wrap: pretty;
 }
 
 .note {
   margin: 2rem 0 0;
   max-width: 35rem;
-  font-size: 0.8rem;
-  line-height: 1.9;
-  color: var(--muted-color);
+  font-size: var(--type-ui-size);
+  line-height: var(--type-leading-reading);
+  color: var(--type-reading-color);
 
   a {
     display: inline-block;
@@ -122,6 +122,6 @@
 @media (max-width: 48rem) {
   .page { padding-top: 2.5rem; }
   .item { padding-block: 1.2rem; }
-  .answerText { font-size: 0.9rem; }
+  .answerText { font-size: var(--type-body-size); }
   .note { max-width: 25rem; }
 }

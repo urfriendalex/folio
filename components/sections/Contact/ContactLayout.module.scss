@@ -4,13 +4,16 @@
   position: relative;
 }
 
-/* —— Flow field: spans the section (ripples anywhere); strokes are zoned to `.block` in JS —— */
+/* Extend through the section's bottom padding and above the heading; fade the outer edges. */
 
 .field {
   position: absolute;
-  inset: 0;
+  top: -6rem;
+  bottom: calc(-1 * var(--section-padding-y) - 2rem);
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 8rem + var(--section-padding-y));
+  mask-image: linear-gradient(to bottom, transparent, #000 5rem, #000 calc(100% - 3rem), transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -32,7 +35,7 @@
   flex-wrap: wrap;
   gap: 0.35rem 1.6rem;
   font-family: var(--font-pixel-stack);
-  font-size: 0.64rem;
+  font-size: var(--type-caption-size);
   letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--muted-color);
@@ -101,8 +104,8 @@
   background: var(--win-menu-face);
   color: var(--win-menu-ink);
   font-family: var(--font-system-95-stack);
-  font-size: 0.74rem;
-  line-height: 1.2;
+  font-size: var(--type-meta-size);
+  line-height: var(--type-leading-title);
   white-space: nowrap;
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.25);
   pointer-events: none;
@@ -179,8 +182,8 @@
     background: transparent;
     color: var(--fg-color);
     font-family: var(--font-pixel-stack);
-    font-size: 0.78rem;
-    letter-spacing: var(--tracking-label-lg);
+    font-size: var(--type-contact-action-size);
+    letter-spacing: var(--type-tracking-action);
     text-align: left;
     text-transform: uppercase;
     cursor: pointer;
@@ -196,7 +199,7 @@
 
   .actionNum {
     color: var(--muted-color);
-    font-size: 0.62rem;
+    font-size: var(--type-caption-size);
     transition: color 180ms ease;
   }
 
@@ -207,7 +210,7 @@
       translate var(--duration-fast) var(--ease-out);
   }
 
-  /* Same hover language as the footer's Schedule a call: blue glyphs heat under the pointer,
+  /* Glyphs heat in each action's accent under the pointer,
      the label firms up, the quiet bits come up to ink, a slight press. */
   @media (hover: hover) and (pointer: fine) {
     .action:hover .actionNum,
@@ -240,7 +243,7 @@
   .emailView.emailView {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(8rem, 1fr) repeat(3, clamp(4rem, 10svh, 5.5rem)) 1rem;
+    grid-template-rows: auto auto minmax(8rem, 1fr) repeat(3, clamp(4rem, 10svh, 5.5rem)) 2.5rem;
     grid-template-areas: "title" "status" "goo" "copy" "call" "brief" ".";
   }
 
@@ -248,7 +251,7 @@
     grid-area: status;
     justify-content: space-between;
     gap: 0.25rem 0.75rem;
-    font-size: 0.63rem;
+    font-size: var(--type-caption-size);
     color: color-mix(in srgb, var(--fg-color) 72%, var(--bg-color));
     margin-bottom: 0.4rem;
   }
@@ -282,7 +285,7 @@
     padding: 1rem 0.5rem;
     border-radius: 0;
     color: var(--fg-color);
-    font-size: 0.86rem;
+    font-size: var(--type-contact-action-size);
     letter-spacing: var(--tracking-label-sm);
     text-align: left;
   }
@@ -295,7 +298,7 @@
   .actionMeta {
     display: block;
     color: var(--muted-color);
-    font-size: 0.65rem;
+    font-size: var(--type-caption-size);
   }
 
   .wipe {

@@ -178,6 +178,24 @@ export function ContactSectionGooey({
     }
   }, []);
 
+  useEffect(() => {
+    if (view !== "form") return;
+    // Let the newly mounted form paint hidden before starting its CSS transitions.
+    // A single frame can merge both states before paint, skipping the entrance.
+    let frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        setFormVisible(true);
+        frameRef.current = null;
+      });
+      frameRef.current = frame;
+    });
+    frameRef.current = frame;
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (frameRef.current === frame) frameRef.current = null;
+    };
+  }, [view]);
+
   const openForm = useCallback(
     (opts?: HomeContactFormOpenOptions) => {
       const instant = opts?.instant === true;
@@ -205,10 +223,6 @@ export function ContactSectionGooey({
         if (pushContactFormHistoryEntry()) {
           contactFormHistorySealRef.current = true;
         }
-        frameRef.current = window.requestAnimationFrame(() => {
-          setFormVisible(true);
-          frameRef.current = null;
-        });
         return;
       }
 
@@ -224,10 +238,6 @@ export function ContactSectionGooey({
         if (pushContactFormHistoryEntry()) {
           contactFormHistorySealRef.current = true;
         }
-        frameRef.current = window.requestAnimationFrame(() => {
-          setFormVisible(true);
-          frameRef.current = null;
-        });
       }, EMAIL_TRANSITION_MS);
     },
     [view, clearScheduledMotion],
@@ -467,7 +477,7 @@ export function ContactSectionGooey({
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 2 } as CSSProperties}
                   >
-                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--fg-color" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
                     <GlitchText className={layoutStyles.actionNum} text="01" seed={11} />
                     <GlitchText className={styles.glitchLabel} text="Open mail app" seed={14} />
                     <GlitchText className={layoutStyles.actionMeta} text="↗" seed={16} />
@@ -481,7 +491,7 @@ export function ContactSectionGooey({
                     data-visible={emailVisible}
                     style={{ "--contact-reveal-index": 3 } as CSSProperties}
                   >
-                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--taskbar-flag-blue" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
                     <GlitchText className={layoutStyles.actionNum} text="02" seed={23} />
                     <GlitchText className={styles.glitchLabel} text="Book a call" seed={26} />
                     <GlitchText className={layoutStyles.actionMeta} text="→" seed={28} />
@@ -497,7 +507,7 @@ export function ContactSectionGooey({
                     style={{ "--contact-reveal-index": 4 } as CSSProperties}
                     onClick={() => openForm()}
                   >
-                    <BookingButtonAscii className={layoutStyles.wipe} accent="--contact-accent" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
+                    <BookingButtonAscii className={layoutStyles.wipe} accent="--signal-color" clearance="text" quietQuery={COMPACT_CELLS_QUERY} directional glitch />
                     <GlitchText className={layoutStyles.actionNum} text="03" seed={37} />
                     <GlitchText className={styles.glitchLabel} text="Send a message" seed={40} />
                     <GlitchText className={layoutStyles.actionMeta} text="→" seed={42} />

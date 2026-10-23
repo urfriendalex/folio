@@ -1,0 +1,57 @@
+/* Semantic typography. Role decisions and documented exceptions: docs/design/typography.md. */
+:root {
+  --type-caption-size: 0.6875rem; /* 11px: short auxiliary labels, never paragraphs */
+  --type-meta-size: 0.75rem; /* 12px: compact facts / captions */
+  --type-control-size: 0.8125rem; /* 13px: compact navigation / actions */
+  --type-ui-size: 0.875rem; /* 14px: card names / secondary links */
+  --type-body-size: 1rem; /* 16px: reading text */
+  --type-lead-size: 1.125rem; /* 18px: introductory copy */
+  --type-section-size: clamp(1rem, 1.2vw, 1.125rem);
+  --type-hero-size: clamp(2.125rem, 3.15vw, 2.875rem);
+  --type-hero-intro-size: clamp(1.3125rem, 1.9vw, 1.6875rem);
+  --type-hero-copy-size: var(--type-lead-size);
+  --type-hero-cta-size: 0.9375rem;
+  --type-hero-detail-size: var(--type-ui-size);
+  --type-hero-label-size: var(--type-meta-size);
+  --type-card-title-size: var(--type-ui-size);
+  --type-contact-action-size: var(--type-control-size);
+  --type-contact-display-size: clamp(2.75rem, 7.5vw, 8.5rem);
+  --type-dialog-title-size: clamp(1.55rem, 3.2vw, 2.8rem);
+  --type-question-size: clamp(1.1rem, 2.3vw, 1.45rem);
+  --type-case-lead-size: clamp(1.1rem, 2vw, 1.6rem);
+  --type-case-heading-size: clamp(1rem, 1.5vw, 1.2rem);
+  --type-about-lead-size: clamp(1.62rem, 2.85vw, 2.55rem);
+  --type-overlay-display-size: clamp(2.8rem, 7vw, 5.8rem);
+  --type-legal-size: clamp(0.65rem, 1.5vw, 0.82rem);
+  --type-reading-color: color-mix(in srgb, var(--fg-color) 72%, var(--bg-color));
+
+  --type-weight-regular: 400;
+  --type-weight-medium: 500;
+  --type-weight-semibold: 600;
+  --type-leading-display: 1.06;
+  --type-leading-heading: 1.15;
+  --type-leading-title: 1.25;
+  --type-leading-label: 1.35;
+  --type-leading-body: 1.5;
+  --type-leading-reading: 1.65;
+  --type-tracking-heading: -0.035em;
+  --type-tracking-tight: -0.02em;
+  --type-tracking-action: 0.06em;
+  --type-reading-measure: 65ch;
+}
+
+@media (max-width: 48rem) {
+  :root {
+    --type-hero-size: clamp(1.625rem, 7.1vw, 1.75rem);
+    --type-hero-intro-size: var(--type-caption-size);
+    --type-hero-copy-size: var(--type-meta-size);
+    --type-hero-cta-size: var(--type-control-size);
+    --type-hero-detail-size: var(--type-meta-size);
+    --type-hero-label-size: var(--type-caption-size);
+    --type-card-title-size: var(--type-control-size);
+    --type-contact-action-size: var(--type-ui-size);
+    --type-contact-display-size: clamp(2.4rem, 12vw, 5.2rem);
+    --type-dialog-title-size: clamp(1.3rem, 6.4vw, 2rem);
+    --type-about-lead-size: clamp(1.12rem, 5.45vw, 1.36rem);
+  }
+}

@@ -218,7 +218,7 @@ export function Navbar() {
               clearLocationHash();
               scrollToHeroSection();
             } else {
-              guardedPush("/", { scroll: false });
+              guardedPush("/", { scroll: true });
             }
           });
         },
@@ -245,7 +245,7 @@ export function Navbar() {
     }
 
     event.preventDefault();
-    guardedPush("/", { scroll: false });
+    guardedPush("/", { scroll: true });
   };
 
   /* Contact: in-page on `/` (keep the hash URL, drop any pending route); elsewhere the scroll provider
@@ -294,7 +294,6 @@ export function Navbar() {
     <NextLink
       href="/"
       prefetch={false}
-      scroll={false}
       className={styles.logo}
       aria-label="Alexander Yansons"
       onClick={handleLogoClick}
