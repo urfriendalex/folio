@@ -35,7 +35,7 @@
   flex-wrap: wrap;
   gap: 0.35rem 1.6rem;
   font-family: var(--font-pixel-stack);
-  font-size: 0.64rem;
+  font-size: var(--type-caption-size);
   letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--muted-color);
@@ -104,8 +104,8 @@
   background: var(--win-menu-face);
   color: var(--win-menu-ink);
   font-family: var(--font-system-95-stack);
-  font-size: 0.74rem;
-  line-height: 1.2;
+  font-size: var(--type-meta-size);
+  line-height: var(--type-leading-title);
   white-space: nowrap;
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.25);
   pointer-events: none;
@@ -182,8 +182,8 @@
     background: transparent;
     color: var(--fg-color);
     font-family: var(--font-pixel-stack);
-    font-size: 0.78rem;
-    letter-spacing: var(--tracking-label-lg);
+    font-size: var(--type-contact-action-size);
+    letter-spacing: var(--type-tracking-action);
     text-align: left;
     text-transform: uppercase;
     cursor: pointer;
@@ -199,7 +199,7 @@
 
   .actionNum {
     color: var(--muted-color);
-    font-size: 0.62rem;
+    font-size: var(--type-caption-size);
     transition: color 180ms ease;
   }
 
@@ -251,7 +251,7 @@
     grid-area: status;
     justify-content: space-between;
     gap: 0.25rem 0.75rem;
-    font-size: 0.63rem;
+    font-size: var(--type-caption-size);
     color: color-mix(in srgb, var(--fg-color) 72%, var(--bg-color));
     margin-bottom: 0.4rem;
   }
@@ -285,7 +285,7 @@
     padding: 1rem 0.5rem;
     border-radius: 0;
     color: var(--fg-color);
-    font-size: 0.86rem;
+    font-size: var(--type-contact-action-size);
     letter-spacing: var(--tracking-label-sm);
     text-align: left;
   }
@@ -298,7 +298,7 @@
   .actionMeta {
     display: block;
     color: var(--muted-color);
-    font-size: 0.65rem;
+    font-size: var(--type-caption-size);
   }
 
   .wipe {

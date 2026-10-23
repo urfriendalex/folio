@@ -20,6 +20,14 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Typography
+
+The shared type roles live in `styles/_typography.scss`. Read the
+[typography system](docs/design/typography.md) before introducing a new size or font,
+and the [23 October audit](docs/design/typography-audit-2026-10-23.md) for findings and remaining visual checks.
+`pnpm check:typography` guards migrated surfaces and runs before each production build;
+`pnpm audit:typography` inventories source declarations across the site.
+
 ## Home hero
 
 The home-page copy lives in `content/hero.ts`. `HomeHero` supplies its service
