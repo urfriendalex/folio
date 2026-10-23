@@ -10,9 +10,9 @@ export const faqContent = [
   },
   {
     id: "seo",
-    question: "Is SEO included?",
+    question: "What SEO is included?",
     answer:
-      "Yes. Every site launches SEO-ready: page titles and descriptions, a clean structure, structured data, a sitemap, fast load times, and Google Search Console set up with the site submitted for indexing. Anything beyond that technical SEO groundwork, such as keyword research, SEO copy, Google Business Profile setup, ongoing optimisation, or AI-search (GEO) visibility, can be added as a separate service.",
+      "Every site launches SEO-ready: page titles and descriptions, a clean structure, structured data, a sitemap, and fast load times, so it's ready for Google to index. Anything beyond that technical groundwork, such as Search Console setup, keyword research, SEO copy, Google Business Profile setup, ongoing optimisation, or AI-search (GEO) visibility, can be added as a separate service.",
   },
   {
     id: "contact",
