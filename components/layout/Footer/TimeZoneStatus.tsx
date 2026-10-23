@@ -256,16 +256,17 @@ export function LiveClock({
 
 /**
  * `+1 day` / `−1 day` beside the visitor's clock when their calendar date differs from Warsaw's.
- * Ticks with the clock so it flips exactly at midnight; renders nothing on the server or same day.
+ * Minute ticks land on the minute boundary, so it still flips exactly at midnight without
+ * re-rendering every second; renders nothing on the server or on the same day.
  */
 export function DayShift({ className }: { className?: string }) {
-  const tick = useSyncExternalStore(secondTicks.subscribe, secondTicks.getSnapshot, getServerClockTick);
+  const tick = useSyncExternalStore(minuteTicks.subscribe, minuteTicks.getSnapshot, getServerClockTick);
 
   if (tick === SERVER_TICK) {
     return null;
   }
 
-  const shift = getDayShift(new Date(tick * 1000), getVisitorTimeZone());
+  const shift = getDayShift(new Date(tick * 60_000), getVisitorTimeZone());
 
   if (shift === 0) {
     return null;

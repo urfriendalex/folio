@@ -32,7 +32,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
     let touchY: number | null = null;
     let latched = false;
     let retracting = false;
-    let baseHeight = host.getBoundingClientRect().height;
+    let baseHeight = 0;
 
     const atEnd = () => !isBodyScrollLocked() && !document.hidden &&
       host.hasAttribute("data-footer-wordmark-active") &&
@@ -49,10 +49,12 @@ export function FooterEasterEgg({ wordmarkRef }: {
 
     const paint = () => {
       const amount = reducedMotion.matches ? (latched ? 1 : 0) : Math.max(0, Math.min(1, extension));
-      // Resize the ORIGINAL wordmark host. Its background and baseline stay continuous.
-      host.style.height = `${baseHeight + (window.innerHeight - baseHeight) * amount}px`;
+      // Reveal more of the ORIGINAL full-viewport wordmark host by moving its clip edge; the box itself
+      // never resizes, so background and baseline stay continuous without layout or layout shifts.
+      const visible = baseHeight + (window.innerHeight - baseHeight) * amount;
+      host.style.clipPath = `inset(calc(100% - ${visible}px) 0 0 0)`;
       host.style.zIndex = amount > 0.001 ? "480" : "";
-      if (amount <= 0.001) host.style.removeProperty("height");
+      if (amount <= 0.001) host.style.removeProperty("clip-path");
     };
 
     const tick = (now: number) => {
@@ -155,6 +157,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
       }
     };
     const onResize = () => { measure(); paint(); };
+    measure();
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -165,7 +168,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
     window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
-      host.style.removeProperty("height");
+      host.style.removeProperty("clip-path");
       host.style.removeProperty("z-index");
       window.removeEventListener("wheel", onWheel, true);
       window.removeEventListener("touchstart", onTouchStart);

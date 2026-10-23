@@ -39,4 +39,22 @@ export function registerGsapScrollTrigger() {
   });
 }
 
+let refreshFrame = 0;
+
+/**
+ * `ScrollTrigger.refresh()` re-measures every trigger and forces a full style + layout pass. Mount
+ * effects that each asked for one (pins, list mode, toolbar fade) now share a single refresh on the
+ * next frame instead of stacking several — one of them synchronously mid-mount.
+ */
+export function scheduleScrollTriggerRefresh() {
+  if (refreshFrame || typeof window === "undefined") {
+    return;
+  }
+
+  refreshFrame = window.requestAnimationFrame(() => {
+    refreshFrame = 0;
+    ScrollTrigger.refresh();
+  });
+}
+
 export { gsap, ScrollTrigger };

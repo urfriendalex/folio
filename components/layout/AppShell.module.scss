@@ -112,10 +112,13 @@
 .footerWordmarkUnderlay {
   position: fixed;
   inset-inline: 0;
+  top: 0;
   bottom: 0;
   width: 100%;
   max-width: none;
-  height: var(--footer-wordmark-strip-height);
+  /* Full-viewport box, revealed bottom-up by clip. The overscroll easter egg grows the visible part by
+     moving the clip, never the box: no per-frame layout and no layout shifts (CLS) while it stretches. */
+  clip-path: inset(calc(100% - var(--footer-wordmark-strip-height)) 0 0 0);
   /* Below `.footerChrome` (35) so editorial/footer paints over the strip; above `.main` (20) so project toolbar stays under. */
   z-index: 34;
   pointer-events: none;

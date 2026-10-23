@@ -26,7 +26,7 @@ import {
   type ProjectFilterId,
 } from "@/content/projects";
 import type { ProjectEntry, ProjectMediaSlot } from "@/content/projects/types";
-import { gsap, registerGsapScrollTrigger, ScrollTrigger } from "@/lib/gsapScroll";
+import { gsap, registerGsapScrollTrigger, scheduleScrollTriggerRefresh, ScrollTrigger } from "@/lib/gsapScroll";
 import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
@@ -711,8 +711,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     stage.addEventListener("touchmove", onTouchMove, { passive: false });
     stage.addEventListener("touchend", onTouchEnd, { passive: true });
 
+    scheduleScrollTriggerRefresh();
+    // Queued after the shared refresh, so Lenis picks up the pinned layout in the same frame.
     const frame = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
       getLenis()?.resize();
     });
 
@@ -829,12 +830,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       });
     });
 
-    const frame = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-    });
+    scheduleScrollTriggerRefresh();
 
     return () => {
-      window.cancelAnimationFrame(frame);
       ctx.revert();
     };
   }, [hasMounted, isList, isMobile, view, visibleProjects, visibleSlugs]);
@@ -845,7 +843,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     }
 
     registerGsapScrollTrigger();
-    ScrollTrigger.refresh();
+    scheduleScrollTriggerRefresh();
   }, [isList, isMobile]);
 
   useLayoutEffect(() => {
