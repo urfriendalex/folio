@@ -520,8 +520,21 @@
     visibility: hidden;
   }
 
+  /* Bottom scrim: busy page content must not read through behind the clocks and social links. */
   .mobileOverlay::before {
-    display: none;
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 0;
+    height: 10rem;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--overlay-immersive-scrim) 0 55%, transparent);
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .mobileOverlay[data-open="true"]::before {
+    opacity: 1;
   }
 
   .mobileOverlay::after {
@@ -633,6 +646,8 @@
   .mobileFooterRow {
     display: flex;
     align-items: end;
+    /* Social links sit on the clock values' baseline, not the label row. */
+    align-items: last baseline;
     justify-content: space-between;
     gap: 1rem;
     width: 100%;
@@ -650,13 +665,16 @@
     line-height: 1;
   }
 
+  /* Warsaw and your time side by side: label row + value row whether one clock shows or two,
+     so the menu footer keeps its height for every visitor. */
   .mobileClockBlock {
     display: grid;
-    gap: 0.35rem;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    column-gap: 1.25rem;
     min-width: 0;
-    flex: 1 1 auto;
-    align-content: end;
-    font-variant-numeric: tabular-nums;
+    flex: 0 1 auto;
+    align-items: end;
     opacity: 0;
     transform: translate3d(0, 0.75rem, 0);
     transition:
@@ -665,24 +683,16 @@
     transition-delay: 0ms;
   }
 
-  .mobileClockMono {
-    font-size: 0.92rem;
-    line-height: 1.2;
-  }
-
-  .mobileClockLine {
+  .mobileClock {
     display: grid;
-    grid-template-columns: minmax(4.25rem, auto) minmax(0, 1fr);
-    gap: 0.35rem 0.65rem;
-    align-items: baseline;
-    font-size: var(--type-control-size);
-    line-height: 1.25;
+    gap: 0.35rem;
   }
 
   .mobileClockLabel {
     font-family: var(--font-pixel-stack);
     font-size: 0.56rem;
     letter-spacing: var(--tracking-label-md);
+    line-height: 1;
     text-transform: uppercase;
     color: var(--overlay-immersive-muted);
     white-space: nowrap;
@@ -690,9 +700,16 @@
 
   .mobileClockValue {
     font-size: 0.86rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
-    justify-self: end;
-    text-align: right;
+    white-space: nowrap;
+  }
+
+  .mobileClockDayShift {
+    margin-inline-start: 0.4em;
+    font-size: 0.68rem;
+    color: var(--overlay-immersive-muted);
   }
 
   .mobileFooterLinks a {

@@ -13,7 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
 import { pathnameFromHref, setRoutePending, useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
-import { LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
+import { DayShift, LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
@@ -393,19 +393,18 @@ export function Navbar() {
 
             <div className={styles.mobileFooterRow}>
               <div className={styles.mobileClockBlock}>
-                {sameAsWarsaw ? (
-                  <LiveClock zone="warsaw" className={styles.mobileClockMono} />
-                ) : (
-                  <>
-                    <span className={styles.mobileClockLine}>
-                      <span className={styles.mobileClockLabel}>Warsaw</span>
-                      <LiveClock zone="warsaw" className={styles.mobileClockValue} />
+                <span className={styles.mobileClock}>
+                  <span className={styles.mobileClockLabel}>Warsaw</span>
+                  <LiveClock zone="warsaw" format="time" className={styles.mobileClockValue} />
+                </span>
+                {sameAsWarsaw ? null : (
+                  <span className={styles.mobileClock}>
+                    <span className={styles.mobileClockLabel}>Your time</span>
+                    <span className={styles.mobileClockValue}>
+                      <LiveClock zone="visitor" format="time" />
+                      <DayShift className={styles.mobileClockDayShift} />
                     </span>
-                    <span className={styles.mobileClockLine}>
-                      <span className={styles.mobileClockLabel}>Your time</span>
-                      <LiveClock zone="visitor" className={styles.mobileClockValue} />
-                    </span>
-                  </>
+                  </span>
                 )}
               </div>
               <div className={styles.mobileFooterLinks}>

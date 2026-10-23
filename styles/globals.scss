@@ -132,6 +132,7 @@
   --overlay-immersive-muted: rgb(16 16 16 / 0.62);
   --overlay-immersive-line: rgb(16 16 16 / 0.12);
   --overlay-immersive-backdrop: rgb(247 246 242 / 0.74);
+  --overlay-immersive-scrim: rgb(247 246 242 / 0.97);
   --overlay-immersive-backdrop-filter: blur(22px) saturate(108%);
   --project-toolbar-border: var(--surface-outline);
   --project-toolbar-border-strong: var(--surface-outline-strong);
@@ -322,6 +323,7 @@
   --overlay-immersive-muted: rgb(244 242 235 / 0.62);
   --overlay-immersive-line: rgb(244 242 235 / 0.14);
   --overlay-immersive-backdrop: rgb(4 4 6 / 0.78);
+  --overlay-immersive-scrim: rgb(4 4 6 / 0.97);
   --overlay-immersive-backdrop-filter: blur(24px) saturate(112%);
   --project-toolbar-block-bg: color-mix(in srgb, var(--surface-strong) 94%, black 6%);
   --project-toolbar-block-bg-hover: color-mix(in srgb, var(--surface-strong) 100%, black 0%);

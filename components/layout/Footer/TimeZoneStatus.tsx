@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 const SERVER_TICK = 0;
 const PLACEHOLDER_TIME = "--:--:--";
 const PLACEHOLDER_DATE_TIME = "-- --- ----, --:--:--";
+const PLACEHOLDER_DAY = "--- -- ---";
 const WARSAW_TIME_ZONE = "Europe/Warsaw";
 
 /**
@@ -92,6 +93,33 @@ function formatDateTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+/** `Fri 23 Oct` — short enough to sit beside a time without wrapping. */
+function formatDay(date: Date, timeZone: string) {
+  return cachedFormatter("day", timeZone, { weekday: "short", day: "numeric", month: "short" }).format(date);
+}
+
+/** Calendar date as a sortable `YYYY-MM-DD` key (`en-CA` formats ISO-style). */
+function dateKey(date: Date, timeZone: string) {
+  return cachedFormatter("dateKey", timeZone, { year: "numeric", month: "2-digit", day: "2-digit" }, "en-CA").format(date);
+}
+
+/** Visitor's calendar day relative to Warsaw's: -1 (yesterday), 0, or 1 (tomorrow). */
+function getDayShift(date: Date, visitorTimeZone: string) {
+  const visitor = dateKey(date, visitorTimeZone);
+  const warsaw = dateKey(date, WARSAW_TIME_ZONE);
+  return visitor === warsaw ? 0 : visitor > warsaw ? 1 : -1;
+}
+
+function getVisitorTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || WARSAW_TIME_ZONE;
+}
+
+/** `America/New_York` → `New York`, `America/Argentina/Buenos_Aires` → `Buenos Aires`. */
+export function formatTimeZonePlace(timeZone: string) {
+  const place = timeZone.split("/").pop() ?? timeZone;
+  return place.replace(/_/g, " ");
+}
+
 function formatWarsawClockLine(date: Date) {
   return `${formatTime(date, WARSAW_TIME_ZONE)} WAW`;
 }
@@ -101,10 +129,6 @@ function formatVisitorClockLine(date: Date, visitorTimeZone: string) {
   const tzShort = parts.find((part) => part.type === "timeZoneName")?.value?.trim() ?? "";
   const time = formatTime(date, visitorTimeZone);
   return tzShort ? `${time} ${tzShort}` : time;
-}
-
-export function formatZoneMeta(timeZone: string, offsetLabel: string) {
-  return offsetLabel ? `${timeZone} · ${offsetLabel}` : timeZone;
 }
 
 function formatOffsetLabel(diffMinutes: number) {
@@ -156,6 +180,7 @@ export type TimeZoneInfo = {
   /** `null` until hydrated (server render can't know the visitor's zone). */
   visitorTimeZone: string | null;
   offsetMinutes: number;
+  /** `6 hours behind Warsaw`; empty when the offsets match. */
   offsetLabel: string;
 };
 
@@ -171,7 +196,7 @@ export function useTimeZoneInfo(): TimeZoneInfo {
   }
 
   const now = new Date(tick * 60_000);
-  const visitorTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local timezone";
+  const visitorTimeZone = getVisitorTimeZone();
   const offsetMinutes = getOffset(now, visitorTimeZone) - getOffset(now, WARSAW_TIME_ZONE);
   return { visitorTimeZone, offsetMinutes, offsetLabel: formatOffsetLabel(offsetMinutes) };
 }
@@ -182,7 +207,9 @@ type LiveClockFormat =
   /** `HH:mm:ss WAW` (warsaw) / `HH:mm:ss CEST` (visitor) */
   | "line"
   /** `15 Oct 2026, 14:03:09` */
-  | "dateTime";
+  | "dateTime"
+  /** `Thu 15 Oct` */
+  | "day";
 
 /** A single ticking text node: the only thing that re-renders every second. */
 export function LiveClock({
@@ -201,17 +228,18 @@ export function LiveClock({
     text =
       format === "dateTime"
         ? PLACEHOLDER_DATE_TIME
+        : format === "day"
+          ? PLACEHOLDER_DAY
         : format === "line" && zone === "warsaw"
           ? `${PLACEHOLDER_TIME} WAW`
           : PLACEHOLDER_TIME;
   } else {
     const now = new Date(tick * 1000);
-    const timeZone =
-      zone === "warsaw"
-        ? WARSAW_TIME_ZONE
-        : Intl.DateTimeFormat().resolvedOptions().timeZone || WARSAW_TIME_ZONE;
+    const timeZone = zone === "warsaw" ? WARSAW_TIME_ZONE : getVisitorTimeZone();
     if (format === "dateTime") {
       text = formatDateTime(now, timeZone);
+    } else if (format === "day") {
+      text = formatDay(now, timeZone);
     } else if (format === "time") {
       text = formatTime(now, timeZone);
     } else {
@@ -222,6 +250,30 @@ export function LiveClock({
   return (
     <span className={className} suppressHydrationWarning>
       {text}
+    </span>
+  );
+}
+
+/**
+ * `+1 day` / `−1 day` beside the visitor's clock when their calendar date differs from Warsaw's.
+ * Ticks with the clock so it flips exactly at midnight; renders nothing on the server or same day.
+ */
+export function DayShift({ className }: { className?: string }) {
+  const tick = useSyncExternalStore(secondTicks.subscribe, secondTicks.getSnapshot, getServerClockTick);
+
+  if (tick === SERVER_TICK) {
+    return null;
+  }
+
+  const shift = getDayShift(new Date(tick * 1000), getVisitorTimeZone());
+
+  if (shift === 0) {
+    return null;
+  }
+
+  return (
+    <span className={className}>
+      {shift > 0 ? "+1 day" : "\u22121 day"}
     </span>
   );
 }
