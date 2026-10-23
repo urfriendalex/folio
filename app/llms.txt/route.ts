@@ -28,7 +28,7 @@ function buildLlmsTxt(): string {
     `- [Home](${SITE_URL}/): Introduction, recent work, and contact.`,
     `- [Work](${SITE_URL}/projects): Index of every case study, filterable by e-commerce, portfolio, product, and event work.`,
     `- [Archive](${SITE_URL}/archive): Experiments, motion stills, and visual studies between client work.`,
-    `- [FAQ](${SITE_URL}/faq): Project types, technologies, getting in touch, and remote collaboration.`,
+    `- [FAQ](${SITE_URL}/faq): Project types, technologies, what SEO is included, getting in touch, and remote collaboration.`,
     "",
     "## Case studies",
     "",

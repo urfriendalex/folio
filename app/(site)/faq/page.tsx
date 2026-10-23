@@ -10,7 +10,7 @@ import styles from "./page.module.scss";
 
 const title = "FAQ — Working With a Freelance Web Developer in Warsaw";
 const description =
-  "Working with Alexander Yansons: project types, Shopify and Next.js work, how to get in touch, reply times, and remote collaboration from Warsaw, Poland.";
+  "Working with Alexander Yansons: project types, Shopify and Next.js work, what SEO is included, how to get in touch, and remote collaboration from Warsaw, Poland.";
 
 export const metadata: Metadata = {
   title,
