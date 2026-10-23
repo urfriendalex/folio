@@ -290,7 +290,7 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "video",
-        "alt": "Blooming Diva mobile grid switcher and image zoom",
+        "alt": "Blooming Diva mobile grid switcher",
         "loop": true,
         "desktop": {
           "src": "/projects/pastel-muse/media-03.mp4",
