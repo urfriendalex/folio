@@ -35,9 +35,9 @@ type ProjectMediaProps = {
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
   /** `instant` skips the load fade — used for hover/scroll previews that must cut.
-      `pixel` keeps the placeholder grid until the asset is ready *and* on screen, then switches its
-      cells off in a scattered order (project page stills). */
-  reveal?: "fade" | "instant" | "pixel";
+      `view` keeps the loading grid (over the tone preview) until the asset is decoded *and* on screen,
+      then crossfades it out while the media fades in — never a half-loaded state (project page stills). */
+  reveal?: "fade" | "instant" | "view";
 };
 
 type UseIntersectionOptions = {
@@ -323,15 +323,15 @@ function ProjectMediaInner({
     releaseVideoSlotRef.current?.();
   }, []);
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
-  const pixelReveal = reveal === "pixel";
+  const viewReveal = reveal === "view";
   /* Already decoded on mount (cached / back navigation): show it straight away, no replay. */
   const [readyOnMount] = useState(ready);
-  const { hasIntersected: pixelRevealSeen } = useIntersectionState(rootRef, {
-    enabled: pixelReveal && !readyOnMount && !reducedMotion,
+  const { hasIntersected: viewRevealSeen } = useIntersectionState(rootRef, {
+    enabled: viewReveal && !readyOnMount && !reducedMotion,
     rootMargin: "0px 0px -12% 0px",
   });
-  const placeholderVisible = pixelReveal
-    ? !(ready && (readyOnMount || reducedMotion || pixelRevealSeen))
+  const placeholderVisible = viewReveal
+    ? !(ready && (readyOnMount || reducedMotion || viewRevealSeen))
     : !ready;
 
   useEffect(() => {
@@ -403,15 +403,19 @@ function ProjectMediaInner({
       data-media-width={activeAsset.width}
       data-media-height={activeAsset.height}
       data-reveal={reveal}
+      data-revealed={placeholderVisible ? "false" : "true"}
       data-video-ready={videoReady ? "true" : "false"}
     >
+      {activeAsset.tone ? (
+        /* 4×4 colour preview, stretched: the browser's smooth upscale makes it a soft blur for free. */
+        <div className={styles.tone} aria-hidden="true" style={{ backgroundImage: `url(${activeAsset.tone})` }} />
+      ) : null}
       <ProjectMediaPlaceholderGrid
         grid={placeholderGrid}
         className={[styles.placeholder, placeholderClassName]
           .filter(Boolean)
           .join(" ")}
         visible={placeholderVisible}
-        reveal={pixelReveal ? "pixel" : "fade"}
       />
       <div className={styles.frame} data-project-media-surface="true" style={sharedStyle}>
         {media.kind === "video" ? (

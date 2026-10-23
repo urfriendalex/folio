@@ -24,7 +24,7 @@ import {
   projectFilterCounts,
   projectFilterLabel,
   type ProjectFilterId,
-} from "@/content/projects";
+} from "@/content/projects/categories";
 import type { ProjectEntry, ProjectMediaSlot } from "@/content/projects/types";
 import { gsap, registerGsapScrollTrigger, scheduleScrollTriggerRefresh, ScrollTrigger } from "@/lib/gsapScroll";
 import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";

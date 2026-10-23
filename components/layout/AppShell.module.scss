@@ -58,16 +58,18 @@
    a transform/filter here would re-parent the fixed UI inside `main`. */
 :global(html.route-pending) .main {
   opacity: 0.45;
-  transition: opacity 220ms var(--ease-out) 120ms;
+  /* Even ease-in-out over 420ms: the front-loaded --ease-out read as an instant cut to the dim. */
+  transition: opacity 420ms cubic-bezier(0.45, 0, 0.25, 1) 120ms;
 }
 
 :global(html.route-entering:not(.home-section-arrival-pending):not(.home-section-arrival-reveal)) .main {
-  animation: route-enter 240ms var(--ease-out) both;
+  animation: route-enter 360ms cubic-bezier(0.33, 0, 0.2, 1) both;
 }
 
+/* Rises from about the dimmed level rather than from 0, so dim → new page is one continuous fade. */
 @keyframes route-enter {
   from {
-    opacity: 0;
+    opacity: 0.4;
   }
   to {
     opacity: 1;

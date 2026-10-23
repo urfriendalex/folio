@@ -1320,9 +1320,8 @@ export function ProjectPage({
           const slotHiddenForViewer =
             mediaViewerHidesGridSlot && isActiveViewerItem;
 
-          /* No hide-until-in-view wrapper: the card and its placeholder grid are always there, so a
-             still that hasn't loaded or revealed yet never reads as empty space. The grid itself is
-             the reveal (`reveal="pixel"`). */
+          /* No hide-until-in-view wrapper: the card, its loading grid and tone preview are always
+             there, so a still that hasn't loaded or revealed yet never reads as empty space. */
           return (
             <div
               key={mediaKey}
@@ -1371,7 +1370,7 @@ export function ProjectPage({
                     sizes={PROJECT_STILL_IMAGE_SIZES}
                     imagePreload={index === 0}
                     loading={index < 2 ? "eager" : "lazy"}
-                    reveal="pixel"
+                    reveal="view"
                   />
                 </div>
                 {isPortrait ? (

@@ -31,29 +31,6 @@
   transition: background-color var(--project-media-grid-trail-duration) var(--ease-out);
 }
 
-/* Pixel reveal: the media is already painted underneath. Grid lines drop at once so it shows through
-   as a mosaic; the component then flips each cell to `half`, then `off`, at its own scattered delay
-   (one rAF loop, no per-cell transitions). Hidden altogether once the last cell is off. */
-.root[data-reveal="pixel"][data-visible="false"] {
-  opacity: 1;
-  visibility: visible;
-  background-color: transparent;
-  transition: none;
-}
-
-.root[data-reveal="pixel"][data-reveal-done="true"] {
-  visibility: hidden;
-}
-
-.root[data-reveal="pixel"] .cell[data-step="half"] {
-  background-color: color-mix(in srgb, var(--project-media-placeholder-cell) 50%, transparent);
-  transition: none;
-}
-
-.root[data-reveal="pixel"] .cell[data-step="off"] {
-  visibility: hidden;
-}
-
 @media (hover: hover) and (pointer: fine) {
   .cell:hover {
     background: var(--project-media-grid);
