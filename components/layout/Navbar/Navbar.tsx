@@ -12,7 +12,7 @@ import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
-import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
+import { pathnameFromHref, setRoutePending, useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
 import { LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -53,7 +53,13 @@ export function Navbar() {
   });
   /* Per-second ticking is isolated in <LiveClock>; the navbar itself re-renders at most once a minute. */
   const sameAsWarsaw = useTimeZoneInfo().offsetMinutes === 0;
-  const { guardedPush } = useNavigationFlightLock(pathname);
+  const { guardedPush, cancelPendingNav } = useNavigationFlightLock(pathname);
+  /* Closing the menu means "stay here": a route still loading must not swap in afterwards. */
+  const dismissMenu = () => {
+    cancelPendingNav();
+    setMenuOpen(false);
+  };
+  const dismissMenuOnEscape = useEffectEvent(dismissMenu);
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {
@@ -141,7 +147,7 @@ export function Navbar() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        dismissMenuOnEscape();
       }
     };
 
@@ -179,7 +185,13 @@ export function Navbar() {
     };
   }, []);
 
+  const handleOpenAbout = () => {
+    cancelPendingNav();
+    openAbout();
+  };
+
   const openAboutFromMenu = () => {
+    cancelPendingNav();
     document.documentElement.classList.add("nav-overlay-instant");
     setMenuOpen(false);
     openAbout();
@@ -202,6 +214,7 @@ export function Navbar() {
           unsubscribe();
           window.requestAnimationFrame(() => {
             if (pathname === "/") {
+              cancelPendingNav("/");
               clearLocationHash();
               scrollToHeroSection();
             } else {
@@ -216,7 +229,17 @@ export function Navbar() {
 
     if (pathname === "/") {
       event.preventDefault();
+      cancelPendingNav("/");
       clearLocationHash();
+
+      if (menuOpen) {
+        /* Body is scroll-locked under the menu: land on the hero (top) instead of restoring the old offset. */
+        skipNextScrollRestore();
+        setMenuOpen(false);
+        window.setTimeout(scrollToHeroSection, 0);
+        return;
+      }
+
       scrollToHeroSection();
       return;
     }
@@ -225,7 +248,24 @@ export function Navbar() {
     guardedPush("/", { scroll: false });
   };
 
-  const handleMobileNavLinkClick = () => {
+  /* Contact: in-page on `/` (keep the hash URL, drop any pending route); elsewhere the scroll provider
+     pushes `/` itself, which supersedes whatever was loading. */
+  const handleContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+
+    const href = event.currentTarget.getAttribute("href") ?? "";
+
+    if (href.startsWith("#")) {
+      cancelPendingNav(`${window.location.pathname}${window.location.search}${href}`);
+    } else {
+      setRoutePending(null);
+    }
+  };
+
+  const handleMobileContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    handleContactClick(event);
     setMenuOpen(false);
   };
 
@@ -235,7 +275,7 @@ export function Navbar() {
     const href = event.currentTarget.getAttribute("href");
     if (
       !href ||
-      href === pathname ||
+      pathnameFromHref(href) === pathname ||
       event.metaKey ||
       event.ctrlKey ||
       event.shiftKey ||
@@ -270,7 +310,7 @@ export function Navbar() {
           {logoLink}
 
           <nav className={styles.nav} aria-label="Primary">
-            <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
+            <button type="button" onClick={handleOpenAbout} className={`link-underline ${styles.navLink}`}>
               About
             </button>
             <IntentPrefetchLink
@@ -288,6 +328,7 @@ export function Navbar() {
             <a
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.navLink}`}
+              onClick={handleContactClick}
             >
               Contact
             </a>
@@ -300,7 +341,7 @@ export function Navbar() {
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
             aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            onClick={() => setMenuOpen((value) => !value)}
+            onClick={() => (menuOpen ? dismissMenu() : setMenuOpen(true))}
           >
             <span className={styles.menuButtonLine} />
             <span className={styles.menuButtonLine} />
@@ -345,7 +386,7 @@ export function Navbar() {
                 href={getAnchor(pathname, "contact")}
                 className={`link-underline ${styles.mobileNavLink}`}
                 style={{ "--item-index": 3 } as CSSProperties}
-                onClick={handleMobileNavLinkClick}
+                onClick={handleMobileContactClick}
               >
                 Contact
               </a>

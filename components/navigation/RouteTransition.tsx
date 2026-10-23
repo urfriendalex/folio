@@ -16,13 +16,20 @@ export function RouteTransition() {
   const previousPathnameRef = useRef(pathname);
 
   useEffect(() => {
+    /* Back/forward supersedes any pushed route; the popstate target may even be the current path. */
+    const onPopState = () => setRoutePending(null);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
     if (previousPathnameRef.current === pathname) {
       return;
     }
 
     previousPathnameRef.current = pathname;
     const html = document.documentElement;
-    setRoutePending(false);
+    setRoutePending(null);
     html.classList.add(ROUTE_ENTER_CLASS);
 
     const timeout = window.setTimeout(() => {
