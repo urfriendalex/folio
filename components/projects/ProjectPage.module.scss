@@ -23,7 +23,7 @@
   background: color-mix(in srgb, var(--surface-color) 58%, transparent);
 }
 
-/* Crossfade with immersive overlay close (~480ms on `.surface[data-variant="immersive"]`). Keep `transform` here so we do not override `.imageReveal > *`’s scale transition. */
+/* Crossfade with immersive overlay close (~480ms on `.surface[data-variant="immersive"]`). */
 .still > * {
   transition:
     opacity 480ms var(--ease-reveal),

@@ -34,8 +34,10 @@ type ProjectMediaProps = {
   placeholderClassName?: string;
   /** Forwards to `next/image` `preload` on the LCP candidate (first tile / hero). */
   imagePreload?: boolean;
-  /** `instant` skips the load fade — used for hover/scroll previews that must cut. */
-  reveal?: "fade" | "instant";
+  /** `instant` skips the load fade — used for hover/scroll previews that must cut.
+      `pixel` keeps the placeholder grid until the asset is ready *and* on screen, then switches its
+      cells off in a scattered order (project page stills). */
+  reveal?: "fade" | "instant" | "pixel";
 };
 
 type UseIntersectionOptions = {
@@ -321,6 +323,16 @@ function ProjectMediaInner({
     releaseVideoSlotRef.current?.();
   }, []);
   const ready = media.kind === "video" ? posterReady || videoReady : assetReady;
+  const pixelReveal = reveal === "pixel";
+  /* Already decoded on mount (cached / back navigation): show it straight away, no replay. */
+  const [readyOnMount] = useState(ready);
+  const { hasIntersected: pixelRevealSeen } = useIntersectionState(rootRef, {
+    enabled: pixelReveal && !readyOnMount && !reducedMotion,
+    rootMargin: "0px 0px -12% 0px",
+  });
+  const placeholderVisible = pixelReveal
+    ? !(ready && (readyOnMount || reducedMotion || pixelRevealSeen))
+    : !ready;
 
   useEffect(() => {
     if (!showVideo) {
@@ -398,7 +410,8 @@ function ProjectMediaInner({
         className={[styles.placeholder, placeholderClassName]
           .filter(Boolean)
           .join(" ")}
-        visible={!ready}
+        visible={placeholderVisible}
+        reveal={pixelReveal ? "pixel" : "fade"}
       />
       <div className={styles.frame} data-project-media-surface="true" style={sharedStyle}>
         {media.kind === "video" ? (

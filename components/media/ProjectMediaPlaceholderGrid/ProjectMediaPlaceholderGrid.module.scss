@@ -31,6 +31,31 @@
   transition: background-color var(--project-media-grid-trail-duration) var(--ease-out);
 }
 
+/* Pixel reveal: the media is already painted underneath. Grid lines drop first so it shows through
+   as a mosaic, then each cell switches off at its own scattered delay in two hard steps (half, gone).
+   Only background-color + visibility flip — discrete main-thread repaints of tiny cells, never 100+
+   opacity animations that would each get promoted to their own compositor layer. */
+.root[data-reveal="pixel"] {
+  --pixel-reveal-spread: 640ms;
+  --pixel-reveal-step: 110ms;
+}
+
+.root[data-reveal="pixel"][data-visible="false"] {
+  opacity: 1;
+  background-color: transparent;
+  transition:
+    background-color 90ms steps(2, end),
+    visibility 0s linear calc(var(--pixel-reveal-spread) + var(--pixel-reveal-step));
+}
+
+.root[data-reveal="pixel"][data-visible="false"] .cell {
+  background-color: transparent;
+  visibility: hidden;
+  transition:
+    background-color var(--pixel-reveal-step) steps(2, end) var(--cell-delay, 0ms),
+    visibility 0s linear calc(var(--cell-delay, 0ms) + var(--pixel-reveal-step));
+}
+
 @media (hover: hover) and (pointer: fine) {
   .cell:hover {
     background: var(--project-media-grid);
@@ -40,11 +65,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .root,
-  .root[data-visible="false"] {
+  .root[data-visible="false"],
+  .root[data-reveal="pixel"][data-visible="false"] {
     transition: none;
   }
 
-  .cell {
+  .cell,
+  .root[data-reveal="pixel"][data-visible="false"] .cell {
     transition: none;
   }
 }
