@@ -15,9 +15,12 @@ export function pathnameFromHref(href: string) {
 }
 
 export const ROUTE_PENDING_CLASS = "route-pending";
+/** Fired when a pending route is dropped, so listeners (e.g. a queued home-section scroll) can stand down. */
+export const ROUTE_CANCEL_EVENT = "folio:route-cancel";
 const ROUTE_PENDING_TIMEOUT_MS = 10000;
 let routePendingTimeout = 0;
 let pendingRoute: string | null = null;
+let pendingHref: string | null = null;
 const pendingRouteListeners = new Set<() => void>();
 
 /**
@@ -38,8 +41,9 @@ export function setRoutePending(href: string | null) {
     routePendingTimeout = window.setTimeout(() => setRoutePending(null), ROUTE_PENDING_TIMEOUT_MS);
   }
 
-  if (next !== pendingRoute) {
+  if (next !== pendingRoute || href !== pendingHref) {
     pendingRoute = next;
+    pendingHref = href;
     pendingRouteListeners.forEach((listener) => listener());
   }
 }
@@ -56,6 +60,15 @@ export function usePendingRoute() {
   return useSyncExternalStore(
     subscribePendingRoute,
     () => pendingRoute,
+    () => null,
+  );
+}
+
+/** Exact href that started the pending navigation (`/#contact` vs `/`), for links sharing a pathname. */
+export function usePendingHref() {
+  return useSyncExternalStore(
+    subscribePendingRoute,
+    () => pendingHref,
     () => null,
   );
 }
@@ -78,6 +91,7 @@ export function useNavigationFlightLock(pathname: string | null) {
         /* Back to where we are: drop whatever was in flight instead of landing on it later. */
         if (pendingRoute !== null) {
           setRoutePending(null);
+          window.dispatchEvent(new Event(ROUTE_CANCEL_EVENT));
           startTransition(() => {
             router.replace(window.location.href, { scroll: false });
           });
@@ -86,10 +100,12 @@ export function useNavigationFlightLock(pathname: string | null) {
       }
 
       if (target === pendingRoute) {
+        /* Same destination already loading: no second fetch, but the newest tap owns the busy state. */
+        setRoutePending(href);
         return true;
       }
 
-      setRoutePending(target);
+      setRoutePending(href);
       startTransition(() => {
         router.push(href, options);
       });
@@ -111,6 +127,7 @@ export function useNavigationFlightLock(pathname: string | null) {
 
       const url = href ?? window.location.href;
       setRoutePending(null);
+      window.dispatchEvent(new Event(ROUTE_CANCEL_EVENT));
       startTransition(() => {
         router.replace(url, { scroll: false });
       });

@@ -12,7 +12,12 @@ import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
-import { pathnameFromHref, setRoutePending, useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
+import {
+  pathnameFromHref,
+  setRoutePending,
+  useNavigationFlightLock,
+  usePendingHref,
+} from "@/lib/useNavigationFlightLock";
 import { DayShift, LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
@@ -54,6 +59,7 @@ export function Navbar() {
   /* Per-second ticking is isolated in <LiveClock>; the navbar itself re-renders at most once a minute. */
   const sameAsWarsaw = useTimeZoneInfo().offsetMinutes === 0;
   const { guardedPush, cancelPendingNav } = useNavigationFlightLock(pathname);
+  const pendingHref = usePendingHref();
   /* Closing the menu means "stay here": a route still loading must not swap in afterwards. */
   const dismissMenu = () => {
     cancelPendingNav();
@@ -249,7 +255,7 @@ export function Navbar() {
   };
 
   /* Contact: in-page on `/` (keep the hash URL, drop any pending route); elsewhere the scroll provider
-     pushes `/` itself, which supersedes whatever was loading. */
+     pushes `/` itself (superseding whatever was loading), so mark `/` as the pending route here. */
   const handleContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       return;
@@ -260,13 +266,21 @@ export function Navbar() {
     if (href.startsWith("#")) {
       cancelPendingNav(`${window.location.pathname}${window.location.search}${href}`);
     } else {
-      setRoutePending(null);
+      setRoutePending(href);
     }
   };
 
+  /* Cross-route Contact holds the menu like Work/Archive; the home arrival scroll already waits for the
+     menu to close (`is-nav-open`), and skipping the restore keeps the old page's offset out of it. */
   const handleMobileContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
     handleContactClick(event);
-    setMenuOpen(false);
+
+    if (event.currentTarget.getAttribute("href")?.startsWith("#") || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      setMenuOpen(false);
+      return;
+    }
+
+    skipNextScrollRestore();
   };
 
   /* Cross-route menu links keep the overlay up while the next page loads; the pathname effect closes it
@@ -385,6 +399,7 @@ export function Navbar() {
                 href={getAnchor(pathname, "contact")}
                 className={`link-underline ${styles.mobileNavLink}`}
                 style={{ "--item-index": 3 } as CSSProperties}
+                aria-busy={(pendingHref !== null && pendingHref === getAnchor(pathname, "contact")) || undefined}
                 onClick={handleMobileContactClick}
               >
                 Contact
