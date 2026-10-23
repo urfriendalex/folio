@@ -61,18 +61,20 @@ export const projectMediaOrderIndexBySlug: Partial<
     "media-03.mp4": 1,
     "media-04.mp4": 2,
   },
-  /** Keep the original Pastel Muse mix and interleave the two newer Photo Day variants. */
+  /**
+   * Photo Day series. Motion leads each chapter. New stills that sat between
+   * clips were removed; the kept registration and Blooming Diva landing stills stay.
+   */
   "pastel-muse": {
-    "media-08.mp4": 1,
-    "media-01.mp4": 2,
-    "media-10.png": 3,
-    "media-04.mp4": 4,
-    "media-02.mp4": 5,
-    "media-11.png": 6,
-    "media-05.png": 7,
+    "media-05.png": 1,
+    "media-04.mp4": 2,
+    "media-01.mp4": 3,
+    "media-02.mp4": 4,
+    "media-07.png": 5,
+    "media-10.png": 6,
+    "media-08.mp4": 7,
     "media-03.mp4": 8,
-    "media-06.png": 9,
-    "media-07.png": 10,
-    "media-09.mp4": 11,
+    "media-09.mp4": 9,
+    "media-13.mp4": 10,
   },
 };
