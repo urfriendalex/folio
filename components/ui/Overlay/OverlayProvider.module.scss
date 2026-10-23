@@ -29,7 +29,7 @@
 
 .contactTitle {
   margin: 0;
-  font-size: clamp(2.8rem, 7vw, 5.8rem);
+  font-size: var(--type-overlay-display-size);
   line-height: 0.9;
   letter-spacing: -0.08em;
 }
@@ -56,8 +56,8 @@
   --reveal-line-gap: 0.12em;
   --about-opening-indent: clamp(4rem, 15vw, 12rem);
   max-width: none;
-  font-size: clamp(1.62rem, 2.85vw, 2.55rem);
-  line-height: 1.06;
+  font-size: var(--type-about-lead-size);
+  line-height: var(--type-leading-display);
   letter-spacing: -0.055em;
   text-indent: var(--about-opening-indent);
 }
@@ -75,8 +75,8 @@
 
 .contactLead p {
   max-width: none;
-  font-size: clamp(1.02rem, 1.22vw, 1.12rem);
-  line-height: 1.52;
+  font-size: var(--type-lead-size);
+  line-height: var(--type-leading-body);
 }
 
 .aboutLeadMuted {
@@ -192,9 +192,9 @@
 
 .metaBlock li {
   --reveal-line-gap: 0.12em;
-  font-size: clamp(0.86rem, 0.18vw + 0.82rem, 0.92rem);
+  font-size: var(--type-ui-size);
   color: var(--overlay-muted);
-  line-height: 1.42;
+  line-height: var(--type-leading-body);
   transition:
     color 200ms ease,
     opacity 200ms ease;
@@ -242,12 +242,16 @@
   align-items: baseline;
   color: var(--overlay-fg);
   text-decoration: none;
+  font-size: var(--type-ui-size);
+  line-height: var(--type-leading-label);
 }
 
 .aboutCopyright {
   display: inline-block;
   color: var(--overlay-muted);
   text-align: right;
+  font-size: var(--footer-brand-meta-font-size);
+  line-height: var(--type-leading-label);
 }
 
 .metaLinks {
@@ -330,8 +334,8 @@
 
   .aboutLeadText {
     --about-opening-indent: clamp(3.25rem, 20vw, 5.5rem);
-    font-size: clamp(1.12rem, 5.45vw, 1.36rem);
-    line-height: 1.05;
+    font-size: var(--type-about-lead-size);
+    line-height: var(--type-leading-display);
     letter-spacing: -0.042em;
   }
 
@@ -349,13 +353,13 @@
   }
 
   .metaBlock li {
-    font-size: 0.7rem;
-    line-height: 1.3;
+    font-size: var(--type-meta-size);
+    line-height: var(--type-leading-label);
     letter-spacing: -0.012em;
   }
 
   .metaBlock :global(.section-label) {
-    font-size: 0.58rem;
+    font-size: var(--type-caption-size);
   }
 
   .metaGrid {
@@ -433,7 +437,7 @@
 
   .aboutFooterLink,
   .aboutCopyright {
-    font-size: clamp(0.58rem, 2.2vw, 0.68rem);
+    font-size: var(--type-caption-size);
     letter-spacing: 0.02em;
     line-height: 1.2;
   }

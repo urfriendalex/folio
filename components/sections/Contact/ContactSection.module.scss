@@ -1,6 +1,6 @@
 .section {
   position: relative;
-  /* Glyph accent only; red read as an alarm here. Labels stay ink; red stays for Back and form errors. */
+  /* The status stays blue; each action supplies its own glyph accent. */
   --contact-accent: var(--taskbar-flag-blue);
   padding-bottom: var(--section-padding-y);
   scroll-margin-top: calc(var(--header-height) + 0.5rem);
@@ -62,7 +62,7 @@
   background: transparent;
   color: var(--signal-color);
   font: inherit;
-  font-size: 0.76rem;
+  font-size: var(--type-control-size);
   letter-spacing: 0.02em;
   text-transform: none;
   cursor: pointer;
@@ -154,7 +154,7 @@
   align-items: center;
   width: 100%;
   max-width: none;
-  font-size: clamp(2.75rem, 7.5vw, 8.5rem);
+  font-size: var(--type-contact-display-size);
   line-height: 0.92;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -284,8 +284,8 @@
   background: transparent;
   color: var(--fg-color);
   font: inherit;
-  font-size: 0.72rem;
-  letter-spacing: var(--tracking-label-lg);
+  font-size: var(--type-meta-size);
+  letter-spacing: var(--type-tracking-action);
   line-height: 1.35;
   text-align: left;
   text-decoration: none;
@@ -421,9 +421,9 @@
   min-width: 0;
   margin: 0;
   font-family: var(--font-body-stack);
-  font-size: clamp(1.55rem, 3.2vw, 2.8rem);
-  font-weight: 600;
-  line-height: 0.92;
+  font-size: var(--type-dialog-title-size);
+  font-weight: var(--type-weight-semibold);
+  line-height: var(--type-leading-heading);
   white-space: nowrap;
 }
 
@@ -491,7 +491,7 @@
 .field span,
 .submitButton {
   color: var(--muted-color);
-  font-size: 0.82rem;
+  font-size: var(--type-control-size);
   letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
 }
@@ -545,7 +545,7 @@
   grid-column: 1 / -1;
   margin: 0;
   max-width: 36rem;
-  font-size: 0.82rem;
+  font-size: var(--type-control-size);
   line-height: 1.45;
   letter-spacing: 0.01em;
   color: var(--muted-color);
@@ -564,7 +564,7 @@
 
 @media (max-width: 48rem) {
   .formTitle {
-    font-size: clamp(1.3rem, 6.4vw, 2rem);
+    font-size: var(--type-dialog-title-size);
   }
 
   /*
@@ -582,12 +582,12 @@
     display: none !important;
   }
 
-  /* Keep a complete contact screen beneath the navigation; spare height belongs to the layout, not the buttons. */
+  /* Use the largest viewport so browser toolbar changes cannot resize the contact layout. */
   .section:not(.sectionFormOpen) .stage {
     display: flex;
     flex-direction: column;
     min-height: calc(100svh - var(--header-height) - 1rem);
-    min-height: calc(100dvh - var(--header-height) - 1rem);
+    min-height: calc(100lvh - var(--header-height) - 1rem);
   }
 
   /* Inside `.emailView` — horizontal inset comes from parent; unmounts with email stack */
@@ -646,9 +646,9 @@
     background: transparent;
     color: var(--fg-color);
     font-family: var(--font-pixel-stack);
-    font-size: clamp(0.84rem, 2.6vw, 0.98rem);
+    font-size: var(--type-contact-action-size);
     font-weight: 400;
-    letter-spacing: var(--tracking-label-lg);
+    letter-spacing: var(--type-tracking-action);
     line-height: 1.35;
     text-transform: uppercase;
     text-align: center;
@@ -688,7 +688,7 @@
 
   .emailWord {
     flex-shrink: 0;
-    font-size: clamp(2.4rem, 12vw, 5.2rem);
+    font-size: var(--type-contact-display-size);
   }
 
   .form {

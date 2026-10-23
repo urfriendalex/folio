@@ -85,6 +85,10 @@ const bootstrapScript = `
   // above the landing position is already known, so its entrances are skipped.
   try {
     const nav = performance.getEntriesByType("navigation")[0];
+    // Hash destinations are positioned after hydration; never paint Home at the top in between.
+    if (location.pathname === "/" && ["#work", "#contact", "#contact-form"].includes(location.hash) && nav?.type !== "back_forward") {
+      html.classList.add("home-section-initial-pending");
+    }
     if (nav && (nav.type === "reload" || nav.type === "back_forward")) {
       html.classList.add("reveal-restore");
     }

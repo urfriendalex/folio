@@ -55,7 +55,8 @@
 
 /* Cross-route Work/Contact links mount Home at the top before its target exists.
    Hold only that incoming Home paint until the immediate destination scroll is positioned. */
-:global(html.home-section-arrival-pending) .main:has(#work) {
+:global(html.home-section-arrival-pending) .main:has(#work),
+:global(html.home-section-initial-pending) .main:has(#work) {
   opacity: 0;
 }
 

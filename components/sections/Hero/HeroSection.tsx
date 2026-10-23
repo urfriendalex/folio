@@ -2,6 +2,9 @@
 
 import {
   Fragment,
+  createContext,
+  useContext,
+  type ReactNode,
   memo,
   useCallback,
   useEffect,
@@ -26,7 +29,6 @@ import { RevealLines } from "@/components/motion/RevealLines/RevealLines";
 import { usePretextLines } from "@/components/motion/shared/usePretextLines";
 import { useRevealOnView } from "@/components/motion/shared/useRevealOnView";
 import { useOptionalHeroRevealTimeline } from "@/lib/heroRevealTimeline";
-import { requestHomeContactFormOpen } from "@/lib/homeContactForm";
 import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import {
   getHomeHeroRevealDone,
@@ -91,6 +93,16 @@ function getServerWalkerParkedSnapshot(): boolean {
   return false;
 }
 
+const MOBILE_HERO_QUERY = "(max-width: 48rem)";
+function subscribeMobileHero(onChange: () => void) {
+  const media = window.matchMedia(MOBILE_HERO_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+function getMobileHeroSnapshot() {
+  return window.matchMedia(MOBILE_HERO_QUERY).matches;
+}
+
 /** Matches the phrases in `heroContent.position`. */
 const INDEPENDENT_DEVELOPER_PHRASE = "Independent Developer";
 const CREATIVE_TECHNOLOGIST_PHRASE = "Creative Technologist";
@@ -148,6 +160,27 @@ const DissolveText = memo(function DissolveText({ text, seed }: { text: string; 
   );
 });
 
+const HeroDetailRevealContext = createContext({ offset: 0, total: 1, visible: true, immediate: true });
+
+/** Additional hero lines share the entrance clock and the scroll dissolve. */
+export function HeroDetailText({ text, seed, revealIndex }: { text: string; seed: number; revealIndex: number }) {
+  const reveal = useContext(HeroDetailRevealContext);
+  return <RevealLines as="span" className={styles.detailLine} text={text} measureLines={false}
+    offset={reveal.offset + revealIndex} total={reveal.total} stepMs={HEADING_REVEAL_STEP_MS}
+    visible={reveal.visible} immediate={reveal.immediate}
+    renderToken={(token) => <DissolveText text={token} seed={seed} />} />;
+}
+
+function renderHeadingCopy(text: string, seed: number, mobileBreakBefore?: string) {
+  const split = mobileBreakBefore ? text.indexOf(` ${mobileBreakBefore}`) : -1;
+  if (split < 0) return <DissolveText text={text} seed={seed} />;
+  return <>
+    <DissolveText text={text.slice(0, split + 1)} seed={seed} />
+    <br className={styles.headingMobileBreak} aria-hidden="true" />
+    <DissolveText text={text.slice(split + 1)} seed={seed + 1} />
+  </>;
+}
+
 /** Matched in `heroContent.statement` — interactive headline gag (see `renderHeadingToken`). */
 const STUFF_GAG_WORD = "stuff";
 
@@ -196,9 +229,16 @@ type HeroContent = {
 
 type HeroSectionProps = {
   content: HeroContent;
+  introClassName?: string;
+  ctaClassName?: string;
+  ctaAdornment?: ReactNode;
+  supportingContent?: ReactNode;
+  supportingLineCount?: number;
+  mobileHeadingBreakBefore?: string;
+  asciiInteraction?: { expanded: boolean; onToggle: () => void };
 };
 
-export function HeroSection({ content }: HeroSectionProps) {
+export function HeroSection({ content, introClassName, ctaClassName, ctaAdornment, supportingContent, supportingLineCount = 0, mobileHeadingBreakBefore, asciiInteraction }: HeroSectionProps) {
   const introRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const descriptionRef = useRef<HTMLParagraphElement>(null);
@@ -214,6 +254,8 @@ export function HeroSection({ content }: HeroSectionProps) {
   const gagTransitionTokenRef = useRef(0);
   const gagEnterRafIdsRef = useRef<Set<number>>(new Set());
   const [hoverAccent, setHoverAccent] = useState<HoverAccent | null>(null);
+  const [asciiTileCount, setAsciiTileCount] = useState(1);
+  const [asciiTileStepPx, setAsciiTileStepPx] = useState(0);
   const [stuffGagMobileActive, setStuffGagMobileActive] = useState(false);
   const [stuffGagHover, setStuffGagHover] = useState(false);
   /** Viewport center + em base (px) from the real “stuff” glyph so the portaled word tracks type scale on any screen. */
@@ -253,6 +295,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     getServerWalkerParkedSnapshot,
   );
   const touchLayout = coarsePointer || walkerParked;
+  const mobileLayout = useSyncExternalStore(subscribeMobileHero, getMobileHeroSnapshot, getServerCoarsePointerSnapshot);
 
   /** Keep the ASCII's right edge on Archive's rail after fonts and viewport changes. */
   useLayoutEffect(() => {
@@ -277,6 +320,103 @@ export function HeroSection({ content }: HeroSectionProps) {
       stage.style.removeProperty("--hero-ascii-rail-right");
     };
   }, []);
+
+  // Anchor the desktop portrait at the top right; mobile keeps one centered, full-screen figure.
+  const hasAsciiInteraction = Boolean(asciiInteraction);
+  useLayoutEffect(() => {
+    if (!hasAsciiInteraction) return;
+    const stage = stageRef.current;
+    const drawing = stage?.querySelector<HTMLElement>("[data-hero-visual] > div");
+    if (!stage || !drawing) return;
+    const measure = () => {
+      const mobile = window.innerWidth <= 768;
+      const frame = drawing.querySelector("pre");
+      if (mobile && frame?.offsetWidth && frame.offsetHeight) {
+        const glyphs = Array.from(document.querySelectorAll<HTMLElement>('[aria-label="Project grid layout"] [data-variant]'))
+          .map((glyph) => glyph.getBoundingClientRect()).filter((rect) => rect.width > 0);
+        if (glyphs.length) {
+          const span = Math.max(...glyphs.map((rect) => rect.right)) - Math.min(...glyphs.map((rect) => rect.left));
+          const width = span / (touchLayout ? WALKER_COARSE_SCALE : 1);
+          stage.style.setProperty("--hero-mobile-ascii-width", `${width}px`);
+          stage.style.setProperty("--hero-mobile-ascii-height", `${width * frame.offsetHeight / frame.offsetWidth}px`);
+        }
+      }
+      const height = drawing.offsetHeight;
+      if (!height) return;
+      const stageBounds = stage.getBoundingClientRect();
+      const stagePageTop = stageBounds.top + window.scrollY;
+      const frameScale = frame ? Math.abs(new DOMMatrixReadOnly(getComputedStyle(frame).transform).a) : 1;
+      const mobileBottomGap = parseFloat(getComputedStyle(stage).getPropertyValue("--hero-mobile-ascii-bottom-gap"));
+      if (mobile && Number.isFinite(mobileBottomGap)) {
+        // Anchor the visible artwork to the hero bottom, independent of the text height.
+        const frameHeight = frame ? frame.offsetHeight * frameScale : height;
+        const inset = (height - frameHeight) / 2;
+        stage.style.setProperty("--hero-mobile-ascii-bottom", `${mobileBottomGap - inset}px`);
+      }
+      if (mobile && frame) {
+        const selector = document.querySelector<HTMLElement>('[aria-label="Project grid layout"] [data-layout="regular"] [data-variant]');
+        if (selector) {
+          const frameWidth = frame.offsetWidth * frameScale;
+          const right = stageBounds.right - selector.getBoundingClientRect().right - (drawing.offsetWidth - frameWidth) / 2;
+          stage.style.setProperty("--hero-mobile-ascii-right", `${right}px`);
+        }
+      } else if (frame) {
+        const archive = document.querySelector<HTMLElement>('nav a[href="/archive"]');
+        if (archive && archive.getClientRects().length > 0) {
+          const frameWidth = frame.offsetWidth * frameScale;
+          const right = stageBounds.right - archive.getBoundingClientRect().right - (drawing.offsetWidth - frameWidth) / 2;
+          stage.style.setProperty("--hero-compact-ascii-right", `${right}px`);
+        }
+      }
+      const aspect = frame?.offsetHeight ? frame.offsetWidth / frame.offsetHeight : 0.55;
+      const expandedHeight = window.innerHeight * 1.08;
+      // Bleed past the viewport rather than stopping on the inset content rail.
+      const expandedRight = window.innerWidth - stageBounds.left + 64;
+      const centerX = mobile ? stage.clientWidth * 0.5 : expandedRight - expandedHeight * aspect / 2;
+      const centerY = (mobile ? window.innerHeight : expandedHeight) * 0.5 - stagePageTop;
+      const restingScale = touchLayout ? WALKER_COARSE_SCALE : 1;
+      stage.style.setProperty("--ascii-background-scale", String(expandedHeight / (height * restingScale)));
+      stage.style.setProperty("--ascii-background-x", `${centerX - drawing.offsetLeft - drawing.offsetWidth / 2}px`);
+      stage.style.setProperty("--ascii-background-y", `${centerY - drawing.offsetTop - height / 2}px`);
+      // Keep the cluster in the right half, with a small incursion into the copy.
+      const expandedWidth = expandedHeight * aspect;
+      const clusterLeft = stage.clientWidth * 0.5 - Math.min(48, stage.clientWidth * 0.04);
+      const tileCount = mobile ? 1 : Math.max(1, Math.ceil((expandedRight - clusterLeft) / expandedWidth));
+      // Translation follows the frame's own scale, so use its unscaled width, not a viewport-derived gap.
+      const stepPx = -(frame ? parseFloat(getComputedStyle(frame).width) || frame.offsetWidth : 0);
+      setAsciiTileCount((current) => current === tileCount ? current : tileCount);
+      setAsciiTileStepPx((current) => current === stepPx ? current : stepPx);
+      stage.dataset.asciiTileCount = String(tileCount);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    observer.observe(drawing);
+    const projectSelector = document.querySelector('[aria-label="Project grid layout"]');
+    if (projectSelector) observer.observe(projectSelector);
+    if (contentRevealGateRef.current) observer.observe(contentRevealGateRef.current);
+    const frameStyleObserver = new MutationObserver(measure);
+    const watchFrame = () => {
+      const frame = drawing.querySelector("pre");
+      if (frame) {
+        observer.observe(frame);
+        frameStyleObserver.observe(frame, { attributes: true, attributeFilter: ["style"] });
+      }
+      measure();
+    };
+    // Frames load after the compact container mounts; watch only their insertion and scale.
+    const frameMountObserver = new MutationObserver(watchFrame);
+    const animationRoot = drawing.firstElementChild;
+    if (animationRoot) frameMountObserver.observe(animationRoot, { childList: true });
+    watchFrame();
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      frameMountObserver.disconnect();
+      frameStyleObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [hasAsciiInteraction, touchLayout, asciiInteraction?.expanded, preloaderComplete]);
 
   /** Fine pointers: hover only (no focus / no click-to-hold). Coarse: tap toggle. */
   const gagActive = coarsePointer ? stuffGagMobileActive : stuffGagHover;
@@ -616,12 +756,17 @@ export function HeroSection({ content }: HeroSectionProps) {
     });
   }, []);
 
-  /** Keep the intro string identical on the server and client; the mobile break is CSS-controlled. */
   const introText = content.position;
-  const introLines = useMemo(() => [introText], [introText]);
-  // Let mobile use identical SSR/client line tokens; measuring into per-line wrappers can move words at hydration.
-  const headingLines = usePretextLines(content.statement, headingRef, "pre-wrap", true, {
-    preserveNaturalWrappingMedia: "(max-width: 48rem)",
+  const introSource = mobileLayout ? introText.replace(" & Creative Technologist", "\n& Creative Technologist") : introText;
+  const introLines = usePretextLines(introSource, introRef, "pre-wrap", true, {
+    preserveNaturalWrappingMedia: MOBILE_HERO_QUERY,
+  });
+  const headingText = mobileLayout && mobileHeadingBreakBefore
+    ? content.statement.replace(` ${mobileHeadingBreakBefore}`, `\n${mobileHeadingBreakBefore}`)
+    : content.statement;
+  // Mobile keeps explicit phrase breaks; desktop still measures its real wrapped lines.
+  const headingLines = usePretextLines(headingText, headingRef, "pre-wrap", true, {
+    preserveNaturalWrappingMedia: MOBILE_HERO_QUERY,
   });
   const descriptionText = content.description ?? "";
   const descriptionLines = usePretextLines(descriptionText, descriptionRef, "pre-wrap", Boolean(descriptionText));
@@ -634,10 +779,17 @@ export function HeroSection({ content }: HeroSectionProps) {
   const hasCta = ctaTextUpper.length > 0;
   const ctaLines = useMemo(() => (hasCta ? [ctaTextUpper] : []), [hasCta, ctaTextUpper]);
 
-  const sequenceTotal = introLines.length + headingLines.length + descriptionLineCount + ctaLines.length;
+  const supportingOffset = introLines.length + headingLines.length + descriptionLineCount + ctaLines.length;
+  const sequenceTotal = supportingOffset + supportingLineCount;
+  const detailReveal = useMemo(() => ({
+    offset: supportingOffset,
+    total: sequenceTotal,
+    visible: bypassHeroReplay || heroContentRevealVisible,
+    immediate: bypassHeroReplay,
+  }), [supportingOffset, sequenceTotal, bypassHeroReplay, heroContentRevealVisible]);
   const walkerRevealed = preloaderComplete && (bypassHeroReplay || heroContentRevealVisible);
   /**
-   * Touch: the walker sits under the text, so it waits for the line cascade instead of appearing with
+   * Touch: the walker sits alongside the details, so it waits for the line cascade instead of appearing with
    * line one — it starts once the last line is ~93% in (half its settle on `--ease-reveal`).
    */
   const [walkerIntroReady, setWalkerIntroReady] = useState(false);
@@ -681,7 +833,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     type Glyph = {
       el: HTMLElement;
       line: number;
-      control: number;
+      controls: number[];
       threshold: number;
       phase: number;
       shown: boolean | null;
@@ -700,8 +852,9 @@ export function HeroSection({ content }: HeroSectionProps) {
     let restoring = false;
 
     const measure = () => {
-      const lines = Array.from(root.querySelectorAll<HTMLElement>('[data-mode="lines"] > span'));
-      controls = Array.from(root.querySelectorAll<HTMLElement>("[data-dissolve-control]"));
+      const lines = Array.from(root.querySelectorAll<HTMLElement>('[data-mode="lines"] > span, [data-dissolve-line]'));
+      // Restore semantic blocks, including every wrapped line and nested control in that block.
+      controls = Array.from(root.querySelectorAll<HTMLElement>('[data-mode="lines"], [data-dissolve-block]'));
       restore = new Float64Array(controls.length);
       restoreTarget = new Float64Array(controls.length);
 
@@ -719,11 +872,10 @@ export function HeroSection({ content }: HeroSectionProps) {
       glyphs = [];
       lines.forEach((line, lineIndex) => {
         line.querySelectorAll<HTMLElement>("[data-dissolve-at]").forEach((el) => {
-          const control = el.closest<HTMLElement>("[data-dissolve-control]");
           glyphs.push({
             el,
             line: lineIndex,
-            control: control ? controls.indexOf(control) : -1,
+            controls: controls.flatMap((control, index) => control.contains(el) ? [index] : []),
             threshold: Number(el.dataset.dissolveAt),
             phase: Number(el.dataset.dissolvePhase) || 0,
             shown: el.hasAttribute("data-dissolve-off") ? false : null,
@@ -755,10 +907,8 @@ export function HeroSection({ content }: HeroSectionProps) {
       }
 
       for (const glyph of glyphs) {
-        const visibility = Math.max(
-          lineVisibility[glyph.line],
-          glyph.control >= 0 ? restore[glyph.control] : 0,
-        );
+        let visibility = lineVisibility[glyph.line];
+        for (const index of glyph.controls) visibility = Math.max(visibility, restore[index]);
         const shown = isGlyphShown(visibility, glyph.threshold, glyph.phase);
         if (shown !== glyph.shown) {
           glyph.shown = shown;
@@ -784,13 +934,17 @@ export function HeroSection({ content }: HeroSectionProps) {
       schedule();
     };
 
-    const setRestore = (target: EventTarget | null, value: number) => {
-      const control = target instanceof Element ? target.closest("[data-dissolve-control]") : null;
-      const index = control ? controls.indexOf(control as HTMLElement) : -1;
-      if (index >= 0 && restoreTarget[index] !== value) {
-        restoreTarget[index] = value;
-        schedule();
-      }
+    const setRestore = (target: EventTarget | null, value: number, related: EventTarget | null = null) => {
+      if (!(target instanceof Node)) return;
+      let changed = false;
+      controls.forEach((control, index) => {
+        if (!control.contains(target) || (related instanceof Node && control.contains(related))) return;
+        if (restoreTarget[index] !== value) {
+          restoreTarget[index] = value;
+          changed = true;
+        }
+      });
+      if (changed) schedule();
     };
     const onPointerOver = (event: PointerEvent) => {
       if (event.pointerType === "mouse") {
@@ -798,10 +952,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       }
     };
     const onPointerOut = (event: PointerEvent) => {
-      const control = (event.target as Element | null)?.closest?.("[data-dissolve-control]");
-      if (control && !control.contains(event.relatedTarget as Node | null)) {
-        setRestore(control, 0);
-      }
+      if (event.pointerType === "mouse") setRestore(event.target, 0, event.relatedTarget);
     };
     const onFocusIn = (event: FocusEvent) => {
       if ((event.target as Element).matches?.(KEYBOARD_FOCUS_SELECTOR)) {
@@ -809,7 +960,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       }
     };
     const onFocusOut = (event: FocusEvent) => {
-      setRestore(event.target, 0);
+      setRestore(event.target, 0, event.relatedTarget);
     };
 
     measure();
@@ -836,7 +987,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       ro.disconnect();
       glyphs.forEach((glyph) => glyph.el.removeAttribute("data-dissolve-off"));
     };
-  }, [headingLines, descriptionLines]);
+  }, [introLines, headingLines, descriptionLines, supportingContent]);
 
   useLayoutEffect(() => {
     if (!preloaderComplete || !bypassHeroReplay) {
@@ -875,11 +1026,11 @@ export function HeroSection({ content }: HeroSectionProps) {
     const descriptionEndMs = descriptionLineCount > 0
       ? (introLines.length + headingLines.length + descriptionLineCount - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
       : 0;
-    const ctaEndMs =
-      hasCta
+    const lastLineEndMs =
+      sequenceTotal > 0
         ? (sequenceTotal - 1) * HEADING_REVEAL_STEP_MS + REVEAL_TRANSFORM_SETTLE_MS
         : 0;
-    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, descriptionEndMs, ctaEndMs) * heroTempo());
+    const revealCompleteMs = Math.round(Math.max(introEndMs, headingEndMs, descriptionEndMs, lastLineEndMs) * heroTempo());
 
     const timeoutId = window.setTimeout(() => {
       html.setAttribute("data-hero-reveal", "complete");
@@ -901,7 +1052,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     sequenceTotal,
   ]);
 
-  /** Publish CTA stagger phase to {@link HeroRevealTimelineProvider} for Work reveals. */
+  /** Hand off to Work as the hero's details enter, overlapping their settling motion. */
   useLayoutEffect(() => {
     if (!setHeroCtaAligned) {
       return undefined;
@@ -931,8 +1082,9 @@ export function HeroSection({ content }: HeroSectionProps) {
       return () => setHeroCtaAligned(false);
     }
 
+    // Let peeking projects enter with the first detail value, overlapping the last hero lines.
     const ctaPhaseStartMs = hasCta
-      ? Math.round((introLines.length + headingLines.length + descriptionLineCount) * HEADING_REVEAL_STEP_MS * heroTempo())
+      ? Math.round((supportingOffset - ctaLines.length + Math.min(2, supportingLineCount)) * HEADING_REVEAL_STEP_MS * heroTempo())
       : 0;
 
     const timeoutId = window.setTimeout(() => {
@@ -952,6 +1104,9 @@ export function HeroSection({ content }: HeroSectionProps) {
     descriptionLineCount,
     headingLines.length,
     introLines.length,
+    supportingOffset,
+    supportingLineCount,
+    ctaLines.length,
   ]);
 
   useEffect(() => {
@@ -1010,6 +1165,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           <>
             {dissolve(token.slice(0, webIndex), 0)}
             <span
+              data-hero-role="developer"
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
               data-dissolve-control=""
               onPointerEnter={handleWebAccent}
@@ -1029,6 +1185,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           <>
             {dissolve(token.slice(0, creativeIndex), 0)}
             <span
+              data-hero-role="creative"
               className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
               data-dissolve-control=""
               onPointerEnter={handleCreativeAccent}
@@ -1053,6 +1210,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         <>
           {dissolve(token.slice(0, webIndex), 0)}
           <span
+            data-hero-role="developer"
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerWeb}`}
             data-dissolve-control=""
             onPointerEnter={handleWebAccent}
@@ -1066,6 +1224,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           <span className={styles.introDesktopSpace}> </span>
           {dissolve(beforeCreative.trimStart(), 2)}
           <span
+            data-hero-role="creative"
             className={`${styles.introAccentTrigger} ${styles.introAccentTriggerCreative}`}
             data-dissolve-control=""
             onPointerEnter={handleCreativeAccent}
@@ -1083,7 +1242,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const renderHeadingToken = useCallback(
     (token: string, tokenIndex: number) => {
       if (!token.includes(STUFF_GAG_WORD)) {
-        return <DissolveText text={token} seed={HEADING_DISSOLVE_SEED + tokenIndex * 8} />;
+        return renderHeadingCopy(token, HEADING_DISSOLVE_SEED + tokenIndex * 8, mobileHeadingBreakBefore);
       }
 
       const segments = token.split(new RegExp(`(${STUFF_GAG_WORD})`, "g"));
@@ -1135,7 +1294,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         return (
           <Fragment key={`stuff-seg-${tokenIndex}-${i}`}>
             {segment ? (
-              <DissolveText text={segment} seed={HEADING_DISSOLVE_SEED + tokenIndex * 8 + i} />
+              renderHeadingCopy(segment, HEADING_DISSOLVE_SEED + tokenIndex * 8 + i, mobileHeadingBreakBefore)
             ) : null}
           </Fragment>
         );
@@ -1143,6 +1302,7 @@ export function HeroSection({ content }: HeroSectionProps) {
     },
     [
       coarsePointer,
+      mobileHeadingBreakBefore,
       gagActive,
       handleStuffPointerEnter,
       handleStuffPointerLeave,
@@ -1155,17 +1315,16 @@ export function HeroSection({ content }: HeroSectionProps) {
     return (
       <a
         href="#contact"
-        className={`link-underline ${styles.heroCtaLink}`}
+        className={["link-underline", styles.heroCtaLink, ctaClassName].filter(Boolean).join(" ")}
         data-dissolve-control=""
-        onClick={(event) => {
-          event.preventDefault();
-          requestHomeContactFormOpen({ instant: true });
-        }}
       >
-        <DissolveText text={token} seed={CTA_DISSOLVE_SEED} />
+        {ctaAdornment}
+        {ctaAdornment ? (
+          <span data-hero-cta-label=""><DissolveText text={token} seed={CTA_DISSOLVE_SEED} /></span>
+        ) : <DissolveText text={token} seed={CTA_DISSOLVE_SEED} />}
       </a>
     );
-  }, []);
+  }, [ctaClassName, ctaAdornment]);
   const renderDescriptionToken = useCallback((token: string, tokenIndex: number) => (
     <DissolveText text={token} seed={DESCRIPTION_DISSOLVE_SEED + tokenIndex * 8} />
   ), []);
@@ -1178,12 +1337,12 @@ export function HeroSection({ content }: HeroSectionProps) {
       onPointerLeave={handleHeroPointerLeave}
     >
       <div className={`page-shell ${styles.inner}`}>
-        <div ref={stageRef} className={styles.stage}>
-          <div ref={contentRevealGateRef} className={styles.content}>
+        <div ref={stageRef} className={styles.stage} data-hero-stage="">
+          <div ref={contentRevealGateRef} className={styles.content} data-hero-content="">
             <RevealLines
               elementRef={introRef}
               as="p"
-              className={styles.intro}
+              className={[styles.intro, introClassName].filter(Boolean).join(" ")}
               text={introText}
               lines={introLines}
               offset={0}
@@ -1197,7 +1356,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               elementRef={headingRef}
               as="h1"
               className={styles.heading}
-              text={content.statement}
+              text={headingText}
               lines={headingLines}
               offset={introLines.length}
               total={sequenceTotal}
@@ -1237,15 +1396,20 @@ export function HeroSection({ content }: HeroSectionProps) {
                 visible={bypassHeroReplay ? true : heroContentRevealVisible}
               />
             ) : null}
+            <HeroDetailRevealContext.Provider value={detailReveal}>
+              {supportingContent}
+            </HeroDetailRevealContext.Provider>
           </div>
 
           <div
             className={styles.visualPanel}
+            data-hero-visual=""
             data-visible={walkerActive ? "true" : "false"}
             data-accent={hoverAccent ?? "default"}
-            aria-hidden="true"
+            aria-hidden={asciiInteraction ? undefined : true}
+            data-interactive={asciiInteraction ? "true" : undefined}
           >
-            <div className={styles.visualPanelInner}>
+            <div className={styles.visualPanelInner} aria-hidden={asciiInteraction ? true : undefined}>
               <ASCIIAnimation
                 className={styles.walkerShell}
                 preClassName={styles.walker}
@@ -1257,14 +1421,16 @@ export function HeroSection({ content }: HeroSectionProps) {
                 paused={!walkerActive}
                 visible={walkerActive}
                 scale={touchLayout ? WALKER_COARSE_SCALE : 1}
-                anchorEnd
+                anchorEnd={!asciiInteraction}
+                repeatCount={asciiInteraction ? asciiTileCount : 1}
+                repeatStepPx={asciiTileStepPx}
+                repeatStepEm={0}
                 /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
                   coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
                 }
                 scrollDissolve
-                touchWave
                 color={
                   hoverAccent === "web"
                     ? "var(--hero-walker-web-color)"
@@ -1275,6 +1441,12 @@ export function HeroSection({ content }: HeroSectionProps) {
                 ariaLabel="ASCII walking animation"
               />
             </div>
+            {asciiInteraction ? (
+              <button type="button" className={styles.asciiToggle} onClick={asciiInteraction.onToggle}
+                aria-label={asciiInteraction.expanded ? "Restore compact ASCII" : "Make ASCII absurdly large"}
+                aria-pressed={asciiInteraction.expanded}>
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

@@ -161,7 +161,7 @@
   background: transparent;
   cursor: pointer;
   font-family: var(--font-pixel-stack);
-  font-size: 0.65rem;
+  font-size: var(--type-caption-size);
   font-weight: 400;
   letter-spacing: var(--tracking-label-sm);
   line-height: 1.2;
@@ -194,7 +194,7 @@
 .empty {
   margin: 1.25rem 0 0;
   color: var(--muted-color);
-  font-size: 0.78rem;
+  font-size: var(--type-control-size);
 }
 
 .viewSwitch {
@@ -353,18 +353,18 @@
 
 .name {
   min-width: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
+  font-size: var(--type-card-title-size);
+  font-weight: var(--type-weight-medium);
+  letter-spacing: var(--type-tracking-tight);
+  line-height: var(--type-leading-title);
 }
 
 .descriptor,
 .descriptorMobile {
   min-width: 0;
   color: var(--muted-color);
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: var(--type-meta-size);
+  line-height: var(--type-leading-label);
   letter-spacing: -0.01em;
   transition: color 320ms var(--ease-out);
 }
@@ -377,7 +377,7 @@
   justify-self: end;
   color: var(--muted-color);
   font-family: var(--font-pixel-square-stack);
-  font-size: 0.65rem;
+  font-size: var(--type-caption-size);
   letter-spacing: var(--tracking-label-sm);
   white-space: nowrap;
   transition: color 320ms var(--ease-out);
@@ -635,7 +635,7 @@
     background: transparent;
     cursor: pointer;
     font-family: var(--font-pixel-stack);
-    font-size: 0.65rem;
+    font-size: var(--type-caption-size);
     font-weight: 400;
     letter-spacing: var(--tracking-label-sm);
     line-height: 1.2;
@@ -709,7 +709,7 @@
     background: transparent;
     cursor: pointer;
     font-family: var(--font-pixel-stack);
-    font-size: 0.72rem;
+    font-size: var(--type-meta-size);
     font-weight: 400;
     letter-spacing: var(--tracking-label-sm);
     line-height: 1.2;
@@ -814,7 +814,7 @@
   }
 
   .name {
-    font-size: 0.8125rem;
+    font-size: var(--type-card-title-size);
   }
 
   .descriptor {
@@ -823,7 +823,7 @@
 
   .descriptorMobile {
     display: block;
-    font-size: 0.6875rem;
+    font-size: var(--type-caption-size);
     line-height: 1.3;
   }
 
@@ -1042,7 +1042,7 @@
   place-items: center;
   color: #fff;
   font-family: var(--font-pixel-square-stack);
-  font-size: 0.62rem;
+  font-size: var(--type-caption-size);
   letter-spacing: 0.04em;
   line-height: 1.15;
   padding-inline: 1rem;
