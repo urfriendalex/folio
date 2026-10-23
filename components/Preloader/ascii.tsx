@@ -95,6 +95,8 @@ interface ASCIIAnimationProps {
   /** Repeat a contained text frame using the same animation clock and visibility mask. */
   repeatCount?: number;
   repeatStepCh?: number;
+  /** Exact unscaled frame width for edge-to-edge repeats, overriding character spacing. */
+  repeatStepPx?: number;
   repeatStepEm?: number;
 }
 
@@ -550,6 +552,7 @@ export default function ASCIIAnimation({
   touchWave = false,
   repeatCount = 1,
   repeatStepCh = 46,
+  repeatStepPx,
   repeatStepEm = 1.5,
 }: ASCIIAnimationProps) {
   const [frames, setFrames] = useState<string[]>([]);
@@ -1393,7 +1396,7 @@ export default function ASCIIAnimation({
                 }
               : {
                   ...sharedStyleContain,
-                  transform: `${sharedStyleContain.transform}${tile ? ` translate(${tile * repeatStepCh}ch, ${tile * repeatStepEm}em)` : ""}`,
+                  transform: `${sharedStyleContain.transform}${tile ? ` translate(${repeatStepPx === undefined ? `${tile * repeatStepCh}ch` : `${tile * repeatStepPx}px`}, ${tile * repeatStepEm}em)` : ""}`,
                   ...(gradient
                     ? {
                         background: gradient,

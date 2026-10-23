@@ -255,7 +255,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
   const gagEnterRafIdsRef = useRef<Set<number>>(new Set());
   const [hoverAccent, setHoverAccent] = useState<HoverAccent | null>(null);
   const [asciiTileCount, setAsciiTileCount] = useState(1);
-  const [asciiTileStepCh, setAsciiTileStepCh] = useState(-46);
+  const [asciiTileStepPx, setAsciiTileStepPx] = useState(0);
   const [stuffGagMobileActive, setStuffGagMobileActive] = useState(false);
   const [stuffGagHover, setStuffGagHover] = useState(false);
   /** Viewport center + em base (px) from the real “stuff” glyph so the portaled word tracks type scale on any screen. */
@@ -381,12 +381,11 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
       // Keep the cluster in the right half, with a small incursion into the copy.
       const expandedWidth = expandedHeight * aspect;
       const clusterLeft = stage.clientWidth * 0.5 - Math.min(48, stage.clientWidth * 0.04);
-      const repeatSpan = Math.max(0, expandedRight - expandedWidth - clusterLeft);
-      const tileCount = mobile ? 1 : Math.ceil(repeatSpan / (window.innerHeight * 0.25)) + 1;
-      const columns = Math.max(1, ...((frame?.textContent ?? "").split("\n").map((line) => line.length)));
-      const stepCh = tileCount > 1 ? -repeatSpan / (tileCount - 1) / (expandedWidth / columns) : -46;
+      const tileCount = mobile ? 1 : Math.max(1, Math.ceil((expandedRight - clusterLeft) / expandedWidth));
+      // Translation follows the frame's own scale, so use its unscaled width, not a viewport-derived gap.
+      const stepPx = -(frame ? parseFloat(getComputedStyle(frame).width) || frame.offsetWidth : 0);
       setAsciiTileCount((current) => current === tileCount ? current : tileCount);
-      setAsciiTileStepCh((current) => current === stepCh ? current : stepCh);
+      setAsciiTileStepPx((current) => current === stepPx ? current : stepPx);
       stage.dataset.asciiTileCount = String(tileCount);
     };
     measure();
@@ -1424,7 +1423,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
                 scale={touchLayout ? WALKER_COARSE_SCALE : 1}
                 anchorEnd={!asciiInteraction}
                 repeatCount={asciiInteraction ? asciiTileCount : 1}
-                repeatStepCh={asciiTileStepCh}
+                repeatStepPx={asciiTileStepPx}
                 repeatStepEm={0}
                 /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}

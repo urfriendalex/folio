@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { cellRevealHash01 } from "@/components/Preloader/ascii";
 import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import { hapticTick } from "@/lib/haptics";
+import { isRevealRestoreWindow } from "@/lib/revealRestore";
 import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 
 // Light end of the hero ramp; denser glyphs only appear under heat or a press.
@@ -132,6 +133,8 @@ export function BookingButtonAscii({
     const revealRoot = touchOrbit === "once" ? button.closest<HTMLElement>('[data-mode="lines"]') : null;
     let entranceTimer = 0;
     let entranceScheduled = false;
+    let entrancePreparing = false;
+    let restoreEntrance = isRevealRestoreWindow();
     let burstElapsed = -1;
     const sweepMs = 2400;
     const fadeMs = 420;
@@ -188,7 +191,7 @@ export function BookingButtonAscii({
     const draw = (ease: number) => {
       // Keep the mobile label inset only while its surrounding field is present.
       // Desktop continues to use its existing hover/focus CSS.
-      const active = bounded() && (interacting() || (burstActive() && burstElapsed < sweepMs));
+      const active = bounded() && (entrancePreparing || interacting() || (burstActive() && burstElapsed < sweepMs));
       if (button.hasAttribute("data-ascii-active") !== active) {
         button.toggleAttribute("data-ascii-active", active);
       }
@@ -411,6 +414,8 @@ export function BookingButtonAscii({
     const playBurst = () => {
       if (!bounded() || reducedMotion.matches) return;
       burstElapsed = 0;
+      entrancePreparing = false;
+      button.removeAttribute("data-ascii-preparing");
       presses = [];
       streaks = [];
       heat.fill(0);
@@ -422,13 +427,29 @@ export function BookingButtonAscii({
 
     // Follow the actual CTA line reveal, rather than spending the sweep behind the loader.
     const scheduleEntrance = () => {
+      restoreEntrance ||= isRevealRestoreWindow();
+      if (document.documentElement.classList.contains("is-loading")) return;
       if (revealRoot?.dataset.visible === "false") {
         window.clearTimeout(entranceTimer);
+        entrancePreparing = false;
+        button.removeAttribute("data-ascii-preparing");
         entranceScheduled = false;
         return;
       }
-      if (!bounded() || !visible || entranceScheduled || reducedMotion.matches) return;
+      if (!bounded() || !visible || entranceScheduled) return;
+      if (restoreEntrance || revealRoot?.dataset.immediate === "true" || reducedMotion.matches ||
+          document.documentElement.classList.contains("reveals-bypassed")) {
+        entranceScheduled = true;
+        entrancePreparing = false;
+        button.removeAttribute("data-ascii-preparing");
+        draw(1);
+        return;
+      }
       entranceScheduled = true;
+      entrancePreparing = true;
+      // Adopt the field's inset while the line is hidden, never slide an already-revealed label on arrival.
+      button.setAttribute("data-ascii-preparing", "");
+      button.setAttribute("data-ascii-active", "");
       const token = button.parentElement;
       const style = token ? window.getComputedStyle(token) : null;
       const milliseconds = (value: string) => Math.max(0, ...value.split(",").map((part) =>
@@ -560,6 +581,10 @@ export function BookingButtonAscii({
 
     const onMotionChange = () => {
       if (reducedMotion.matches) {
+        window.clearTimeout(entranceTimer);
+        entrancePreparing = false;
+        burstElapsed = -1;
+        button.removeAttribute("data-ascii-preparing");
         stop();
         shown = shownTarget;
         applyGlitch();
@@ -613,7 +638,7 @@ export function BookingButtonAscii({
     });
     let disposed = false;
     resizeObserver.observe(canvas);
-    if (revealRoot) entranceObserver.observe(revealRoot, { attributes: true, attributeFilter: ["data-visible"] });
+    if (revealRoot) entranceObserver.observe(revealRoot, { attributes: true, attributeFilter: ["data-visible", "data-immediate"] });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
@@ -638,6 +663,7 @@ export function BookingButtonAscii({
     return () => {
       disposed = true;
       button.removeAttribute("data-ascii-active");
+      button.removeAttribute("data-ascii-preparing");
       window.clearTimeout(entranceTimer);
       entranceObserver.disconnect();
       stop();

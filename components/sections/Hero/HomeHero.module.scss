@@ -124,6 +124,7 @@
   .hero .cta {
     .ctaAscii { opacity: 1; }
     [data-hero-cta-label] > span[aria-hidden="true"] { transform: translateX(calc(-1 * var(--cta-label-inset))); }
+    &[data-ascii-preparing] [data-hero-cta-label] > span[aria-hidden="true"] { transition: none; }
     &[data-ascii-active], &:focus-visible {
       [data-hero-cta-label] > span[aria-hidden="true"] { transform: translateX(0); }
     }
