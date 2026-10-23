@@ -42,7 +42,7 @@ export function HomeHero() {
         mobileHeadingBreakBefore="and other cool"
         introClassName={styles.role}
         ctaClassName={styles.cta}
-        ctaAdornment={<BookingButtonAscii className={styles.ctaAscii} accent="--signal-color" clearance="box" directional glitch touchOrbit />}
+        ctaAdornment={<BookingButtonAscii className={styles.ctaAscii} accent="--signal-color" clearance="box" directional glitch touchOrbit="once" />}
         supportingContent={details}
         supportingLineCount={8}
         asciiInteraction={{ expanded, onToggle: () => setExpanded((value) => !value) }}

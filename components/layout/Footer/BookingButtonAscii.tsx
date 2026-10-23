@@ -113,8 +113,8 @@ export function BookingButtonAscii({
   /** Follow the parent's `data-visible`: glitch the field and its `[data-glitch-at]` glyphs in and out.
       The glitch-in waits for the canvas's computed `transition-delay` (the cell's slot in the cascade). */
   glitch?: boolean;
-  /** On mobile/touch, move a virtual pointer around the field's edge while visible. */
-  touchOrbit?: boolean;
+  /** On mobile/touch, move a virtual pointer along the edge; "once" settles after a short sweep. */
+  touchOrbit?: boolean | "once";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -129,6 +129,17 @@ export function BookingButtonAscii({
     const orbitMedia = touchOrbit ? window.matchMedia("(max-width: 48rem), (hover: none) and (pointer: coarse)") : null;
     let pointerInside = false;
     let keyboardFocused = false;
+    const revealRoot = touchOrbit === "once" ? button.closest<HTMLElement>('[data-mode="lines"]') : null;
+    let entranceTimer = 0;
+    let entranceScheduled = false;
+    let burstElapsed = -1;
+    const sweepMs = 1000;
+    const fadeMs = 280;
+    const bounded = () => touchOrbit === "once" && !!orbitMedia?.matches;
+    const interacting = () => pointerInside || keyboardFocused;
+    const burstActive = () => burstElapsed >= 0 && burstElapsed < sweepMs + fadeMs;
+    const fieldAlpha = () => !bounded() || interacting() ? 1 : burstActive()
+      ? Math.min(1, burstElapsed / 120, (sweepMs + fadeMs - burstElapsed) / fadeMs) : 0;
     let width = 0;
     let height = 0;
     let columns = 0;
@@ -176,6 +187,7 @@ export function BookingButtonAscii({
 
     const draw = (ease: number) => {
       context.clearRect(0, 0, width, height);
+      if (!fieldAlpha() || (bounded() && reducedMotion.matches)) return;
       context.font = font;
       context.textBaseline = "top";
       presses = presses.filter((press) => time - press.t < PRESS_LIFE);
@@ -282,7 +294,7 @@ export function BookingButtonAscii({
       buckets.forEach((bucket, b) => {
         if (!bucket.length) return;
         context.fillStyle = fills[b];
-        context.globalAlpha = alphas[b];
+        context.globalAlpha = alphas[b] * fieldAlpha();
         for (let j = 0; j < bucket.length; j += 3) {
           context.fillText(GLYPHS[bucket[j]], bucket[j + 1], bucket[j + 2]);
         }
@@ -294,14 +306,23 @@ export function BookingButtonAscii({
       const delta = lastTime ? Math.min(now - lastTime, 40) : 16;
       lastTime = now;
       time += delta / 1000;
+      if (bounded() && burstActive()) burstElapsed += delta;
+      if (bounded() && !burstActive() && !interacting()) {
+        draw(1);
+        frame = 0;
+        lastTime = 0;
+        return;
+      }
       const ease = 1 - Math.exp(-delta / 70);
-      if (orbitMedia?.matches && !pointerInside && !keyboardFocused) {
+      if (orbitMedia?.matches && !interacting() && (!bounded() || burstActive())) {
         // The existing heat and directional strokes follow this virtual pointer too.
         // Easing rounds the corners while keeping the activity near the perimeter.
         const inset = 5;
         const w = Math.max(1, width - inset * 2);
         const h = Math.max(1, height - inset * 2);
-        const distance = (time * 80) % (2 * (w + h));
+        const distance = bounded()
+          ? Math.min(1, burstElapsed / sweepMs) * 2 * (w + h)
+          : (time * 80) % (2 * (w + h));
         targetX = inset + (distance < w ? distance : distance < w + h ? w : distance < 2 * w + h ? 2 * w + h - distance : 0);
         targetY = inset + (distance < w ? 0 : distance < w + h ? distance - w : distance < 2 * w + h ? h : 2 * (w + h) - distance);
         hoverTarget = 1;
@@ -369,7 +390,8 @@ export function BookingButtonAscii({
     };
 
     const start = () => {
-      if (frame || !visible || reducedMotion.matches || document.hidden) return;
+      if (frame || !visible || reducedMotion.matches || document.hidden ||
+          (bounded() && !burstActive() && !interacting())) return;
       lastTime = 0;
       frame = window.requestAnimationFrame(tick);
     };
@@ -378,6 +400,35 @@ export function BookingButtonAscii({
       window.cancelAnimationFrame(frame);
       frame = 0;
       lastTime = 0;
+    };
+
+    const playBurst = () => {
+      if (!bounded() || reducedMotion.matches) return;
+      burstElapsed = 0;
+      presses = [];
+      streaks = [];
+      heat.fill(0);
+      pointerX = targetX = 5;
+      pointerY = targetY = 5;
+      hover = hoverTarget = 1;
+      start();
+    };
+
+    // Follow the actual CTA line reveal, rather than spending the sweep behind the loader.
+    const scheduleEntrance = () => {
+      if (revealRoot?.dataset.visible === "false") {
+        window.clearTimeout(entranceTimer);
+        entranceScheduled = false;
+        return;
+      }
+      if (!bounded() || !visible || entranceScheduled || reducedMotion.matches) return;
+      entranceScheduled = true;
+      const token = button.parentElement;
+      const style = token ? window.getComputedStyle(token) : null;
+      const milliseconds = (value: string) => Math.max(0, ...value.split(",").map((part) =>
+        parseFloat(part) * (part.trim().endsWith("ms") ? 1 : 1000) || 0));
+      const delay = style ? milliseconds(style.transitionDelay) + milliseconds(style.transitionDuration) : 0;
+      entranceTimer = window.setTimeout(playBurst, delay);
     };
 
     const updateColors = () => {
@@ -455,6 +506,7 @@ export function BookingButtonAscii({
         pointerY = targetY;
       }
       hoverTarget = 1;
+      if (pointerInside) start();
       if (reducedMotion.matches) {
         pointerX = targetX;
         pointerY = targetY;
@@ -464,7 +516,10 @@ export function BookingButtonAscii({
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType === "touch") hapticTick();
+      if (event.pointerType === "touch") {
+        hapticTick();
+        playBurst();
+      }
       if (reducedMotion.matches) return;
       const rect = canvas.getBoundingClientRect();
       presses.push({ x: event.clientX - rect.left, y: event.clientY - rect.top, t: time });
@@ -472,7 +527,8 @@ export function BookingButtonAscii({
 
     const onPointerLeave = () => {
       pointerInside = false;
-      hoverTarget = keyboardFocused || orbitMedia?.matches ? 1 : 0;
+      hoverTarget = keyboardFocused || (orbitMedia?.matches && (!bounded() || burstActive())) ? 1 : 0;
+      start();
       if (reducedMotion.matches) {
         hover = hoverTarget;
         draw(1);
@@ -484,6 +540,7 @@ export function BookingButtonAscii({
       targetX = pointerX = width / 2;
       targetY = pointerY = height / 2;
       hoverTarget = 1;
+      start();
       if (reducedMotion.matches) {
         hover = 1;
         draw(1);
@@ -508,8 +565,15 @@ export function BookingButtonAscii({
         pointerY = targetY;
         draw(1);
       } else {
+        scheduleEntrance();
         start();
       }
+    };
+
+    const onOrbitChange = () => {
+      onPointerLeave();
+      scheduleEntrance();
+      draw(1);
     };
 
     const onVisibilityChange = () => {
@@ -526,23 +590,28 @@ export function BookingButtonAscii({
       visible = rect.bottom > 0 && rect.top < window.innerHeight && rect.width > 0;
       stop();
       if (glitch) syncGlitch();
+      scheduleEntrance();
       start();
     };
 
+    const entranceObserver = new MutationObserver(scheduleEntrance);
     const resizeObserver = new ResizeObserver(resize);
     const glitchObserver = new MutationObserver(syncGlitch);
     const themeObserver = new MutationObserver(onRootStateChange);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
-      if (visible) start();
-      else stop();
+      if (visible) {
+        scheduleEntrance();
+        start();
+      } else stop();
     });
     let disposed = false;
     resizeObserver.observe(canvas);
+    if (revealRoot) entranceObserver.observe(revealRoot, { attributes: true, attributeFilter: ["data-visible"] });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
     visibilityObserver.observe(button);
     reducedMotion.addEventListener("change", onMotionChange);
-    orbitMedia?.addEventListener("change", onPointerLeave);
+    orbitMedia?.addEventListener("change", onOrbitChange);
     document.addEventListener("visibilitychange", onVisibilityChange);
     button.addEventListener("pointerenter", onPointerMove);
     button.addEventListener("pointermove", onPointerMove);
@@ -562,12 +631,14 @@ export function BookingButtonAscii({
 
     return () => {
       disposed = true;
+      window.clearTimeout(entranceTimer);
+      entranceObserver.disconnect();
       stop();
       resizeObserver.disconnect();
       themeObserver.disconnect();
       visibilityObserver.disconnect();
       reducedMotion.removeEventListener("change", onMotionChange);
-      orbitMedia?.removeEventListener("change", onPointerLeave);
+      orbitMedia?.removeEventListener("change", onOrbitChange);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       button.removeEventListener("pointerenter", onPointerMove);
       button.removeEventListener("pointermove", onPointerMove);
