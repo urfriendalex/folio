@@ -4,7 +4,7 @@ export const AboutOverlayContent = {
     "I'm an independent developer and creative technologist. I build custom websites, e-commerce sites, portfolios, and product interfaces for brands, studios, and product teams.",
   /** Single body under the lead. */
   description:
-    "I work independently on projects often handled by a studio, bringing in trusted collaborators when the scope calls for it. The technology follows the job, and the finished work is straightforward to maintain and easy to find.",
+    "Work that would usually go to an agency comes straight to me. I bring in trusted collaborators when the scope calls for it, pick the technology to fit the job, and ship work that stays easy to maintain and easy to find.",
   details: [
     {
       label: "(Work)",
