@@ -14,13 +14,33 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 180ms ease, visibility 180ms;
+  // Leaving: quick, so rolling the strip down never drags the text along with it.
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
 
   &[data-visible="true"] {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+    // Arriving: wait for the strip to finish its last stretch to the top before the scene fades up.
+    transition: opacity 360ms var(--ease-out) 140ms, visibility 0s;
   }
+}
+
+// The message and its hint lift into place, staggered, as the scene fades up.
+.message,
+.invitation {
+  transform: translate3d(0, 0.6rem, 0);
+  transition: transform 160ms ease;
+}
+
+.scene[data-visible="true"] .message,
+.scene[data-visible="true"] .invitation {
+  transform: translate3d(0, 0, 0);
+  transition: transform 620ms var(--ease-reveal) 160ms;
+}
+
+.scene[data-visible="true"] .invitation {
+  transition-delay: 260ms;
 }
 
 .header {
@@ -59,5 +79,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene { transition: none; }
+  .scene,
+  .scene[data-visible="true"] { transition: none; }
+
+  .message,
+  .invitation,
+  .scene[data-visible="true"] .message,
+  .scene[data-visible="true"] .invitation {
+    transform: none;
+    transition: none;
+  }
 }

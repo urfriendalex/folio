@@ -7,7 +7,17 @@ import styles from "./FooterEasterEgg.module.scss";
 
 const EFFORT_THRESHOLD = 2400;
 const MIN_PUSH_MS = 3200;
-const REVERSE_DISTANCE = 1400;
+/** No push for this long before the reveal latches = the visitor gave up: roll the strip back down. */
+const IDLE_RELEASE_MS = 320;
+/* A single scroll while already resting at the end lifts the strip this far, holds a beat, and rolls back:
+   a hint that there's more to push. Not on arrival (momentum carrying the page into the end). */
+const PEEK_PX = 36;
+const PEEK_HOLD_MS = 560;
+const PEEK_SETTLED_MS = 240;
+/* Rising follows the push on a softer spring so stepped wheel/touch input glides; retracting is
+   firmer so letting go reads as a clean roll down. Both stay near critical damping (no bounce). */
+const RISE_SPRING = { stiffness: 90, damping: 19 };
+const RETRACT_SPRING = { stiffness: 140, damping: 24 };
 
 export function FooterEasterEgg({ wordmarkRef }: {
   wordmarkRef: RefObject<HTMLParagraphElement | null>;
@@ -32,11 +42,15 @@ export function FooterEasterEgg({ wordmarkRef }: {
     let touchY: number | null = null;
     let latched = false;
     let retracting = false;
-    let baseHeight = host.getBoundingClientRect().height;
+    let baseHeight = 0;
+    let endSince = 0;
+    let lastInput = 0;
+    let inputGap = Infinity;
+    let peek = 0;
 
+    const atPageEnd = () => document.documentElement.scrollHeight - window.innerHeight - window.scrollY <= 4;
     const atEnd = () => !isBodyScrollLocked() && !document.hidden &&
-      host.hasAttribute("data-footer-wordmark-active") &&
-      document.documentElement.scrollHeight - window.innerHeight - window.scrollY <= 4;
+      host.hasAttribute("data-footer-wordmark-active") && atPageEnd();
 
     const measure = () => {
       // The CSS token remains the resting height even while the actual strip grows.
@@ -47,24 +61,40 @@ export function FooterEasterEgg({ wordmarkRef }: {
       probe.remove();
     };
 
+    const riseTarget = (now: number) => Math.max(
+      peek,
+      Math.min(effort / EFFORT_THRESHOLD, Math.max(0, (now - firstPush) / MIN_PUSH_MS), 0.94),
+    );
+
     const paint = () => {
       const amount = reducedMotion.matches ? (latched ? 1 : 0) : Math.max(0, Math.min(1, extension));
-      // Resize the ORIGINAL wordmark host. Its background and baseline stay continuous.
-      host.style.height = `${baseHeight + (window.innerHeight - baseHeight) * amount}px`;
+      // Reveal more of the ORIGINAL full-viewport wordmark host by moving its clip edge; the box itself
+      // never resizes, so background and baseline stay continuous without layout or layout shifts.
+      const visible = baseHeight + (window.innerHeight - baseHeight) * amount;
+      host.style.clipPath = `inset(calc(100% - ${visible}px) 0 0 0)`;
       host.style.zIndex = amount > 0.001 ? "480" : "";
-      if (amount <= 0.001) host.style.removeProperty("height");
+      if (amount <= 0.001) host.style.removeProperty("clip-path");
     };
 
     const tick = (now: number) => {
       const elapsed = Math.min(now - lastFrame, 40);
       lastFrame = now;
       if (!latched && !retracting && target > 0) {
-        const idle = now - lastPush > 180;
-        effort = Math.max(0, effort - elapsed * (idle ? 0.9 : 0.32));
-        target = Math.min(effort / EFFORT_THRESHOLD, Math.max(0, (lastPush - firstPush) / MIN_PUSH_MS), 0.94);
+        if (now - lastPush > (target <= peek ? PEEK_HOLD_MS : IDLE_RELEASE_MS)) {
+          // Stopped pushing (or it was a single scroll): roll back down instead of lingering.
+          retracting = true;
+          effort = 0;
+          firstPush = 0;
+          peek = 0;
+          target = 0;
+        } else {
+          effort = Math.max(0, effort - elapsed * 0.32);
+          target = riseTarget(lastPush);
+        }
       }
       const dt = elapsed / 1000;
-      velocity += ((target - extension) * 150 - velocity * 24) * dt;
+      const spring = retracting ? RETRACT_SPRING : RISE_SPRING;
+      velocity += ((target - extension) * spring.stiffness - velocity * spring.damping) * dt;
       extension += velocity * dt;
       paint();
       if (Math.abs(target - extension) > 0.0005 || Math.abs(velocity) > 0.001 || (!latched && effort > 0)) {
@@ -86,6 +116,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
       retracting = true;
       effort = 0;
       firstPush = 0;
+      peek = 0;
       target = 0;
       setRevealed(false);
       schedule();
@@ -94,14 +125,9 @@ export function FooterEasterEgg({ wordmarkRef }: {
     const push = (delta: number) => {
       if (isBodyScrollLocked() || document.hidden) { close(); return false; }
       if (delta < 0 && (extension > 0.002 || target > 0)) {
-        // Reverse the same surface before releasing the gesture back to the page.
-        latched = false;
-        retracting = true;
-        setRevealed(false);
-        target = Math.max(0, target - Math.min(-delta, 160) / REVERSE_DISTANCE);
-        effort = 0;
-        firstPush = 0;
-        schedule();
+        // One scroll back rolls the whole strip down ("scroll back, or play a game"); the page only
+        // takes the gesture over once the strip is down.
+        close();
         return true;
       }
       if (delta <= 0 || !atEnd()) return false;
@@ -112,10 +138,13 @@ export function FooterEasterEgg({ wordmarkRef }: {
       if (!firstPush || now - lastPush > 800) {
         firstPush = now;
         effort = Math.min(effort, EFFORT_THRESHOLD * 0.15);
+        // A fresh gesture on a page already resting at the end, not momentum carried into it.
+        const settled = endSince > 0 && now - endSince >= PEEK_SETTLED_MS && inputGap >= PEEK_SETTLED_MS;
+        peek = settled && !reducedMotion.matches ? PEEK_PX / Math.max(1, window.innerHeight - baseHeight) : 0;
       }
       lastPush = now;
       effort += Math.min(delta, 120);
-      target = Math.min(effort / EFFORT_THRESHOLD, (now - firstPush) / MIN_PUSH_MS, 0.94);
+      target = riseTarget(now);
       if (effort >= EFFORT_THRESHOLD && now - firstPush >= MIN_PUSH_MS) {
         latched = true;
         target = 1;
@@ -124,7 +153,13 @@ export function FooterEasterEgg({ wordmarkRef }: {
       schedule();
       return true;
     };
+    const noteInput = () => {
+      const now = performance.now();
+      inputGap = now - lastInput;
+      lastInput = now;
+    };
     const onWheel = (event: WheelEvent) => {
+      noteInput();
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
       if (event.target instanceof Element && event.target.closest("[data-lenis-prevent], dialog, textarea, input, select, [contenteditable]")) return;
       const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
@@ -138,6 +173,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
     };
     const onTouchMove = (event: TouchEvent) => {
       if (event.touches.length !== 1) { touchY = null; return; }
+      noteInput();
       const nextY = event.touches[0].clientY;
       if (touchY !== null && push((touchY - nextY) * 3)) {
         event.preventDefault();
@@ -155,6 +191,12 @@ export function FooterEasterEgg({ wordmarkRef }: {
       }
     };
     const onResize = () => { measure(); paint(); };
+    const onScroll = () => {
+      if (!atPageEnd()) endSince = 0;
+      else if (!endSince) endSince = performance.now();
+    };
+    measure();
+    onScroll();
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -163,9 +205,10 @@ export function FooterEasterEgg({ wordmarkRef }: {
     window.addEventListener("touchcancel", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
-      host.style.removeProperty("height");
+      host.style.removeProperty("clip-path");
       host.style.removeProperty("z-index");
       window.removeEventListener("wheel", onWheel, true);
       window.removeEventListener("touchstart", onTouchStart);
@@ -174,6 +217,7 @@ export function FooterEasterEgg({ wordmarkRef }: {
       window.removeEventListener("touchcancel", onTouchEnd);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [wordmarkRef]);
 

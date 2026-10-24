@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isReloadNavigation } from "@/lib/navigationType";
 import { clearHomeHistoryPopReveal } from "@/lib/restoredScroll";
 import { setActiveLenis } from "@/lib/lenisScrollTriggerBridge";
+import { ROUTE_CANCEL_EVENT } from "@/lib/useNavigationFlightLock";
 import {
   clearLocationHash,
   getLenis,
@@ -157,10 +158,22 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       }
     };
 
+    /* The visitor backed out (closed the menu, opened About…) before Home loaded: drop the queued section. */
+    const cancelHomeSectionArrival = () => {
+      if (pendingHomeSectionIdRef.current === null) {
+        return;
+      }
+
+      pendingHomeSectionIdRef.current = null;
+      clearHomeSectionArrivalClasses();
+    };
+
     document.addEventListener("click", cancelSupersededHomeSectionArrival, true);
+    window.addEventListener(ROUTE_CANCEL_EVENT, cancelHomeSectionArrival);
 
     return () => {
       document.removeEventListener("click", cancelSupersededHomeSectionArrival, true);
+      window.removeEventListener(ROUTE_CANCEL_EVENT, cancelHomeSectionArrival);
     };
   }, []);
 

@@ -1,4 +1,6 @@
 import { normalizeProjectMediaSlots } from "@/lib/projectMedia";
+import type { ProjectMediaAsset, ProjectThumbnailVariant } from "./types";
+import { projectMediaTones } from "./media-tones";
 
 export type { ProjectCategory, ProjectFilterId } from "./categories";
 export {
@@ -34,12 +36,35 @@ const projectEntries = [
   studioIskraProject,
 ];
 
+/* Tone previews are attached here, server-side, so a page only serializes the ones its media uses
+   (client code imports `./categories` / types, never this module). */
+function withAssetTone<T extends ProjectMediaAsset | undefined>(asset: T): T {
+  if (!asset) return asset;
+  const tone = projectMediaTones[asset.poster ?? asset.src];
+  return tone ? { ...asset, tone } : asset;
+}
+
+function withPosterTone<T extends ProjectThumbnailVariant | undefined>(variant: T): T {
+  if (!variant) return variant;
+  const tone = projectMediaTones[variant.poster];
+  return tone ? { ...variant, tone } : variant;
+}
+
 /** Sorted by each entry's `orderIndex` (see `content/projects/types.ts`). Gallery order: `project-media-order.ts`. */
 export const projects = [...projectEntries]
   .sort((a, b) => a.orderIndex - b.orderIndex)
   .map((project) => ({
     ...project,
-    media: normalizeProjectMediaSlots(project.media, projectMediaOrderIndexBySlug[project.slug]),
+    thumbnail: {
+      ...project.thumbnail,
+      desktop: withPosterTone(project.thumbnail.desktop),
+      mobile: withPosterTone(project.thumbnail.mobile),
+    },
+    media: normalizeProjectMediaSlots(project.media, projectMediaOrderIndexBySlug[project.slug]).map((slot) => ({
+      ...slot,
+      desktop: withAssetTone(slot.desktop),
+      mobile: withAssetTone(slot.mobile),
+    })),
   }));
 
 /** Home Work section teaser; full list lives on `/projects`. */

@@ -13,7 +13,7 @@ import {
   type TouchEvent,
 } from "react";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
-import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
+import { pathnameFromHref, useNavigationFlightLock, usePendingRoute } from "@/lib/useNavigationFlightLock";
 
 type LinkComponentProps = ComponentProps<typeof Link>;
 
@@ -58,7 +58,8 @@ export function IntentPrefetchLink({
 }: IntentPrefetchLinkProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { guardedPush, isPendingNav } = useNavigationFlightLock(pathname);
+  const { guardedPush } = useNavigationFlightLock(pathname);
+  const pendingRoute = usePendingRoute();
   const timeoutRef = useRef<number | null>(null);
   const prefetchHref = prefetchHrefFromProp(href);
 
@@ -149,7 +150,7 @@ export function IntentPrefetchLink({
       href={href}
       scroll={scroll}
       prefetch={false}
-      aria-busy={isPendingNav || undefined}
+      aria-busy={(prefetchHref !== null && pendingRoute === pathnameFromHref(prefetchHref)) || undefined}
       onClick={handleClick}
       onFocus={handleFocus}
       onPointerEnter={handlePointerEnter}

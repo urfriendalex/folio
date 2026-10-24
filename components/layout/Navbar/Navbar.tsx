@@ -12,12 +12,17 @@ import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { allowNavigatorRoutePrefetch } from "@/lib/allowNavigatorRoutePrefetch";
-import { useNavigationFlightLock } from "@/lib/useNavigationFlightLock";
-import { LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
+import {
+  pathnameFromHref,
+  setRoutePending,
+  useNavigationFlightLock,
+  usePendingHref,
+} from "@/lib/useNavigationFlightLock";
+import { DayShift, LiveClock, useTimeZoneInfo } from "@/components/layout/Footer/TimeZoneStatus";
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
-import { lockBodyScroll, onBodyScrollLock, unlockBodyScroll } from "@/lib/scrollLock";
+import { lockBodyScroll, onBodyScrollLock, skipNextScrollRestore, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 import { NavbarWordmark } from "./NavbarWordmark";
@@ -53,7 +58,14 @@ export function Navbar() {
   });
   /* Per-second ticking is isolated in <LiveClock>; the navbar itself re-renders at most once a minute. */
   const sameAsWarsaw = useTimeZoneInfo().offsetMinutes === 0;
-  const { guardedPush } = useNavigationFlightLock(pathname);
+  const { guardedPush, cancelPendingNav } = useNavigationFlightLock(pathname);
+  const pendingHref = usePendingHref();
+  /* Closing the menu means "stay here": a route still loading must not swap in afterwards. */
+  const dismissMenu = () => {
+    cancelPendingNav();
+    setMenuOpen(false);
+  };
+  const dismissMenuOnEscape = useEffectEvent(dismissMenu);
 
   useEffect(() => {
     if (!allowNavigatorRoutePrefetch()) {
@@ -141,7 +153,7 @@ export function Navbar() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        dismissMenuOnEscape();
       }
     };
 
@@ -179,7 +191,13 @@ export function Navbar() {
     };
   }, []);
 
+  const handleOpenAbout = () => {
+    cancelPendingNav();
+    openAbout();
+  };
+
   const openAboutFromMenu = () => {
+    cancelPendingNav();
     document.documentElement.classList.add("nav-overlay-instant");
     setMenuOpen(false);
     openAbout();
@@ -202,6 +220,7 @@ export function Navbar() {
           unsubscribe();
           window.requestAnimationFrame(() => {
             if (pathname === "/") {
+              cancelPendingNav("/");
               clearLocationHash();
               scrollToHeroSection();
             } else {
@@ -216,7 +235,17 @@ export function Navbar() {
 
     if (pathname === "/") {
       event.preventDefault();
+      cancelPendingNav("/");
       clearLocationHash();
+
+      if (menuOpen) {
+        /* Body is scroll-locked under the menu: land on the hero (top) instead of restoring the old offset. */
+        skipNextScrollRestore();
+        setMenuOpen(false);
+        window.setTimeout(scrollToHeroSection, 0);
+        return;
+      }
+
       scrollToHeroSection();
       return;
     }
@@ -225,8 +254,54 @@ export function Navbar() {
     guardedPush("/", { scroll: true });
   };
 
-  const handleMobileNavLinkClick = () => {
-    setMenuOpen(false);
+  /* Contact: in-page on `/` (keep the hash URL, drop any pending route); elsewhere the scroll provider
+     pushes `/` itself (superseding whatever was loading), so mark `/` as the pending route here. */
+  const handleContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+
+    const href = event.currentTarget.getAttribute("href") ?? "";
+
+    if (href.startsWith("#")) {
+      cancelPendingNav(`${window.location.pathname}${window.location.search}${href}`);
+    } else {
+      setRoutePending(href);
+    }
+  };
+
+  /* Cross-route Contact holds the menu like Work/Archive; the home arrival scroll already waits for the
+     menu to close (`is-nav-open`), and skipping the restore keeps the old page's offset out of it. */
+  const handleMobileContactClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    handleContactClick(event);
+
+    if (event.currentTarget.getAttribute("href")?.startsWith("#") || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      setMenuOpen(false);
+      return;
+    }
+
+    skipNextScrollRestore();
+  };
+
+  /* Cross-route menu links keep the overlay up while the next page loads; the pathname effect closes it
+     once the new route has committed, so the fade reveals the destination instead of the old page. */
+  const handleMobileRouteLinkClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    const href = event.currentTarget.getAttribute("href");
+    if (
+      !href ||
+      pathnameFromHref(href) === pathname ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      setMenuOpen(false);
+      return;
+    }
+
+    /* The body lock would otherwise restore the old page's scroll offset onto the new one. */
+    skipNextScrollRestore();
   };
 
   const logoLink = (
@@ -248,7 +323,7 @@ export function Navbar() {
           {logoLink}
 
           <nav className={styles.nav} aria-label="Primary">
-            <button type="button" onClick={openAbout} className={`link-underline ${styles.navLink}`}>
+            <button type="button" onClick={handleOpenAbout} className={`link-underline ${styles.navLink}`}>
               About
             </button>
             <IntentPrefetchLink
@@ -266,6 +341,8 @@ export function Navbar() {
             <a
               href={getAnchor(pathname, "contact")}
               className={`link-underline ${styles.navLink}`}
+              aria-busy={(pendingHref !== null && pendingHref === getAnchor(pathname, "contact")) || undefined}
+              onClick={handleContactClick}
             >
               Contact
             </a>
@@ -278,7 +355,7 @@ export function Navbar() {
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
             aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            onClick={() => setMenuOpen((value) => !value)}
+            onClick={() => (menuOpen ? dismissMenu() : setMenuOpen(true))}
           >
             <span className={styles.menuButtonLine} />
             <span className={styles.menuButtonLine} />
@@ -307,7 +384,7 @@ export function Navbar() {
                 href="/projects"
                 className={`link-underline ${styles.mobileNavLink}`}
                 style={{ "--item-index": 1 } as CSSProperties}
-                onClick={handleMobileNavLinkClick}
+                onClick={handleMobileRouteLinkClick}
               >
                 Work
               </IntentPrefetchLink>
@@ -315,7 +392,7 @@ export function Navbar() {
                 href="/archive"
                 className={`link-underline ${styles.mobileNavLink} ${styles.archiveNavLink}`}
                 style={{ "--item-index": 2 } as CSSProperties}
-                onClick={() => setMenuOpen(false)}
+                onClick={handleMobileRouteLinkClick}
               >
                 Archive
               </IntentPrefetchLink>
@@ -323,7 +400,8 @@ export function Navbar() {
                 href={getAnchor(pathname, "contact")}
                 className={`link-underline ${styles.mobileNavLink}`}
                 style={{ "--item-index": 3 } as CSSProperties}
-                onClick={handleMobileNavLinkClick}
+                aria-busy={(pendingHref !== null && pendingHref === getAnchor(pathname, "contact")) || undefined}
+                onClick={handleMobileContactClick}
               >
                 Contact
               </a>
@@ -331,19 +409,18 @@ export function Navbar() {
 
             <div className={styles.mobileFooterRow}>
               <div className={styles.mobileClockBlock}>
-                {sameAsWarsaw ? (
-                  <LiveClock zone="warsaw" className={styles.mobileClockMono} />
-                ) : (
-                  <>
-                    <span className={styles.mobileClockLine}>
-                      <span className={styles.mobileClockLabel}>Warsaw</span>
-                      <LiveClock zone="warsaw" className={styles.mobileClockValue} />
+                <span className={styles.mobileClock}>
+                  <span className={styles.mobileClockLabel}>Warsaw</span>
+                  <LiveClock zone="warsaw" format="time" className={styles.mobileClockValue} />
+                </span>
+                {sameAsWarsaw ? null : (
+                  <span className={styles.mobileClock}>
+                    <span className={styles.mobileClockLabel}>Your time</span>
+                    <span className={styles.mobileClockValue}>
+                      <LiveClock zone="visitor" format="time" />
+                      <DayShift className={styles.mobileClockDayShift} />
                     </span>
-                    <span className={styles.mobileClockLine}>
-                      <span className={styles.mobileClockLabel}>Your time</span>
-                      <LiveClock zone="visitor" className={styles.mobileClockValue} />
-                    </span>
-                  </>
+                  </span>
                 )}
               </div>
               <div className={styles.mobileFooterLinks}>

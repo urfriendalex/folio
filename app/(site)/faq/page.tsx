@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { FaqExperience } from "./FaqExperience";
 import { contactContent } from "@/content/contact";
 import { SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
@@ -78,7 +78,7 @@ export default function FaqPage() {
           Something else on your mind? Write to {" "}
           <a className="link-underline" href={`mailto:${contactContent.email}`}>{contactContent.email}</a>
           {" "}or take a look at {" "}
-          <Link href="/projects" className="link-underline">selected work</Link>.
+          <IntentPrefetchLink href="/projects" className="link-underline">selected work</IntentPrefetchLink>.
         </p>
       </div>
     </FaqExperience>

@@ -222,14 +222,67 @@
   inset: calc((1lh - var(--close-row-height)) / 2) -0.75rem;
 }
 
-.closeButton:hover,
-.closeButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
-  color: var(--fg-color);
+/* Close speaks the Navbar link language (it sits in that row): a 1px currentColor underline draws in
+   from the left (same as `.link-underline`) and the label settles to the nav links' 0.72 opacity.
+   `::before` is the immersive hit area, so the underline lives on `::after`. `scale` (not `transform`)
+   keeps the immersive `translateY(-50%)` centring intact while pressed. */
+.closeButton {
+  transition:
+    color 220ms ease,
+    opacity 220ms ease,
+    scale var(--duration-release) var(--ease-spring-press);
 }
 
-.closeButton[data-variant="immersive"]:hover,
+.closeButton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+  background: currentColor;
+  transform-origin: 100% 50%;
+  transform: scale3d(0, 1, 1);
+  transition: transform 0.3s;
+}
+
+.closeButton:active {
+  scale: 0.96;
+  transition-duration: 220ms, 220ms, var(--duration-press);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .closeButton:hover {
+    color: var(--fg-color);
+  }
+
+  .closeButton[data-variant="immersive"]:hover {
+    color: var(--overlay-fg);
+    opacity: 0.72;
+  }
+
+  .closeButton:hover::after {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* Keyboard focus mirrors hover; the dotted mark comes from the global `:focus-visible` rule. */
+.closeButton:focus-visible:not(:where([data-input-modality="pointer"] *)) {
+  color: var(--fg-color);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .closeButton[data-variant="immersive"]:focus-visible:not(:where([data-input-modality="pointer"] *)) {
   color: var(--overlay-fg);
+  opacity: 0.72;
+}
+
+.closeButton:focus-visible:not(:where([data-input-modality="pointer"] *))::after {
+  transform-origin: 0% 50%;
+  transform: scale3d(1, 1, 1);
 }
 
 .panelTitle {
@@ -322,5 +375,20 @@
   .surface[data-variant="immersive"]::before,
   .surface[data-variant="immersive"]::after {
     transition: none;
+  }
+
+  /* Colour/opacity still shift; the underline appears without sweeping and nothing scales. */
+  .closeButton {
+    transition:
+      color 220ms ease,
+      opacity 220ms ease;
+  }
+
+  .closeButton::after {
+    transition: none;
+  }
+
+  .closeButton:active {
+    scale: none;
   }
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SmoothScrollProvider } from "@/components/Scroll/SmoothScrollProvider";
 import { Footer } from "@/components/layout/Footer/Footer";
 import { Navbar, NavbarGradientBlur } from "@/components/layout/Navbar/Navbar";
+import { RouteTransition } from "@/components/navigation/RouteTransition";
 import { ExploreCueProvider } from "@/components/ui/ExploreCue/ExploreCueProvider";
 import { OverlayProvider } from "@/components/ui/Overlay/OverlayProvider";
 import styles from "./AppShell.module.scss";
@@ -15,6 +16,7 @@ export function AppShell({ children }: AppShellProps) {
     <OverlayProvider>
       <SmoothScrollProvider>
         <ExploreCueProvider>
+          <RouteTransition />
           <div data-app-shell="true" className={styles.shell}>
             <div
               data-app-chrome="true"

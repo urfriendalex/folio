@@ -53,6 +53,29 @@
   background: var(--bg-color);
 }
 
+/* In-app navigation: once a push has been waiting a beat, quietly dim the outgoing page so the tap
+   reads as acknowledged; fast (prefetched) routes swap before the delay and never dim. Opacity only —
+   a transform/filter here would re-parent the fixed UI inside `main`. */
+:global(html.route-pending) .main {
+  opacity: 0.45;
+  /* Even ease-in-out over 420ms: the front-loaded --ease-out read as an instant cut to the dim. */
+  transition: opacity 420ms cubic-bezier(0.45, 0, 0.25, 1) 120ms;
+}
+
+:global(html.route-entering:not(.home-section-arrival-pending):not(.home-section-arrival-reveal)) .main {
+  animation: route-enter 360ms cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+/* Rises from about the dimmed level rather than from 0, so dim → new page is one continuous fade. */
+@keyframes route-enter {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Cross-route Work/Contact links mount Home at the top before its target exists.
    Hold only that incoming Home paint until the immediate destination scroll is positioned. */
 :global(html.home-section-arrival-pending) .main:has(#work),
@@ -77,16 +100,27 @@
   :global(html.home-section-arrival-reveal) .main:has(#work) {
     animation: none;
   }
+
+  :global(html.route-pending) .main {
+    opacity: 1;
+  }
+
+  :global(html.route-entering) .main {
+    animation: none;
+  }
 }
 
 /* Viewport-fixed strip; visibility toggled from Footer via `data-footer-wordmark-active` + IO (hidden off-footer). */
 .footerWordmarkUnderlay {
   position: fixed;
   inset-inline: 0;
+  top: 0;
   bottom: 0;
   width: 100%;
   max-width: none;
-  height: var(--footer-wordmark-strip-height);
+  /* Full-viewport box, revealed bottom-up by clip. The overscroll easter egg grows the visible part by
+     moving the clip, never the box: no per-frame layout and no layout shifts (CLS) while it stretches. */
+  clip-path: inset(calc(100% - var(--footer-wordmark-strip-height)) 0 0 0);
   /* Below `.footerChrome` (35) so editorial/footer paints over the strip; above `.main` (20) so project toolbar stays under. */
   z-index: 34;
   pointer-events: none;
