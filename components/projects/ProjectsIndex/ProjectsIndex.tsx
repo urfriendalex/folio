@@ -106,7 +106,7 @@ const PREVIEW_CURSOR_OFFSET = 36;
 const PREVIEW_VIEWPORT_PAD = 12;
 const PREVIEW_LERP = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
-const VIEW_LEAVE_MS = 100;
+const VIEW_LEAVE_MS = 140;
 const VIEW_ENTER_STAGGER_CAP = 8;
 /** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
 const VIEW_INDEX_STAGGER_MS = 60;
@@ -203,11 +203,15 @@ type ProjectsIndexProps = {
 export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndexProps) {
   const [view, setView] = useState<IndexView>("list");
   const [filter, setFilter] = useState<ProjectFilterId>(initialFilter);
-  const [exitingView, setExitingView] = useState<IndexView | null>(null);
+  /* List ↔ grid runs out, then in: the shown view fades out on its own, and only then is the next one
+     mounted. Mounting it under the fading one froze that layer on top while the list pinned and
+     ScrollTrigger refreshed, then cut it away. */
+  const [leaving, setLeaving] = useState(false);
   const [pendingView, setPendingView] = useState<IndexView | null>(null);
   const [entered, setEntered] = useState(false);
   const [layoutEpoch, setLayoutEpoch] = useState(0);
   const pendingViewRef = useRef<IndexView | null>(null);
+  const swapScrollRef = useRef(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMotion, setFilterMotion] = useState(false);
   const [toolbarFaded, setToolbarFaded] = useState(false);
@@ -217,6 +221,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   const [listPinActive, setListPinActive] = useState(true);
   const [filterPanelBox, setFilterPanelBox] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLElement | null>(null);
+  const indexBodyRef = useRef<HTMLDivElement | null>(null);
   const filterFieldRef = useRef<HTMLDivElement | null>(null);
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
   const pinRef = useRef<HTMLDivElement | null>(null);
@@ -1202,9 +1207,13 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   };
 
   const selectedView = pendingView ?? view;
-  const showList = isList || exitingView === "list";
-  const showGrid = isGridView(view) || (exitingView !== null && isGridView(exitingView));
-  const liveGridView = isGridView(view) ? view : exitingView !== null && isGridView(exitingView) ? exitingView : "wide";
+
+  /** The mobile list pin is torn down before the swap, so its spacer doesn't linger under the next view. */
+  const releaseListPin = () => {
+    registerGsapScrollTrigger();
+    ScrollTrigger.getById("work-list-pin")?.kill();
+    setListPinActive(false);
+  };
 
   const requestIndexView = (next: IndexView) => {
     if (next === selectedView) {
@@ -1213,16 +1222,14 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     writeProjectLayout(isGridView(next) ? { view: next, grid: next } : { view: next });
 
-    if (isGridView(view) && isGridView(next) && exitingView === "list") {
-      setExitingView(null);
-      previousGridRectsRef.current = captureGridRects();
-      startTransition(() => {
-        setView(next);
-      });
+    if (leaving) {
+      // Latest pick wins; the swap at the end of the fade reads it.
+      pendingViewRef.current = next;
+      setPendingView(next);
       return;
     }
 
-    if (isGridView(view) && isGridView(next) && !exitingView) {
+    if (isGridView(view) && isGridView(next)) {
       previousGridRectsRef.current = captureGridRects();
       startTransition(() => {
         setView(next);
@@ -1233,49 +1240,41 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     if (reducedMotion) {
       pendingViewRef.current = null;
       setPendingView(null);
-      setExitingView(null);
       setFilterMotion(false);
       setEntered(true);
+      if (isList) {
+        releaseListPin();
+      }
+      swapScrollRef.current = true;
       setView(next);
       return;
     }
 
-    if (exitingView) {
-      pendingViewRef.current = next;
-      setPendingView(next);
-      return;
-    }
-
-    pendingViewRef.current = null;
-    setPendingView(null);
+    pendingViewRef.current = next;
+    setPendingView(next);
     setFilterMotion(false);
-    setEntered(false);
-    setLayoutEpoch((epoch) => epoch + 1);
-
-    if (isList && isMobile) {
-      registerGsapScrollTrigger();
-      ScrollTrigger.getById("work-list-pin")?.kill();
-      setListPinActive(false);
-    }
-
-    setExitingView(view);
-    setView(next);
+    setLeaving(true);
   };
 
   useLayoutEffect(() => {
-    if (!exitingView) {
+    if (!swapScrollRef.current) {
       return;
     }
+    swapScrollRef.current = false;
 
     const lenis = getLenis();
     lenis?.resize();
 
     const toolbar = headerRef.current;
-    if (!toolbar) {
+    const body = indexBodyRef.current;
+    if (!toolbar || !body) {
       return;
     }
 
-    const delta = toolbar.getBoundingClientRect().top - headerHeightPx();
+    /* Open the new view at its first item: put the toolbar's natural spot (just above the content) under
+       the site header. Measured from the content, since the toolbar is sticky on desktop and reads as
+       already in place while the previous view was scrolled deep. */
+    const delta = body.getBoundingClientRect().top - toolbar.getBoundingClientRect().height - headerHeightPx();
     if (Math.abs(delta) < 1) {
       return;
     }
@@ -1283,31 +1282,36 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     const nextY = Math.max(0, window.scrollY + delta);
     window.scrollTo({ top: nextY, left: 0, behavior: "auto" });
     lenis?.scrollTo(nextY, { immediate: true, force: true });
-  }, [exitingView, view]);
+  }, [view]);
 
   useEffect(() => {
-    if (!exitingView) {
+    if (!leaving) {
       return;
     }
 
     const id = window.setTimeout(() => {
-      const next = pendingViewRef.current;
-      setExitingView(null);
-      setPendingView(null);
+      const next = pendingViewRef.current ?? view;
       pendingViewRef.current = null;
+      setPendingView(null);
+      setLeaving(false);
+      // Replays the entrance, also when the pick came back to the view that was leaving.
+      setEntered(false);
+      setLayoutEpoch((epoch) => epoch + 1);
 
-      if (next && next !== view) {
-        setEntered(false);
-        setLayoutEpoch((epoch) => epoch + 1);
+      if (next !== view) {
+        if (view === "list") {
+          releaseListPin();
+        }
+        swapScrollRef.current = true;
         setView(next);
       }
     }, VIEW_LEAVE_MS);
 
     return () => window.clearTimeout(id);
-  }, [exitingView, view]);
+  }, [leaving, view]);
 
   useEffect(() => {
-    if (exitingView || reducedMotion) {
+    if (leaving || reducedMotion) {
       return;
     }
 
@@ -1316,7 +1320,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     }, VIEW_ENTER_DONE_MS);
 
     return () => window.clearTimeout(id);
-  }, [view, layoutEpoch, exitingView, reducedMotion]);
+  }, [view, layoutEpoch, leaving, reducedMotion]);
 
   const applyFilter = (next: ProjectFilterId) => {
     if (next !== filter) {
@@ -1605,13 +1609,13 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       {visibleProjects.length === 0 ? (
         <p className={styles.empty}>No projects in this type.</p>
       ) : (
-        <div className={styles.indexBody}>
-          {showList ? (
+        <div ref={indexBodyRef} className={styles.indexBody}>
+          {isList ? (
             <div
               key="list"
               ref={isList ? tableRef : undefined}
               className={styles.table}
-              data-outgoing={!isList ? "true" : undefined}
+              data-outgoing={leaving ? "true" : undefined}
               data-mobile-list={isMobile ? "true" : undefined}
               data-hovering={isList && desktopHovering ? "true" : undefined}
               onPointerMove={isList ? handleTablePointerMove : undefined}
@@ -1658,13 +1662,13 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
               </div>
             </div>
           ) : null}
-          {showGrid ? (
+          {!isList ? (
             <div
               key="grid"
               ref={!isList ? gridRef : undefined}
               className={styles.grid}
-              data-view={liveGridView}
-              data-outgoing={isList ? "true" : undefined}
+              data-view={view}
+              data-outgoing={leaving ? "true" : undefined}
               aria-label={`${projectFilterLabel(filter)} projects`}
             >
               {visibleProjects.map((project, index) => (
@@ -1692,18 +1696,18 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
       {hasMounted &&
       isMobile &&
-      (isList || exitingView === "list") &&
+      isList &&
       activeProject &&
       activeMedia
         ? createPortal(
             <IntentPrefetchLink
-              key={isList ? "docked-list" : "docked-exit"}
+              key="docked-list"
               ref={dockedPreviewRef}
               href={`/projects/${activeProject.slug}`}
               className={styles.preview}
               data-docked="true"
               data-intro={!previewIntroDone && !previewDismissed ? "true" : undefined}
-              data-outgoing={!isList ? "true" : undefined}
+              data-outgoing={leaving ? "true" : undefined}
               data-hidden={previewDismissed ? "true" : undefined}
               aria-hidden={previewDismissed ? true : undefined}
               tabIndex={previewDismissed ? -1 : undefined}
