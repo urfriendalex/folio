@@ -34,6 +34,45 @@
   z-index: 2;
 }
 
+/* Blurred colour preview under the loading grid: a 4×4 PNG stretched to the box and softened with a
+   static blur, scaled past the edges so the blur doesn't darken them. It never animates (a fading
+   blur would re-rasterise every frame): the revealed media fades in over it, then it is dropped.
+   Visible from the first paint with no request. */
+.tone {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  filter: blur(28px) saturate(1.1);
+  transform: scale(1.18);
+  opacity: 0.9;
+}
+
+.root[data-revealed="true"] .tone {
+  visibility: hidden;
+  transition: visibility 0s linear var(--project-media-view-fade-duration, 520ms);
+}
+
+/* `view` reveal: the media stays fully hidden behind the grid until it's decoded and on screen, then
+   the grid fades out while the frame fades in with a slight settle — never a half-loaded state. */
+.root[data-reveal="view"] {
+  --project-media-grid-fade-duration: 420ms;
+}
+
+.root[data-reveal="view"] .frame {
+  opacity: 0;
+  transform: scale(1.02);
+  transition:
+    opacity var(--project-media-view-fade-duration, 520ms) var(--ease-out),
+    transform 900ms var(--ease-reveal);
+}
+
+.root[data-reveal="view"][data-revealed="true"] .frame {
+  opacity: 1;
+  transform: none;
+}
+
 .layer,
 .posterLayer,
 .videoLayer {
@@ -99,7 +138,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .videoLayer,
-  .root[data-video-ready="true"] .posterLayer {
+  .root[data-video-ready="true"] .posterLayer,
+  .root[data-revealed="true"] .tone,
+  .root[data-reveal="view"] .frame {
     transition: none;
+  }
+
+  .root[data-reveal="view"] .frame {
+    transform: none;
   }
 }

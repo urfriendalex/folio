@@ -24,12 +24,13 @@ import {
   projectFilterCounts,
   projectFilterLabel,
   type ProjectFilterId,
-} from "@/content/projects";
+} from "@/content/projects/categories";
 import type { ProjectEntry, ProjectMediaSlot } from "@/content/projects/types";
-import { gsap, registerGsapScrollTrigger, ScrollTrigger } from "@/lib/gsapScroll";
+import { gsap, registerGsapScrollTrigger, scheduleScrollTriggerRefresh, ScrollTrigger } from "@/lib/gsapScroll";
 import { onBodyScrollLock, isBodyScrollLocked } from "@/lib/scrollLock";
 import { coerceProjectIndexView, readProjectLayout, writeProjectLayout } from "@/lib/projectLayout";
 import { useClientMounted } from "@/lib/useClientMounted";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { PROJECT_INDEX_PREVIEW_IMAGE_SIZES, thumbnailToMediaSlot } from "@/lib/projectMedia";
 import { resolveEase } from "@/lib/motion";
 import { getLenis, scrollToTop } from "@/lib/smoothScroll";
@@ -107,9 +108,10 @@ const PREVIEW_LERP = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 100;
 const VIEW_ENTER_STAGGER_CAP = 8;
-const VIEW_INDEX_STAGGER_MS = 120;
-const VIEW_INDEX_RULE_MS = 1100;
-const VIEW_INDEX_RULE_DELAY_MS = Math.round(VIEW_INDEX_STAGGER_MS * 1.5);
+/** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
+const VIEW_INDEX_STAGGER_MS = 60;
+const VIEW_INDEX_RULE_MS = 640;
+const VIEW_INDEX_RULE_DELAY_MS = 0;
 const VIEW_ENTER_DONE_MS =
   VIEW_ENTER_STAGGER_CAP * VIEW_INDEX_STAGGER_MS + VIEW_INDEX_RULE_DELAY_MS + VIEW_INDEX_RULE_MS + 40;
 const LIST_PAGE_LOCK_S = 0.42;
@@ -260,6 +262,11 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
   );
   const isMobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, reducedMotionServerSnapshot);
   const hasMounted = useClientMounted();
+  const preloaderComplete = usePreloaderComplete();
+  /* The CSS entrance waits for hydration and the preloader: on a hard load it used to run under the
+     preloader and, on mobile, restart when the layout settled after hydration (text flashing in,
+     snapping away, then replaying). Client navigations are ready on the first render. */
+  const enterReady = hasMounted && preloaderComplete;
 
   useEffect(() => {
     const html = document.documentElement;
@@ -606,42 +613,66 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       applyIndex(currentIndex, false);
     };
 
-    applyStageSize();
-    applyIndex(currentIndex, false);
-    setListPinActive(true);
+    const ctx = gsap.context(() => {}, pinRef);
+    let pinFrame = 0;
+    let lenisFrame = 0;
 
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        id: "work-list-pin",
-        trigger: stage,
-        start: () => `top ${headerHeightPx()}px`,
-        end: "max",
-        pin: true,
-        pinSpacing: false,
-        invalidateOnRefresh: true,
-        onRefresh: (self) => {
-          if (pinFrozenRef.current || isBodyScrollLocked()) {
-            return;
-          }
+    const createPin = () => {
+      applyStageSize();
+      applyIndex(currentIndex, false);
+      setListPinActive(true);
 
-          applyStageSize();
-          setListPinActive(self.isActive);
-          if (self.isActive) {
-            applyIndex(currentIndex, false);
-          }
-        },
-        onToggle: (self) => {
-          if (pinFrozenRef.current || isBodyScrollLocked()) {
-            return;
-          }
+      ctx.add(() => {
+        ScrollTrigger.create({
+          id: "work-list-pin",
+          trigger: stage,
+          start: () => `top ${headerHeightPx()}px`,
+          end: "max",
+          pin: true,
+          pinSpacing: false,
+          invalidateOnRefresh: true,
+          onRefresh: (self) => {
+            if (pinFrozenRef.current || isBodyScrollLocked()) {
+              return;
+            }
 
-          setListPinActive(self.isActive);
-          if (self.isActive) {
-            applyIndex(currentIndex, false);
-          }
-        },
+            applyStageSize();
+            setListPinActive(self.isActive);
+            if (self.isActive) {
+              applyIndex(currentIndex, false);
+            }
+          },
+          onToggle: (self) => {
+            if (pinFrozenRef.current || isBodyScrollLocked()) {
+              return;
+            }
+
+            setListPinActive(self.isActive);
+            if (self.isActive) {
+              applyIndex(currentIndex, false);
+            }
+          },
+        });
       });
-    }, pinRef);
+
+      scheduleScrollTriggerRefresh();
+      // Queued after the shared refresh, so Lenis picks up the pinned layout in the same frame.
+      lenisFrame = window.requestAnimationFrame(() => {
+        getLenis()?.resize();
+      });
+    };
+
+    /* Pinning measures and restyles the stage several times. Run during the route's mount commit,
+       every read forces a style pass over the whole freshly mounted page. On a fresh visit (page at
+       the top, first project) the CSS `data-list-pin` layout already matches the pinned one, so wait
+       until after the first paint; a restored scroll/selection pins immediately to avoid a jump. */
+    if (currentIndex === 0 && window.scrollY < 1) {
+      pinFrame = window.requestAnimationFrame(() => {
+        pinFrame = window.requestAnimationFrame(createPin);
+      });
+    } else {
+      createPin();
+    }
 
     const gesture = { x: 0, y: 0, active: false };
     const isPagingIgnoreTarget = (eventTarget: EventTarget | null) => {
@@ -711,18 +742,14 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     stage.addEventListener("touchmove", onTouchMove, { passive: false });
     stage.addEventListener("touchend", onTouchEnd, { passive: true });
 
-    const frame = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-      getLenis()?.resize();
-    });
-
     return () => {
       const shouldRelease = previewDismissedRef.current;
       const slug = activeSlugRef.current;
       const row = rowsBySlug.get(slug);
       const rowTop = releaseRowTopRef.current ?? row?.getBoundingClientRect().top ?? 0;
       releaseRowTopRef.current = null;
-      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(pinFrame);
+      window.cancelAnimationFrame(lenisFrame);
       syncListFromPinRef.current = () => {};
       stage.removeEventListener("wheel", onWheel);
       stage.removeEventListener("touchstart", onTouchStart);
@@ -829,12 +856,9 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       });
     });
 
-    const frame = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-    });
+    scheduleScrollTriggerRefresh();
 
     return () => {
-      window.cancelAnimationFrame(frame);
       ctx.revert();
     };
   }, [hasMounted, isList, isMobile, view, visibleProjects, visibleSlugs]);
@@ -845,7 +869,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
     }
 
     registerGsapScrollTrigger();
-    ScrollTrigger.refresh();
+    scheduleScrollTriggerRefresh();
   }, [isList, isMobile]);
 
   useLayoutEffect(() => {
@@ -1534,6 +1558,7 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
       data-work-index="true"
       data-crossfade={layoutEpoch > 0 ? "true" : undefined}
       data-entered={entered ? "true" : undefined}
+      data-enter-ready={enterReady ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
       data-list-layout={isList ? "true" : undefined}
       data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}

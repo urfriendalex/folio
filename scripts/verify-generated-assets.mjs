@@ -6,6 +6,7 @@ import process from "node:process";
 const trackedPaths = [
   "lib/generated/archive-manifest.ts",
   "content/projects/generated-media.ts",
+  "content/projects/media-tones.ts",
   "public/projects",
 ];
 
@@ -56,6 +57,7 @@ if (fs.existsSync("media/project-sources")) {
   console.log("Skipping project media regeneration: media/project-sources is not available.");
 }
 verifyCheckedInProjectMedia();
+run("pnpm run generate:media-tones");
 run("pnpm run generate:archive-manifest");
 
 const status = output(`git status --porcelain -- ${trackedPaths.join(" ")}`);

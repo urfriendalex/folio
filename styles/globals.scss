@@ -132,6 +132,7 @@
   --overlay-immersive-muted: rgb(16 16 16 / 0.62);
   --overlay-immersive-line: rgb(16 16 16 / 0.12);
   --overlay-immersive-backdrop: rgb(247 246 242 / 0.74);
+  --overlay-immersive-scrim: rgb(247 246 242);
   --overlay-immersive-backdrop-filter: blur(22px) saturate(108%);
   --project-toolbar-border: var(--surface-outline);
   --project-toolbar-border-strong: var(--surface-outline-strong);
@@ -322,6 +323,7 @@
   --overlay-immersive-muted: rgb(244 242 235 / 0.62);
   --overlay-immersive-line: rgb(244 242 235 / 0.14);
   --overlay-immersive-backdrop: rgb(4 4 6 / 0.78);
+  --overlay-immersive-scrim: rgb(6 6 8);
   --overlay-immersive-backdrop-filter: blur(24px) saturate(112%);
   --project-toolbar-block-bg: color-mix(in srgb, var(--surface-strong) 94%, black 6%);
   --project-toolbar-block-bg-hover: color-mix(in srgb, var(--surface-strong) 100%, black 0%);
@@ -784,10 +786,41 @@ img {
   transform: scale3d(1, 1, 1);
 }
 
+/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): the underline
+   draws in from the left and leaves to the right on a loop. Same 120ms grace as the page dim, so
+   prefetched routes that swap instantly never flash it. */
+.link-underline[aria-busy="true"]::after {
+  animation: link-underline-loading 1.15s var(--ease-out) 120ms infinite both;
+}
+
+@keyframes link-underline-loading {
+  0% {
+    transform-origin: 0% 50%;
+    transform: scale3d(0, 1, 1);
+  }
+  50% {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+  50.01% {
+    transform-origin: 100% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+  100% {
+    transform-origin: 100% 50%;
+    transform: scale3d(0, 1, 1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link-underline::after,
   .text-link::after {
     transition: none;
+  }
+
+  .link-underline[aria-busy="true"]::after {
+    animation: none;
+    transform: scale3d(1, 1, 1);
   }
 
   .link-underline:hover::after,

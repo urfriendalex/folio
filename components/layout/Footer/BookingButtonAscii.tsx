@@ -24,6 +24,8 @@ const STREAK_LIFE = 0.8;
 const STREAK_MAX = 16;
 const STREAK_MIN_SPEED = 90; // px/s
 const STREAK_TOP_SPEED = 520; // px/s
+/** Covers the 240ms hover fade-out and the pointer easing before a hidden-at-rest canvas stops drawing. */
+const PARK_AFTER_MS = 600;
 const STREAK_FRICTION = 2.4; // 1/s
 const STREAK_CLEARING = 5; // px from the label's glyphs
 // Appended after the ramp so a bucket entry can address either: horizontal, falling, vertical, rising.
@@ -141,6 +143,13 @@ export function BookingButtonAscii({
     const bounded = () => touchOrbit === "once" && !!orbitMedia?.matches;
     const interacting = () => pointerInside || keyboardFocused;
     const burstActive = () => burstElapsed >= 0 && burstElapsed < sweepMs + fadeMs;
+    /* A canvas that rests at opacity 0 (the hero CTA on hover-capable screens only shows its field on
+       hover) must not keep drawing frames nobody sees. Read at rest, never mid-hover. */
+    let restsHidden = false;
+    const readRestsHidden = () => {
+      if (!interacting()) restsHidden = window.getComputedStyle(canvas).opacity === "0";
+    };
+    let parkedSince = 0;
     const fieldAlpha = () => !bounded() || interacting() ? 1 : burstActive()
       ? Math.min(1, burstElapsed / 120, (sweepMs + fadeMs - burstElapsed) / fadeMs) : 0;
     let width = 0;
@@ -368,8 +377,22 @@ export function BookingButtonAscii({
         }
       }
       draw(1 - Math.exp(-delta / 110));
+      if (parked()) {
+        // Let the hover fade and pointer easing finish, then stop until the next hover/focus.
+        parkedSince ||= now;
+        if (now - parkedSince > PARK_AFTER_MS) {
+          frame = 0;
+          lastTime = 0;
+          parkedSince = 0;
+          return;
+        }
+      } else parkedSince = 0;
       frame = window.requestAnimationFrame(tick);
     };
+
+    function parked() {
+      return restsHidden && !interacting() && shown === shownTarget && !burstActive();
+    }
 
     /** One clock for the cell: the label lands first, the texture keeps filling in behind it. */
     function applyGlitch() {
@@ -396,10 +419,11 @@ export function BookingButtonAscii({
         applyGlitch();
         draw(1);
       }
+      start();
     };
 
     const start = () => {
-      if (frame || !visible || reducedMotion.matches || document.hidden ||
+      if (frame || !visible || reducedMotion.matches || document.hidden || parked() ||
           (bounded() && !burstActive() && !interacting())) return;
       lastTime = 0;
       frame = window.requestAnimationFrame(tick);
@@ -471,6 +495,7 @@ export function BookingButtonAscii({
     };
 
     const resize = () => {
+      readRestsHidden();
       const rect = canvas.getBoundingClientRect();
       width = rect.width;
       height = rect.height;
@@ -617,6 +642,7 @@ export function BookingButtonAscii({
     // on the observer's initial intersection from that temporary layout.
     const onRootStateChange = () => {
       updateColors();
+      readRestsHidden();
       const rect = button.getBoundingClientRect();
       visible = rect.bottom > 0 && rect.top < window.innerHeight && rect.width > 0;
       stop();
@@ -651,6 +677,7 @@ export function BookingButtonAscii({
     button.addEventListener("focus", onFocus);
     button.addEventListener("blur", onBlur);
     resize();
+    readRestsHidden();
     if (glitch) {
       glitchObserver.observe(button, { attributes: true, attributeFilter: ["data-visible"] });
       syncGlitch();

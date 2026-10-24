@@ -31,6 +31,8 @@ export type ProjectThumbnailVariant = {
   video?: string;
   width: number;
   height: number;
+  /** 4×4 PNG data URI of the poster (`media-tones.ts`), stretched under the loading grid. */
+  tone?: string;
 };
 
 export type ProjectMediaAsset = {
@@ -38,6 +40,8 @@ export type ProjectMediaAsset = {
   poster?: string;
   width: number;
   height: number;
+  /** 4×4 PNG data URI of the image/poster (`media-tones.ts`), stretched under the loading grid. */
+  tone?: string;
 };
 
 export type ProjectThumbnail = {

@@ -88,6 +88,7 @@ export function thumbnailToMediaSlot(thumbnail: ProjectThumbnail): ProjectMediaS
       poster: thumbnail.desktop.poster,
       width: thumbnail.desktop.width,
       height: thumbnail.desktop.height,
+      tone: thumbnail.desktop.tone,
     },
     mobile: thumbnail.mobile
       ? {
@@ -95,6 +96,7 @@ export function thumbnailToMediaSlot(thumbnail: ProjectThumbnail): ProjectMediaS
           poster: thumbnail.mobile.poster,
           width: thumbnail.mobile.width,
           height: thumbnail.mobile.height,
+          tone: thumbnail.mobile.tone,
         }
       : undefined,
     loop: true,
