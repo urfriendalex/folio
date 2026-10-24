@@ -108,9 +108,10 @@ const PREVIEW_LERP = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 100;
 const VIEW_ENTER_STAGGER_CAP = 8;
-const VIEW_INDEX_STAGGER_MS = 120;
-const VIEW_INDEX_RULE_MS = 1100;
-const VIEW_INDEX_RULE_DELAY_MS = Math.round(VIEW_INDEX_STAGGER_MS * 1.5);
+/** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
+const VIEW_INDEX_STAGGER_MS = 60;
+const VIEW_INDEX_RULE_MS = 640;
+const VIEW_INDEX_RULE_DELAY_MS = 0;
 const VIEW_ENTER_DONE_MS =
   VIEW_ENTER_STAGGER_CAP * VIEW_INDEX_STAGGER_MS + VIEW_INDEX_RULE_DELAY_MS + VIEW_INDEX_RULE_MS + 40;
 const LIST_PAGE_LOCK_S = 0.42;

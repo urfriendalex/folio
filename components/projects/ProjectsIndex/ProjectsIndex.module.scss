@@ -1,10 +1,13 @@
 .page {
   --page-pad-bottom: clamp(1.5rem, 4vh, 2.25rem);
-  --index-stagger: 120ms;
-  --index-enter-ms: 820ms;
+  /* One wave, not ten events: a tight stagger where each row's rule draws first and its text lands on
+     it a beat later. Keep in sync with VIEW_INDEX_* in ProjectsIndex.tsx. */
+  --index-stagger: 60ms;
+  --index-enter-ms: 560ms;
   --index-leave-ms: 100ms;
-  --index-rule-ms: 1100ms;
-  --index-rule-delay: calc(var(--index-stagger) * 1.5);
+  --index-rule-ms: 640ms;
+  --index-rule-delay: 0ms;
+  --index-text-lag: 40ms;
   --bleed: calc(-1 * var(--content-padding-inline));
   min-height: calc(100svh - var(--header-height));
   padding-block: 0 var(--page-pad-bottom);
@@ -398,7 +401,7 @@
 .row .year {
   animation: indexEnter var(--index-enter-ms) var(--ease-move) both;
   animation-iteration-count: 1;
-  animation-delay: calc(var(--item-index, 0) * var(--index-stagger));
+  animation-delay: calc(var(--index-text-lag) + var(--item-index, 0) * var(--index-stagger));
 }
 
 .table[data-outgoing="true"],
