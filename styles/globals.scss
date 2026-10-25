@@ -787,16 +787,48 @@ img {
 }
 
 /* Route loading on the tapped link (`aria-busy` comes from the shared pending route): the underline
-   draws in from the left and leaves to the right on a loop. Same 120ms grace as the page dim, so
-   prefetched routes that swap instantly never flash it. */
+   loops — leaves to the right, draws back in from the left. Same 120ms grace as the page dim, so
+   prefetched routes that swap instantly never show it. Each half eases in and out, so the turns
+   read as one continuous motion rather than restarts. */
 .link-underline[aria-busy="true"]::after {
-  animation: link-underline-loading 1.15s var(--ease-out) 120ms infinite both;
+  animation: link-underline-loading-draw 1.3s linear 120ms infinite both;
+}
+
+/* With a mouse the link is hovered when clicked, so its underline is already drawn: start the loop
+   from that full line (it simply begins to leave) instead of wiping it and redrawing. */
+@media (hover: hover) and (pointer: fine) {
+  .link-underline[aria-busy="true"]::after {
+    animation-name: link-underline-loading;
+  }
 }
 
 @keyframes link-underline-loading {
   0% {
+    transform-origin: 100% 50%;
+    transform: scale3d(1, 1, 1);
+    animation-timing-function: var(--ease-in-out);
+  }
+  50% {
+    transform-origin: 100% 50%;
+    transform: scale3d(0, 1, 1);
+  }
+  50.01% {
     transform-origin: 0% 50%;
     transform: scale3d(0, 1, 1);
+    animation-timing-function: var(--ease-in-out);
+  }
+  100% {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+/* Touch: nothing is drawn at tap, so the loop starts by drawing in. */
+@keyframes link-underline-loading-draw {
+  0% {
+    transform-origin: 0% 50%;
+    transform: scale3d(0, 1, 1);
+    animation-timing-function: var(--ease-in-out);
   }
   50% {
     transform-origin: 0% 50%;
@@ -805,6 +837,7 @@ img {
   50.01% {
     transform-origin: 100% 50%;
     transform: scale3d(1, 1, 1);
+    animation-timing-function: var(--ease-in-out);
   }
   100% {
     transform-origin: 100% 50%;
