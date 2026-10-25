@@ -22,10 +22,14 @@ import { DayShift, LiveClock, useTimeZoneInfo } from "@/components/layout/Footer
 import { useOverlay } from "@/components/ui/Overlay/OverlayProvider";
 import { contactContent } from "@/content/contact";
 import { getAnchor } from "@/lib/navLinks";
+import { usePreloaderComplete } from "@/lib/preloaderComplete";
 import { lockBodyScroll, onBodyScrollLock, skipNextScrollRestore, unlockBodyScroll } from "@/lib/scrollLock";
 import { clearLocationHash, scrollToHeroSection } from "@/lib/smoothScroll";
 import styles from "./Navbar.module.scss";
 import { NavbarWordmark } from "./NavbarWordmark";
+
+/** Routes the nav links lead to (Contact is `/#contact`, so home covers it). */
+const NAV_PREFETCH_ROUTES = ["/", "/projects", "/archive"] as const;
 
 export function NavbarGradientBlur() {
   return (
@@ -48,6 +52,7 @@ export function NavbarGradientBlur() {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const preloaderComplete = usePreloaderComplete();
   const { openAbout, closeOverlay, activeOverlay } = useOverlay();
   const [menuOpen, setMenuOpen] = useState(false);
   const firstMenuActionRef = useRef<HTMLButtonElement | null>(null);
@@ -67,22 +72,31 @@ export function Navbar() {
   };
   const dismissMenuOnEscape = useEffectEvent(dismissMenu);
 
+  /* Warm every nav route once the page is idle after the preloader, so a tap swaps instantly instead
+     of waiting on the network (intent prefetch alone starts only ~100ms before a tap on touch). Off
+     the load path, so it doesn't compete with the page's own load; the RSC payloads are small and no
+     images are fetched. Skipped on save-data / 2g. */
   useEffect(() => {
-    if (!allowNavigatorRoutePrefetch()) {
+    if (!preloaderComplete || !allowNavigatorRoutePrefetch()) {
       return;
     }
 
-    if (pathname === "/") {
-      router.prefetch("/projects");
-      return;
+    const warm = () => {
+      for (const href of NAV_PREFETCH_ROUTES) {
+        if (href !== pathname) {
+          router.prefetch(href);
+        }
+      }
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
     }
 
-    if (pathname !== "/archive" && pathname !== "/projects" && !pathname.startsWith("/projects/")) {
-      return;
-    }
-
-    router.prefetch("/");
-  }, [pathname, router]);
+    const id = window.setTimeout(warm, 1200);
+    return () => window.clearTimeout(id);
+  }, [pathname, preloaderComplete, router]);
 
   useEffect(() => {
     let frame = 0;
