@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { watchLinkUnderlineLoading } from "@/lib/linkUnderlineLoading";
 import { setRoutePending } from "@/lib/useNavigationFlightLock";
 
 const ROUTE_ENTER_CLASS = "route-entering";
@@ -14,6 +15,8 @@ const ROUTE_ENTER_MS = 260;
 export function RouteTransition() {
   const pathname = usePathname();
   const previousPathnameRef = useRef(pathname);
+
+  useEffect(() => watchLinkUnderlineLoading(), []);
 
   useEffect(() => {
     /* Back/forward supersedes any pushed route; the popstate target may even be the current path. */

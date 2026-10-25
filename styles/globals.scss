@@ -786,30 +786,20 @@ img {
   transform: scale3d(1, 1, 1);
 }
 
-/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): the underline
-   draws in from the left and leaves to the right on a loop. Same 120ms grace as the page dim, so
-   prefetched routes that swap instantly never flash it. */
+/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): hold the line
+   full — already drawn under a hover or a tap (touch counts as hover), otherwise it draws in with the
+   transition above. lib/linkUnderlineLoading.ts loops it from that full line and settles it from
+   wherever it is when loading ends, so the whole thing reads as one motion. */
 .link-underline[aria-busy="true"]::after {
-  animation: link-underline-loading 1.15s var(--ease-out) 120ms infinite both;
+  transform-origin: 0% 50%;
+  transform: scale3d(1, 1, 1);
 }
 
-@keyframes link-underline-loading {
-  0% {
-    transform-origin: 0% 50%;
-    transform: scale3d(0, 1, 1);
-  }
-  50% {
-    transform-origin: 0% 50%;
-    transform: scale3d(1, 1, 1);
-  }
-  50.01% {
-    transform-origin: 100% 50%;
-    transform: scale3d(1, 1, 1);
-  }
-  100% {
-    transform-origin: 100% 50%;
-    transform: scale3d(0, 1, 1);
-  }
+/* Loading just ended under the pointer/focus: rest without a line until it moves off, so the hover
+   underline doesn't reappear as the loading's last frame (set by lib/linkUnderlineLoading.ts). */
+.link-underline[data-underline-rest]::after {
+  transform: scale3d(0, 1, 1);
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

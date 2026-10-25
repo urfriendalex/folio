@@ -757,8 +757,8 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
   }, []);
 
   const introText = content.position;
-  const introSource = mobileLayout ? introText.replace(" & Creative Technologist", "\n& Creative Technologist") : introText;
-  const introLines = usePretextLines(introSource, introRef, "pre-wrap", true, {
+  // One line on phones too: the role is a label above the two-line headline, not a second headline.
+  const introLines = usePretextLines(introText, introRef, "pre-wrap", true, {
     preserveNaturalWrappingMedia: MOBILE_HERO_QUERY,
   });
   const headingText = mobileLayout && mobileHeadingBreakBefore
@@ -1220,8 +1220,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
               {dissolve(INDEPENDENT_DEVELOPER_PHRASE, 1)}
             </span>
           </span>
-          <br className={styles.introMobileBreak} aria-hidden="true" />
-          <span className={styles.introDesktopSpace}> </span>
+          {" "}
           {dissolve(beforeCreative.trimStart(), 2)}
           <span
             data-hero-role="creative"

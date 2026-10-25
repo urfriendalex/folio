@@ -36,8 +36,6 @@
   color: inherit;
 }
 .introAccentTrigger { display: inline-block; transition: color 180ms ease-out; }
-.introMobileBreak { display: none; }
-.introDesktopSpace { display: inline; }
 .introAccentTriggerWeb:hover,
 .introAccentTriggerWeb:focus-visible:not(:where([data-input-modality="pointer"] *)) { color: var(--hero-walker-web-color); }
 .introAccentTriggerCreative:hover,
@@ -247,8 +245,6 @@
   }
   .content { width: 100%; max-width: none; }
   .intro { font-size: 14px; margin-bottom: 16px; }
-  .introMobileBreak { display: block; }
-  .introDesktopSpace { display: none; }
   .heading { font-size: clamp(1.8rem, 8.72vw, 2.125rem); line-height: 1.12; letter-spacing: -0.04em; }
   .description { margin-top: 24px; font-size: 17px; line-height: 1.4; max-width: 100%; }
   .heroCta { margin-top: 35px; }
