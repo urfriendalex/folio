@@ -786,63 +786,13 @@ img {
   transform: scale3d(1, 1, 1);
 }
 
-/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): the underline
-   loops — leaves to the right, draws back in from the left. Same 120ms grace as the page dim, so
-   prefetched routes that swap instantly never show it. Each half eases in and out, so the turns
-   read as one continuous motion rather than restarts. */
+/* Route loading on the tapped link (`aria-busy` comes from the shared pending route): hold the line
+   full — already drawn under a hover or a tap (touch counts as hover), otherwise it draws in with the
+   transition above. lib/linkUnderlineLoading.ts loops it from that full line and settles it from
+   wherever it is when loading ends, so the whole thing reads as one motion. */
 .link-underline[aria-busy="true"]::after {
-  animation: link-underline-loading-draw 1.3s linear 120ms infinite both;
-}
-
-/* With a mouse the link is hovered when clicked, so its underline is already drawn: start the loop
-   from that full line (it simply begins to leave) instead of wiping it and redrawing. */
-@media (hover: hover) and (pointer: fine) {
-  .link-underline[aria-busy="true"]::after {
-    animation-name: link-underline-loading;
-  }
-}
-
-@keyframes link-underline-loading {
-  0% {
-    transform-origin: 100% 50%;
-    transform: scale3d(1, 1, 1);
-    animation-timing-function: var(--ease-in-out);
-  }
-  50% {
-    transform-origin: 100% 50%;
-    transform: scale3d(0, 1, 1);
-  }
-  50.01% {
-    transform-origin: 0% 50%;
-    transform: scale3d(0, 1, 1);
-    animation-timing-function: var(--ease-in-out);
-  }
-  100% {
-    transform-origin: 0% 50%;
-    transform: scale3d(1, 1, 1);
-  }
-}
-
-/* Touch: nothing is drawn at tap, so the loop starts by drawing in. */
-@keyframes link-underline-loading-draw {
-  0% {
-    transform-origin: 0% 50%;
-    transform: scale3d(0, 1, 1);
-    animation-timing-function: var(--ease-in-out);
-  }
-  50% {
-    transform-origin: 0% 50%;
-    transform: scale3d(1, 1, 1);
-  }
-  50.01% {
-    transform-origin: 100% 50%;
-    transform: scale3d(1, 1, 1);
-    animation-timing-function: var(--ease-in-out);
-  }
-  100% {
-    transform-origin: 100% 50%;
-    transform: scale3d(0, 1, 1);
-  }
+  transform-origin: 0% 50%;
+  transform: scale3d(1, 1, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
