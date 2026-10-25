@@ -112,6 +112,9 @@ const WALKER_FPS = 20;
 const WALKER_COARSE_SCALE = 0.88;
 /** Desktop hover in/out runs 15% quicker than the shared reveal so it keeps up with the pointer. */
 const WALKER_HOVER_REVEAL_DURATION_MS = Math.round(ASCII_VISIBILITY_REVEAL_DURATION_MS * 0.85);
+/** Touch intro: the walker builds in cell by cell alongside the CTA's ASCII sweep, so it takes its time
+    (~1.5× the shared reveal) instead of finishing well before the button motion has played out. */
+const WALKER_TOUCH_INTRO_REVEAL_DURATION_MS = 1400;
 
 /** Scroll-out dissolve: nothing glitches until the page has scrolled this share of the viewport… */
 const TEXT_DISSOLVE_DELAY_VIEWPORT = 0.12;
@@ -1427,7 +1430,7 @@ export function HeroSection({ content, introClassName, ctaClassName, ctaAdornmen
                 /* Delayed touch intro reveals cell by cell rather than popping in from the preloader hand-off. */
                 randomVisibilityReveal={!walkerRevealPlayedInPreloader || walkerWaitsForText}
                 randomVisibilityDurationMs={
-                  coarsePointer ? ASCII_VISIBILITY_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
+                  coarsePointer ? WALKER_TOUCH_INTRO_REVEAL_DURATION_MS : WALKER_HOVER_REVEAL_DURATION_MS
                 }
                 scrollDissolve
                 color={

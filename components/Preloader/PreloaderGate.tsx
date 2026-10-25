@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { PRELOADER_REPLAY_EVENT } from "@/lib/preloaderReplay";
 import { Preloader } from "./Preloader";
+import { PRELOADER_HANDOFF_CLASS } from "@/lib/preloaderComplete";
 
 type PreloaderGateProps = {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function PreloaderGate({ children }: PreloaderGateProps) {
       html.setAttribute("data-preloader", "run");
       html.classList.add("is-loading");
       html.classList.remove("is-preloader-exiting");
+      html.classList.remove(PRELOADER_HANDOFF_CLASS);
       setSession((current) => current + 1);
       setShowPreloader(true);
     };

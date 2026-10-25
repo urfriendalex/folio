@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { cellRevealHash01 } from "@/components/Preloader/ascii";
 import { GLYPH_GLITCH_STEPS, GLYPH_GLITCH_THRESHOLD_MAX, isGlyphShown } from "@/lib/glyphGlitch";
 import { hapticTick } from "@/lib/haptics";
+import { isPreloaderComplete } from "@/lib/preloaderComplete";
 import { isRevealRestoreWindow } from "@/lib/revealRestore";
 import { KEYBOARD_FOCUS_SELECTOR } from "@/lib/inputModality";
 
@@ -452,7 +453,7 @@ export function BookingButtonAscii({
     // Follow the actual CTA line reveal, rather than spending the sweep behind the loader.
     const scheduleEntrance = () => {
       restoreEntrance ||= isRevealRestoreWindow();
-      if (document.documentElement.classList.contains("is-loading")) return;
+      if (!isPreloaderComplete()) return;
       if (revealRoot?.dataset.visible === "false") {
         window.clearTimeout(entranceTimer);
         entrancePreparing = false;

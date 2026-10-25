@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import ASCIIAnimation, { ASCII_VISIBILITY_REVEAL_DURATION_MS } from "./ascii";
+import { PRELOADER_HANDOFF_CLASS } from "@/lib/preloaderComplete";
 import { getFrameFolderForTheme, getInitialFrameFolder } from "./frameFolder";
 import styles from "./preloader.module.scss";
 import { usePreloaderAssets } from "./usePreloaderAssets";
@@ -19,6 +20,10 @@ const HOLD_AT_100_MS = 360;
 const REDUCED_MOTION_COUNTUP_MS = 160;
 const REDUCED_MOTION_HOLD_MS = 160;
 const EXIT_TIMEOUT_MS = 1200;
+/* The overlay dissolves over 640ms on a front-loaded ease-out. Hand off to the page's reveals this far
+   in — overlay mostly gone, still blurring away — so the intro plays out of the dissolve instead of
+   starting after it. Scroll and deep-link positioning still wait for `is-loading` to clear. */
+const REVEAL_HANDOFF_MS = 180;
 const ENTER_DURATION_MS = 320;
 const ASCII_SCALE = 1;
 const ASCII_FRAME_COUNT = 37;
@@ -109,6 +114,7 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
 
     let rafId: number | null = null;
     let exitFallbackTimer: number | null = null;
+    let handoffTimer: number | null = null;
     let isExiting = false;
     let didFinalize = false;
     let displayedProgress = 0;
@@ -149,6 +155,9 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
 
       overlayNode.classList.add(styles.isLoaded);
       html.classList.add("is-preloader-exiting");
+      handoffTimer = window.setTimeout(() => {
+        html.classList.add(PRELOADER_HANDOFF_CLASS);
+      }, REVEAL_HANDOFF_MS);
       if (prefersReducedMotion) {
         overlayNode.classList.add(styles.reducedMotionExit);
       }
@@ -165,8 +174,14 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
           exitFallbackTimer = null;
         }
 
+        if (handoffTimer !== null) {
+          window.clearTimeout(handoffTimer);
+          handoffTimer = null;
+        }
+
         html.classList.remove("is-loading");
         html.classList.remove("is-preloader-exiting");
+        html.classList.remove(PRELOADER_HANDOFF_CLASS);
         html.setAttribute("data-preloader", "skip");
         html.setAttribute("data-preloader-ascii-revealed", "true");
 
@@ -297,7 +312,12 @@ export function Preloader({ onDone, replay = false }: PreloaderProps) {
         window.clearTimeout(exitFallbackTimer);
       }
 
+      if (handoffTimer !== null) {
+        window.clearTimeout(handoffTimer);
+      }
+
       html.classList.remove("is-preloader-exiting");
+      html.classList.remove(PRELOADER_HANDOFF_CLASS);
     };
   }, [actualProgressRef, hasStartedAssetLoading, isCompleteRef, onDone, replay]);
 
