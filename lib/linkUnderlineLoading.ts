@@ -4,13 +4,15 @@
  * CSS holds the busy link's line full: already drawn under a hover or a tap, otherwise it draws in with
  * the regular 0.3s underline transition. Once that line is complete this loop takes over from it — the
  * line leaves to the right, draws back in from the left, and repeats. It runs as a Web Animation rather
- * than a CSS one so that when loading ends, the line can finish from wherever it is instead of snapping:
- * the loop's current value is read, the loop cancelled, and the line eased to its resting state.
+ * than a CSS one so that when loading ends, the line can leave from wherever it is: it fades out in
+ * place, mid-loop, and is never drawn full again as a finish. If the link is still hovered (a tap on a
+ * phone leaves it hovered) or focused, it rests without a line until the pointer or focus moves off,
+ * so the hover underline doesn't come back as the loading's last frame.
  */
 
 const HOLD_MS = 300;
 const LOOP_MS = 1300;
-const SETTLE_MS = 280;
+const FADE_MS = 240;
 // A soft in-out: each turn slows into the end of the line without lingering on an empty one.
 const EASE_IN_OUT = "cubic-bezier(0.65, 0, 0.35, 1)";
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -29,11 +31,33 @@ export function watchLinkUnderlineLoading(): () => void {
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const loops = new WeakMap<HTMLElement, Animation>();
+  const fades = new WeakMap<HTMLElement, Animation>();
+
+  const rest = (link: HTMLElement) => {
+    // Also cuts the regular underline transition that started underneath when busy ended, so no
+    // sliver of it shows once the fade lets go.
+    link.dataset.underlineRest = "";
+    const release = () => {
+      delete link.dataset.underlineRest;
+      link.removeEventListener("pointerleave", release);
+      link.removeEventListener("blur", release);
+    };
+
+    if (link.matches(":hover, :focus-visible")) {
+      link.addEventListener("pointerleave", release);
+      link.addEventListener("blur", release);
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(release));
+    }
+  };
 
   const start = (link: HTMLElement) => {
     if (loops.has(link) || reducedMotion.matches) {
       return;
     }
+
+    // Busy again while the last loading was fading out: drop that fade and its loop.
+    fades.get(link)?.finish();
 
     loops.set(
       link,
@@ -53,24 +77,22 @@ export function watchLinkUnderlineLoading(): () => void {
     }
 
     loops.delete(link);
-    const current = getComputedStyle(link, "::after");
-    const transform = current.transform;
-    const transformOrigin = current.transformOrigin;
-    loop.cancel();
-
-    const target = getComputedStyle(link, "::after").transform;
-    if (transform === target) {
-      return;
-    }
-
-    // Keep the line anchored where it is, so it grows or shrinks in place to its resting state.
-    link.animate(
-      [
-        { transform, transformOrigin },
-        { transform: target, transformOrigin },
-      ],
-      { duration: SETTLE_MS, easing: EASE_OUT, pseudoElement: "::after" },
-    );
+    // The loop keeps moving while the line fades out, so it simply dissolves mid-motion.
+    const fade = link.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: FADE_MS,
+      easing: EASE_OUT,
+      fill: "forwards",
+      pseudoElement: "::after",
+    });
+    fades.set(link, fade);
+    fade.onfinish = () => {
+      fades.delete(link);
+      if (link.getAttribute("aria-busy") !== "true") {
+        rest(link);
+      }
+      loop.cancel();
+      fade.cancel();
+    };
   };
 
   const observer = new MutationObserver((records) => {
@@ -95,6 +117,7 @@ export function watchLinkUnderlineLoading(): () => void {
     observer.disconnect();
     document.querySelectorAll<HTMLElement>(".link-underline").forEach((link) => {
       loops.get(link)?.cancel();
+      fades.get(link)?.cancel();
     });
   };
 }

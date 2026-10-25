@@ -795,6 +795,13 @@ img {
   transform: scale3d(1, 1, 1);
 }
 
+/* Loading just ended under the pointer/focus: rest without a line until it moves off, so the hover
+   underline doesn't reappear as the loading's last frame (set by lib/linkUnderlineLoading.ts). */
+.link-underline[data-underline-rest]::after {
+  transform: scale3d(0, 1, 1);
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link-underline::after,
   .text-link::after {
