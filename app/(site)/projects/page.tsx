@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import { ProjectsIndex } from "@/components/projects/ProjectsIndex/ProjectsIndex";
-import { parseProjectFilter, projects } from "@/content/projects";
+import { projects } from "@/content/projects";
 import { clampMetaDescription, SITE_NAME, SITE_OG_IMAGE } from "@/lib/metadata";
 import { PAGE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 import { breadcrumbEntity, jsonLd, PERSON_ID, WEBSITE_ID } from "@/lib/structuredData";
-
-type ProjectsIndexRouteProps = {
-  searchParams: Promise<{ type?: string | string[] }>;
-};
 
 const projectsDescription = clampMetaDescription(
   "Case studies by Alexander Yansons: Shopify e-commerce stores, film and photo portfolios, Next.js websites, and enterprise product UI built from Warsaw.",
@@ -35,9 +31,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndexRouteProps) {
-  const params = await searchParams;
-  const initialFilter = parseProjectFilter(params.type);
+/* Static on purpose (prerendered, CDN-cached, fully prefetchable): the `?type=` filter is client state,
+   applied by ProjectsIndex on mount. Reading `searchParams` here made every visit a server render. */
+export default function ProjectsIndexRoute() {
   const pageUrl = `${SITE_URL}/projects`;
   const collectionSchema = {
     "@type": "CollectionPage",
@@ -70,7 +66,7 @@ export default async function ProjectsIndexRoute({ searchParams }: ProjectsIndex
           __html: jsonLd(collectionSchema, breadcrumbEntity([{ name: "Work", path: "/projects" }])),
         }}
       />
-      <ProjectsIndex projects={projects} initialFilter={initialFilter} />
+      <ProjectsIndex projects={projects} />
     </>
   );
 }

@@ -30,6 +30,8 @@ import { NavbarWordmark } from "./NavbarWordmark";
 
 /** Routes the nav links lead to (Contact is `/#contact`, so home covers it). */
 const NAV_PREFETCH_ROUTES = ["/", "/projects", "/archive"] as const;
+/** Past the intro reveal (headline and details settle ~1.4s after the preloader hands off). */
+const NAV_PREFETCH_AFTER_INTRO_MS = 1600;
 
 export function NavbarGradientBlur() {
   return (
@@ -72,10 +74,10 @@ export function Navbar() {
   };
   const dismissMenuOnEscape = useEffectEvent(dismissMenu);
 
-  /* Warm every nav route once the page is idle after the preloader, so a tap swaps instantly instead
-     of waiting on the network (intent prefetch alone starts only ~100ms before a tap on touch). Off
-     the load path, so it doesn't compete with the page's own load; the RSC payloads are small and no
-     images are fetched. Skipped on save-data / 2g. */
+  /* Warm every nav route once the intro has played and the page is idle, so a tap swaps instantly
+     instead of waiting on the network (intent prefetch alone starts only ~100ms before a tap on touch).
+     Off the load path and after the reveal, so it never competes with either; ~15KB of RSC payloads,
+     no images. Skipped on save-data / 2g. */
   useEffect(() => {
     if (!preloaderComplete || !allowNavigatorRoutePrefetch()) {
       return;
@@ -89,13 +91,21 @@ export function Navbar() {
       }
     };
 
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(warm, { timeout: 2500 });
-      return () => window.cancelIdleCallback(id);
-    }
+    let idleId = 0;
+    const timer = window.setTimeout(() => {
+      if (typeof window.requestIdleCallback === "function") {
+        idleId = window.requestIdleCallback(warm, { timeout: 2000 });
+      } else {
+        warm();
+      }
+    }, NAV_PREFETCH_AFTER_INTRO_MS);
 
-    const id = window.setTimeout(warm, 1200);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(timer);
+      if (idleId) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
   }, [pathname, preloaderComplete, router]);
 
   useEffect(() => {

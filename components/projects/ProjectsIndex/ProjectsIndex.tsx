@@ -20,6 +20,7 @@ import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
 import {
   filterProjectsByType,
+  parseProjectFilter,
   PROJECT_FILTERS,
   projectFilterCounts,
   projectFilterLabel,
@@ -197,12 +198,11 @@ function writeFilterToUrl(filter: ProjectFilterId) {
 
 type ProjectsIndexProps = {
   projects: ProjectEntry[];
-  initialFilter?: ProjectFilterId;
 };
 
-export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndexProps) {
+export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const [view, setView] = useState<IndexView>("list");
-  const [filter, setFilter] = useState<ProjectFilterId>(initialFilter);
+  const [filter, setFilter] = useState<ProjectFilterId>("all");
   /* List ↔ grid runs out, then in: the shown view fades out on its own, and only then is the next one
      mounted. Mounting it under the fading one froze that layer on top while the list pinned and
      ScrollTrigger refreshed, then cut it away. */
@@ -421,6 +421,18 @@ export function ProjectsIndex({ projects, initialFilter = "all" }: ProjectsIndex
 
     previousRects.clear();
   }, [view, visibleProjects, visibleSlugs]);
+
+  /* The page is prerendered (static, CDN-cached, prefetchable), so a shared or reloaded `?type=` filter
+     is picked up here, before the first hydrated paint; the list's entrance is still held then. */
+  useLayoutEffect(() => {
+    const fromUrl = parseProjectFilter(new URLSearchParams(window.location.search).get("type"));
+    if (fromUrl === "all") {
+      return;
+    }
+
+    setFilter(fromUrl);
+    setActiveSlug(filterProjectsByType(projects, fromUrl)[0]?.slug ?? "");
+  }, [projects]);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia(MOBILE_MQ);
