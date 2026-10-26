@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const studioIskraProject: ProjectEntry = {
   slug: "studio-iskra",
-  orderIndex: 2,
+  orderIndex: 3,
   title: "STUDIO ISKRA",
   cardDescriptor: "PHOTO STUDIO",
   category: "portfolio",
