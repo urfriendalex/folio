@@ -32,6 +32,9 @@ export function RouteTransition() {
 
     previousPathnameRef.current = pathname;
     const html = document.documentElement;
+    const main = document.querySelector<HTMLElement>("main[data-app-main]");
+    const dimmed = main ? Number.parseFloat(getComputedStyle(main).opacity) : Number.NaN;
+    html.style.setProperty("--route-enter-from", String(Number.isFinite(dimmed) ? dimmed : 0.4));
     setRoutePending(null);
     html.classList.add(ROUTE_ENTER_CLASS);
 
