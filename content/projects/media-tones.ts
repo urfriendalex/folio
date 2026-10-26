@@ -104,5 +104,10 @@ export const projectMediaTones: Record<string, string> = {
   "/projects/studio-iskra/media-05.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAM0lEQVR42mN49+7N1atXL1289PnzZ4b///9/+fL1+/fvQAaI8+3b11+/fkE5P378gMgAAJFQLeLMUUXAAAAAAElFTkSuQmCC",
   "/projects/studio-iskra/media-06.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAOElEQVR42g3HMQ7AMAgDQP7/ymxZKqVSC4ktMO1tZ5kJgGRJ5hEEN870yyR19xM+1rSq+nOIe78fvTAuilJC+WIAAAAASUVORK5CYII=",
   "/projects/studio-iskra/media-07-poster.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAO0lEQVR42gXBQQrAMAgEQP//vRSESoUE8dwmiKunzlBVyS3XGAAoM919zbm/lyJCVZn5nE3dbWaPSAE/cnIr2HejckEAAAAASUVORK5CYII=",
-  "/projects/studio-iskra/thumbnail.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAMElEQVR42mP4AwN///5l+Pfv33swADIY/v//f/3atcuXLwMZIJmPH95/+vjh379/ALMMLe9dQPs9AAAAAElFTkSuQmCC"
+  "/projects/studio-iskra/thumbnail.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAMElEQVR42mP4AwN///5l+Pfv33swADIY/v//f/3atcuXLwMZIJmPH95/+vjh379/ALMMLe9dQPs9AAAAAElFTkSuQmCC",
+  "/projects/y2k-warsaw/media-01-poster.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR42gE0AMv/AMjJydPT0vPy8O/v7QCWiIisnZyLf3iVi4IAknp5l3t5Ujs2TDkzANjKxsW8s7J/eYVTT0hXHRq97tiiAAAAAElFTkSuQmCC",
+  "/projects/y2k-warsaw/media-04.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR42gE0AMv/AMG4rsS5q87Iwefn6ACNhHiKeGSViYm7t9IAhoB4enFksKqk/f3/AKylm5mThr66sv///0Z3IMBWpiThAAAAAElFTkSuQmCC",
+  "/projects/y2k-warsaw/media-06-poster.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAKklEQVR42mN4fPP442uH/4MBw+kt0zcsbvj67TuI8+v7jx/ff0Bl/iMBAFzDLIDOWNn8AAAAAElFTkSuQmCC",
+  "/projects/y2k-warsaw/media-09.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR42gE0AMv/AKaekrOqoLGlmbeplwB1al1+eXKFfXCNemIAmZmXlpSTpJ6Wr6mgALi4t62trbq6utTU1NfWHWhBHqZ1AAAAAElFTkSuQmCC",
+  "/projects/y2k-warsaw/thumbnail.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR42gE0AMv/AMjIyNPT0vPy8O/v7QCWiIirnJyLf3iVi4IAknp5mHt5Ujs2TDkzANjKxsW8s7J+eYVTT0fAHRZOzbh4AAAAAElFTkSuQmCC"
 };
