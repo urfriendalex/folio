@@ -375,4 +375,104 @@ export const curatedProjectMedia = {
       }
     ]
   },
+  "full-course-studio": {
+    thumbnail: {
+      desktop: {
+        poster: "/projects/full-course-studio/thumbnail.png",
+        video: "/projects/full-course-studio/thumbnail.mp4",
+        width: 1956,
+        height: 1048,
+      },
+    },
+    media: [
+      {
+        kind: "video",
+        alt: "Full Course Studio homepage, from the ASCII hero into the work section",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-01.mp4",
+          poster: "/projects/full-course-studio/media-01-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Hover on navigation, service rows, the liquid button, and arrow links",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-02.mp4",
+          poster: "/projects/full-course-studio/media-02-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "ASCII figure controls for colour, detail, size, and the next form",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-03.mp4",
+          poster: "/projects/full-course-studio/media-03-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Dark mode, with the atmosphere gradient shifting to the night palette",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-04.mp4",
+          poster: "/projects/full-course-studio/media-04-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Language switch from English to Polish, then Russian",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-05.mp4",
+          poster: "/projects/full-course-studio/media-05-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Service micro-animations for ads, content, and websites",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-06.mp4",
+          poster: "/projects/full-course-studio/media-06-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Footer wordmark: glyphs scatter under the pointer, then the press changes the pose",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-07.mp4",
+          poster: "/projects/full-course-studio/media-07-poster.png",
+          width: 1956,
+          height: 1048,
+        },
+      },
+      {
+        kind: "video",
+        alt: "Mobile homepage, ASCII controls, a service animation, and the footer wordmark tap",
+        loop: true,
+        desktop: {
+          src: "/projects/full-course-studio/media-08.mp4",
+          poster: "/projects/full-course-studio/media-08-poster.png",
+          width: 780,
+          height: 1680,
+        },
+      },
+    ],
+  },
 } satisfies Record<string, ProjectCuratedMedia>;

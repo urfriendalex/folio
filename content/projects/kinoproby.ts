@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const kinoprobyProject: ProjectEntry = {
   slug: "kinoproby",
-  orderIndex: 8,
+  orderIndex: 9,
   title: "KINOPROBY",
   cardDescriptor: "FILM PORTFOLIO",
   category: "portfolio",

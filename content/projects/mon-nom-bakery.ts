@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const monNomBakeryProject: ProjectEntry = {
   slug: "mon-nom-bakery",
-  orderIndex: 5,
+  orderIndex: 6,
   title: "MON NOM BAKERY",
   cardDescriptor: "WEBSITE + MENU",
   category: "product",

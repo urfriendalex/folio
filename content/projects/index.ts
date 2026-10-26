@@ -13,6 +13,7 @@ export {
 
 import { axirosAxfAxessProject } from "./axiros-axf-axess";
 import { dianaMilkanovaProject } from "./diana-milkanova";
+import { fullCourseStudioProject } from "./full-course-studio";
 import { kinoprobyProject } from "./kinoproby";
 import { linaTsapovaProject } from "./lina-tsapova";
 import { lumanoProject } from "./lumano";
@@ -26,6 +27,7 @@ import { y2kWarsawProject } from "./y2k-warsaw";
 
 const projectEntries = [
   y2kWarsawProject,
+  fullCourseStudioProject,
   lumanoProject,
   monNomBakeryProject,
   linaTsapovaProject,
