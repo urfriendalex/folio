@@ -7,8 +7,8 @@ export const curatedProjectMedia = {
   "y2k-warsaw": {
     "thumbnail": {
       "desktop": {
-        "poster": "/projects/y2k-warsaw/thumbnail-v2.png",
-        "video": "/projects/y2k-warsaw/thumbnail-v2.mp4",
+        "poster": "/projects/y2k-warsaw/thumbnail-v3.png",
+        "video": "/projects/y2k-warsaw/thumbnail-v3.mp4",
         "width": 1956,
         "height": 1048
       }
@@ -19,8 +19,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW desktop scroll from the homepage through new arrivals, a product, and the cart",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-01-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-01-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-01-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-01-poster-v3.png",
           "width": 1956,
           "height": 1048
         }
@@ -30,8 +30,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW desktop header collapsing on scroll, then opening again",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-02-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-02-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-02-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-02-poster-v3.png",
           "width": 1956,
           "height": 1048
         }
@@ -41,8 +41,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW desktop brands menu opening and closing",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-03-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-03-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-03-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-03-poster-v3.png",
           "width": 1956,
           "height": 1048
         }
@@ -52,8 +52,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW desktop add to cart and cart drawer",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-05-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-05-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-05-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-05-poster-v3.png",
           "width": 1956,
           "height": 1048
         }
@@ -63,8 +63,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW mobile scroll from the homepage through new arrivals, a product, and the cart",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-06-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-06-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-06-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-06-poster-v3.png",
           "width": 780,
           "height": 1680
         }
@@ -74,8 +74,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW mobile menu opening and closing",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-07-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-07-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-07-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-07-poster-v3.png",
           "width": 780,
           "height": 1680
         }
@@ -85,8 +85,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW mobile brands list expanding in the menu",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-08-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-08-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-08-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-08-poster-v3.png",
           "width": 780,
           "height": 1680
         }
@@ -96,8 +96,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW mobile filter drawer opening and closing",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-10-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-10-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-10-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-10-poster-v3.png",
           "width": 780,
           "height": 1680
         }
@@ -107,8 +107,8 @@ export const curatedProjectMedia = {
         "alt": "Y2K WARSAW mobile add to cart and cart drawer",
         "loop": true,
         "desktop": {
-          "src": "/projects/y2k-warsaw/media-11-v2.mp4",
-          "poster": "/projects/y2k-warsaw/media-11-poster-v2.png",
+          "src": "/projects/y2k-warsaw/media-11-v3.mp4",
+          "poster": "/projects/y2k-warsaw/media-11-poster-v3.png",
           "width": 780,
           "height": 1680
         }
