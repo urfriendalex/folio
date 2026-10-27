@@ -27,9 +27,16 @@ export const projectMediaOrderIndexBySlug: Partial<
 > = {
   "y2k-warsaw": {
     "media-01.mp4": 1,
-    "media-06.mp4": 2,
-    "media-04.png": 3,
-    "media-09.png": 4,
+    "media-02.mp4": 2,
+    "media-03.mp4": 3,
+    "media-05.mp4": 4,
+    "media-06.mp4": 5,
+    "media-07.mp4": 6,
+    "media-08.mp4": 7,
+    "media-10.mp4": 8,
+    "media-11.mp4": 9,
+    "media-04.png": 10,
+    "media-09.png": 11,
   },
   "full-course-studio": {
     "media-01.mp4": 1,

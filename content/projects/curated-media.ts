@@ -27,11 +27,88 @@ export const curatedProjectMedia = {
       },
       {
         "kind": "video",
+        "alt": "Y2K WARSAW desktop header collapsing on scroll, then opening again",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-02.mp4",
+          "poster": "/projects/y2k-warsaw/media-02-poster.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW desktop brands menu opening and closing",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-03.mp4",
+          "poster": "/projects/y2k-warsaw/media-03-poster.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW desktop add to cart and cart drawer",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-05.mp4",
+          "poster": "/projects/y2k-warsaw/media-05-poster.png",
+          "width": 1956,
+          "height": 1048
+        }
+      },
+      {
+        "kind": "video",
         "alt": "Y2K WARSAW mobile scroll from the homepage through new arrivals, a product, and the cart",
         "loop": true,
         "desktop": {
           "src": "/projects/y2k-warsaw/media-06.mp4",
           "poster": "/projects/y2k-warsaw/media-06-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile menu opening and closing",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-07.mp4",
+          "poster": "/projects/y2k-warsaw/media-07-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile brands list expanding in the menu",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-08.mp4",
+          "poster": "/projects/y2k-warsaw/media-08-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile filter drawer opening and closing",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-10.mp4",
+          "poster": "/projects/y2k-warsaw/media-10-poster.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Y2K WARSAW mobile add to cart and cart drawer",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/y2k-warsaw/media-11.mp4",
+          "poster": "/projects/y2k-warsaw/media-11-poster.png",
           "width": 780,
           "height": 1680
         }

@@ -9,7 +9,7 @@ export const y2kWarsawProject: ProjectEntry = {
   category: "ecommerce",
   descriptor: "Shopify storefront for a Warsaw vintage shop",
   year: "2026",
-  lastModified: "2026-10-22",
+  lastModified: "2026-10-27",
   role: "Design + Development",
   technologies: ["Shopify"],
   shortDescription:
