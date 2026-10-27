@@ -9,20 +9,20 @@ export const fullCourseStudioProject: ProjectEntry = {
   category: "portfolio",
   descriptor: "Custom site for a Warsaw restaurant studio",
   year: "2026",
-  lastModified: "2026-10-23",
+  lastModified: "2026-10-26",
   role: "Design + Development",
   technologies: ["Next.js", "React", "GSAP", "Lenis", "Tailwind CSS"],
   shortDescription:
-    "Custom site for Full Course Studio, launched 20 October 2026, with an ASCII figure, hover motion, and English, Polish, and Russian.",
+    "Custom site for Full Course Studio, launched 20 October 2026, with a preloader, morphing ASCII forms, and English, Polish, and Russian.",
   description:
     "A custom site for Full Course Studio, a Warsaw practice for marketing, content, websites, and ordering for cafés, bakeries, and restaurants. Launched 20 October 2026.",
   overview:
-    "The page opens on an ASCII figure and the line \"Digital solutions and marketing for cafés and restaurants.\" Services, two published projects, the studio, and contact follow on the same page. A six-dot control on the figure opens colour, detail, size, pause, and next form. Dark mode remaps the atmosphere gradients. The footer wordmark is a canvas: a pointer over it scatters the glyphs, and a press changes the pose. A tap does the same on a phone. The footer also switches English, Polish, and Russian. Search and answer-engine files on the live site include a canonical URL, hreflang, JSON-LD, a sitemap, robots.txt, and llms.txt.",
+    "A preloader plays first: the navigation chips appear, move into the bar, and the page is revealed. The hero is an ASCII figure that morphs between pastry forms, beside the line \"Digital solutions and marketing for cafés and restaurants.\" Services, two published projects, the studio, and contact follow on the same page. Opening a service plays a short phone scene. A control on the figure sets colour, detail, size, pause, and the next form. Dark mode remaps the atmosphere gradients. The footer wordmark is a canvas: a pointer over it scatters the glyphs, and a press changes the pose. A tap does the same on a phone. The footer also switches English, Polish, and Russian. Search and answer-engine files on the live site include a canonical URL, hreflang, JSON-LD, a sitemap, robots.txt, and llms.txt.",
   roleSummary: "Design and development of the studio site.",
   responsibilities: [
     "Design and frontend build",
-    "ASCII figure and its controls",
-    "Hover states and service motion",
+    "Preloader and morphing ASCII figure",
+    "Hover states and service scenes",
     "Light and dark atmosphere gradients",
     "English, Polish, and Russian",
     "Metadata, structured data, sitemap, and llms.txt",
@@ -44,13 +44,14 @@ export const fullCourseStudioProject: ProjectEntry = {
       "The response is served by Next.js on Vercel. The client bundle includes GSAP, ScrollTrigger, and Lenis. Styling is Tailwind utilities with CSS modules. The hero figure, founder tiles, contact field, and footer wordmark are canvas. English and Polish text uses Host Grotesk; Russian uses Golos Text. Newsreader, DM Mono, and Doto are loaded for serif lines, labels, and numerals.",
   },
   features: [
-    "ASCII hero figure with colour, detail, size, pause, and next form",
+    "Preloader: navigation chips appear, move into place, then the page is revealed",
+    "ASCII hero that morphs between pastry forms, with colour, detail, size, pause, and next form",
     "Hover on navigation, service rows, arrow links, and a liquid button",
     "Optional dark mode with a separate atmosphere palette",
     "Drifting gradients on the contact stage",
     "Footer wordmark that scatters under the pointer and changes pose on press",
     "English, Polish, and Russian",
-    "Short motion pieces for ads, content, and websites",
+    "Phone scenes for ads, content, and websites",
     "Canonical URL, hreflang, JSON-LD, sitemap, robots.txt, and llms.txt",
   ],
   impact: {

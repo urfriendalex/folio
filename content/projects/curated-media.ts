@@ -387,7 +387,7 @@ export const curatedProjectMedia = {
     media: [
       {
         kind: "video",
-        alt: "Full Course Studio homepage, from the ASCII hero into the work section",
+        alt: "Preloader, then the hero figure morphing through pastry forms",
         loop: true,
         desktop: {
           src: "/projects/full-course-studio/media-01.mp4",
@@ -398,7 +398,7 @@ export const curatedProjectMedia = {
       },
       {
         kind: "video",
-        alt: "Hover on navigation, service rows, the liquid button, and arrow links",
+        alt: "Hover on navigation, the call button, and the work links",
         loop: true,
         desktop: {
           src: "/projects/full-course-studio/media-02.mp4",
@@ -409,7 +409,7 @@ export const curatedProjectMedia = {
       },
       {
         kind: "video",
-        alt: "ASCII figure controls for colour, detail, size, and the next form",
+        alt: "Mark settings for colour, detail, size, and the next pastry form",
         loop: true,
         desktop: {
           src: "/projects/full-course-studio/media-03.mp4",
@@ -442,7 +442,7 @@ export const curatedProjectMedia = {
       },
       {
         kind: "video",
-        alt: "Service micro-animations for ads, content, and websites",
+        alt: "Service scenes: a search ad, a social post, and a café menu on a phone",
         loop: true,
         desktop: {
           src: "/projects/full-course-studio/media-06.mp4",
@@ -464,7 +464,7 @@ export const curatedProjectMedia = {
       },
       {
         kind: "video",
-        alt: "Mobile homepage, ASCII controls, a service animation, and the footer wordmark tap",
+        alt: "Mobile preloader, mark settings, the ads phone scene, and a footer wordmark tap",
         loop: true,
         desktop: {
           src: "/projects/full-course-studio/media-08.mp4",
