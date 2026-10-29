@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const y2kWarsawProject: ProjectEntry = {
   slug: "y2k-warsaw",
-  orderIndex: 2,
+  orderIndex: 3,
   title: "Y2K WARSAW",
   cardDescriptor: "VINTAGE STORE",
   category: "ecommerce",

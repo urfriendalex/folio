@@ -3,7 +3,7 @@ import { generatedProjectMedia } from "./generated-media";
 
 export const fullCourseStudioProject: ProjectEntry = {
   slug: "full-course-studio",
-  orderIndex: 1,
+  orderIndex: 5,
   title: "FULL COURSE STUDIO",
   cardDescriptor: "STUDIO SITE",
   category: "portfolio",
