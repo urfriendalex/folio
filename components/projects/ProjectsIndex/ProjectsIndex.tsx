@@ -116,8 +116,11 @@ const FILTER_MOVE_S = 0.48;
 const FILTER_ENTER_S = 0.32;
 const FILTER_ENTER_WINDOW_S = 0.42;
 const FILTER_ENTER_STAGGER_MAX_S = 0.12;
+/** List ↔ grid: card images leave before the titles move and return after they land. */
+const VIEW_MORPH_MEDIA_OUT_S = 0.18;
+const VIEW_MORPH_MEDIA_IN_S = 0.32;
 
-/** Names the on-screen items (and their titles) so a list ↔ grid view transition can pair card and row by slug. */
+/** Names the titles of on-screen items so a list ↔ grid view transition can pair card and row by slug. */
 function tagViewMorphNodes(root: HTMLElement | null, only?: Set<string>) {
   const tagged = new Set<string>();
   const viewportHeight = window.innerHeight;
@@ -129,8 +132,6 @@ function tagViewMorphNodes(root: HTMLElement | null, only?: Set<string>) {
       return;
     }
 
-    node.style.viewTransitionName = `work-item-${slug}`;
-    node.style.setProperty("view-transition-class", "work-item");
     const title = node.querySelector<HTMLElement>("[data-view-morph-title]");
     if (title) {
       title.style.viewTransitionName = `work-title-${slug}`;
@@ -142,8 +143,12 @@ function tagViewMorphNodes(root: HTMLElement | null, only?: Set<string>) {
   return tagged;
 }
 
+function viewMorphMedia(root: HTMLElement | null) {
+  return Array.from(root?.querySelectorAll<HTMLElement>("[data-view-morph-media]") ?? []);
+}
+
 function clearViewMorphNodes(root: HTMLElement | null) {
-  root?.querySelectorAll<HTMLElement>("[data-slug], [data-view-morph-title]").forEach((node) => {
+  root?.querySelectorAll<HTMLElement>("[data-view-morph-title]").forEach((node) => {
     node.style.viewTransitionName = "";
     node.style.removeProperty("view-transition-class");
   });
@@ -255,6 +260,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const [filterMotion, setFilterMotion] = useState(false);
   /** List ↔ grid runs as a view transition where supported; the CSS entrance stays off while it plays. */
   const [viewMorph, setViewMorph] = useState(false);
+  const viewMorphRunningRef = useRef(false);
   /** Viewport rects of items that survive a filter switch, keyed by slug, read once by the filter motion. */
   const filterFromRectsRef = useRef(new Map<string, DOMRect>());
   const filterExitRef = useRef<{ tween: gsap.core.Tween; nodes: HTMLElement[] } | null>(null);
@@ -1294,33 +1300,66 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     }
 
     if (!reducedMotion && typeof document.startViewTransition === "function") {
+      if (viewMorphRunningRef.current) {
+        return;
+      }
+      viewMorphRunningRef.current = true;
+
+      /* Text only: card images clear out before the titles move (grid → list) and come back after they
+         land (list → grid), so a picture never sits over the list mid-move. */
       const root = indexBodyRef.current;
-      clearViewMorphNodes(root);
-      const tagged = tagViewMorphNodes(root);
       const fromView = view;
-      document.documentElement.setAttribute("data-work-morph", "");
+      const toGrid = isGridView(next);
 
-      const transition = document.startViewTransition(() => {
+      const morph = () => {
         clearViewMorphNodes(root);
-        flushSync(() => {
-          if (fromView === "list") {
-            releaseListPin();
-          }
-          setFilterMotion(false);
-          setViewMorph(true);
-          setEntered(true);
-          swapScrollRef.current = true;
-          setView(next);
-        });
-        // Only pair what was on screen before; anything else simply fades in with the page.
-        tagViewMorphNodes(indexBodyRef.current, tagged);
-      });
+        const tagged = tagViewMorphNodes(root);
+        document.documentElement.setAttribute("data-work-morph", "");
 
-      void transition.finished.finally(() => {
-        clearViewMorphNodes(indexBodyRef.current);
-        document.documentElement.removeAttribute("data-work-morph");
-        setViewMorph(false);
-      });
+        const transition = document.startViewTransition(() => {
+          clearViewMorphNodes(root);
+          flushSync(() => {
+            if (fromView === "list") {
+              releaseListPin();
+            }
+            setFilterMotion(false);
+            setViewMorph(true);
+            setEntered(true);
+            swapScrollRef.current = true;
+            setView(next);
+          });
+          const body = indexBodyRef.current;
+          if (toGrid) {
+            gsap.set(viewMorphMedia(body), { autoAlpha: 0 });
+          }
+          // Only pair what was on screen before; anything else simply fades in with the page.
+          tagViewMorphNodes(body, tagged);
+        });
+
+        void transition.finished.finally(() => {
+          const body = indexBodyRef.current;
+          clearViewMorphNodes(body);
+          document.documentElement.removeAttribute("data-work-morph");
+          viewMorphRunningRef.current = false;
+          setViewMorph(false);
+          if (toGrid) {
+            gsap.to(viewMorphMedia(body), {
+              autoAlpha: 1,
+              duration: VIEW_MORPH_MEDIA_IN_S,
+              ease: "power1.out",
+              stagger: 0.03,
+              clearProps: "opacity,visibility",
+            });
+          }
+        });
+      };
+
+      const outgoingMedia = toGrid ? [] : viewMorphMedia(root);
+      if (outgoingMedia.length) {
+        gsap.to(outgoingMedia, { autoAlpha: 0, duration: VIEW_MORPH_MEDIA_OUT_S, ease: "power1.in", onComplete: morph });
+      } else {
+        morph();
+      }
       return;
     }
 
