@@ -422,12 +422,18 @@
 .page[data-filter-motion="true"] .row .identity,
 .page[data-filter-motion="true"] .row .descriptor,
 .page[data-filter-motion="true"] .row .year,
-.page[data-filter-motion="true"] .row::before {
+.page[data-filter-motion="true"] .row::before,
+.page[data-view-morph="true"] .staggerItem,
+.page[data-view-morph="true"] .row .identity,
+.page[data-view-morph="true"] .row .descriptor,
+.page[data-view-morph="true"] .row .year,
+.page[data-view-morph="true"] .row::before {
   animation: none;
 }
 
 .table[data-outgoing="true"] .row::before,
-.page[data-filter-motion="true"] .row::before {
+.page[data-filter-motion="true"] .row::before,
+.page[data-view-morph="true"] .row::before {
   clip-path: inset(0 0 0 0);
 }
 

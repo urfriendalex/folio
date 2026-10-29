@@ -14,7 +14,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
@@ -116,6 +116,38 @@ const FILTER_MOVE_S = 0.48;
 const FILTER_ENTER_S = 0.32;
 const FILTER_ENTER_WINDOW_S = 0.42;
 const FILTER_ENTER_STAGGER_MAX_S = 0.12;
+
+/** Names the on-screen items (and their titles) so a list ↔ grid view transition can pair card and row by slug. */
+function tagViewMorphNodes(root: HTMLElement | null, only?: Set<string>) {
+  const tagged = new Set<string>();
+  const viewportHeight = window.innerHeight;
+
+  root?.querySelectorAll<HTMLElement>("[data-slug]").forEach((node) => {
+    const slug = node.dataset.slug ?? "";
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom <= 0 || rect.top >= viewportHeight || (only && !only.has(slug))) {
+      return;
+    }
+
+    node.style.viewTransitionName = `work-item-${slug}`;
+    node.style.setProperty("view-transition-class", "work-item");
+    const title = node.querySelector<HTMLElement>("[data-view-morph-title]");
+    if (title) {
+      title.style.viewTransitionName = `work-title-${slug}`;
+      title.style.setProperty("view-transition-class", "work-title");
+    }
+    tagged.add(slug);
+  });
+
+  return tagged;
+}
+
+function clearViewMorphNodes(root: HTMLElement | null) {
+  root?.querySelectorAll<HTMLElement>("[data-slug], [data-view-morph-title]").forEach((node) => {
+    node.style.viewTransitionName = "";
+    node.style.removeProperty("view-transition-class");
+  });
+}
 /** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
 const VIEW_INDEX_STAGGER_MS = 60;
 const VIEW_INDEX_RULE_MS = 640;
@@ -221,6 +253,8 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const swapScrollRef = useRef(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMotion, setFilterMotion] = useState(false);
+  /** List ↔ grid runs as a view transition where supported; the CSS entrance stays off while it plays. */
+  const [viewMorph, setViewMorph] = useState(false);
   /** Viewport rects of items that survive a filter switch, keyed by slug, read once by the filter motion. */
   const filterFromRectsRef = useRef(new Map<string, DOMRect>());
   const filterExitRef = useRef<{ tween: gsap.core.Tween; nodes: HTMLElement[] } | null>(null);
@@ -1259,6 +1293,37 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       return;
     }
 
+    if (!reducedMotion && typeof document.startViewTransition === "function") {
+      const root = indexBodyRef.current;
+      clearViewMorphNodes(root);
+      const tagged = tagViewMorphNodes(root);
+      const fromView = view;
+      document.documentElement.setAttribute("data-work-morph", "");
+
+      const transition = document.startViewTransition(() => {
+        clearViewMorphNodes(root);
+        flushSync(() => {
+          if (fromView === "list") {
+            releaseListPin();
+          }
+          setFilterMotion(false);
+          setViewMorph(true);
+          setEntered(true);
+          swapScrollRef.current = true;
+          setView(next);
+        });
+        // Only pair what was on screen before; anything else simply fades in with the page.
+        tagViewMorphNodes(indexBodyRef.current, tagged);
+      });
+
+      void transition.finished.finally(() => {
+        clearViewMorphNodes(indexBodyRef.current);
+        document.documentElement.removeAttribute("data-work-morph");
+        setViewMorph(false);
+      });
+      return;
+    }
+
     if (reducedMotion) {
       pendingViewRef.current = null;
       setPendingView(null);
@@ -1657,6 +1722,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       data-entered={entered ? "true" : undefined}
       data-enter-ready={enterReady ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
+      data-view-morph={viewMorph ? "true" : undefined}
       data-list-layout={isList ? "true" : undefined}
       data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}
       style={{ "--preview-intro-delay": `${previewIntroDelayMs / 1000}s` } as CSSProperties}
@@ -1745,7 +1811,9 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                     ref={isList ? (node) => setRowNode(project.slug, node) : undefined}
                   >
                     <span className={styles.identity}>
-                      <span className={styles.name}>{project.title}</span>
+                      <span className={styles.name} data-view-morph-title="">
+                        {project.title}
+                      </span>
                       <span className={styles.descriptorMobile}>{project.descriptor}</span>
                     </span>
                     <span className={styles.descriptor}>{project.descriptor}</span>

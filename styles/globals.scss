@@ -949,3 +949,42 @@ textarea {
     --header-height: 4rem;
   }
 }
+
+/* Work index list ↔ grid (ProjectsIndex): each on-screen card morphs into its row and back, titles glide
+   between the two, and everything else crossfades. Pseudo-elements live on the root, so this can't sit in
+   the component module. */
+:root[data-work-morph]::view-transition-group(*) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-move);
+}
+
+:root[data-work-morph]::view-transition-old(root),
+:root[data-work-morph]::view-transition-new(root) {
+  animation-duration: 260ms;
+}
+
+/* A card and a row have nothing in common in shape, so neither snapshot scales: the box clips them at
+   their own size, the card folds up into the row's strip (or unrolls out of it), and they trade late. */
+:root[data-work-morph]::view-transition-group(*.work-item) {
+  overflow: clip;
+}
+
+:root[data-work-morph]::view-transition-old(*.work-item) {
+  animation-duration: 380ms;
+}
+
+:root[data-work-morph]::view-transition-new(*.work-item) {
+  animation-delay: 220ms;
+  animation-duration: 300ms;
+}
+
+/* Stretching a snapshot to its moving box balloons titles and smears rows into grey slabs. */
+:root[data-work-morph]::view-transition-old(*.work-item),
+:root[data-work-morph]::view-transition-new(*.work-item),
+:root[data-work-morph]::view-transition-old(*.work-title),
+:root[data-work-morph]::view-transition-new(*.work-title) {
+  width: auto;
+  height: auto;
+  object-fit: none;
+  object-position: left top;
+}
