@@ -136,8 +136,8 @@ export const curatedProjectMedia = {
   "lumano": {
     "thumbnail": {
       "desktop": {
-        "poster": "/projects/lumano/thumbnail.png",
-        "video": "/projects/lumano/thumbnail.mp4",
+        "poster": "/projects/lumano/thumbnail-v2.png",
+        "video": "/projects/lumano/thumbnail-v2.mp4",
         "width": 1956,
         "height": 1048
       }
@@ -145,67 +145,99 @@ export const curatedProjectMedia = {
     "media": [
       {
         "kind": "video",
-        "alt": "Lumano live landing with animated typography and jewelry",
+        "alt": "Lumano desktop catalogue switching between Fragmento, Mesa, and Polaris, then scrolling into shop collections",
         "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-01.mp4",
-          "poster": "/projects/lumano/media-01-poster.png",
-          "width": 1920,
-          "height": 1080
+          "src": "/projects/lumano/media-01-v2.mp4",
+          "poster": "/projects/lumano/media-01-poster-v2.png",
+          "width": 1956,
+          "height": 1048
         }
       },
       {
         "kind": "video",
-        "alt": "Lumano live storefront landing scroll",
+        "alt": "Lumano desktop categories and info menus, then a search for ring",
         "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-02.mp4",
-          "poster": "/projects/lumano/media-02-poster.png",
-          "width": 1920,
-          "height": 1080
-        }
-      },
-      {
-        "kind": "image",
-        "alt": "Lumano storefront homepage",
-        "desktop": {
-          "src": "/projects/lumano/media-03.png",
+          "src": "/projects/lumano/media-02-v2.mp4",
+          "poster": "/projects/lumano/media-02-poster-v2.png",
           "width": 1956,
           "height": 1048
         }
       },
       {
-        "kind": "image",
-        "alt": "Lumano configurable product collection",
+        "kind": "video",
+        "alt": "Lumano desktop silver rings collection with the availability filter, a scroll, and a product-card hover",
+        "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-04.png",
+          "src": "/projects/lumano/media-03-v2.mp4",
+          "poster": "/projects/lumano/media-03-poster-v2.png",
           "width": 1956,
           "height": 1048
         }
       },
       {
-        "kind": "image",
-        "alt": "Lumano customized product page",
+        "kind": "video",
+        "alt": "Lumano desktop Fragmento ring: size 13, the size guide, and add to cart",
+        "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-05.png",
+          "src": "/projects/lumano/media-04-v2.mp4",
+          "poster": "/projects/lumano/media-04-poster-v2.png",
           "width": 1956,
           "height": 1048
         }
       },
       {
-        "kind": "image",
-        "alt": "Lumano brand story page",
+        "kind": "video",
+        "alt": "Lumano desktop about page, from the story through the footer",
+        "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-06.png",
+          "src": "/projects/lumano/media-05-v2.mp4",
+          "poster": "/projects/lumano/media-05-poster-v2.png",
           "width": 1956,
           "height": 1048
         }
       },
       {
-        "kind": "image",
-        "alt": "Lumano responsive mobile storefront",
+        "kind": "video",
+        "alt": "Lumano mobile film hero scrolling into the Fragmento catalogue",
+        "loop": true,
         "desktop": {
-          "src": "/projects/lumano/media-07.png",
+          "src": "/projects/lumano/media-06-v2.mp4",
+          "poster": "/projects/lumano/media-06-poster-v2.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lumano mobile menu opening into the categories list",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-07-v2.mp4",
+          "poster": "/projects/lumano/media-07-poster-v2.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lumano mobile Fragmento page: size guide and add to cart",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-08-v2.mp4",
+          "poster": "/projects/lumano/media-08-poster-v2.png",
+          "width": 780,
+          "height": 1680
+        }
+      },
+      {
+        "kind": "video",
+        "alt": "Lumano mobile search for silver, with suggestions and products",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-09-v2.mp4",
+          "poster": "/projects/lumano/media-09-poster-v2.png",
           "width": 780,
           "height": 1680
         }
