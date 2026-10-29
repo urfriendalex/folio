@@ -109,6 +109,13 @@ const PREVIEW_LERP = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 140;
 const VIEW_ENTER_STAGGER_CAP = 8;
+/* Filter switch: leavers fade out first, then stayers glide to their new slot while newcomers cascade in.
+   The cascade spreads over a fixed window, so two cards land one after the other rather than as one. */
+const FILTER_EXIT_S = 0.16;
+const FILTER_MOVE_S = 0.48;
+const FILTER_ENTER_S = 0.32;
+const FILTER_ENTER_WINDOW_S = 0.42;
+const FILTER_ENTER_STAGGER_MAX_S = 0.12;
 /** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
 const VIEW_INDEX_STAGGER_MS = 60;
 const VIEW_INDEX_RULE_MS = 640;
@@ -214,6 +221,9 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const swapScrollRef = useRef(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMotion, setFilterMotion] = useState(false);
+  /** Viewport rects of items that survive a filter switch, keyed by slug, read once by the filter motion. */
+  const filterFromRectsRef = useRef(new Map<string, DOMRect>());
+  const filterExitRef = useRef<{ tween: gsap.core.Tween; nodes: HTMLElement[] } | null>(null);
   const [toolbarFaded, setToolbarFaded] = useState(false);
   const [previewDismissed, setPreviewDismissed] = useState(false);
   const [previewIntroDone, setPreviewIntroDone] = useState(false);
@@ -1334,17 +1344,66 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     return () => window.clearTimeout(id);
   }, [view, layoutEpoch, leaving, reducedMotion]);
 
+  const filterItemNodes = () =>
+    Array.from(
+      (isList ? tableRef.current : gridRef.current)?.querySelectorAll<HTMLElement>("[data-slug]") ?? [],
+    );
+
   const applyFilter = (next: ProjectFilterId) => {
-    if (next !== filter) {
-      const nextProjects = filterProjectsByType(projects, next);
+    setFilterMenuOpen(false);
+
+    const pendingExit = filterExitRef.current;
+    if (pendingExit) {
+      // A newer pick replaces the exit in flight; its leavers come back before we measure again.
+      pendingExit.tween.kill();
+      gsap.set(pendingExit.nodes, { autoAlpha: 1 });
+      filterExitRef.current = null;
+    }
+
+    if (next === filter) {
+      return;
+    }
+
+    const nextProjects = filterProjectsByType(projects, next);
+    const nextSlugs = new Set(nextProjects.map((project) => project.slug));
+
+    const commit = () => {
+      filterExitRef.current = null;
+      const fromRects = new Map<string, DOMRect>();
+      filterItemNodes().forEach((node) => {
+        const slug = node.dataset.slug;
+        if (slug && nextSlugs.has(slug)) {
+          fromRects.set(slug, node.getBoundingClientRect());
+        }
+      });
+      filterFromRectsRef.current = fromRects;
       setFilterMotion(true);
       setFilter(next);
       writeFilterToUrl(next);
       setActiveSlug(nextProjects[0]?.slug ?? "");
-      scrollToTop({ force: true });
+    };
+
+    scrollToTop({ force: true });
+
+    const leaving = reducedMotion
+      ? []
+      : filterItemNodes().filter((node) => !nextSlugs.has(node.dataset.slug ?? ""));
+
+    if (!leaving.length) {
+      commit();
+      return;
     }
 
-    setFilterMenuOpen(false);
+    filterExitRef.current = {
+      nodes: leaving,
+      tween: gsap.to(leaving, {
+        autoAlpha: 0,
+        duration: FILTER_EXIT_S,
+        ease: "power1.in",
+        overwrite: true,
+        onComplete: commit,
+      }),
+    };
   };
 
   useLayoutEffect(() => {
@@ -1352,11 +1411,13 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       return;
     }
 
-    const items = isList
-      ? tableRef.current?.querySelectorAll(`.${styles.row}`)
-      : gridRef.current?.querySelectorAll(`.${styles.staggerItem}`);
+    const items = Array.from(
+      (isList ? tableRef.current : gridRef.current)?.querySelectorAll<HTMLElement>("[data-slug]") ?? [],
+    );
+    const fromRects = filterFromRectsRef.current;
+    filterFromRectsRef.current = new Map();
 
-    if (!items?.length) {
+    if (!items.length) {
       setFilterMotion(false);
       setEntered(true);
       return;
@@ -1369,26 +1430,46 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       return;
     }
 
-    const tween = gsap.fromTo(
-      items,
-      { autoAlpha: 0, y: 10 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.28,
-        ease: "power2.out",
-        stagger: 0.04,
-        overwrite: true,
-        onComplete: () => {
-          gsap.set(items, { clearProps: "transform" });
-          setFilterMotion(false);
-          setEntered(true);
-        },
+    const staying = items.filter((node) => fromRects.has(node.dataset.slug ?? ""));
+    const entering = items.filter((node) => !fromRects.has(node.dataset.slug ?? ""));
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        gsap.set(items, { clearProps: "transform" });
+        setFilterMotion(false);
+        setEntered(true);
       },
-    );
+    });
+
+    staying.forEach((node) => {
+      const from = fromRects.get(node.dataset.slug ?? "");
+      const to = node.getBoundingClientRect();
+      if (!from) {
+        return;
+      }
+      const x = from.left - to.left;
+      const y = from.top - to.top;
+      gsap.set(node, { autoAlpha: 1 });
+      if (Math.abs(x) >= 1 || Math.abs(y) >= 1) {
+        timeline.fromTo(node, { x, y }, { x: 0, y: 0, duration: FILTER_MOVE_S, ease: "power3.inOut" }, 0);
+      }
+    });
+
+    if (entering.length) {
+      const stagger =
+        entering.length > 1
+          ? Math.min(FILTER_ENTER_STAGGER_MAX_S, FILTER_ENTER_WINDOW_S / (entering.length - 1))
+          : 0;
+      timeline.fromTo(
+        entering,
+        { autoAlpha: 0, y: 10 },
+        { autoAlpha: 1, y: 0, duration: FILTER_ENTER_S, ease: "power2.out", stagger },
+        // Newcomers start once the stayers are underway, so the move reads first.
+        staying.length ? FILTER_MOVE_S * 0.35 : 0,
+      );
+    }
 
     return () => {
-      tween.kill();
+      timeline.kill();
       gsap.set(items, { autoAlpha: 1, clearProps: "transform" });
     };
   }, [filterMotion, isList, reducedMotion, visibleSlugs]);
@@ -1643,6 +1724,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                     key={project.slug}
                     href={`/projects/${project.slug}`}
                     className={styles.row}
+                    data-slug={project.slug}
                     role="listitem"
                     style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
                     data-active={
@@ -1687,6 +1769,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                 <div
                   key={project.slug}
                   className={styles.staggerItem}
+                  data-slug={project.slug}
                   style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
                 >
                   <ProjectCard

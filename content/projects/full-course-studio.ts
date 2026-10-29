@@ -6,7 +6,7 @@ export const fullCourseStudioProject: ProjectEntry = {
   orderIndex: 1,
   title: "FULL COURSE STUDIO",
   cardDescriptor: "STUDIO SITE",
-  category: "portfolio",
+  categories: ["gastro"],
   descriptor: "Custom site for a Warsaw restaurant studio",
   year: "2026",
   lastModified: "2026-10-26",

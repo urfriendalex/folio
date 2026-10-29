@@ -6,7 +6,7 @@ export const pastelMuseProject: ProjectEntry = {
   orderIndex: 5,
   title: "PHOTO DAY EXPERIENCE",
   cardDescriptor: "WEBSITES SERIES",
-  category: "event",
+  categories: ["studio"],
   descriptor: "Photo-day experience website series",
   year: "2026",
   lastModified: "2026-10-23",

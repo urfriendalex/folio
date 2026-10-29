@@ -6,7 +6,7 @@ export const kinoprobyProject: ProjectEntry = {
   orderIndex: 9,
   title: "KINOPROBY",
   cardDescriptor: "FILM PORTFOLIO",
-  category: "portfolio",
+  categories: ["studio"],
   descriptor: "Website for a production studio / creative duo",
   year: "2019",
   lastModified: "2026-10-22",

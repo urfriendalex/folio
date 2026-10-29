@@ -59,7 +59,7 @@ export type ProjectMediaSlot = {
   orderIndex?: number;
 };
 
-export type ProjectCategory = "ecommerce" | "portfolio" | "product" | "event";
+export type ProjectCategory = "ecommerce" | "gastro" | "portfolio" | "studio";
 
 export type ProjectEntry = {
   slug: string;
@@ -68,8 +68,9 @@ export type ProjectEntry = {
   title: string;
   /** Concise category shown beside the title in project cards. */
   cardDescriptor: string;
-  /** What a hiring visitor is looking for — drives the Work index filter. */
-  category: ProjectCategory;
+  /** What a hiring visitor is looking for — drives the Work index filter. A project can sit under
+      several (a restaurant shop is both gastro and e-commerce); leave empty to show it only under All. */
+  categories: ProjectCategory[];
   /** Fuller project summary shown on the project page. */
   descriptor: string;
   year: string;
