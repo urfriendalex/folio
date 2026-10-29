@@ -9,7 +9,7 @@ export const lumanoProject: ProjectEntry = {
   category: "ecommerce",
   descriptor: "Custom Shopify storefront and configurable theme system",
   year: "2026",
-  lastModified: "2026-10-22",
+  lastModified: "2026-10-29",
   role: "Solo Designer & Developer",
   technologies: ["Shopify", "Liquid", "JavaScript", "CSS"],
   shortDescription:
