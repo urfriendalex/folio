@@ -21,6 +21,7 @@ export function ExploreMediaLink({ href, ariaLabel, children }: ExploreMediaLink
       ref={cue.setRef}
       href={href}
       className={styles.media}
+      data-view-morph-media=""
       aria-label={ariaLabel}
       nativeNavigation
       onPointerEnter={cue.onPointerEnter}

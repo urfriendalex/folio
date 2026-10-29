@@ -6,7 +6,7 @@ export const y2kWarsawProject: ProjectEntry = {
   orderIndex: 0,
   title: "Y2K WARSAW",
   cardDescriptor: "VINTAGE STORE",
-  category: "ecommerce",
+  categories: ["ecommerce"],
   descriptor: "Shopify storefront for a Warsaw vintage shop",
   year: "2026",
   lastModified: "2026-10-27",

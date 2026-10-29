@@ -949,3 +949,39 @@ textarea {
     --header-height: 4rem;
   }
 }
+
+/* Work index list ↔ grid (ProjectsIndex): card images clear out (or wait) in the component, so here only
+   titles glide between card and row while the rest of the text swaps quickly, old out before new in.
+   Pseudo-elements live on the root, so this can't sit in the component module. */
+:root[data-work-morph]::view-transition-group(*) {
+  animation-duration: 480ms;
+  animation-timing-function: var(--ease-move);
+}
+
+:root[data-work-morph]::view-transition-old(root) {
+  animation-duration: 140ms;
+}
+
+:root[data-work-morph]::view-transition-new(root) {
+  animation-delay: 120ms;
+  animation-duration: 260ms;
+}
+
+/* Titles glide at their own size; stretching the snapshot to the moving box balloons the text. */
+:root[data-work-morph]::view-transition-old(*.work-title),
+:root[data-work-morph]::view-transition-new(*.work-title) {
+  width: auto;
+  height: auto;
+  object-fit: none;
+  object-position: left top;
+}
+
+/* A one-line row title and a wrapped card title differ in shape: hand over in the middle, not as an overlay. */
+:root[data-work-morph]::view-transition-old(*.work-title) {
+  animation-duration: 200ms;
+}
+
+:root[data-work-morph]::view-transition-new(*.work-title) {
+  animation-delay: 160ms;
+  animation-duration: 280ms;
+}

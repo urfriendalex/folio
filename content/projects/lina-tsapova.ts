@@ -6,7 +6,7 @@ export const linaTsapovaProject: ProjectEntry = {
   orderIndex: 10,
   title: "LINA TSAPOVA",
   cardDescriptor: "PHOTO PORTFOLIO",
-  category: "portfolio",
+  categories: ["portfolio"],
   descriptor: "Image-led Svelte portfolio with browser-native view transitions",
   year: "2026",
   lastModified: "2026-10-22",

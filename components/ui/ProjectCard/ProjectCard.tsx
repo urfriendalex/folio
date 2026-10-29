@@ -93,7 +93,7 @@ export function ProjectCard({
             <div className={styles.titleCluster}>
               <h3 className={styles.title} aria-label={displayTitle}>
                 <IntentPrefetchLink href={projectHref} className={styles.titleLink} nativeNavigation>
-                  <span className={styles.titlePrimary}>{project.title}</span>
+                  <span className={styles.titlePrimary} data-view-morph-title="">{project.title}</span>
                   <span className={styles.titleSeparator} aria-hidden="true">
                     |
                   </span>
