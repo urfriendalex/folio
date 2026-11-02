@@ -145,10 +145,37 @@ function morphRestOf(node: HTMLElement) {
   return Array.from(node.querySelectorAll<HTMLElement>("[data-work-morph-rest]"));
 }
 
+/* A cloned <video> comes back empty (no frame, no poster), so for a beat every card showed its fallback
+   or placeholder. Paint each one's current frame onto a canvas that takes its place in the clone. */
+function freezeGhostVideos(source: HTMLElement, ghost: HTMLElement) {
+  const live = source.querySelectorAll("video");
+  ghost.querySelectorAll("video").forEach((copy, index) => {
+    const video = live[index];
+    const canvas = document.createElement("canvas");
+    canvas.className = copy.className;
+    canvas.style.cssText = copy.style.cssText;
+    canvas.setAttribute("aria-hidden", "true");
+    if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      try {
+        canvas.getContext("2d")?.drawImage(video, 0, 0);
+      } catch {
+        // A cross-origin frame can't be read back; an empty canvas still beats a reloading video.
+      }
+    } else {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+    copy.replaceWith(canvas);
+  });
+}
+
 /** A frozen copy of the outgoing view, parked on top of the page and under the traveling names. */
 function createViewGhost(source: HTMLElement) {
   const rect = source.getBoundingClientRect();
   const ghost = source.cloneNode(true) as HTMLElement;
+  freezeGhostVideos(source, ghost);
 
   ghost.querySelectorAll<HTMLElement>("[id]").forEach((node) => {
     node.removeAttribute("id");
