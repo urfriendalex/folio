@@ -123,6 +123,12 @@ const VIEW_HANDOFF_CLEAR_S = 0.18;
 /** Names set off while the clear is finishing, so the hand-off reads as one motion. */
 const VIEW_HANDOFF_TRAVEL_AT_S = 0.1;
 const VIEW_HANDOFF_LAND_S = VIEW_HANDOFF_TRAVEL_AT_S + FILTER_MOVE_S;
+/* Into the list the beats stay apart: shared names travel alone, the other names follow once they
+   land, and only then does the list's own intro (rules, descriptors, years) run down the rows. */
+const VIEW_LIST_NAMES_WINDOW_S = 0.3;
+const VIEW_LIST_NAMES_STAGGER_MAX_S = 0.05;
+/** The intro wave starts while the last names are still settling, so it reads as one continuation. */
+const VIEW_LIST_WAVE_OVERLAP_S = 0.22;
 /** Descriptor / year settle once a row is in place. Same ease family as a filter arrival. */
 const VIEW_TEXT_REPLAY_S = 0.32;
 const VIEW_TEXT_REPLAY_Y = 4;
@@ -177,8 +183,9 @@ type ViewFlight = {
   touched: HTMLElement[];
 };
 
-/** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
+/** Keep in sync with `--index-stagger` / `--index-text-lag` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
 const VIEW_INDEX_STAGGER_MS = 60;
+const VIEW_INDEX_TEXT_LAG_MS = 40;
 const VIEW_INDEX_RULE_MS = 640;
 const VIEW_INDEX_RULE_DELAY_MS = 0;
 const VIEW_ENTER_DONE_MS =
@@ -1512,10 +1519,18 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       });
     });
 
-    const enterStart = next === "list" ? VIEW_HANDOFF_CLEAR_S : VIEW_HANDOFF_LAND_S - 0.06;
+    const toList = next === "list";
+    const enterStart = toList
+      ? shared.length
+        ? VIEW_HANDOFF_LAND_S
+        : VIEW_HANDOFF_CLEAR_S
+      : VIEW_HANDOFF_LAND_S - 0.06;
     const stagger =
       entering.length > 1
-        ? Math.min(FILTER_ENTER_STAGGER_MAX_S, FILTER_ENTER_WINDOW_S / (entering.length - 1))
+        ? Math.min(
+            toList ? VIEW_LIST_NAMES_STAGGER_MAX_S : FILTER_ENTER_STAGGER_MAX_S,
+            (toList ? VIEW_LIST_NAMES_WINDOW_S : FILTER_ENTER_WINDOW_S) / (entering.length - 1),
+          )
         : 0;
     if (entering.length) {
       touched.push(...entering);
@@ -1527,52 +1542,40 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       );
     }
 
-    /* Each row's text and rule wait until that row has landed, not until the last one has. */
-    const readyAt = (node: HTMLElement) => {
-      const index = entering.indexOf(node);
-      if (index === -1) {
-        return shared.includes(node) ? VIEW_HANDOFF_LAND_S : 0;
-      }
+    if (!toList) {
+      // Card images and captions follow the names in reading order, a beat apart.
+      replay.forEach((node) => {
+        const item = node.closest<HTMLElement>("[data-slug]");
+        const at = VIEW_HANDOFF_LAND_S - 0.06 + Math.max(0, shared.indexOf(item as HTMLElement)) * 0.03;
+        timeline.to(node, { opacity: 1, y: 0, duration: 0.36, ease: "power2.out" }, at);
+      });
+      return true;
+    }
 
-      return enterStart + index * stagger + FILTER_ENTER_S;
-    };
+    const namesIn = entering.length
+      ? enterStart + (entering.length - 1) * stagger + FILTER_ENTER_S - VIEW_LIST_WAVE_OVERLAP_S
+      : VIEW_HANDOFF_LAND_S;
+    const rows = Array.from(incoming.querySelectorAll<HTMLElement>("[role='list'] > [data-slug]"));
+    // Same rhythm as the first load: each row's rule draws, its text lands a beat later.
+    const waveAt = (row: HTMLElement | null) =>
+      namesIn +
+      (Math.min(Math.max(row ? rows.indexOf(row) : 0, 0), VIEW_ENTER_STAGGER_CAP) * VIEW_INDEX_STAGGER_MS) / 1000;
 
     replay.forEach((node) => {
-      const item = node.closest<HTMLElement>("[data-slug]");
-      /* Each item's details wait for its own name to land: list text per row, card images and
-         captions in reading order a beat apart. */
-      const at =
-        next === "list"
-          ? (item ? readyAt(item) : VIEW_HANDOFF_LAND_S) + 0.04
-          : VIEW_HANDOFF_LAND_S - 0.06 + Math.max(0, shared.indexOf(item as HTMLElement)) * 0.03;
-      timeline.to(
-        node,
-        {
-          opacity: 1,
-          y: 0,
-          duration: next === "list" ? VIEW_TEXT_REPLAY_S : 0.36,
-          ease: "power2.out",
-        },
-        at,
-      );
+      const at = waveAt(node.closest<HTMLElement>("[data-slug]")) + VIEW_INDEX_TEXT_LAG_MS / 1000;
+      timeline.to(node, { opacity: 1, y: 0, duration: VIEW_TEXT_REPLAY_S, ease: "power2.out" }, at);
     });
 
-    if (next === "list") {
-      const rows = Array.from(incoming.querySelectorAll<HTMLElement>("[role='list'] > [data-slug]"));
-      let last = 0;
-      rows.forEach((row) => {
-        const at = readyAt(row);
-        last = Math.max(last, at);
-        timeline.call(() => {
-          row.dataset.listArrive = "true";
-        }, [], at);
-      });
+    rows.forEach((row) => {
       timeline.call(() => {
-        rows.forEach((row) => {
-          delete row.dataset.listArrive;
-        });
-      }, [], last + VIEW_INDEX_RULE_MS / 1000 + 0.04);
-    }
+        row.dataset.listArrive = "true";
+      }, [], waveAt(row));
+    });
+    timeline.call(() => {
+      rows.forEach((row) => {
+        delete row.dataset.listArrive;
+      });
+    }, [], waveAt(rows.at(-1) ?? null) + VIEW_INDEX_RULE_MS / 1000 + 0.04);
 
     return true;
   };
