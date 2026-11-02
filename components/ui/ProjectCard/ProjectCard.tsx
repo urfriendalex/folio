@@ -94,16 +94,19 @@ export function ProjectCard({
               <h3 className={styles.title} aria-label={displayTitle}>
                 <IntentPrefetchLink href={projectHref} className={styles.titleLink} nativeNavigation>
                   <span className={styles.titlePrimary} data-view-morph-title="">{project.title}</span>
-                  <span className={styles.titleSeparator} aria-hidden="true">
+                  <span className={styles.titleSeparator} data-work-morph-rest="" aria-hidden="true">
                     |
                   </span>
-                  <span className={styles.titleSecondary}>{project.cardDescriptor}</span>
+                  <span className={styles.titleSecondary} data-work-morph-rest="">
+                    {project.cardDescriptor}
+                  </span>
                 </IntentPrefetchLink>
               </h3>
               {externalUrl ? (
                 <a
                   href={externalUrl}
                   className={styles.visit}
+                  data-work-morph-rest=""
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Visit ${project.title} (opens in a new tab)`}
@@ -117,7 +120,9 @@ export function ProjectCard({
                 </a>
               ) : null}
             </div>
-            <span className={styles.year}>{project.year}</span>
+            <span className={styles.year} data-work-morph-rest="">
+              {project.year}
+            </span>
           </div>
         </footer>
       </article>

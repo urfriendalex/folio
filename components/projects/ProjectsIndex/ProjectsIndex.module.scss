@@ -24,6 +24,21 @@
   min-width: 0;
 }
 
+/* Frozen outgoing view while list ↔ grid runs. Sits outside `.page`, so it must opt out of the
+   entrance keyframes or the clone redraws its rules and fades its type in from nothing. */
+.viewGhost .row::before,
+.viewGhost .staggerItem,
+.viewGhost .identity,
+.viewGhost .descriptor,
+.viewGhost .descriptorMobile,
+.viewGhost .year {
+  animation: none;
+}
+
+.viewGhost .row::before {
+  clip-path: inset(0 0 0 0);
+}
+
 .pinStage[data-list-pin="true"] {
   box-sizing: border-box;
   width: calc(100% + 2 * var(--content-padding-inline));
@@ -432,8 +447,7 @@
 }
 
 .table[data-outgoing="true"] .row::before,
-.page[data-filter-motion="true"] .row::before,
-.page[data-view-morph="true"] .row::before {
+.page[data-filter-motion="true"] .row::before {
   clip-path: inset(0 0 0 0);
 }
 
@@ -479,6 +493,17 @@
 .page[data-entered="true"] .row::before {
   animation: none;
   clip-path: inset(0 0 0 0);
+}
+
+/* Held shut in the snapshot, then drawn once the names have landed. */
+.page[data-entered="true"][data-view-morph="true"] .row::before {
+  animation: none;
+  clip-path: inset(0 100% 0 0);
+}
+
+.page[data-entered="true"] .row[data-list-arrive="true"]::before {
+  animation: indexRule var(--index-rule-ms) var(--ease-draw) both;
+  animation-delay: 0s;
 }
 
 .grid {
@@ -1014,8 +1039,11 @@
     animation-delay: 0ms;
   }
 
-  .row::before {
+  .row::before,
+  .page[data-entered="true"] .row[data-list-arrive="true"]::before,
+  .page[data-entered="true"][data-view-morph="true"] .row::before {
     animation: none;
+    opacity: 1;
     clip-path: inset(0 0 0 0);
   }
 
