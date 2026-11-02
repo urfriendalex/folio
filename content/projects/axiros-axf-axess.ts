@@ -6,7 +6,7 @@ export const axirosAxfAxessProject: ProjectEntry = {
   orderIndex: 11,
   title: "AXIROS: AXF / AXESS",
   cardDescriptor: "ENTERPRISE WEB PLATFORM",
-  category: "product",
+  categories: [],
   descriptor: "Telecom device-management platform (AXF JS framework / component library + AXESS)",
   year: "2019–2026",
   lastModified: "2026-10-22",

@@ -6,7 +6,7 @@ export const monNomBakeryProject: ProjectEntry = {
   orderIndex: 6,
   title: "MON NOM BAKERY",
   cardDescriptor: "WEBSITE + MENU",
-  category: "product",
+  categories: ["gastro"],
   descriptor: "Custom bilingual restaurant website and interactive menu experience",
   year: "2026",
   lastModified: "2026-10-22",

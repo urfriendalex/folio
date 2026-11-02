@@ -6,7 +6,7 @@ export const lumanoProject: ProjectEntry = {
   orderIndex: 0,
   title: "LUMANO",
   cardDescriptor: "E-COMMERCE STORE",
-  category: "ecommerce",
+  categories: ["ecommerce"],
   descriptor: "Custom Shopify storefront and configurable theme system",
   year: "2026",
   lastModified: "2026-10-22",

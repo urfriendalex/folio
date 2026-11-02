@@ -7,9 +7,9 @@ export type ProjectFilterId = "all" | ProjectCategory;
 export const PROJECT_FILTERS: { id: ProjectFilterId; label: string }[] = [
   { id: "all", label: "All" },
   { id: "ecommerce", label: "E-commerce" },
+  { id: "gastro", label: "Gastro" },
   { id: "portfolio", label: "Portfolios" },
-  { id: "product", label: "Product UI" },
-  { id: "event", label: "Events" },
+  { id: "studio", label: "Studios" },
 ];
 
 const FILTER_ALIASES: Record<string, ProjectFilterId> = {
@@ -19,15 +19,15 @@ const FILTER_ALIASES: Record<string, ProjectFilterId> = {
   shop: "ecommerce",
   shopify: "ecommerce",
   store: "ecommerce",
+  gastro: "gastro",
+  food: "gastro",
+  restaurant: "gastro",
+  hospitality: "gastro",
   portfolio: "portfolio",
   portfolios: "portfolio",
   creative: "portfolio",
-  product: "product",
-  "product-ui": "product",
-  saas: "product",
-  app: "product",
-  event: "event",
-  events: "event",
+  studio: "studio",
+  studios: "studio",
 };
 
 export function parseProjectFilter(value: string | string[] | undefined | null): ProjectFilterId {
@@ -48,20 +48,22 @@ export function filterProjectsByType(projects: ProjectEntry[], filter: ProjectFi
     return projects;
   }
 
-  return projects.filter((project) => project.category === filter);
+  return projects.filter((project) => project.categories.includes(filter));
 }
 
 export function projectFilterCounts(projects: ProjectEntry[]) {
   const counts = {
     all: projects.length,
     ecommerce: 0,
+    gastro: 0,
     portfolio: 0,
-    product: 0,
-    event: 0,
+    studio: 0,
   } satisfies Record<ProjectFilterId, number>;
 
   projects.forEach((project) => {
-    counts[project.category] += 1;
+    project.categories.forEach((category) => {
+      counts[category] += 1;
+    });
   });
 
   return counts;

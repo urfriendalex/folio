@@ -14,7 +14,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { ProjectMedia } from "@/components/media/ProjectMedia/ProjectMedia";
 import { IntentPrefetchLink } from "@/components/navigation/IntentPrefetchLink";
 import { ProjectCard } from "@/components/ui/ProjectCard/ProjectCard";
@@ -109,8 +109,110 @@ const PREVIEW_LERP = 0.2;
 const PREVIEW_CROSSFADE_MS = 280;
 const VIEW_LEAVE_MS = 140;
 const VIEW_ENTER_STAGGER_CAP = 8;
-/** Keep in sync with `--index-stagger` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
+/* Filter switch: on the list, leavers slide up as the rows beneath close the gap (the reverse of
+   newcomers sliding down). Elsewhere they fade, then stayers glide while newcomers cascade in.
+   The cascade spreads over a fixed window, so two cards land one after the other rather than as one. */
+const FILTER_EXIT_S = 0.16;
+const FILTER_MOVE_S = 0.48;
+const FILTER_ENTER_S = 0.32;
+const FILTER_ENTER_WINDOW_S = 0.42;
+const FILTER_ENTER_STAGGER_MAX_S = 0.12;
+/* List ↔ grid runs in three beats so old and new never share the screen: everything but the names
+   clears out, the names travel, then the next view's details arrive around them. */
+const VIEW_HANDOFF_CLEAR_S = 0.18;
+/** Names set off while the clear is finishing, so the hand-off reads as one motion. */
+const VIEW_HANDOFF_TRAVEL_AT_S = 0.1;
+const VIEW_HANDOFF_LAND_S = VIEW_HANDOFF_TRAVEL_AT_S + FILTER_MOVE_S;
+/* Into the list the beats stay apart: shared names travel alone, the other names follow once they
+   land, and only then does the list's own intro (rules, descriptors, years) run down the rows. */
+const VIEW_LIST_NAMES_WINDOW_S = 0.3;
+const VIEW_LIST_NAMES_STAGGER_MAX_S = 0.05;
+/** The intro wave starts while the last names are still settling, so it reads as one continuation. */
+const VIEW_LIST_WAVE_OVERLAP_S = 0.22;
+/** Descriptor / year settle once a row is in place. Same ease family as a filter arrival. */
+const VIEW_TEXT_REPLAY_S = 0.32;
+const VIEW_TEXT_REPLAY_Y = 4;
+
+function rectOnScreen(rect: DOMRect) {
+  return rect.bottom > 12 && rect.top < window.innerHeight - 12;
+}
+
+function morphTitleOf(node: HTMLElement) {
+  return node.querySelector<HTMLElement>("[data-view-morph-title]");
+}
+
+function morphRestOf(node: HTMLElement) {
+  return Array.from(node.querySelectorAll<HTMLElement>("[data-work-morph-rest]"));
+}
+
+/* A cloned <video> comes back empty (no frame, no poster), so for a beat every card showed its fallback
+   or placeholder. Paint each one's current frame onto a canvas that takes its place in the clone. */
+function freezeGhostVideos(source: HTMLElement, ghost: HTMLElement) {
+  const live = source.querySelectorAll("video");
+  ghost.querySelectorAll("video").forEach((copy, index) => {
+    const video = live[index];
+    const canvas = document.createElement("canvas");
+    canvas.className = copy.className;
+    canvas.style.cssText = copy.style.cssText;
+    canvas.setAttribute("aria-hidden", "true");
+    if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      try {
+        canvas.getContext("2d")?.drawImage(video, 0, 0);
+      } catch {
+        // A cross-origin frame can't be read back; an empty canvas still beats a reloading video.
+      }
+    } else {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+    copy.replaceWith(canvas);
+  });
+}
+
+/** A frozen copy of the outgoing view, parked on top of the page and under the traveling names. */
+function createViewGhost(source: HTMLElement) {
+  const rect = source.getBoundingClientRect();
+  const ghost = source.cloneNode(true) as HTMLElement;
+  freezeGhostVideos(source, ghost);
+
+  ghost.querySelectorAll<HTMLElement>("[id]").forEach((node) => {
+    node.removeAttribute("id");
+  });
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.inert = true;
+  ghost.removeAttribute("data-hovering");
+  ghost.querySelectorAll<HTMLElement>("[data-active]").forEach((node) => {
+    node.removeAttribute("data-active");
+  });
+  ghost.style.position = "fixed";
+  ghost.style.top = `${rect.top}px`;
+  ghost.style.left = `${rect.left}px`;
+  ghost.style.width = `${rect.width}px`;
+  ghost.style.height = `${rect.height}px`;
+  ghost.style.margin = "0";
+  ghost.style.pointerEvents = "none";
+  ghost.style.zIndex = "30";
+  ghost.style.overflow = "visible";
+  ghost.style.transform = "none";
+  ghost.style.opacity = "0";
+  // Rows bleed by a custom property set on `.page`; the clone sits outside it and would shift inward.
+  ghost.style.setProperty("--bleed", getComputedStyle(source).getPropertyValue("--bleed"));
+
+  return ghost;
+}
+
+type ViewFlight = {
+  tween: gsap.core.Timeline;
+  ghosts: HTMLElement[];
+  travelers: HTMLElement[];
+  touched: HTMLElement[];
+};
+
+/** Keep in sync with `--index-stagger` / `--index-text-lag` / `--index-rule-ms` / `--index-rule-delay` in the SCSS. */
 const VIEW_INDEX_STAGGER_MS = 60;
+const VIEW_INDEX_TEXT_LAG_MS = 40;
 const VIEW_INDEX_RULE_MS = 640;
 const VIEW_INDEX_RULE_DELAY_MS = 0;
 const VIEW_ENTER_DONE_MS =
@@ -214,6 +316,12 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const swapScrollRef = useRef(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMotion, setFilterMotion] = useState(false);
+  /** List ↔ grid: CSS entrance stays off while the handoff moves names and brings the rest in. */
+  const [viewMorph, setViewMorph] = useState(false);
+  const viewFlightRef = useRef<ViewFlight | null>(null);
+  /** Viewport rects of items that survive a filter switch, keyed by slug, read once by the filter motion. */
+  const filterFromRectsRef = useRef(new Map<string, DOMRect>());
+  const filterExitRef = useRef<{ tween: gsap.core.Animation; nodes: HTMLElement[] } | null>(null);
   const [toolbarFaded, setToolbarFaded] = useState(false);
   const [previewDismissed, setPreviewDismissed] = useState(false);
   const [previewIntroDone, setPreviewIntroDone] = useState(false);
@@ -1227,6 +1335,278 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     setListPinActive(false);
   };
 
+  const clearViewFlight = () => {
+    const flight = viewFlightRef.current;
+    if (!flight) {
+      return;
+    }
+
+    flight.tween.kill();
+    flight.ghosts.forEach((node) => node.remove());
+    flight.travelers.forEach((node) => node.remove());
+    gsap.set(flight.touched, { clearProps: "transform,opacity,visibility" });
+    viewFlightRef.current = null;
+    setViewMorph(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      const flight = viewFlightRef.current;
+      if (!flight) {
+        return;
+      }
+
+      flight.tween.kill();
+      flight.ghosts.forEach((node) => node.remove());
+      flight.travelers.forEach((node) => node.remove());
+      viewFlightRef.current = null;
+    };
+  }, []);
+
+  /**
+   * List ↔ grid, for whatever happens to be on screen.
+   * Names that are visible in both views travel. Anything that won't be in the next view fades out.
+   * Anything that wasn't on screen slides in the way a filter arrival does. On the list, descriptors
+   * and years settle after the rows are in place, and the rules draw then.
+   */
+  const handoffIndexView = (next: IndexView) => {
+    clearViewFlight();
+
+    const fromView = view;
+    const outgoing = (fromView === "list" ? tableRef.current : gridRef.current);
+    const pane = indexBodyRef.current?.getBoundingClientRect();
+    if (!outgoing || !pane) {
+      return false;
+    }
+
+    const oldTitleRects = new Map<string, DOMRect>();
+    /* The traveling copy lives on <body>, outside the row or card it inherits type from, so it carries
+       the origin's computed type with it; otherwise it renders wider and wraps differently in flight. */
+    const oldTitleType = new Map<string, Partial<CSSStyleDeclaration>>();
+    outgoing.querySelectorAll<HTMLElement>("[data-slug]").forEach((node) => {
+      if (!rectOnScreen(node.getBoundingClientRect())) {
+        return;
+      }
+
+      const title = morphTitleOf(node);
+      const slug = node.dataset.slug ?? "";
+      if (!title || !slug) {
+        return;
+      }
+
+      const titleRect = title.getBoundingClientRect();
+      if (rectOnScreen(titleRect)) {
+        oldTitleRects.set(slug, titleRect);
+        const style = getComputedStyle(title);
+        oldTitleType.set(slug, {
+          color: style.color,
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          fontFeatureSettings: style.fontFeatureSettings,
+          letterSpacing: style.letterSpacing,
+          lineHeight: style.lineHeight,
+          textTransform: style.textTransform,
+        });
+      }
+    });
+
+    const ghosts = [createViewGhost(outgoing)];
+    const preview = fromView === "list" ? dockedPreviewRef.current ?? followPreviewRef.current : null;
+    if (preview && rectOnScreen(preview.getBoundingClientRect())) {
+      ghosts.push(createViewGhost(preview));
+    }
+
+    ghosts.forEach((ghost) => {
+      ghost.classList.add(styles.viewGhost);
+      document.body.appendChild(ghost);
+    });
+
+    flushSync(() => {
+      if (fromView === "list") {
+        releaseListPin();
+      }
+      setDesktopHovering(false);
+      setFilterMotion(false);
+      setViewMorph(true);
+      setEntered(true);
+      swapScrollRef.current = true;
+      setView(next);
+    });
+
+    const incoming = (next === "list" ? tableRef.current : gridRef.current);
+    if (!incoming) {
+      ghosts.forEach((ghost) => ghost.remove());
+      setViewMorph(false);
+      return true;
+    }
+
+    const shared: HTMLElement[] = [];
+    const entering: HTMLElement[] = [];
+    const itemSelector = next === "list" ? "[role='list'] > [data-slug]" : ":scope > [data-slug]";
+    incoming.querySelectorAll<HTMLElement>(itemSelector).forEach((node) => {
+      if (!rectOnScreen(node.getBoundingClientRect())) {
+        return;
+      }
+
+      const slug = node.dataset.slug ?? "";
+      const title = morphTitleOf(node);
+      const from = oldTitleRects.get(slug);
+      if (from && title && rectOnScreen(title.getBoundingClientRect())) {
+        shared.push(node);
+        return;
+      }
+
+      entering.push(node);
+    });
+
+    // Shared names leave the clone at once: their traveling copies take over in the same spot.
+    const sharedSlugs = new Set(shared.map((node) => node.dataset.slug ?? ""));
+    ghosts.forEach((ghost) => {
+      ghost.querySelectorAll<HTMLElement>("[data-view-morph-title]").forEach((title) => {
+        const slug = title.closest<HTMLElement>("[data-slug]")?.dataset.slug ?? "";
+        if (sharedSlugs.has(slug)) {
+          title.style.opacity = "0";
+        }
+      });
+    });
+
+    const travelers: HTMLElement[] = [];
+    const touched: HTMLElement[] = [];
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        travelers.forEach((node) => node.remove());
+        ghosts.forEach((node) => node.remove());
+        gsap.set(touched, { clearProps: "transform,opacity,visibility" });
+        viewFlightRef.current = null;
+        setViewMorph(false);
+      },
+    });
+    viewFlightRef.current = { tween: timeline, ghosts, travelers, touched };
+
+    gsap.set(ghosts, { opacity: 1 });
+    timeline.to(ghosts, { opacity: 0, duration: VIEW_HANDOFF_CLEAR_S, ease: "power1.in" }, 0);
+    timeline.set(ghosts, { display: "none" }, VIEW_HANDOFF_CLEAR_S);
+
+    shared.forEach((node) => {
+      const title = morphTitleOf(node);
+      const from = oldTitleRects.get(node.dataset.slug ?? "");
+      if (!title || !from) {
+        return;
+      }
+
+      const to = title.getBoundingClientRect();
+      const traveler = title.cloneNode(true) as HTMLElement;
+      traveler.style.position = "fixed";
+      traveler.style.left = "0";
+      traveler.style.top = "0";
+      traveler.style.margin = "0";
+      /* Start at the origin's width so a wrapped card title wraps the same, and widen (or narrow) to the
+         destination's in flight: any one-line ↔ two-line reflow happens while the name is moving. */
+      traveler.style.width = `${Math.ceil(from.width) + 1}px`;
+      traveler.style.maxWidth = "none";
+      traveler.style.whiteSpace = "normal";
+      traveler.style.display = "inline-block";
+      traveler.style.pointerEvents = "none";
+      traveler.style.zIndex = "40";
+      traveler.style.opacity = "1";
+      Object.assign(traveler.style, oldTitleType.get(node.dataset.slug ?? ""));
+      document.body.appendChild(traveler);
+      travelers.push(traveler);
+
+      gsap.set(title, { opacity: 0 });
+      gsap.set(traveler, {
+        x: Math.round(from.left),
+        y: Math.round(from.top),
+      });
+      touched.push(title);
+      timeline.to(
+        traveler,
+        {
+          x: Math.round(to.left),
+          y: Math.round(to.top),
+          width: Math.ceil(to.width) + 1,
+          duration: FILTER_MOVE_S,
+          ease: "power3.inOut",
+        },
+        VIEW_HANDOFF_TRAVEL_AT_S,
+      );
+      timeline.set(title, { opacity: 1 }, VIEW_HANDOFF_LAND_S);
+      timeline.set(traveler, { opacity: 0 }, VIEW_HANDOFF_LAND_S);
+    });
+
+    const replay: HTMLElement[] = [];
+    // Entering grid cards arrive whole once the names land; list rows still settle their text per row.
+    const holdText = next === "list" ? [...shared, ...entering] : shared;
+    holdText.forEach((node) => {
+      morphRestOf(node).forEach((rest) => {
+        gsap.set(rest, { opacity: 0, y: next === "list" ? VIEW_TEXT_REPLAY_Y : 0 });
+        touched.push(rest);
+        replay.push(rest);
+      });
+    });
+
+    const toList = next === "list";
+    const enterStart = toList
+      ? shared.length
+        ? VIEW_HANDOFF_LAND_S
+        : VIEW_HANDOFF_CLEAR_S
+      : VIEW_HANDOFF_LAND_S - 0.06;
+    const stagger =
+      entering.length > 1
+        ? Math.min(
+            toList ? VIEW_LIST_NAMES_STAGGER_MAX_S : FILTER_ENTER_STAGGER_MAX_S,
+            (toList ? VIEW_LIST_NAMES_WINDOW_S : FILTER_ENTER_WINDOW_S) / (entering.length - 1),
+          )
+        : 0;
+    if (entering.length) {
+      touched.push(...entering);
+      timeline.fromTo(
+        entering,
+        { autoAlpha: 0, y: 10 },
+        { autoAlpha: 1, y: 0, duration: FILTER_ENTER_S, ease: "power2.out", stagger },
+        enterStart,
+      );
+    }
+
+    if (!toList) {
+      // Card images and captions follow the names in reading order, a beat apart.
+      replay.forEach((node) => {
+        const item = node.closest<HTMLElement>("[data-slug]");
+        const at = VIEW_HANDOFF_LAND_S - 0.06 + Math.max(0, shared.indexOf(item as HTMLElement)) * 0.03;
+        timeline.to(node, { opacity: 1, y: 0, duration: 0.36, ease: "power2.out" }, at);
+      });
+      return true;
+    }
+
+    const namesIn = entering.length
+      ? enterStart + (entering.length - 1) * stagger + FILTER_ENTER_S - VIEW_LIST_WAVE_OVERLAP_S
+      : VIEW_HANDOFF_LAND_S;
+    const rows = Array.from(incoming.querySelectorAll<HTMLElement>("[role='list'] > [data-slug]"));
+    // Same rhythm as the first load: each row's rule draws, its text lands a beat later.
+    const waveAt = (row: HTMLElement | null) =>
+      namesIn +
+      (Math.min(Math.max(row ? rows.indexOf(row) : 0, 0), VIEW_ENTER_STAGGER_CAP) * VIEW_INDEX_STAGGER_MS) / 1000;
+
+    replay.forEach((node) => {
+      const at = waveAt(node.closest<HTMLElement>("[data-slug]")) + VIEW_INDEX_TEXT_LAG_MS / 1000;
+      timeline.to(node, { opacity: 1, y: 0, duration: VIEW_TEXT_REPLAY_S, ease: "power2.out" }, at);
+    });
+
+    rows.forEach((row) => {
+      timeline.call(() => {
+        row.dataset.listArrive = "true";
+      }, [], waveAt(row));
+    });
+    timeline.call(() => {
+      rows.forEach((row) => {
+        delete row.dataset.listArrive;
+      });
+    }, [], waveAt(rows.at(-1) ?? null) + VIEW_INDEX_RULE_MS / 1000 + 0.04);
+
+    return true;
+  };
+
   const requestIndexView = (next: IndexView) => {
     if (next === selectedView) {
       return;
@@ -1242,10 +1622,15 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     }
 
     if (isGridView(view) && isGridView(next)) {
+      clearViewFlight();
       previousGridRectsRef.current = captureGridRects();
       startTransition(() => {
         setView(next);
       });
+      return;
+    }
+
+    if (!reducedMotion && handoffIndexView(next)) {
       return;
     }
 
@@ -1334,17 +1719,103 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     return () => window.clearTimeout(id);
   }, [view, layoutEpoch, leaving, reducedMotion]);
 
+  const filterItemNodes = () =>
+    Array.from(
+      (isList ? tableRef.current : gridRef.current)?.querySelectorAll<HTMLElement>("[data-slug]") ?? [],
+    );
+
   const applyFilter = (next: ProjectFilterId) => {
-    if (next !== filter) {
-      const nextProjects = filterProjectsByType(projects, next);
+    setFilterMenuOpen(false);
+
+    const pendingExit = filterExitRef.current;
+    if (pendingExit) {
+      // A newer pick replaces the exit in flight; its rows come back before we measure again.
+      pendingExit.tween.kill();
+      gsap.set(pendingExit.nodes, { autoAlpha: 1, clearProps: "transform" });
+      filterExitRef.current = null;
+    }
+
+    if (next === filter) {
+      return;
+    }
+
+    const nextProjects = filterProjectsByType(projects, next);
+    const nextSlugs = new Set(nextProjects.map((project) => project.slug));
+
+    const commit = () => {
+      filterExitRef.current = null;
+      const fromRects = new Map<string, DOMRect>();
+      filterItemNodes().forEach((node) => {
+        const slug = node.dataset.slug;
+        if (slug && nextSlugs.has(slug)) {
+          fromRects.set(slug, node.getBoundingClientRect());
+        }
+      });
+      filterFromRectsRef.current = fromRects;
       setFilterMotion(true);
       setFilter(next);
       writeFilterToUrl(next);
       setActiveSlug(nextProjects[0]?.slug ?? "");
-      scrollToTop({ force: true });
+    };
+
+    scrollToTop({ force: true });
+
+    const leaving = reducedMotion
+      ? []
+      : filterItemNodes().filter((node) => !nextSlugs.has(node.dataset.slug ?? ""));
+
+    if (!leaving.length) {
+      commit();
+      return;
     }
 
-    setFilterMenuOpen(false);
+    if (!isList) {
+      filterExitRef.current = {
+        nodes: leaving,
+        tween: gsap.to(leaving, {
+          autoAlpha: 0,
+          duration: FILTER_EXIT_S,
+          ease: "power2.out",
+          overwrite: true,
+          onComplete: commit,
+        }),
+      };
+      return;
+    }
+
+    /* Slide each leaver up out of its slot while the rows below rise by the same amount, so the
+       list closes in one motion instead of fading and then jumping. */
+    const leavingSet = new Set(leaving);
+    const rows = filterItemNodes();
+    const timeline = gsap.timeline({ onComplete: commit });
+    let collapsed = 0;
+
+    rows.forEach((node) => {
+      const height = node.getBoundingClientRect().height;
+      if (leavingSet.has(node)) {
+        timeline.to(
+          node,
+          { y: -(collapsed + height), duration: FILTER_MOVE_S, ease: "power3.inOut", overwrite: "auto" },
+          0,
+        );
+        timeline.to(
+          node,
+          { autoAlpha: 0, duration: FILTER_MOVE_S * 0.85, ease: "power2.out", overwrite: "auto" },
+          0,
+        );
+        collapsed += height;
+        return;
+      }
+      if (collapsed > 0) {
+        timeline.to(
+          node,
+          { y: -collapsed, duration: FILTER_MOVE_S, ease: "power3.inOut", overwrite: true },
+          0,
+        );
+      }
+    });
+
+    filterExitRef.current = { nodes: rows, tween: timeline };
   };
 
   useLayoutEffect(() => {
@@ -1352,11 +1823,13 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       return;
     }
 
-    const items = isList
-      ? tableRef.current?.querySelectorAll(`.${styles.row}`)
-      : gridRef.current?.querySelectorAll(`.${styles.staggerItem}`);
+    const items = Array.from(
+      (isList ? tableRef.current : gridRef.current)?.querySelectorAll<HTMLElement>("[data-slug]") ?? [],
+    );
+    const fromRects = filterFromRectsRef.current;
+    filterFromRectsRef.current = new Map();
 
-    if (!items?.length) {
+    if (!items.length) {
       setFilterMotion(false);
       setEntered(true);
       return;
@@ -1369,26 +1842,50 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       return;
     }
 
-    const tween = gsap.fromTo(
-      items,
-      { autoAlpha: 0, y: 10 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.28,
-        ease: "power2.out",
-        stagger: 0.04,
-        overwrite: true,
-        onComplete: () => {
-          gsap.set(items, { clearProps: "transform" });
-          setFilterMotion(false);
-          setEntered(true);
-        },
+    /* Drop the exit slide before measuring, so the FLIP reads layout position, not the transform
+       that just closed the gap. */
+    gsap.set(items, { clearProps: "transform" });
+
+    const staying = items.filter((node) => fromRects.has(node.dataset.slug ?? ""));
+    const entering = items.filter((node) => !fromRects.has(node.dataset.slug ?? ""));
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        gsap.set(items, { clearProps: "transform" });
+        setFilterMotion(false);
+        setEntered(true);
       },
-    );
+    });
+
+    staying.forEach((node) => {
+      const from = fromRects.get(node.dataset.slug ?? "");
+      const to = node.getBoundingClientRect();
+      if (!from) {
+        return;
+      }
+      const x = from.left - to.left;
+      const y = from.top - to.top;
+      gsap.set(node, { autoAlpha: 1 });
+      if (Math.abs(x) >= 1 || Math.abs(y) >= 1) {
+        timeline.fromTo(node, { x, y }, { x: 0, y: 0, duration: FILTER_MOVE_S, ease: "power3.inOut" }, 0);
+      }
+    });
+
+    if (entering.length) {
+      const stagger =
+        entering.length > 1
+          ? Math.min(FILTER_ENTER_STAGGER_MAX_S, FILTER_ENTER_WINDOW_S / (entering.length - 1))
+          : 0;
+      timeline.fromTo(
+        entering,
+        { autoAlpha: 0, y: 10 },
+        { autoAlpha: 1, y: 0, duration: FILTER_ENTER_S, ease: "power2.out", stagger },
+        // Newcomers start once the stayers are underway, so the move reads first.
+        staying.length ? FILTER_MOVE_S * 0.35 : 0,
+      );
+    }
 
     return () => {
-      tween.kill();
+      timeline.kill();
       gsap.set(items, { autoAlpha: 1, clearProps: "transform" });
     };
   }, [filterMotion, isList, reducedMotion, visibleSlugs]);
@@ -1576,6 +2073,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       data-entered={entered ? "true" : undefined}
       data-enter-ready={enterReady ? "true" : undefined}
       data-filter-motion={filterMotion ? "true" : undefined}
+      data-view-morph={viewMorph ? "true" : undefined}
       data-list-layout={isList ? "true" : undefined}
       data-active-highlight-pending={activeHighlightPending && isList ? "true" : undefined}
       style={{ "--preview-intro-delay": `${previewIntroDelayMs / 1000}s` } as CSSProperties}
@@ -1643,6 +2141,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                     key={project.slug}
                     href={`/projects/${project.slug}`}
                     className={styles.row}
+                    data-slug={project.slug}
                     role="listitem"
                     style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
                     data-active={
@@ -1663,11 +2162,19 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                     ref={isList ? (node) => setRowNode(project.slug, node) : undefined}
                   >
                     <span className={styles.identity}>
-                      <span className={styles.name}>{project.title}</span>
-                      <span className={styles.descriptorMobile}>{project.descriptor}</span>
+                      <span className={styles.name} data-view-morph-title="">
+                        {project.title}
+                      </span>
+                      <span className={styles.descriptorMobile} data-work-morph-rest="">
+                        {project.descriptor}
+                      </span>
                     </span>
-                    <span className={styles.descriptor}>{project.descriptor}</span>
-                    <span className={styles.year}>{project.year}</span>
+                    <span className={styles.descriptor} data-work-morph-rest="">
+                      {project.descriptor}
+                    </span>
+                    <span className={styles.year} data-work-morph-rest="">
+                      {project.year}
+                    </span>
                   </IntentPrefetchLink>
                 );
               })}
@@ -1687,6 +2194,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
                 <div
                   key={project.slug}
                   className={styles.staggerItem}
+                  data-slug={project.slug}
                   style={{ "--item-index": Math.min(index, VIEW_ENTER_STAGGER_CAP) } as CSSProperties}
                 >
                   <ProjectCard
@@ -1718,6 +2226,8 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
               href={`/projects/${activeProject.slug}`}
               className={styles.preview}
               data-docked="true"
+              data-slug={activeProject.slug}
+              data-work-morph-rest=""
               data-intro={!previewIntroDone && !previewDismissed ? "true" : undefined}
               data-outgoing={leaving ? "true" : undefined}
               data-hidden={previewDismissed ? "true" : undefined}
