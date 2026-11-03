@@ -567,7 +567,6 @@
   transform: none;
   will-change: transform;
   box-shadow: var(--shadow-glass-md);
-  border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
   /* The swipe hint sits above the frame, outside it; the frame does the clipping instead. */
   overflow: visible;
   touch-action: none;
@@ -1076,26 +1075,24 @@
 
 .previewHint {
   position: absolute;
-  /* Docked on the preview's top edge, border to border, so none of the screenshot is covered. */
-  inset: auto -1px calc(100% + 1px);
+  /* Docked on the preview's top edge at its exact width, so none of the screenshot is covered. */
+  inset: auto 0 100%;
   z-index: 2;
   display: grid;
   pointer-events: none;
   /* Parent opacity would cut off the frost's backdrop, so frost and ink fade on their own. */
 }
 
-/* A strip square and hairlined like the filter panel, so the line reads in one go. */
+/* A square frosted strip, no border, so the line reads in one go and the page shows through blurred. */
 .previewHintFrost,
 .previewHintInk {
   grid-area: 1 / 1;
 }
 
 .previewHintFrost {
-  border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
-  border-bottom: 0;
-  background: color-mix(in srgb, var(--bg-color) 72%, transparent);
-  -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
-  backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
+  background: color-mix(in srgb, var(--bg-color) 46%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-glass-lg)) saturate(120%);
+  backdrop-filter: blur(var(--blur-glass-lg)) saturate(120%);
   animation: previewHintFrostFade 3.5s linear forwards;
 }
 
@@ -1123,16 +1120,14 @@
 
 @keyframes previewHintFrostFade {
   0%, 100% {
-    border-color: transparent;
     background: color-mix(in srgb, var(--bg-color) 0%, transparent);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
     backdrop-filter: blur(0px) saturate(100%);
   }
   15%, 85% {
-    border-color: color-mix(in srgb, var(--fg-color) 12%, transparent);
-    background: color-mix(in srgb, var(--bg-color) 72%, transparent);
-    -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
-    backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
+    background: color-mix(in srgb, var(--bg-color) 46%, transparent);
+    -webkit-backdrop-filter: blur(var(--blur-glass-lg)) saturate(120%);
+    backdrop-filter: blur(var(--blur-glass-lg)) saturate(120%);
   }
   100% { visibility: hidden; }
 }
