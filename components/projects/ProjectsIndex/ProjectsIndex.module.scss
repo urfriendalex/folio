@@ -1115,7 +1115,7 @@
 /* Points the way: keeps pushing toward the swipe for as long as the hint is up. */
 .previewHintArrow {
   display: inline-block;
-  animation: previewHintNudge 1s ease-in-out infinite;
+  animation: previewHintNudge 1.8s ease-in-out infinite;
 }
 
 @keyframes previewHintFrostFade {
