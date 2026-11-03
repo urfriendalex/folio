@@ -29,7 +29,7 @@ Values below assume a 16px root. All actual sizes use `rem`; user settings remai
 | Role | Size | Leading | Use |
 | --- | --- | --- | --- |
 | Caption | 11px | 1.25–1.35 | Short labels, years, status; never explanatory paragraphs |
-| Compact metadata | 12px | 1.35–1.5 | Hero facts and short support copy |
+| Compact metadata | 12px | 1.35–1.5 | Hero facts, short support copy, project names on narrow (two-column phone) cards |
 | Compact control | 13px | 1.25–1.5 | Navigation, mobile hero invitation, compact project names |
 | Secondary UI | 14px | 1.25–1.5 | Desktop project names, secondary links, short notes |
 | Reading text | 16px | 1.65 | FAQ answers and case-study prose |

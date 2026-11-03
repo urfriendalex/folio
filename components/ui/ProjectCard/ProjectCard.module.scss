@@ -247,6 +247,11 @@
   .year {
     display: none;
   }
+
+  /* One tier down so two names side by side stay calm; specific enough to beat the mobile rule below. */
+  .titleRow .title {
+    font-size: var(--type-meta-size);
+  }
 }
 
 @media (max-width: 48rem) {
