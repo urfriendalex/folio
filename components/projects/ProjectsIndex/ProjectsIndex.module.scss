@@ -568,6 +568,8 @@
   will-change: transform;
   box-shadow: var(--shadow-glass-md);
   border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+  /* The swipe hint sits above the frame, outside it; the frame does the clipping instead. */
+  overflow: visible;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -593,6 +595,7 @@
 .previewFrame {
   position: relative;
   display: block;
+  overflow: hidden;
   width: 100%;
   height: 100%;
   transform-origin: center center;
@@ -1073,22 +1076,23 @@
 
 .previewHint {
   position: absolute;
-  inset: auto 0 0;
+  /* Docked on the preview's top edge, border to border, so none of the screenshot is covered. */
+  inset: auto -1px calc(100% + 1px);
   z-index: 2;
   display: grid;
   pointer-events: none;
   /* Parent opacity would cut off the frost's backdrop, so frost and ink fade on their own. */
 }
 
-/* A strip along the bottom edge, square and hairlined like the filter panel, so the screenshot's
-   middle stays visible and the line reads in one go. */
+/* A strip square and hairlined like the filter panel, so the line reads in one go. */
 .previewHintFrost,
 .previewHintInk {
   grid-area: 1 / 1;
 }
 
 .previewHintFrost {
-  border-top: 1px solid color-mix(in srgb, var(--fg-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg-color) 12%, transparent);
+  border-bottom: 0;
   background: color-mix(in srgb, var(--bg-color) 72%, transparent);
   -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
@@ -1111,21 +1115,21 @@
   animation: previewHintInkFade 3.5s linear forwards;
 }
 
-/* Points the way: a few short pushes toward the swipe, then rest. */
+/* Points the way: keeps pushing toward the swipe for as long as the hint is up. */
 .previewHintArrow {
   display: inline-block;
-  animation: previewHintNudge 900ms var(--ease-out) 500ms 3;
+  animation: previewHintNudge 1s ease-in-out infinite;
 }
 
 @keyframes previewHintFrostFade {
   0%, 100% {
-    border-top-color: transparent;
+    border-color: transparent;
     background: color-mix(in srgb, var(--bg-color) 0%, transparent);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
     backdrop-filter: blur(0px) saturate(100%);
   }
   15%, 85% {
-    border-top-color: color-mix(in srgb, var(--fg-color) 14%, transparent);
+    border-color: color-mix(in srgb, var(--fg-color) 12%, transparent);
     background: color-mix(in srgb, var(--bg-color) 72%, transparent);
     -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
     backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);

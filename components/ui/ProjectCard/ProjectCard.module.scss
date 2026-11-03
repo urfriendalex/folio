@@ -235,8 +235,8 @@
   }
 }
 
-/* Narrow cards (two columns on a phone): the name alone. Arrow and year crowded it into a wrap that
-   pushed the year down and left rows uneven; the card itself already opens the project. */
+/* Narrow cards (two columns on a phone): name and visit arrow only. The year crowded the row into a
+   wrap that pushed it down and left rows uneven. */
 @container (max-width: 14.5rem) {
   .meta {
     margin-top: 0.48rem;
@@ -244,7 +244,6 @@
 
   .titleSeparator,
   .titleSecondary,
-  .visit,
   .year {
     display: none;
   }
