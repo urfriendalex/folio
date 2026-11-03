@@ -136,21 +136,34 @@
   padding: var(--filter-panel-pad);
   overflow: hidden;
   border-radius: 0;
-  background: color-mix(in srgb, var(--bg-color) 58%, transparent);
+  /* A dark active row behind the glass turned a thin tint into a grey smear; more page colour keeps it frosted but clean. */
+  background: color-mix(in srgb, var(--bg-color) 72%, transparent);
   -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--fg-color) 14%, transparent),
     0 1px 2px rgb(0 0 0 / 0.06),
     0 0.65rem 1.5rem rgb(0 0 0 / 0.12);
+  /* Unfolds out of the trigger above it. */
+  transform-origin: top left;
   transition:
-    opacity 240ms var(--ease-out),
-    filter 320ms var(--ease-out);
+    opacity 200ms var(--ease-out),
+    transform 240ms var(--ease-out);
 
   @starting-style {
     opacity: 0;
-    filter: blur(10px);
+    transform: translateY(-4px) scale(0.97);
   }
+}
+
+/* Kept mounted for the exit so the panel folds back instead of vanishing. */
+.filterPanel[data-closing="true"] {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  pointer-events: none;
+  transition:
+    opacity 140ms ease-in,
+    transform 140ms ease-in;
 }
 
 /* Dark: light rows (active/hovered) bleed through a thin tint and wash out the labels, so the
@@ -1012,13 +1025,14 @@
     animation: none;
   }
 
-  .filterPanel {
+  .filterPanel,
+  .filterPanel[data-closing="true"] {
     transition: none;
-    filter: none;
+    transform: none;
 
     @starting-style {
       opacity: 1;
-      filter: none;
+      transform: none;
     }
   }
 
@@ -1059,68 +1073,81 @@
 
 .previewHint {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
+  z-index: 2;
   display: grid;
-  place-items: center;
   pointer-events: none;
-  /* Parent opacity would cut off the frost's backdrop and isolate the ink. */
+  /* Parent opacity would cut off the frost's backdrop, so frost and ink fade on their own. */
 }
 
+/* A strip along the bottom edge, square and hairlined like the filter panel, so the screenshot's
+   middle stays visible and the line reads in one go. */
 .previewHintFrost,
-.previewHintBlend {
+.previewHintInk {
   grid-area: 1 / 1;
-  position: relative;
-  z-index: 2;
-  width: min(6.5rem, calc(100% - 1.5rem));
-  aspect-ratio: 1;
-  border-radius: 0.5rem;
 }
 
 .previewHintFrost {
-  background: rgb(255 255 255 / 0.08);
-  -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
-  backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
+  border-top: 1px solid color-mix(in srgb, var(--fg-color) 14%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 72%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
+  backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   animation: previewHintFrostFade 3.5s linear forwards;
 }
 
-.previewHintBlend {
-  display: grid;
-  place-items: center;
-  color: #fff;
+.previewHintInk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  color: var(--fg-color);
   font-family: var(--font-pixel-square-stack);
   font-size: var(--type-caption-size);
   letter-spacing: 0.04em;
-  line-height: 1.15;
-  padding-inline: 1rem;
-  text-align: center;
+  line-height: 1;
   text-transform: lowercase;
-  mix-blend-mode: difference;
+  white-space: nowrap;
   animation: previewHintInkFade 3.5s linear forwards;
+}
+
+/* Points the way: a few short pushes toward the swipe, then rest. */
+.previewHintArrow {
+  display: inline-block;
+  animation: previewHintNudge 900ms var(--ease-out) 500ms 3;
 }
 
 @keyframes previewHintFrostFade {
   0%, 100% {
-    background: rgb(255 255 255 / 0);
+    border-top-color: transparent;
+    background: color-mix(in srgb, var(--bg-color) 0%, transparent);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
     backdrop-filter: blur(0px) saturate(100%);
   }
   15%, 85% {
-    background: rgb(255 255 255 / 0.08);
-    -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
-    backdrop-filter: blur(var(--blur-glass-md)) saturate(120%);
+    border-top-color: color-mix(in srgb, var(--fg-color) 14%, transparent);
+    background: color-mix(in srgb, var(--bg-color) 72%, transparent);
+    -webkit-backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
+    backdrop-filter: blur(var(--blur-glass-md)) saturate(112%);
   }
   100% { visibility: hidden; }
 }
 
 @keyframes previewHintInkFade {
-  0%, 100% { color: rgb(255 255 255 / 0); }
-  15%, 85% { color: #fff; }
+  0%, 100% { opacity: 0; }
+  15%, 85% { opacity: 1; }
   100% { visibility: hidden; }
+}
+
+@keyframes previewHintNudge {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0.3rem 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .previewHintFrost,
-  .previewHintBlend {
+  .previewHintInk,
+  .previewHintArrow {
     animation: none;
   }
 }
