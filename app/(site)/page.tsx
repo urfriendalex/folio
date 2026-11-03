@@ -54,7 +54,6 @@ export default function Home() {
       width: SITE_OG_IMAGE.width,
       height: SITE_OG_IMAGE.height,
     },
-    dateModified: PAGE_LAST_MODIFIED.home,
     hasPart: projects.slice(0, HOME_RECENT_PROJECT_COUNT).map((project) => ({
       "@type": "CreativeWork",
       "@id": `${SITE_URL}/projects/${project.slug}#project`,
