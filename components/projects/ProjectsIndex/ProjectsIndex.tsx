@@ -145,29 +145,50 @@ function morphRestOf(node: HTMLElement) {
   return Array.from(node.querySelectorAll<HTMLElement>("[data-work-morph-rest]"));
 }
 
-/* A cloned <video> comes back empty (no frame, no poster), so for a beat every card showed its fallback
-   or placeholder. Paint each one's current frame onto a canvas that takes its place in the clone. */
-function freezeGhostVideos(source: HTMLElement, ghost: HTMLElement) {
-  const live = source.querySelectorAll("video");
-  ghost.querySelectorAll("video").forEach((copy, index) => {
-    const video = live[index];
+/* A cloned <video> comes back empty and would start loading on its own, so the clone gets a blank
+   canvas in its place; `settleGhostMedia` fills it once the swap has happened. */
+function blankGhostVideos(ghost: HTMLElement) {
+  ghost.querySelectorAll("video").forEach((copy) => {
     const canvas = document.createElement("canvas");
     canvas.className = copy.className;
     canvas.style.cssText = copy.style.cssText;
     canvas.setAttribute("aria-hidden", "true");
-    if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      try {
-        canvas.getContext("2d")?.drawImage(video, 0, 0);
-      } catch {
-        // A cross-origin frame can't be read back; an empty canvas still beats a reloading video.
-      }
-    } else {
-      canvas.width = 0;
-      canvas.height = 0;
-    }
+    canvas.width = 0;
+    canvas.height = 0;
     copy.replaceWith(canvas);
+  });
+}
+
+/* Cloned images and videos have to decode again (Safari shows them blank for a beat), so every card
+   flashed its placeholder as the switch began. Once React has unmounted the outgoing view, its real,
+   already painted media move into the clone instead. A source still on the page keeps its media and
+   lends the clone a canvas of each video's current frame. */
+function settleGhostMedia(source: HTMLElement, ghost: HTMLElement) {
+  if (!source.isConnected) {
+    const live = source.querySelectorAll("[data-project-media]");
+    ghost.querySelectorAll("[data-project-media]").forEach((copy, index) => {
+      const media = live[index];
+      if (media) {
+        copy.replaceWith(media);
+      }
+    });
+    return;
+  }
+
+  const live = source.querySelectorAll("video");
+  ghost.querySelectorAll("canvas").forEach((canvas, index) => {
+    const video = live[index];
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !video.videoWidth) {
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    try {
+      canvas.getContext("2d")?.drawImage(video, 0, 0);
+    } catch {
+      // A cross-origin frame can't be read back; an empty canvas still beats a reloading video.
+    }
   });
 }
 
@@ -175,7 +196,7 @@ function freezeGhostVideos(source: HTMLElement, ghost: HTMLElement) {
 function createViewGhost(source: HTMLElement) {
   const rect = source.getBoundingClientRect();
   const ghost = source.cloneNode(true) as HTMLElement;
-  freezeGhostVideos(source, ghost);
+  blankGhostVideos(ghost);
 
   ghost.querySelectorAll<HTMLElement>("[id]").forEach((node) => {
     node.removeAttribute("id");
@@ -1411,11 +1432,12 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       }
     });
 
-    const ghosts = [createViewGhost(outgoing)];
+    const ghostSources: HTMLElement[] = [outgoing];
     const preview = fromView === "list" ? dockedPreviewRef.current ?? followPreviewRef.current : null;
     if (preview && rectOnScreen(preview.getBoundingClientRect())) {
-      ghosts.push(createViewGhost(preview));
+      ghostSources.push(preview);
     }
+    const ghosts = ghostSources.map(createViewGhost);
 
     ghosts.forEach((ghost) => {
       ghost.classList.add(styles.viewGhost);
@@ -1433,6 +1455,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
       swapScrollRef.current = true;
       setView(next);
     });
+    ghostSources.forEach((source, index) => settleGhostMedia(source, ghosts[index]));
 
     const incoming = (next === "list" ? tableRef.current : gridRef.current);
     if (!incoming) {
