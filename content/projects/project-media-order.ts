@@ -58,6 +58,7 @@ export const projectMediaOrderIndexBySlug: Partial<
     "media-07-v2.mp4": 7,
     "media-08-v2.mp4": 8,
     "media-09-v2.mp4": 9,
+    "media-10-v2.mp4": 10,
   },
   "mon-nom-bakery": {
     "media-04.mp4": 1,

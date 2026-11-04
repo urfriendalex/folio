@@ -241,6 +241,17 @@ export const curatedProjectMedia = {
           "width": 780,
           "height": 1680
         }
+      },
+      {
+        "kind": "video",
+        "alt": "Lumano desktop buyer path from the hero through featured pieces, Fragmento size and add to cart, then the cart drawer",
+        "loop": true,
+        "desktop": {
+          "src": "/projects/lumano/media-10-v2.mp4",
+          "poster": "/projects/lumano/media-10-poster-v2.png",
+          "width": 1956,
+          "height": 1048
+        }
       }
     ]
   },

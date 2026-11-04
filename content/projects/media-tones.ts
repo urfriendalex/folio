@@ -65,6 +65,7 @@ export const projectMediaTones: Record<string, string> = {
   "/projects/lumano/media-07-poster-v2.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAALUlEQVR42mNgZGTk4uLi4OAAMhhkpKXKSwsiI8KAQgysrCySkhKiIiIgGWQAAHPdA6fVLd+hAAAAAElFTkSuQmCC",
   "/projects/lumano/media-08-poster-v2.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAANUlEQVR42hXIsQ0AIAwDsJSSSEVdu8IBiP/fAzbLACCJ7Gb2jHP2WvNrjMhM9/Y/IkhWlaQLLIUBylyCjgoAAAAASUVORK5CYII=",
   "/projects/lumano/media-09-poster-v2.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAALklEQVR42mNgZGTk5ubi4OAAMhhkZaQry4ujIsI4OTkZWFlZpKQkRUVFQDLIAAB1tQO1V9PInQAAAABJRU5ErkJggg==",
+  "/projects/lumano/media-10-poster-v2.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAOElEQVR42mNgYWHh4uQSFxXn5+NnYGRkFBUVCwsOU5BVAHHExcTDQ8IV5BQYmJiYgMqkJaXFxcQBbSkElfSuyB0AAAAASUVORK5CYII=",
   "/projects/lumano/thumbnail-v2.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAI0lEQVR42mNgRAIMQKCkpCguLsYAARoa6ioqylAOExMTRA0AKYgBofD2npcAAAAASUVORK5CYII=",
   "/projects/mon-nom-bakery/media-01.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAPUlEQVR42mN49+7V+TOn7t668fHDO4Z3H95efnv/xqcn7z++Y3jw4O7ytSuACMhgOHfujLu7u5ur26lTxwEeryULEkHZYwAAAABJRU5ErkJggg==",
   "/projects/mon-nom-bakery/media-03.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR42gE0AMv/APLy7+/u6uTj3+zr6ADx8e729fH6+fXy8e4A9PTy9vXx+/r18vLuAMK/uvTz8Pz79/Ly7oqbLKkCDDanAAAAAElFTkSuQmCC",
