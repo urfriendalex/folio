@@ -235,35 +235,17 @@
   }
 }
 
+/* Narrow cards (two columns on a phone): name and visit arrow only. The year crowded the row into a
+   wrap that pushed it down and left rows uneven. */
 @container (max-width: 14.5rem) {
   .meta {
     margin-top: 0.48rem;
   }
 
-  .titleRow {
-    gap: 0.4rem;
-  }
-
-  .titleCluster {
-    gap: 0.35em;
-  }
-
-  .title {
-    overflow: hidden;
-    font-size: var(--type-card-title-size);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-wrap: unset;
-  }
-
   .titleSeparator,
   .titleSecondary,
-  .visitWordClip {
-    display: none;
-  }
-
   .year {
-    font-size: var(--type-caption-size);
+    display: none;
   }
 }
 

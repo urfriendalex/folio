@@ -117,6 +117,8 @@ const FILTER_MOVE_S = 0.48;
 const FILTER_ENTER_S = 0.32;
 const FILTER_ENTER_WINDOW_S = 0.42;
 const FILTER_ENTER_STAGGER_MAX_S = 0.12;
+/** Keep in sync with the `.filterPanel[data-closing]` transition in the SCSS. */
+const FILTER_PANEL_EXIT_MS = 140;
 /* List ↔ grid runs in three beats so old and new never share the screen: everything but the names
    clears out, the names travel, then the next view's details arrive around them. */
 const VIEW_HANDOFF_CLEAR_S = 0.18;
@@ -336,6 +338,11 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
   const pendingViewRef = useRef<IndexView | null>(null);
   const swapScrollRef = useRef(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  /** Outlives `filterMenuOpen` by the exit transition so the panel can fold away. */
+  const [filterPanelShown, setFilterPanelShown] = useState(false);
+  if (filterMenuOpen && !filterPanelShown) {
+    setFilterPanelShown(true);
+  }
   const [filterMotion, setFilterMotion] = useState(false);
   /** List ↔ grid: CSS entrance stays off while the handoff moves names and brings the rest in. */
   const [viewMorph, setViewMorph] = useState(false);
@@ -1948,6 +1955,15 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     };
   }, [filterMenuOpen]);
 
+  useEffect(() => {
+    if (filterMenuOpen || !filterPanelShown) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setFilterPanelShown(false), FILTER_PANEL_EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [filterMenuOpen, filterPanelShown]);
+
   const syncFilterPanelBox = () => {
     const trigger = filterFieldRef.current?.querySelector("button");
     if (!trigger) {
@@ -1957,7 +1973,7 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
     const rect = trigger.getBoundingClientRect();
     setFilterPanelBox({
       top: Math.round(rect.bottom + 4),
-      left: Math.round(Math.max(10, rect.left - 20)),
+      left: Math.round(Math.max(10, rect.left)),
     });
   };
 
@@ -2108,11 +2124,12 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
         data-lenis-prevent={pinList && listPinActive ? "" : undefined}
       >
       {toolbar}
-      {filterMenuOpen && hasMounted
+      {filterPanelShown && hasMounted
         ? createPortal(
             <div
               ref={filterPanelRef}
               className={styles.filterPanel}
+              data-closing={filterMenuOpen ? undefined : "true"}
               role="listbox"
               aria-label="Project type"
               style={{ top: filterPanelBox.top, left: filterPanelBox.left }}
@@ -2270,7 +2287,10 @@ export function ProjectsIndex({ projects }: ProjectsIndexProps) {
               {previewIntroDone && !previewDismissed ? (
                 <span className={styles.previewHint} aria-hidden="true">
                   <span className={styles.previewHintFrost} />
-                  <span className={styles.previewHintBlend}>You can swipe right to hide the preview&nbsp; →</span>
+                  <span className={styles.previewHintInk}>
+                    swipe to hide
+                    <span className={styles.previewHintArrow}>→</span>
+                  </span>
                 </span>
               ) : null}
               <span className={styles.previewFrame}>
