@@ -2,6 +2,7 @@ import "server-only";
 
 import { getCalEventSlug, getCalPageHref, normalizeCalLink } from "@/components/booking/calBooking";
 import { contactContent } from "@/content/contact";
+import { isFolioCallEventType } from "@/lib/cal/folioEventTypes";
 
 const CAL_API_BASE_URL = "https://api.cal.com/v2";
 const CAL_API_TIMEOUT_MS = 10000;
@@ -250,7 +251,8 @@ export async function getCalWidgetOverview(): Promise<CalWidgetOverview> {
 
   const eventTypes = rawEventTypes
     .filter((eventType) => !eventType.hidden && !eventType.bookingRequiresAuthentication)
-    .map(mapEventType);
+    .map(mapEventType)
+    .filter(isFolioCallEventType);
 
   const defaultEventType = selectDefaultEventType(eventTypes);
   const username = profile.username ?? eventTypes[0]?.username ?? getFallbackUsernameFromLink();
@@ -263,6 +265,25 @@ export async function getCalWidgetOverview(): Promise<CalWidgetOverview> {
     eventTypes,
     defaultEventTypeId: defaultEventType?.id ?? null,
   };
+}
+
+/** Rejects hidden, authenticated, non 15/30, and fullcourse.studio event types. */
+export async function requireFolioCallEventType(eventTypeId: number): Promise<CalWidgetEventType> {
+  const rawEventTypes = await fetchCal<RawCalEventType[]>({
+    path: "/event-types",
+    version: CAL_API_VERSIONS.eventTypes,
+  });
+
+  const match = rawEventTypes
+    .filter((eventType) => !eventType.hidden && !eventType.bookingRequiresAuthentication)
+    .map(mapEventType)
+    .find((eventType) => eventType.id === eventTypeId);
+
+  if (!match || !isFolioCallEventType(match)) {
+    throw new CalApiError("That call option is not available.", 400);
+  }
+
+  return match;
 }
 
 export async function getCalSlots(input: {

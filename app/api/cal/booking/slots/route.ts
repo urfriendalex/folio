@@ -1,4 +1,4 @@
-import { CalApiError, getCalSlots } from "@/lib/cal/api";
+import { CalApiError, getCalSlots, requireFolioCallEventType } from "@/lib/cal/api";
 
 export const runtime = "nodejs";
 
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await requireFolioCallEventType(eventTypeId);
     const slots = await getCalSlots({
       eventTypeId,
       start,

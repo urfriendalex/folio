@@ -2,6 +2,7 @@
 
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { contactContent } from "@/content/contact";
+import { AddToCalendar } from "./AddToCalendar";
 import { getCalPageHref, normalizeCalLink } from "./calBooking";
 import styles from "./CalBookingOverlayContent.module.scss";
 
@@ -50,6 +51,7 @@ type BookingSuccess = {
   attendeeEmail: string;
   location: string | null;
   meetingUrl: string | null;
+  lengthInMinutes?: number | null;
 };
 
 type AsyncState<T> =
@@ -224,7 +226,7 @@ function BookingSkeleton() {
           <div className={styles.skeletonEventGroup}>
             <span className={`${styles.skeletonLine} ${styles.skeletonLabel}`} />
             <div className={styles.skeletonEventList}>
-              {Array.from({ length: 3 }, (_, index) => (
+              {Array.from({ length: 2 }, (_, index) => (
                 <span key={index} className={styles.skeletonEvent}>
                   <span className={`${styles.skeletonLine} ${styles.skeletonEventTitle}`} />
                   <span className={`${styles.skeletonLine} ${styles.skeletonEventMeta}`} />
@@ -636,19 +638,38 @@ export function CalBookingOverlayContent({ calLink }: CalBookingOverlayContentPr
                       >
                         {bookingState.booking.meetingUrl}
                       </a>
-                      <button
-                        type="button"
-                        className={styles.copyLinkAction}
-                        onClick={() => handleCopyMeetingUrl(bookingState.booking.meetingUrl!)}
-                      >
-                        {copyStatus === "copied"
-                          ? "Copied"
-                          : copyStatus === "error"
-                            ? "Copy failed"
-                            : "Copy link"}
-                      </button>
+                      <div className={styles.meetingActions}>
+                        <button
+                          type="button"
+                          className={styles.copyLinkAction}
+                          onClick={() => handleCopyMeetingUrl(bookingState.booking.meetingUrl!)}
+                        >
+                          {copyStatus === "copied"
+                            ? "Copied"
+                            : copyStatus === "error"
+                              ? "Copy failed"
+                              : "Copy link"}
+                        </button>
+                        <AddToCalendar
+                          start={bookingState.booking.start}
+                          end={bookingState.booking.end}
+                          lengthInMinutes={
+                            bookingState.booking.lengthInMinutes ?? selectedEvent.lengthInMinutes
+                          }
+                          meetingUrl={bookingState.booking.meetingUrl}
+                          uid={bookingState.booking.uid}
+                        />
+                      </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <AddToCalendar
+                      start={bookingState.booking.start}
+                      end={bookingState.booking.end}
+                      lengthInMinutes={bookingState.booking.lengthInMinutes ?? selectedEvent.lengthInMinutes}
+                      meetingUrl={null}
+                      uid={bookingState.booking.uid}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className={styles.widgetSection}>

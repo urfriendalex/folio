@@ -10,7 +10,7 @@
 - Image sitemap, refreshed `lastmod`, and `max-image-preview:large`.
 - Permanent www → apex redirect; security headers; `X-Powered-By` removed.
 
-## Week 1: after this deploys (manual, ~20 min)
+## Week 1: after this deploys (manual checklist)
 
 1. **Vercel → Domains**: `www.yansons.online` → `yansons.online` is already **308** ✅. `folio-indol-sigma.vercel.app` also serves Production; it now sends `X-Robots-Tag: noindex`. Optionally set it to redirect (308) to `yansons.online` via **Edit** as well.
 2. **Search Console → Sitemaps**: submit `https://yansons.online/sitemap.xml`. Google currently knows only 7 of 14 URLs.
