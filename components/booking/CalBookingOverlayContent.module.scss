@@ -780,11 +780,29 @@
 .meetingLinkRow {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.42rem 0.75rem;
   width: 100%;
   min-width: 0;
   margin-top: 0.12rem;
+}
+
+.meetingActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.calendarControl {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 100%;
 }
 
 .meetingUrl {
@@ -831,7 +849,6 @@
 
 .copyLinkAction {
   flex: 0 0 auto;
-  margin-inline-start: auto;
   appearance: none;
   border: 0;
   padding: 0.1rem 0;
@@ -868,6 +885,83 @@
 
 .copyLinkAction:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
   outline: none;
+}
+
+.calendarMenu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 5;
+  min-width: 13.75rem;
+  margin: 0;
+  padding: 0.28rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-fg) 16%, transparent);
+  corner-shape: squircle;
+  border-radius: var(--project-toolbar-panel-radius);
+  background: var(--overlay-immersive-scrim);
+  box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--overlay-fg) 10%, transparent);
+  display: grid;
+  gap: 0.12rem;
+  animation: calendarMenuIn 200ms var(--ease-out);
+  transform-origin: top right;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.calendarMenuItem {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--overlay-fg);
+  font-family: var(--font-body-stack);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight-sm);
+  text-align: left;
+  padding: 0.48rem 0.62rem;
+  border-radius: calc(var(--project-toolbar-panel-radius) - 2px);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0.01ms;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .calendarMenuItem:hover {
+    background: color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  }
+}
+
+.calendarMenuItem[data-active="true"],
+.calendarMenuItem:focus-visible:not(:where([data-input-modality="pointer"] *)) {
+  background: color-mix(in srgb, var(--overlay-fg) 8%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--overlay-fg) 36%, transparent);
+  outline-offset: 2px;
+}
+
+.calendarMenuItem:focus:not(:focus-visible:not(:where([data-input-modality="pointer"] *))) {
+  outline: none;
+}
+
+@keyframes calendarMenuIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate3d(0, 0.35rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .skeletonEventGroup,
@@ -1316,17 +1410,19 @@
     grid-auto-rows: 1fr;
   }
 
+  /* Duration stays reachable on a phone. Email and Cal.com links stay in the page footer. */
   .contextPane {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .utilityLinks {
     display: none;
   }
 
-  .contextPane {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-
   .eventPicker {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .eventButton {
@@ -1445,6 +1541,14 @@
     gap: 0.5rem;
   }
 
+  .meetingActions,
+  .calendarControl {
+    margin-inline-start: 0;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
   .meetingUrl {
     flex: 0 1 auto;
     width: 100%;
@@ -1492,8 +1596,8 @@
     --booking-date-grid-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .contextPane {
-    display: none;
+  .eventButton {
+    min-height: 2.4rem;
   }
 
   .dateButton,
@@ -1521,6 +1625,8 @@
   .formGrid > *,
   .primaryLink,
   .copyLinkAction,
+  .calendarMenu,
+  .calendarMenuItem,
   .stepNavButton,
   .restartButton,
   .eventButton,

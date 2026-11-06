@@ -3,6 +3,7 @@ import {
   createCalBooking,
   getBookingLocationLabel,
   getCalWidgetOverview,
+  requireFolioCallEventType,
   type CalLocation,
 } from "@/lib/cal/api";
 
@@ -98,8 +99,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    const eventType = await requireFolioCallEventType(parsed.eventTypeId);
     const booking = await createCalBooking({
-      eventTypeId: parsed.eventTypeId,
+      eventTypeId: eventType.id,
       start: parsed.start,
       attendee: {
         name: parsed.name,
@@ -120,6 +122,7 @@ export async function POST(request: Request) {
         attendeeEmail: booking.attendees?.[0]?.email ?? parsed.email,
         location: getBookingLocationLabel(booking.location),
         meetingUrl: booking.meetingUrl ?? null,
+        lengthInMinutes: eventType.lengthInMinutes,
       },
     });
   } catch (error) {
