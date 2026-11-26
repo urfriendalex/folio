@@ -52,6 +52,12 @@ and codec/color metadata must match. Files are replaced only when smaller
 (MP4 container savings must be at least 1 KiB). Resolution, frame rate, duration,
 asset paths, and page layouts stay unchanged. Already optimized files are kept.
 
+Checked-in videos are H.264 at CRF 20 (`slower` preset, no audio track, since
+every player is muted). That is visually indistinguishable from the old CRF 16
+encodes at about half the size, which matters because every Vercel deployment
+stores its own copy of `public/`. `pnpm generate:project-media` uses the same
+CRF, so regenerated clips stay in line.
+
 Curated captures remain curated: this command does not regenerate them from
 sources, change their gallery ordering, or trim their clips.
 
